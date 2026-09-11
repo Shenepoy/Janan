@@ -374,7 +374,7 @@ class _AppState extends ConsumerState<App> with Loggable {
   }
 }
 
-class _AppRoot extends ConsumerWidget {
+class _AppRoot extends ConsumerStatefulWidget {
   const _AppRoot({
     required this.initialRoute,
     required this.homePresence,
@@ -385,19 +385,35 @@ class _AppRoot extends ConsumerWidget {
   final HomePresenceObserver homePresence;
   final GlobalKey launchSyncHostKey;
 
+  @override
+  ConsumerState<_AppRoot> createState() => _AppRootState();
+}
+
+class _AppRootState extends ConsumerState<_AppRoot> {
+  final _settingsSearchOpen = ValueNotifier<bool>(false);
+
+  @override
+  void dispose() {
+    _settingsSearchOpen.dispose();
+    super.dispose();
+  }
+
   Widget _shell(ShellTab tab) => AppShell(
-    homePresence: homePresence,
+    homePresence: widget.homePresence,
     initialTab: tab,
-    pages: const [
-      AppHome(),
-      WeightScreen(),
-      StatisticsScreen(),
-      SettingsPage(),
+    settingsSearchOpen: _settingsSearchOpen,
+    onSettingsSearch: () =>
+        _settingsSearchOpen.value = !_settingsSearchOpen.value,
+    pages: [
+      const AppHome(),
+      const WeightScreen(),
+      const StatisticsScreen(),
+      SettingsPage(searchOpen: _settingsSearchOpen, showAppBar: false),
     ],
   );
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final settings = ref.watch(appSettingsProvider);
     final isRtl = context.locale.languageCode == 'ar';
     return SafaehTheme(
@@ -427,19 +443,19 @@ class _AppRoot extends ConsumerWidget {
         supportedLocales: context.supportedLocales,
         locale: context.locale,
         debugShowCheckedModeBanner: false,
-        navigatorObservers: [homePresence],
+        navigatorObservers: [widget.homePresence],
         builder: (context, child) {
           final directed = Directionality(
             textDirection: isRtl ? ui.TextDirection.rtl : ui.TextDirection.ltr,
             child: child ?? const SizedBox.shrink(),
           );
           return BleLaunchSyncHost(
-            key: launchSyncHostKey,
-            homePresence: homePresence,
+            key: widget.launchSyncHostKey,
+            homePresence: widget.homePresence,
             child: directed,
           );
         },
-        initialRoute: initialRoute.path,
+        initialRoute: widget.initialRoute.path,
         routes: {
           AppRoute.onboarding.path: (_) =>
               OnboardingScreen(firstRun: !settings.onboardingCompleted),

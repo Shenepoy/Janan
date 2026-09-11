@@ -38,6 +38,8 @@ class AppShell extends ConsumerWidget {
     this.homePresence,
     this.initialTab = ShellTab.home,
     this.showWeight,
+    this.settingsSearchOpen,
+    this.onSettingsSearch,
   });
 
   /// Blood pressure, weight, statistics, and settings pages, in that order.
@@ -51,6 +53,12 @@ class AppShell extends ConsumerWidget {
 
   /// When null, follows [AppSettings.weightInput]. Tests can pin it.
   final bool? showWeight;
+
+  /// Whether the settings search overlay is open.
+  final ValueNotifier<bool>? settingsSearchOpen;
+
+  /// Opens or closes the settings search overlay.
+  final VoidCallback? onSettingsSearch;
 
   static const navHomeKey = ValueKey<String>('shell_nav_home');
   static const navWeightKey = ValueKey<String>('shell_nav_weight');
@@ -68,6 +76,8 @@ class AppShell extends ConsumerWidget {
       homePresence: homePresence,
       initialTab: tab,
       showWeight: enabled,
+      settingsSearchOpen: settingsSearchOpen,
+      onSettingsSearch: onSettingsSearch,
     );
   }
 }
@@ -77,6 +87,8 @@ class _AppShellView extends StatefulWidget {
     required this.pages,
     required this.initialTab,
     required this.showWeight,
+    this.settingsSearchOpen,
+    this.onSettingsSearch,
     this.homePresence,
   });
 
@@ -84,6 +96,8 @@ class _AppShellView extends StatefulWidget {
   final HomePresenceObserver? homePresence;
   final ShellTab initialTab;
   final bool showWeight;
+  final ValueNotifier<bool>? settingsSearchOpen;
+  final VoidCallback? onSettingsSearch;
 
   @override
   State<_AppShellView> createState() => _AppShellViewState();
@@ -156,11 +170,17 @@ class _AppShellViewState extends State<_AppShellView> {
   void _select(int index) {
     if (_index == index) return;
     setState(() => _index = index);
+    if (index != _tabs.length - 1 && widget.settingsSearchOpen?.value == true) {
+      widget.settingsSearchOpen!.value = false;
+    }
     widget.homePresence?.setHomeTab(index == 0);
   }
 
   void _go(int index) {
     if (index == _index) return;
+    if (index != _tabs.length - 1 && widget.settingsSearchOpen?.value == true) {
+      widget.settingsSearchOpen!.value = false;
+    }
     final tokens = SafaehTheme.of(context);
     final motion = safaehResolvedMotion(context, tokens.motion);
     if (motion == Duration.zero || !_pageController.hasClients) {
@@ -220,8 +240,12 @@ class _AppShellViewState extends State<_AppShellView> {
     final pages = _visiblePages;
     assert(pages.length == destinations.length);
     final dataTabCount = _tabs.length - 1;
-    final headerExtent = DashboardAppBar.extentOf(context);
-    final titleKeys = ['title', if (widget.showWeight) 'weight', 'statistics'];
+    final titleKeys = [
+      'title',
+      if (widget.showWeight) 'weight',
+      'statistics',
+      'settings',
+    ];
     return SafaehBottomNavScope(
       // Scaffold reserves the bottom-navigation slot already; keep only a
       // small visual gap for controls that float above that slot.
@@ -240,31 +264,20 @@ class _AppShellViewState extends State<_AppShellView> {
             // pages add the shared content inset so their last item can still
             // be brought fully above the bar.
             extendBody: true,
-            body: Stack(
+            appBar: DashboardAppBar(
+              page: _page,
+              titleKeys: titleKeys,
+              settingsSearchOpen: widget.settingsSearchOpen,
+              onSettingsSearch: widget.onSettingsSearch,
+            ),
+            body: PageView(
+              controller: _pageController,
+              onPageChanged: _select,
               children: [
-                PageView(
-                  controller: _pageController,
-                  onPageChanged: _select,
-                  children: [
-                    for (var i = 0; i < pages.length; i++)
-                      _KeepAlivePage(
-                        key: ValueKey<String>('shell-page-$i-$localeTag'),
-                        child: i < dataTabCount
-                            ? Padding(
-                                padding: EdgeInsets.only(top: headerExtent),
-                                child: pages[i],
-                              )
-                            : pages[i],
-                      ),
-                  ],
-                ),
-                if (_index < dataTabCount)
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: headerExtent,
-                    child: DashboardAppBar(page: _page, titleKeys: titleKeys),
+                for (var i = 0; i < pages.length; i++)
+                  _KeepAlivePage(
+                    key: ValueKey<String>('shell-page-$i-$localeTag'),
+                    child: pages[i],
                   ),
               ],
             ),

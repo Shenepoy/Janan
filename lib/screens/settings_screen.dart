@@ -30,9 +30,9 @@ import 'package:path/path.dart';
 import 'package:safaeh/safaeh.dart' as safaeh;
 import 'package:url_launcher/url_launcher.dart';
 
-/// Drop [visible]: false rows. The catalog page still builds every setting in a
-/// section; Health Connect internals and other power-user flags must stay off
-/// this list.
+/// Drop rows whose registry definition marks them invisible. The catalog page
+/// still builds every setting in a section; Health Connect internals and other
+/// power-user flags must stay off this list.
 @visibleForTesting
 List<Widget> visibleCatalogChildren(
   SettingsRegistry registry,
@@ -49,7 +49,13 @@ List<Widget> visibleCatalogChildren(
 
 /// Searchable settings catalog backed by Edadat and Safaeh chrome.
 class SettingsPage extends ConsumerStatefulWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({super.key, this.searchOpen, this.showAppBar = true});
+
+  /// Shared search state used when the page is embedded in the main shell.
+  final ValueNotifier<bool>? searchOpen;
+
+  /// Whether to render a page-local app bar when used outside the main shell.
+  final bool showAppBar;
 
   @override
   ConsumerState<SettingsPage> createState() => _SettingsPageState();
@@ -66,9 +72,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _searchOpen = false;
   bool _activeUpdateScheduled = false;
 
+  bool get _isSearchOpen => widget.searchOpen?.value ?? _searchOpen;
+
   @override
   void initState() {
     super.initState();
+    widget.searchOpen?.addListener(_handleSearchOpenChanged);
+    _searchOpen = widget.searchOpen?.value ?? false;
     _registry = createAppSettingsRegistry();
     for (final section in _registry.getSortedSections()) {
       _sectionKeys[section.key] = GlobalKey();
@@ -81,10 +91,33 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   @override
   void dispose() {
+    widget.searchOpen?.removeListener(_handleSearchOpenChanged);
     _scrollController.removeListener(_scheduleActiveSectionUpdate);
     _scrollController.dispose();
     _anchors.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant SettingsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.searchOpen == widget.searchOpen) return;
+    oldWidget.searchOpen?.removeListener(_handleSearchOpenChanged);
+    widget.searchOpen?.addListener(_handleSearchOpenChanged);
+    _searchOpen = widget.searchOpen?.value ?? false;
+  }
+
+  void _handleSearchOpenChanged() {
+    if (!mounted) return;
+    setState(() => _searchOpen = widget.searchOpen?.value ?? false);
+  }
+
+  void _setSearchOpen(bool value) {
+    if (widget.searchOpen != null) {
+      widget.searchOpen!.value = value;
+    } else if (_searchOpen != value) {
+      setState(() => _searchOpen = value);
+    }
   }
 
   List<SettingSection> get _displayedSections => _registry
@@ -95,10 +128,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       )
       .toList();
 
-  bool _isWide(BuildContext context) {
-    return MediaQuery.sizeOf(context).width >=
-        safaeh.SafaehTheme.of(context).tabletBreakpoint;
-  }
+  bool _isWide(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >=
+      safaeh.SafaehTheme.of(context).tabletBreakpoint;
 
   String _sectionTitle(String key) => key.tr();
 
@@ -113,7 +145,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _activeUpdateScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _activeUpdateScheduled = false;
-      if (!mounted || _searchOpen) return;
+      if (!mounted || _isSearchOpen) return;
       final scrollContext = _scrollViewportKey.currentContext;
       if (scrollContext == null) return;
       final active = edadat_safaeh.activeSafaehSettingsSectionId(
@@ -290,8 +322,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             onSelect: _selectSection,
           ),
         edadat_safaeh.SafaehSettingsSearchOverlay(
-          isOpen: _searchOpen,
-          onClose: () => setState(() => _searchOpen = false),
+          isOpen: _isSearchOpen,
+          onClose: () => _setSearchOpen(false),
           searchIndex: settings.searchIndex,
           resultFilter: _isSearchResultVisible,
           onResultSelected: _selectSearchResult,
@@ -322,16 +354,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
     final settings = ref.settings;
     return Scaffold(
-      appBar: AppBar(
-        title: Text('settings'.tr()),
-        actions: [
-          edadat_safaeh.SafaehSettingsSearchButton(
-            isOpen: _searchOpen,
-            hintText: 'searchSettings'.tr(),
-            onPressed: () => setState(() => _searchOpen = !_searchOpen),
-          ),
-        ],
-      ),
+      primary: false,
+      appBar: widget.showAppBar
+          ? AppBar(
+              title: Text('settings'.tr()),
+              actions: [
+                edadat_safaeh.SafaehSettingsSearchButton(
+                  isOpen: _isSearchOpen,
+                  hintText: 'searchSettings'.tr(),
+                  onPressed: () => _setSearchOpen(!_isSearchOpen),
+                ),
+              ],
+            )
+          : null,
       body: _buildBody(context, settings),
     );
   }
