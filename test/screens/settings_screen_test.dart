@@ -45,4 +45,26 @@ void main() {
     expect(find.byType(SafaehSettingsPageIndex), findsOneWidget);
     expect(find.byType(SafaehSettingsPageIndexOverlay), findsNothing);
   });
+
+  testWidgets('theme and language use Safaeh phone picker sheets', (
+    tester,
+  ) async {
+    usePhoneTestSurface(tester);
+
+    await pumpApp(tester, await materialApp(const SettingsPage()));
+
+    await tester.tap(find.text('Theme').last);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('safaeh_drag_handle')), findsOneWidget);
+    expect(find.text('Dark'), findsOneWidget);
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Language').last);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('safaeh_drag_handle')), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
+    await tester.tap(find.text('English'));
+    await tester.pumpAndSettle();
+  });
 }

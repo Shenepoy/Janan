@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive_io.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/app.dart';
+import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/bluetooth_devices_screen.dart';
 import 'package:blood_pressure_app/features/settings/body_profile_screen.dart';
@@ -376,7 +377,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     SettingsProviders settings,
     SettingDefinition<Object?> setting,
   ) {
-    final defaultTile = _buildDefaultTile(settings, setting);
+    final defaultTile = _buildDefaultTile(context, settings, setting);
     if (setting.key == bleInputSetting.key) {
       return const BleEngineSettingsTile();
     }
@@ -440,6 +441,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget? _buildDefaultTile(
+    BuildContext context,
     SettingsProviders settings,
     SettingDefinition<Object?> setting,
   ) {
@@ -480,17 +482,31 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
     if (setting is EnumSetting) {
       final value = ref.watch(settings.provider(setting));
-      return EnumSettingsTile.fromSetting(
-        setting: setting,
-        title: title,
-        subtitle: enumLabel(value),
-        value: value,
-        labelBuilder: enumLabel,
+      final options = setting.options ?? const <String>[];
+      return ListTile(
+        leading: setting.icon != null ? Icon(setting.icon) : null,
+        title: Text(title),
+        subtitle: Text(enumLabel(value)),
+        trailing: settingsChevronEnd(context),
         enabled: enabled,
-        dialogTitle: title,
-        onChanged: enabled
-            ? (value) =>
-                  ref.read(settings.provider(setting).notifier).set(value)
+        onTap: enabled
+            ? () async {
+                final result = await showOptionPickerSheet<String>(
+                  context,
+                  title: title,
+                  selected: value,
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+                  options: [
+                    for (final option in options)
+                      SheetPickerOption<String>(
+                        value: option,
+                        label: enumLabel(option),
+                      ),
+                  ],
+                );
+                if (!mounted || result == null) return;
+                await ref.read(settings.provider(setting).notifier).set(result);
+              }
             : null,
       );
     }
