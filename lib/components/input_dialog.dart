@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,12 +9,14 @@ class InputDialog extends StatefulWidget {
   /// Creates a dialog with a text input field.
   ///
   /// Pops the context after value submission with object of type [String?].
-  const InputDialog({super.key,
+  const InputDialog({
+    super.key,
     this.hintText,
     this.initialValue,
     this.inputFormatters,
     this.keyboardType,
-    this.validator,});
+    this.validator,
+  });
 
   /// Initial content of the input field.
   final String? initialValue;
@@ -107,25 +110,35 @@ class _InputDialogState extends State<InputDialog> {
 }
 
 /// Creates a dialog for prompting a single user input.
-Future<String?> showInputDialog(BuildContext context, {String? hintText, String? initialValue}) async =>
-  showSafaehTextInput(
-    context: context,
-    title: hintText ?? 'addNote'.tr(),
-    hint: hintText,
-    initialValue: initialValue ?? '',
-    doneLabel: 'btnConfirm'.tr(),
-    cancelLabel: 'btnCancel'.tr(),
-  );
+Future<String?> showInputDialog(
+  BuildContext context, {
+  String? hintText,
+  String? initialValue,
+}) async => showSafaehTextInput(
+  context: context,
+  title: hintText ?? 'addNote'.tr(),
+  hint: hintText,
+  initialValue: initialValue ?? '',
+  doneLabel: 'btnConfirm'.tr(),
+  cancelLabel: 'btnCancel'.tr(),
+);
 
 /// Creates a dialog that only allows int and double inputs.
-Future<double?> showNumberInputDialog(BuildContext context, {String? hintText, num? initialValue}) async {
-  final result = await showSafaeh<String?>(
+Future<double?> showNumberInputDialog(
+  BuildContext context, {
+  String? hintText,
+  num? initialValue,
+}) async {
+  final result = await showResponsiveSheet<String?>(
     context: context,
     title: hintText ?? 'errNoValue'.tr(),
+    maxHeight: MediaQuery.sizeOf(context).height * 0.5,
     child: InputDialog(
       hintText: hintText,
       initialValue: initialValue?.toString(),
-      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'([0-9]+(\.([0-9]*))?)')),],
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'([0-9]+(\.([0-9]*))?)')),
+      ],
       keyboardType: TextInputType.number,
       validator: (text) {
         double? value = double.tryParse(text);

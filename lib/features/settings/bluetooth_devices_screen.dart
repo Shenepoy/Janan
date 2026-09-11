@@ -1,6 +1,7 @@
 // ignore_for_file: strict_raw_type
 
 import 'package:blood_pressure_app/components/confirm_deletion_dialog.dart';
+import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:blood_pressure_app/features/bluetooth/backend/bluetooth_manager.dart';
 import 'package:blood_pressure_app/features/settings/add_bluetooth_device_page.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
@@ -34,20 +35,16 @@ class BluetoothDevicesScreen extends ConsumerWidget {
     final settings = ref.watch(appSettingsProvider);
     final devices = settings.knownBleDev;
     return Scaffold(
-      appBar: AppBar(
-        title: Text('bluetoothDevices'.tr()),
-      ),
+      appBar: AppBar(title: Text('bluetoothDevices'.tr())),
       body: ListView(
         children: [
-          if (devices.isEmpty)
-            ListTile(
-              title: Text('noBluetoothDevices'.tr()),
-            ),
+          if (devices.isEmpty) ListTile(title: Text('noBluetoothDevices'.tr())),
           for (final device in devices)
             _DeviceTile(
               device: device,
               onForget: () => _forget(context, ref, settings, device),
-              onAutoSyncChanged: (value) => _setAutoSync(ref, settings, device, value),
+              onAutoSyncChanged: (value) =>
+                  _setAutoSync(ref, settings, device, value),
             ),
           ListTile(
             leading: const Icon(Icons.add),
@@ -55,9 +52,11 @@ class BluetoothDevicesScreen extends ConsumerWidget {
             onTap: () async {
               await Navigator.of(context).push<void>(
                 MaterialPageRoute<void>(
-                  builder: addDevicePageBuilder ?? (context) => AddBluetoothDevicePage(
-                    manager: manager ?? BluetoothManager.create(),
-                  ),
+                  builder:
+                      addDevicePageBuilder ??
+                      (context) => AddBluetoothDevicePage(
+                        manager: manager ?? BluetoothManager.create(),
+                      ),
                 ),
               );
             },
@@ -88,13 +87,23 @@ class BluetoothDevicesScreen extends ConsumerWidget {
                 title: Text('bluetoothImportMode'.tr()),
                 subtitle: Text(settings.bluetoothImportMode.localize()),
                 onTap: () async {
-                  final result = await SettingsDialog.select<BluetoothMeasurementImportMode>(
-                    context: context,
-                    title: 'bluetoothImportMode'.tr(),
-                    options: BluetoothMeasurementImportMode.values,
-                    selectedValue: settings.bluetoothImportMode,
-                    itemBuilder: (option) => Text(option.localize()),
-                  );
+                  final result =
+                      await showOptionPickerSheet<
+                        BluetoothMeasurementImportMode
+                      >(
+                        context,
+                        title: 'bluetoothImportMode'.tr(),
+                        selected: settings.bluetoothImportMode,
+                        maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+                        options: [
+                          for (final option
+                              in BluetoothMeasurementImportMode.values)
+                            SheetPickerOption<BluetoothMeasurementImportMode>(
+                              value: option,
+                              label: option.localize(),
+                            ),
+                        ],
+                      );
                   if (result != null) await ref.setBluetoothImportMode(result);
                 },
               ),
@@ -130,11 +139,10 @@ class BluetoothDevicesScreen extends ConsumerWidget {
     AppSettings settings,
     KnownBleDevice device,
     bool value,
-  ) =>
-      ref.writeKnownBleDevices([
-        for (final known in settings.knownBleDev)
-          if (known.id == device.id) known.copyWith(autoSync: value) else known,
-      ]);
+  ) => ref.writeKnownBleDevices([
+    for (final known in settings.knownBleDev)
+      if (known.id == device.id) known.copyWith(autoSync: value) else known,
+  ]);
 }
 
 class _DeviceTile extends StatelessWidget {

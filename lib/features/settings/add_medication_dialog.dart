@@ -104,6 +104,7 @@ class _AddMedicationDialogState extends ConsumerState<AddMedicationDialog> {
                   const SizedBox(height: 16),
                   ColorSelectionListTile(
                     title: Text('color'.tr()),
+                    showTransparentColor: false,
                     onMainColorChanged: (value) => setState(() {
                       _color = value;
                     }),

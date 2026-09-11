@@ -6,14 +6,16 @@ class ColorSelectionListTile extends StatelessWidget {
   /// Creates a [ListTile] with a color preview that opens a color picker on tap.
   ///
   /// This allows also allows picking the color [Colors.transparent], which can be used as a null color.
-  const ColorSelectionListTile(
-      {super.key,
-        required this.title,
-        required this.onMainColorChanged,
-        required this.initialColor,
-        this.subtitle,
-        this.shape,
-        this.swatchAtEnd = false,});
+  const ColorSelectionListTile({
+    super.key,
+    required this.title,
+    required this.onMainColorChanged,
+    required this.initialColor,
+    this.subtitle,
+    this.shape,
+    this.swatchAtEnd = false,
+    this.showTransparentColor = true,
+  });
 
   /// The primary label of the list tile.
   final Widget title;
@@ -33,6 +35,11 @@ class ColorSelectionListTile extends StatelessWidget {
   /// When true, the color circle sits at the end of the row.
   final bool swatchAtEnd;
 
+  /// Whether the picker offers the transparent/no-color option.
+  ///
+  /// When false, the tile uses Edadat's richer adaptive material palette.
+  final bool showTransparentColor;
+
   @override
   Widget build(BuildContext context) {
     final empty = initialColor == Colors.transparent;
@@ -46,10 +53,7 @@ class ColorSelectionListTile extends StatelessWidget {
               border: Border.all(color: outline, width: 2),
             ),
           )
-        : CircleAvatar(
-            backgroundColor: initialColor,
-            radius: 12,
-          );
+        : CircleAvatar(backgroundColor: initialColor, radius: 12);
     return ListTile(
       title: title,
       subtitle: subtitle,
@@ -57,7 +61,12 @@ class ColorSelectionListTile extends StatelessWidget {
       leading: swatchAtEnd ? null : swatch,
       trailing: swatchAtEnd ? swatch : null,
       onTap: () async {
-        final color = await showColorPickerDialog(context, initialColor);
+        final color = showTransparentColor
+            ? await showColorPickerDialog(context, initialColor)
+            : await showEdadatColorPickerDialog(
+                context,
+                initialColor: initialColor,
+              );
         if (color != null) onMainColorChanged(color);
       },
     );

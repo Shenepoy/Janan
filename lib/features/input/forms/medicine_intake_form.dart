@@ -1,4 +1,5 @@
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
+import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/input/forms/entry_form_section.dart';
 import 'package:blood_pressure_app/features/input/forms/form_base.dart';
@@ -41,7 +42,7 @@ class MedicineIntakeForm extends FormBase<(Medicine, Weight)> {
 
   @override
   FormStateBase<(Medicine, Weight), MedicineIntakeForm> createState() =>
-    MedicineIntakeFormState();
+      MedicineIntakeFormState();
 }
 
 class _IntakeSlot {
@@ -62,7 +63,8 @@ class _IntakeSlot {
 }
 
 /// State of form to enter medicine intakes.
-class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), MedicineIntakeForm> {
+class MedicineIntakeFormState
+    extends FormStateBase<(Medicine, Weight), MedicineIntakeForm> {
   late List<_IntakeSlot> _slots;
 
   /// Time the first separately-logged dose was taken.
@@ -105,8 +107,9 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
             medicine: intake.medicine,
             dose: _doseText(intake.dosis.mg),
             time: intake.time,
-            showTime: widget.entryTime != null
-                && !_sameMinute(intake.time, widget.entryTime!),
+            showTime:
+                widget.entryTime != null &&
+                !_sameMinute(intake.time, widget.entryTime!),
           ),
       ];
     }
@@ -121,10 +124,7 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
       ];
     }
     return [
-      _IntakeSlot(
-        time: widget.entryTime ?? DateTime.now(),
-        showTime: false,
-      ),
+      _IntakeSlot(time: widget.entryTime ?? DateTime.now(), showTime: false),
     ];
   }
 
@@ -139,7 +139,8 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
   bool validate() {
     var ok = true;
     for (final slot in _slots) {
-      if (slot.medicine != null && double.tryParse(slot.controller.text) == null) {
+      if (slot.medicine != null &&
+          double.tryParse(slot.controller.text) == null) {
         slot.error = 'errNaN'.tr();
         ok = false;
       } else {
@@ -172,11 +173,13 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
         time = time.add(const Duration(seconds: 1));
       }
       used.add(time);
-      result.add(MedicineIntake(
-        time: time,
-        medicine: slot.medicine!,
-        dosis: Weight.mg(double.parse(slot.controller.text)),
-      ));
+      result.add(
+        MedicineIntake(
+          time: time,
+          medicine: slot.medicine!,
+          dosis: Weight.mg(double.parse(slot.controller.text)),
+        ),
+      );
     }
     return result;
   }
@@ -190,9 +193,8 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
   });
 
   /// Prefill medicine, dose, and the time it was taken.
-  void fillIntake(MedicineIntake? value) => fillIntakes(
-    value == null ? const [] : [value],
-  );
+  void fillIntake(MedicineIntake? value) =>
+      fillIntakes(value == null ? const [] : [value]);
 
   /// Prefill every dose attached to this row.
   void fillIntakes(List<MedicineIntake> values) => setState(() {
@@ -214,9 +216,9 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
       for (var i = 0; i < filled.length; i++) {
         final slot = filled[i];
         final intake = initial[i];
-        if (slot.medicine != intake.medicine
-            || slot.controller.text != _doseText(intake.dosis.mg)
-            || (slot.showTime && !_sameMinute(slot.time, intake.time))) {
+        if (slot.medicine != intake.medicine ||
+            slot.controller.text != _doseText(intake.dosis.mg) ||
+            (slot.showTime && !_sameMinute(slot.time, intake.time))) {
           return true;
         }
       }
@@ -226,10 +228,10 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
     if (single == null) return filled.isNotEmpty;
     if (filled.length != 1) return true;
     final first = filled.first;
-    return first.medicine != single.$1
-        || first.controller.text != _doseText(single.$2.mg)
-        || (first.showTime
-            && !_sameMinute(first.time, widget.initialIntakeTime ?? first.time));
+    return first.medicine != single.$1 ||
+        first.controller.text != _doseText(single.$2.mg) ||
+        (first.showTime &&
+            !_sameMinute(first.time, widget.initialIntakeTime ?? first.time));
   }
 
   Medicine? _matchMed(List<Medicine> meds, Medicine? value) {
@@ -250,10 +252,12 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
       initialTime: TimeOfDay.fromDateTime(slot.time),
     );
     if (timeOfDay == null) return;
-    setState(() => slot.time = slot.time.copyWith(
-      hour: timeOfDay.hour,
-      minute: timeOfDay.minute,
-    ));
+    setState(
+      () => slot.time = slot.time.copyWith(
+        hour: timeOfDay.hour,
+        minute: timeOfDay.minute,
+      ),
+    );
   }
 
   Future<void> _openPicker(_IntakeSlot slot, List<Medicine> options) async {
@@ -293,10 +297,12 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
     _selectMedicine(slot, null);
     if (_slots.isEmpty) {
       setState(() {
-        _slots.add(_IntakeSlot(
-          time: widget.entryTime ?? DateTime.now(),
-          showTime: false,
-        ));
+        _slots.add(
+          _IntakeSlot(
+            time: widget.entryTime ?? DateTime.now(),
+            showTime: false,
+          ),
+        );
       });
     }
   }
@@ -308,9 +314,7 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
     final next = current + direction * step;
     setState(() {
       slot.error = null;
-      slot.controller.text = next <= 0
-          ? _doseText(step)
-          : _doseText(next);
+      slot.controller.text = next <= 0 ? _doseText(step) : _doseText(next);
     });
   }
 
@@ -331,9 +335,9 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
-                    onPressed: () => Navigator.of(context).pushNamed(
-                      '/settings/medications',
-                    ),
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).pushNamed('/settings/medications'),
                     icon: const Icon(Icons.medication_outlined),
                     label: Text('manageMedications'.tr()),
                   ),
@@ -354,12 +358,15 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
         final extras = <Medicine>[];
         for (final slot in filled) {
           final match = _matchMed(meds, slot.medicine);
-          if (match != null && !meds.contains(match) && !extras.contains(match)) {
+          if (match != null &&
+              !meds.contains(match) &&
+              !extras.contains(match)) {
             extras.add(match);
           }
         }
         final options = [...extras, ...meds];
-        final canAdd = widget.allowMultiple && empty == null && filled.isNotEmpty;
+        final canAdd =
+            widget.allowMultiple && empty == null && filled.isNotEmpty;
         return EntryFormSection(
           title: 'medications'.tr(),
           trailing: canAdd
@@ -378,9 +385,7 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
               ],
               if (empty != null) ...[
                 if (filled.isNotEmpty) const SizedBox(height: 12),
-                _AddMedicationRow(
-                  onTap: () => _openPicker(empty, options),
-                ),
+                _AddMedicationRow(onTap: () => _openPicker(empty, options)),
               ],
             ],
           ),
@@ -394,12 +399,14 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
     final picked = await _showPicker(options: options, selected: null);
     if (!mounted || picked is! Medicine) return;
     setState(() {
-      _slots.add(_IntakeSlot(
-        medicine: picked,
-        dose: picked.dosis == null ? '' : _doseText(picked.dosis!.mg),
-        time: widget.entryTime ?? DateTime.now(),
-        showTime: false,
-      ));
+      _slots.add(
+        _IntakeSlot(
+          medicine: picked,
+          dose: picked.dosis == null ? '' : _doseText(picked.dosis!.mg),
+          time: widget.entryTime ?? DateTime.now(),
+          showTime: false,
+        ),
+      );
     });
     _keepKeypadClosed();
   }
@@ -414,19 +421,12 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
     required List<Medicine> options,
     required Medicine? selected,
   }) {
-    final theme = Theme.of(context);
-    return showModalBottomSheet<Object>(
+    return showResponsiveSheet<Object>(
       context: context,
+      title: 'selectMedication'.tr(),
+      maxHeight: MediaQuery.sizeOf(context).height * 0.75,
       showDragHandle: true,
-      isScrollControlled: true,
-      backgroundColor: theme.colorScheme.surfaceContainerLow,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) => _MedicinePickerSheet(
-        medicines: options,
-        selected: selected,
-      ),
+      child: _MedicinePickerSheet(medicines: options, selected: selected),
     );
   }
 
@@ -434,10 +434,7 @@ class MedicineIntakeFormState extends FormStateBase<(Medicine, Weight), Medicine
     final theme = Theme.of(context);
     final selected = _matchMed(meds, slot.medicine);
     if (selected == null) return const SizedBox.shrink();
-    final options = [
-      if (!meds.contains(selected)) selected,
-      ...meds,
-    ];
+    final options = [if (!meds.contains(selected)) selected, ...meds];
     final color = _medColor(selected, theme);
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -614,7 +611,9 @@ class _DoseStepper extends StatelessWidget {
                             decimal: true,
                           ),
                           inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp('[0-9,.]')),
+                            FilteringTextInputFormatter.allow(
+                              RegExp('[0-9,.]'),
+                            ),
                           ],
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w700,
@@ -700,7 +699,11 @@ class _DoseEndButton extends StatelessWidget {
           child: SizedBox(
             width: 56,
             height: 52,
-            child: Icon(icon, size: 32, color: theme.colorScheme.onSecondaryContainer),
+            child: Icon(
+              icon,
+              size: 32,
+              color: theme.colorScheme.onSecondaryContainer,
+            ),
           ),
         ),
       ),
@@ -735,10 +738,7 @@ class _RoundStepButton extends StatelessWidget {
 }
 
 class _MedSwatch extends StatelessWidget {
-  const _MedSwatch({
-    required this.color,
-    required this.empty,
-  });
+  const _MedSwatch({required this.color, required this.empty});
 
   final Color color;
   final bool empty;
@@ -765,10 +765,7 @@ class _MedSwatch extends StatelessWidget {
 }
 
 class _MedicinePickerSheet extends StatelessWidget {
-  const _MedicinePickerSheet({
-    required this.medicines,
-    required this.selected,
-  });
+  const _MedicinePickerSheet({required this.medicines, required this.selected});
 
   final List<Medicine> medicines;
   final Medicine? selected;
@@ -776,49 +773,33 @@ class _MedicinePickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.72;
-    return SafeArea(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxHeight),
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-              child: Text(
-                'selectMedication'.tr(),
-                style: AppText.title(context),
-              ),
+    return ListView(
+      shrinkWrap: true,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      children: [
+        if (selected != null) ...[
+          _PickerTile(
+            swatch: _MedSwatch(color: theme.colorScheme.outline, empty: true),
+            title: 'noMedication'.tr(),
+            selected: false,
+            onTap: () => Navigator.pop(context, _noneSentinel),
+          ),
+          const SizedBox(height: 8),
+        ],
+        for (var i = 0; i < medicines.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          _PickerTile(
+            swatch: _MedSwatch(
+              color: _medColor(medicines[i], theme),
+              empty: false,
             ),
-            if (selected != null) ...[
-              _PickerTile(
-                swatch: _MedSwatch(
-                  color: theme.colorScheme.outline,
-                  empty: true,
-                ),
-                title: 'noMedication'.tr(),
-                selected: false,
-                onTap: () => Navigator.pop(context, _noneSentinel),
-              ),
-              const SizedBox(height: 8),
-            ],
-            for (var i = 0; i < medicines.length; i++) ...[
-              if (i > 0) const SizedBox(height: 8),
-              _PickerTile(
-                swatch: _MedSwatch(
-                  color: _medColor(medicines[i], theme),
-                  empty: false,
-                ),
-                title: medicines[i].designation,
-                subtitle: medicines[i].formattedDosis,
-                selected: selected == medicines[i],
-                onTap: () => Navigator.pop(context, medicines[i]),
-              ),
-            ],
-          ],
-        ),
-      ),
+            title: medicines[i].designation,
+            subtitle: medicines[i].formattedDosis,
+            selected: selected == medicines[i],
+            onTap: () => Navigator.pop(context, medicines[i]),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -860,10 +841,7 @@ class _PickerTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: AppText.title(context),
-                    ),
+                    Text(title, style: AppText.title(context)),
                     if (subtitle != null) ...[
                       const SizedBox(height: 4),
                       DecoratedBox(
@@ -887,10 +865,7 @@ class _PickerTile extends StatelessWidget {
                 ),
               ),
               if (selected)
-                Icon(
-                  Icons.check_circle,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.check_circle, color: theme.colorScheme.primary),
             ],
           ),
         ),
@@ -906,18 +881,12 @@ class _FieldCaption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: AppText.label(context),
-    );
+    return Text(text, style: AppText.label(context));
   }
 }
 
 class _IntakeTimeField extends StatelessWidget {
-  const _IntakeTimeField({
-    required this.time,
-    required this.onTap,
-  });
+  const _IntakeTimeField({required this.time, required this.onTap});
 
   final DateTime time;
   final VoidCallback onTap;
@@ -968,8 +937,8 @@ double _doseStep(MedicationUnit unit, double value) {
 }
 
 bool _sameMinute(DateTime a, DateTime b) =>
-    a.year == b.year
-    && a.month == b.month
-    && a.day == b.day
-    && a.hour == b.hour
-    && a.minute == b.minute;
+    a.year == b.year &&
+    a.month == b.month &&
+    a.day == b.day &&
+    a.hour == b.hour &&
+    a.minute == b.minute;

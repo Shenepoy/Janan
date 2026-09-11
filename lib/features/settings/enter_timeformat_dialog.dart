@@ -1,14 +1,15 @@
+import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/features/export_import/ui/export_field_format_documentation_screen.dart';
 import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:safaeh/safaeh.dart';
 
 /// Fullscreen dialog that explains the time format and pops the context with either null or a time format string.
 class EnterTimeFormatDialog extends StatefulWidget {
   /// Create dialog for entering time formats as used by the [DateFormat] class.
-  const EnterTimeFormatDialog({super.key,
+  const EnterTimeFormatDialog({
+    super.key,
     required this.initialValue,
     this.previewTime,
     this.bottomAppBars = false,
@@ -60,8 +61,12 @@ class _EnterTimeFormatDialogState extends State<EnterTimeFormatDialog> {
             physics: const NeverScrollableScrollPhysics(),
             data: 'enterTimeFormatDesc'.tr(),
           ),
-          Text(WesternDateFormat(timeFormatFieldController.text, context.locale.toString())
-              .format(widget.previewTime ?? DateTime.now())),
+          Text(
+            WesternDateFormat(
+              timeFormatFieldController.text,
+              context.locale.toString(),
+            ).format(widget.previewTime ?? DateTime.now()),
+          ),
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
@@ -70,7 +75,9 @@ class _EnterTimeFormatDialogState extends State<EnterTimeFormatDialog> {
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
                 labelText: 'enterTimeFormatString'.tr(),
-                errorText: timeFormatFieldController.text.isEmpty ? 'errNoValue'.tr() : null,
+                errorText: timeFormatFieldController.text.isEmpty
+                    ? 'errNoValue'.tr()
+                    : null,
               ),
             ),
           ),
@@ -94,12 +101,16 @@ class _EnterTimeFormatDialogState extends State<EnterTimeFormatDialog> {
 /// Shows a dialog that explains the ICU DateTime format and allows editing [initialTimeFormat] with a preview.
 ///
 /// When canceled null is returned.
-Future<String?> showTimeFormatPickerDialog(BuildContext context, String initialTimeFormat, bool bottomAppBars) =>
-  showSafaeh<String?>(
-    context: context,
-    title: 'enterTimeFormatScreen'.tr(),
-    child: EnterTimeFormatDialog(
-      initialValue: initialTimeFormat,
-      bottomAppBars: bottomAppBars,
-    ),
-  );
+Future<String?> showTimeFormatPickerDialog(
+  BuildContext context,
+  String initialTimeFormat,
+  bool bottomAppBars,
+) => showResponsiveSheet<String?>(
+  context: context,
+  title: 'enterTimeFormatScreen'.tr(),
+  maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+  child: EnterTimeFormatDialog(
+    initialValue: initialTimeFormat,
+    bottomAppBars: bottomAppBars,
+  ),
+);

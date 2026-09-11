@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -16,42 +17,33 @@ class BleEngineSettingsTile extends ConsumerWidget {
   ];
 
   String? _description(BluetoothInputMode mode) => switch (mode) {
-        BluetoothInputMode.disabled => null,
-        BluetoothInputMode.newBluetoothInputCrossPlatform => 'bleEngineDesc'.tr(),
-        BluetoothInputMode.oldBluetoothInput => 'ultraEngineDesc'.tr(),
-      };
+    BluetoothInputMode.disabled => null,
+    BluetoothInputMode.newBluetoothInputCrossPlatform => 'bleEngineDesc'.tr(),
+    BluetoothInputMode.oldBluetoothInput => 'ultraEngineDesc'.tr(),
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mode = ref.watch(appSettingsProvider).bleInput;
-    final theme = Theme.of(context);
     return ListTile(
       leading: const Icon(Icons.bluetooth),
       title: Text('bluetoothInput'.tr()),
       subtitle: Text(mode.localize()),
       trailing: settingsChevronEnd(context),
       onTap: () async {
-        final result = await SettingsDialog.select<BluetoothInputMode>(
-          context: context,
+        final result = await showOptionPickerSheet<BluetoothInputMode>(
+          context,
           title: 'bluetoothInput'.tr(),
-          options: _options,
-          selectedValue: mode,
-          itemBuilder: (option) {
-            final desc = _description(option);
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(option.localize()),
-                if (desc != null)
-                  Text(
-                    desc,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            );
-          },
+          selected: mode,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+          options: [
+            for (final option in _options)
+              SheetPickerOption<BluetoothInputMode>(
+                value: option,
+                label: option.localize(),
+                subtitle: _description(option),
+              ),
+          ],
         );
         if (result != null) {
           await ref.setBleInput(result);

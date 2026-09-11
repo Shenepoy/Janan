@@ -1,4 +1,5 @@
 import 'package:blood_pressure_app/features/settings/add_medication_dialog.dart';
+import 'package:blood_pressure_app/features/settings/tiles/color_picker_list_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
@@ -43,6 +44,19 @@ void main() {
     await tester.tap(find.text('tablet').last);
     await tester.pumpAndSettle();
     expect(find.text('tablet'), findsOneWidget);
+  });
+
+  testWidgets('opens the Edadat color palette from the medication dialog', (
+    tester,
+  ) async {
+    usePhoneTestSurface(tester);
+    await pumpApp(tester, await materialApp(const AddMedicationDialog()));
+
+    await tester.tap(find.byType(ColorSelectionListTile));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.bySemanticsLabel('#F44336'), findsOneWidget);
   });
 
   testWidgets('localizes the unit dropdown and keeps it trailing in RTL', (
