@@ -1,4 +1,5 @@
 import 'package:blood_pressure_app/components/fullscreen_dialog.dart';
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/input/forms/entry_form_section.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/tiles/color_picker_list_tile.dart';
@@ -6,7 +7,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// Dialog to enter values for a [Medicine].
 class AddMedicationDialog extends ConsumerStatefulWidget {
@@ -17,7 +17,8 @@ class AddMedicationDialog extends ConsumerStatefulWidget {
   final Medicine? initialValue;
 
   @override
-  ConsumerState<AddMedicationDialog> createState() => _AddMedicationDialogState();
+  ConsumerState<AddMedicationDialog> createState() =>
+      _AddMedicationDialogState();
 }
 
 class _AddMedicationDialogState extends ConsumerState<AddMedicationDialog> {
@@ -28,7 +29,7 @@ class _AddMedicationDialogState extends ConsumerState<AddMedicationDialog> {
 
   String? _designation;
 
-  /// Selected default dosis in the chosen [unit].
+  /// Selected default dose amount in the chosen medication unit.
   double? _defaultDosis;
 
   MedicationUnit _unit = MedicationUnit.mg;
@@ -56,12 +57,15 @@ class _AddMedicationDialogState extends ConsumerState<AddMedicationDialog> {
     formKey.currentState?.save();
     final name = _designation?.trim() ?? '';
     if (name.isEmpty) return;
-    Navigator.pop(context, Medicine(
-      designation: name,
-      color: _color.toARGB32(),
-      dosis: _defaultDosis == null ? null : Weight.mg(_defaultDosis!),
-      unit: _unit,
-    ),);
+    Navigator.pop(
+      context,
+      Medicine(
+        designation: name,
+        color: _color.toARGB32(),
+        dosis: _defaultDosis == null ? null : Weight.mg(_defaultDosis!),
+        unit: _unit,
+      ),
+    );
   }
 
   @override
@@ -114,6 +118,34 @@ class _AddMedicationDialogState extends ConsumerState<AddMedicationDialog> {
                       labelText: 'defaultDosis'.tr(),
                       hintText: formatDoseAmount(1),
                       helperText: 'defaultDosisHint'.tr(),
+                      suffixIconConstraints: const BoxConstraints(minWidth: 92),
+                      suffixIcon: Semantics(
+                        label: 'medicationUnit'.tr(),
+                        button: true,
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 8),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<MedicationUnit>(
+                              key: const ValueKey('medication-unit-dropdown'),
+                              value: _unit,
+                              isDense: true,
+                              alignment: AlignmentDirectional.centerEnd,
+                              borderRadius: BorderRadius.circular(12),
+                              items: [
+                                for (final unit in MedicationUnit.values)
+                                  DropdownMenuItem<MedicationUnit>(
+                                    value: unit,
+                                    child: Text(unit.labelKey.tr()),
+                                  ),
+                              ],
+                              onChanged: (unit) {
+                                if (unit == null) return;
+                                setState(() => _unit = unit);
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
@@ -121,35 +153,9 @@ class _AddMedicationDialogState extends ConsumerState<AddMedicationDialog> {
                       ),
                     ],
                     initialValue: _defaultDosis?.toString(),
-                    onSaved: (value) => _defaultDosis = double.tryParse(value ?? '')
-                        ?? int.tryParse(value ?? '')?.toDouble(),
-                  ),
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      'medicationUnit'.tr(),
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final unit in MedicationUnit.values)
-                        ChoiceChip(
-                          label: Text(unit.labelKey.tr()),
-                          selected: _unit == unit,
-                          onSelected: (selected) {
-                            if (!selected) return;
-                            setState(() => _unit = unit);
-                          },
-                        ),
-                    ],
+                    onSaved: (value) => _defaultDosis =
+                        double.tryParse(value ?? '') ??
+                        int.tryParse(value ?? '')?.toDouble(),
                   ),
                 ],
               ),
@@ -164,9 +170,10 @@ class _AddMedicationDialogState extends ConsumerState<AddMedicationDialog> {
 /// Shows a full screen dialog to input a medicine.
 ///
 /// The created medicine gets an index that was never in settings.
-Future<Medicine?> showAddMedicineDialog(BuildContext context, {
+Future<Medicine?> showAddMedicineDialog(
+  BuildContext context, {
   Medicine? initialValue,
-}) =>
-  showDialog<Medicine?>(context: context,
-    builder: (context) => AddMedicationDialog(initialValue: initialValue),
-  );
+}) => showDialog<Medicine?>(
+  context: context,
+  builder: (context) => AddMedicationDialog(initialValue: initialValue),
+);
