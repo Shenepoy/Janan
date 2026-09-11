@@ -223,6 +223,9 @@ class _AppShellViewState extends State<_AppShellView> {
     final headerExtent = DashboardAppBar.extentOf(context);
     final titleKeys = ['title', if (widget.showWeight) 'weight', 'statistics'];
     return SafaehBottomNavScope(
+      // Scaffold reserves the bottom-navigation slot already; keep only a
+      // small visual gap for controls that float above that slot.
+      visualClearance: 16,
       child: Builder(
         builder: (context) => PopScope(
           canPop: _index == 0,
