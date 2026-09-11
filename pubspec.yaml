@@ -37,8 +37,8 @@ dependencies:
   archive: ^4.0.9
   file_picker: ^12.0.0
   app_settings: ^9.0.0
-  safaeh: ^0.2.1
-  flutter_settings_framework: ^0.7.2
+  safaeh: ^0.2.5
+  flutter_settings_framework: ^0.8.0
   flutter_logging_service: ^0.2.3
   easy_localization: ^3.0.8
   persistent_user_dir_access_android: ^0.0.3

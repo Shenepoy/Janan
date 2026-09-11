@@ -548,10 +548,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_settings_framework
-      sha256: d60b156b8328caa6b293f48ce7c3f3bf1f72ab6d350560c1402b99f5cc844902
+      sha256: "868b12b7e12f0f91424b3ef9797e59b1b28d7951ad77287d2e85d91b30fca09f"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.2"
+    version: "0.8.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -932,6 +932,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.0"
+  pausable_timer:
+    dependency: transitive
+    description:
+      name: pausable_timer
+      sha256: "6ef1a95441ec3439de6fb63f39a011b67e693198e7dae14e20675c3c00e86074"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.0+3"
   pdf:
     dependency: "direct main"
     description:
@@ -1096,10 +1104,10 @@ packages:
     dependency: "direct main"
     description:
       name: safaeh
-      sha256: "7982a7439e905cf64a7898757d041b0f04234d57193249e44d4a29b2e4d970fe"
+      sha256: adb92ed1fab3fe4425e8b97bdfd5312d9be008ad05137635042a718650ad066d
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1"
+    version: "0.2.5"
   share_plus:
     dependency: "direct main"
     description:
@@ -1425,6 +1433,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.18"
+  toastification:
+    dependency: transitive
+    description:
+      name: toastification
+      sha256: "66c96678e3dece8ba24de3ea31634bd65a80aaecb8105f9bafe946e5f0d7590a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.0"
   typed_data:
     dependency: transitive
     description:
