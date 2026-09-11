@@ -236,6 +236,10 @@ class _AppShellViewState extends State<_AppShellView> {
             // The floating navigation is shell chrome. Keep it stable while a
             // page-level text field resizes for the keyboard.
             resizeToAvoidBottomInset: false,
+            // Let page content continue under the floating bar. Scrollable
+            // pages add the shared content inset so their last item can still
+            // be brought fully above the bar.
+            extendBody: true,
             body: Stack(
               children: [
                 PageView(
