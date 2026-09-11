@@ -382,6 +382,8 @@
   "home": "Domov",
   "logs": "Dnevnik",
   "searchSettings": "Iskanje v nastavitvah",
+  "settingsOnThisPage": "Na tej strani",
+  "settingsNoSearchResults": "Nastavitev za »{query}« ni bilo mogoče najti",
   "measurementSemantics": "Krvni tlak {sys} nad {dia}, pulz {pul}",
   "weightSemantics": "Teža {weight}",
   "graphSemantics": "Graf {name} od {start} do {end}",

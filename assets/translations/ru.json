@@ -382,6 +382,8 @@
   "home": "Главная",
   "logs": "Журнал",
   "searchSettings": "Поиск в настройках",
+  "settingsOnThisPage": "На этой странице",
+  "settingsNoSearchResults": "Настройки для «{query}» не найдены",
   "measurementSemantics": "Давление {sys} на {dia}, пульс {pul}",
   "weightSemantics": "Вес {weight}",
   "graphSemantics": "График {name} с {start} по {end}",

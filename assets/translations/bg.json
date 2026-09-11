@@ -382,6 +382,8 @@
   "home": "Начало",
   "logs": "Дневник",
   "searchSettings": "Търсене в настройките",
+  "settingsOnThisPage": "На тази страница",
+  "settingsNoSearchResults": "Няма настройки за „{query}“",
   "measurementSemantics": "Кръвно налягане {sys} на {dia}, пулс {pul}",
   "weightSemantics": "Тегло {weight}",
   "graphSemantics": "Графика на {name} от {start} до {end}",

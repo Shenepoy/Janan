@@ -382,6 +382,8 @@
   "home": "الرئيسية",
   "logs": "السجلات",
   "searchSettings": "ابحث في الإعدادات",
+  "settingsOnThisPage": "في هذه الصفحة",
+  "settingsNoSearchResults": "لم يتم العثور على إعدادات لـ «{query}»",
   "measurementSemantics": "ضغط الدم {sys} على {dia}، النبض {pul}",
   "weightSemantics": "الوزن {weight}",
   "graphSemantics": "رسم {name} من {start} إلى {end}",

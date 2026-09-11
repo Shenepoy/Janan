@@ -382,6 +382,8 @@
   "home": "Kezdőlap",
   "logs": "Napló",
   "searchSettings": "Keresés a beállításokban",
+  "settingsOnThisPage": "Ezen az oldalon",
+  "settingsNoSearchResults": "Nincs beállítás a(z) „{query}” kifejezéshez",
   "measurementSemantics": "Vérnyomás {sys} per {dia}, pulzus {pul}",
   "weightSemantics": "Testsúly {weight}",
   "graphSemantics": "{name} grafikonja {start}–{end}",

@@ -382,6 +382,8 @@
   "home": "Home",
   "logs": "Logs",
   "searchSettings": "Search settings",
+  "settingsOnThisPage": "On this page",
+  "settingsNoSearchResults": "No settings found for “{query}”",
   "measurementSemantics": "Blood pressure {sys} over {dia}, pulse {pul}, {time}",
   "weightSemantics": "Weight {weight}, {time}",
   "graphSemantics": "Graph of {name} from {start} to {end}",

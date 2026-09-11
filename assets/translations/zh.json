@@ -382,6 +382,8 @@
   "home": "首页",
   "logs": "记录",
   "searchSettings": "搜索设置",
+  "settingsOnThisPage": "本页内容",
+  "settingsNoSearchResults": "未找到与“{query}”匹配的设置",
   "measurementSemantics": "血压 {sys} / {dia}，脉搏 {pul}",
   "weightSemantics": "体重 {weight}",
   "graphSemantics": "{name} 图表，{start} 至 {end}",

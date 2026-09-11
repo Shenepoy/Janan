@@ -382,6 +382,8 @@
   "home": "முகப்பு",
   "logs": "பதிவுகள்",
   "searchSettings": "அமைப்புகளைத் தேடு",
+  "settingsOnThisPage": "இந்தப் பக்கத்தில்",
+  "settingsNoSearchResults": "“{query}” என்பதற்கு அமைப்புகள் எதுவும் இல்லை",
   "measurementSemantics": "இரத்த அழுத்தம் {sys} / {dia}, துடிப்பு {pul}",
   "weightSemantics": "எடை {weight}",
   "graphSemantics": "{name} வரைபடம் {start} முதல் {end} வரை",

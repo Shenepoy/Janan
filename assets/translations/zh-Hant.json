@@ -382,6 +382,8 @@
   "home": "首頁",
   "logs": "紀錄",
   "searchSettings": "搜尋設定",
+  "settingsOnThisPage": "本頁內容",
+  "settingsNoSearchResults": "找不到與「{query}」相符的設定",
   "measurementSemantics": "血壓 {sys} / {dia}，脈搏 {pul}",
   "weightSemantics": "體重 {weight}",
   "graphSemantics": "{name} 圖表，{start} 至 {end}",

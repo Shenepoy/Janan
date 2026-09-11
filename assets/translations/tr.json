@@ -382,6 +382,8 @@
   "home": "Ana sayfa",
   "logs": "Kayıtlar",
   "searchSettings": "Ayarlarda ara",
+  "settingsOnThisPage": "Bu sayfada",
+  "settingsNoSearchResults": "“{query}” için ayar bulunamadı",
   "measurementSemantics": "Tansiyon {sys} / {dia}, nabız {pul}",
   "weightSemantics": "Kilo {weight}",
   "graphSemantics": "{name} grafiği {start}–{end}",

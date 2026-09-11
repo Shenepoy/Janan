@@ -382,6 +382,8 @@
   "home": "Start",
   "logs": "Logboeken",
   "searchSettings": "Instellingen zoeken",
+  "settingsOnThisPage": "Op deze pagina",
+  "settingsNoSearchResults": "Geen instellingen gevonden voor ‘{query}’",
   "measurementSemantics": "Bloeddruk {sys} over {dia}, pols {pul}",
   "weightSemantics": "Gewicht {weight}",
   "graphSemantics": "Grafiek van {name} van {start} tot {end}",

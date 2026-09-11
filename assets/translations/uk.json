@@ -382,6 +382,8 @@
   "home": "Головна",
   "logs": "Журнал",
   "searchSettings": "Пошук у налаштуваннях",
+  "settingsOnThisPage": "На цій сторінці",
+  "settingsNoSearchResults": "Налаштувань для «{query}» не знайдено",
   "measurementSemantics": "Тиск {sys} на {dia}, пульс {pul}",
   "weightSemantics": "Вага {weight}",
   "graphSemantics": "Графік {name} з {start} до {end}",

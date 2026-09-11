@@ -382,6 +382,8 @@
   "home": "Domů",
   "logs": "Záznamy",
   "searchSettings": "Hledat v nastavení",
+  "settingsOnThisPage": "Na této stránce",
+  "settingsNoSearchResults": "Pro „{query}“ nebyla nalezena žádná nastavení",
   "measurementSemantics": "Krevní tlak {sys} na {dia}, tep {pul}",
   "weightSemantics": "Hmotnost {weight}",
   "graphSemantics": "Graf {name} od {start} do {end}",

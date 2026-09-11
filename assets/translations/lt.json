@@ -382,6 +382,8 @@
   "home": "Pradžia",
   "logs": "Žurnalas",
   "searchSettings": "Ieškoti nustatymuose",
+  "settingsOnThisPage": "Šiame puslapyje",
+  "settingsNoSearchResults": "Nerasta nustatymų pagal „{query}“",
   "measurementSemantics": "Kraujospūdis {sys} virš {dia}, pulsas {pul}",
   "weightSemantics": "Svoris {weight}",
   "graphSemantics": "{name} grafikas nuo {start} iki {end}",

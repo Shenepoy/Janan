@@ -382,6 +382,8 @@
   "home": "Start",
   "logs": "Dziennik",
   "searchSettings": "Szukaj w ustawieniach",
+  "settingsOnThisPage": "Na tej stronie",
+  "settingsNoSearchResults": "Nie znaleziono ustawień dla „{query}”",
   "measurementSemantics": "Ciśnienie krwi {sys} na {dia}, tętno {pul}",
   "weightSemantics": "Waga {weight}",
   "graphSemantics": "Wykres {name} od {start} do {end}",

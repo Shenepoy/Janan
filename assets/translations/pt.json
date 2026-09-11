@@ -382,6 +382,8 @@
   "home": "Início",
   "logs": "Registos",
   "searchSettings": "Pesquisar nas definições",
+  "settingsOnThisPage": "Nesta página",
+  "settingsNoSearchResults": "Não foram encontradas definições para «{query}»",
   "measurementSemantics": "Pressão arterial {sys} sobre {dia}, pulso {pul}",
   "weightSemantics": "Peso {weight}",
   "graphSemantics": "Gráfico de {name} de {start} a {end}",

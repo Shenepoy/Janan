@@ -382,6 +382,8 @@
   "home": "Accueil",
   "logs": "Journaux",
   "searchSettings": "Rechercher dans les paramètres",
+  "settingsOnThisPage": "Sur cette page",
+  "settingsNoSearchResults": "Aucun paramètre trouvé pour « {query} »",
   "measurementSemantics": "Tension artérielle {sys} sur {dia}, pouls {pul}",
   "weightSemantics": "Poids {weight}",
   "graphSemantics": "Graphique de {name} du {start} au {end}",

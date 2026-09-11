@@ -25,7 +25,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:flutter_settings_framework/safaeh.dart' as edadat_safaeh;
 import 'package:path/path.dart';
+import 'package:safaeh/safaeh.dart' as safaeh;
 import 'package:url_launcher/url_launcher.dart';
 
 /// Drop [visible]: false rows. The catalog page still builds every setting in a
@@ -41,143 +43,529 @@ List<Widget> visibleCatalogChildren(
   };
   return [
     for (final child in children)
-      if (child is! SettingAnchor || (visible[child.settingKey] ?? true))
-        child,
+      if (child is! SettingAnchor || (visible[child.settingKey] ?? true)) child,
   ];
 }
 
-/// Searchable settings catalog backed by Edadat.
-class SettingsPage extends ConsumerWidget {
+/// Searchable settings catalog backed by Edadat and Safaeh chrome.
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen<String>(
-      ref.settings.provider(languageSetting),
-      (previous, next) {
-        final locale = localeFromLanguageKey(next);
-        if (locale == null) {
-          context.resetLocale();
-        } else {
-          context.setLocale(locale);
-        }
-      },
-    );
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
+}
 
-    final registry = createAppSettingsRegistry();
-    return RegistrySettingsPage(
-      registry: registry,
-      settings: ref.settings,
-      title: 'settings'.tr(),
-      searchHint: 'searchSettings'.tr(),
-      sectionTitleBuilder: (key) => key.tr(),
-      enumLabelBuilder: (key) {
-        if (key == 'system') return 'system'.tr();
-        if (languageSettingOptions.contains(key) && key != 'system') {
-          final locale = localeFromLanguageKey(key);
-          return locale == null ? key : getDisplayLanguage(locale);
-        }
-        return key.tr();
-      },
-      sectionContentBuilder: (sectionKey, defaultChildren) =>
-          visibleCatalogChildren(registry, defaultChildren),
-      tileBuilder: (setting, defaultTile) {
-        if (setting.key == bleInputSetting.key) {
-          return const BleEngineSettingsTile();
-        }
-        if (setting.key == dateFormatStringSetting.key) {
-          final settings = ref.watch(appSettingsProvider);
-          return ListTile(
-            leading: const Icon(Icons.schedule),
-            title: Text('enterTimeFormatScreen'.tr()),
-            subtitle: Text(settings.dateFormatString),
-            onTap: () async {
-              final result = await showTimeFormatPickerDialog(
-                context,
-                settings.dateFormatString,
-                settings.bottomAppBars,
-              );
-              if (result != null) {
-                await ref.updateSetting(dateFormatStringSetting, result);
-              }
-            },
-          );
-        }
-        if (setting is! ActionSetting) return defaultTile;
-        if (setting.key == bodyProfileAction.key) {
-          final settings = ref.watch(appSettingsProvider);
-          return ActionSettingsTile(
-            leading: const Icon(Icons.accessibility_new),
-            title: Text('bodyProfile'.tr()),
-            subtitle: Text(
-              settings.hasBodyProfile
-                  ? '${settings.bodyHeightCm!.round()} cm · ${settings.birthYear}'
-                  : 'bodyProfileIncomplete'.tr(),
-            ),
-            onTap: () => _handleAction(context, ref, setting.key),
-          );
-        }
-        if (setting.key == bluetoothDevicesAction.key) {
-          final settings = ref.watch(appSettingsProvider);
-          final enabled = settings.bleInput != BluetoothInputMode.disabled;
-          return ActionSettingsTile(
-            leading: const Icon(Icons.bluetooth_searching),
-            title: Text('bluetoothDevices'.tr()),
-            subtitle: settings.knownBleDev.isEmpty
-                ? null
-                : Text(settings.knownBleDev.map((device) => device.displayName).join(', ')),
-            enabled: enabled,
-            onTap: enabled ? () => _handleAction(context, ref, setting.key) : null,
-          );
-        }
-        return ActionSettingsTile(
-          leading: setting.icon != null ? Icon(setting.icon) : null,
-          title: Text(setting.titleKey.tr()),
-          subtitle: setting.subtitleKey != null ? Text(setting.subtitleKey!.tr()) : null,
-          onTap: () => _handleAction(context, ref, setting.key),
+class _SettingsPageState extends ConsumerState<SettingsPage> {
+  late final SettingsRegistry _registry;
+  final _scrollController = ScrollController();
+  final _scrollViewportKey = GlobalKey();
+  final _anchors = SettingAnchorRegistry();
+  final _sectionKeys = <String, GlobalKey>{};
+  final _sectionExpanded = <String, bool>{};
+  String? _activeSectionId;
+  bool _searchOpen = false;
+  bool _activeUpdateScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _registry = createAppSettingsRegistry();
+    for (final section in _registry.getSortedSections()) {
+      _sectionKeys[section.key] = GlobalKey();
+    }
+    _scrollController.addListener(_scheduleActiveSectionUpdate);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleActiveSectionUpdate();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scheduleActiveSectionUpdate);
+    _scrollController.dispose();
+    _anchors.dispose();
+    super.dispose();
+  }
+
+  List<SettingSection> get _displayedSections => _registry
+      .getSortedSections()
+      .where(
+        (section) =>
+            _registry.getVisibleSettingsInSection(section.key).isNotEmpty,
+      )
+      .toList();
+
+  bool _isWide(BuildContext context) {
+    return MediaQuery.sizeOf(context).width >=
+        safaeh.SafaehTheme.of(context).tabletBreakpoint;
+  }
+
+  String _sectionTitle(String key) => key.tr();
+
+  String _settingTitle(SettingDefinition<Object?> setting) =>
+      setting.titleKey.tr();
+
+  String? _settingSubtitle(SettingDefinition<Object?> setting) =>
+      setting.subtitleKey?.tr();
+
+  void _scheduleActiveSectionUpdate() {
+    if (_activeUpdateScheduled) return;
+    _activeUpdateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _activeUpdateScheduled = false;
+      if (!mounted || _searchOpen) return;
+      final scrollContext = _scrollViewportKey.currentContext;
+      if (scrollContext == null) return;
+      final active = edadat_safaeh.activeSafaehSettingsSectionId(
+        sections: _displayedSections,
+        sectionKeys: _sectionKeys,
+        scrollContext: scrollContext,
+      );
+      if (active != null && active != _activeSectionId) {
+        setState(() => _activeSectionId = active);
+      }
+    });
+  }
+
+  void _setSectionExpanded(String sectionId, bool expanded) {
+    if (_sectionExpanded[sectionId] == expanded) return;
+    setState(() => _sectionExpanded[sectionId] = expanded);
+  }
+
+  Future<void> _selectSection(SettingSection section) async {
+    final key = _sectionKeys[section.key];
+    if (key == null) return;
+    final wasExpanded =
+        _sectionExpanded[section.key] ?? section.initiallyExpanded;
+    setState(() {
+      _activeSectionId = section.key;
+      _sectionExpanded[section.key] = true;
+    });
+    if (!wasExpanded) {
+      await Future<void>.delayed(const Duration(milliseconds: 220));
+    }
+    if (!mounted) return;
+    await edadat_safaeh.scrollToPageSection(key, controller: _scrollController);
+    _scheduleActiveSectionUpdate();
+  }
+
+  Future<void> _selectSearchResult(SearchResult result) async {
+    final setting = result.setting;
+    final sectionKey = setting.section;
+    if (sectionKey == null) return;
+    final section = _registry.getSection(sectionKey);
+    if (section == null) return;
+    final wasExpanded =
+        _sectionExpanded[sectionKey] ?? section.initiallyExpanded;
+    setState(() {
+      _sectionExpanded[sectionKey] = true;
+      _activeSectionId = sectionKey;
+    });
+    if (!wasExpanded) {
+      await Future<void>.delayed(const Duration(milliseconds: 220));
+    }
+    if (!mounted) return;
+    await _anchors.scrollTo(setting.key);
+    _scheduleActiveSectionUpdate();
+  }
+
+  bool _isSearchResultVisible(SearchResult result) {
+    final setting = result.setting;
+    return setting.visible &&
+        (setting.section == null ||
+            _registry.getSection(setting.section!) != null);
+  }
+
+  List<Widget> _sectionChildren(
+    BuildContext context,
+    SettingsProviders settings,
+    String sectionKey,
+  ) {
+    final bySub = _registry.getSettingsGroupedBySubSection(sectionKey);
+    final result = <Widget>[];
+    final keys = bySub.keys.toList()
+      ..sort((a, b) => (a ?? '').compareTo(b ?? ''));
+
+    for (final subKey in keys) {
+      final settingsList = bySub[subKey]!
+          .where((setting) => setting.visible)
+          .toList();
+      if (settingsList.isEmpty) continue;
+      if (subKey != null && subKey.isNotEmpty) {
+        final subTitle = subKey.tr();
+        result.add(
+          SettingsSubsectionHeader(
+            title: subTitle,
+            icon: Icons.subdirectory_arrow_right,
+          ),
         );
-      },
+      }
+      for (final setting in settingsList) {
+        final tile = _buildTileForSetting(context, settings, setting);
+        if (tile != null) result.add(_anchors.wrap(setting.key, tile));
+      }
+    }
+    return visibleCatalogChildren(_registry, result);
+  }
+
+  Widget _sectionWidget(
+    BuildContext context,
+    SettingsProviders settings,
+    SettingSection section,
+  ) {
+    final isExpanded =
+        _sectionExpanded[section.key] ?? section.initiallyExpanded;
+    return KeyedSubtree(
+      key: _sectionKeys[section.key],
+      child: CardSettingsSection(
+        title: _sectionTitle(section.titleKey),
+        icon: section.icon ?? Icons.settings,
+        isExpanded: isExpanded,
+        onExpansionChanged: (expanded) =>
+            _setSectionExpanded(section.key, expanded),
+        sectionId: section.key,
+        children: _sectionChildren(context, settings, section.key),
+      ),
     );
   }
 
-  Future<void> _handleAction(
+  Widget _buildSettingsList(BuildContext context, SettingsProviders settings) {
+    final bottomInset =
+        safaeh.SafaehBottomNavScope.maybeOf(
+          context,
+        )?.contentInsetWithSafeArea ??
+        0.0;
+    return ListView(
+      key: _scrollViewportKey,
+      controller: _scrollController,
+      padding: EdgeInsets.fromLTRB(0, 8, 0, bottomInset + 16),
+      children: [
+        for (final section in _displayedSections)
+          _sectionWidget(context, settings, section),
+      ],
+    );
+  }
+
+  Widget _buildBody(BuildContext context, SettingsProviders settings) {
+    final list = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: _buildSettingsList(context, settings),
+      ),
+    );
+    final wide = _isWide(context);
+    final content = wide
+        ? Row(
+            children: [
+              Expanded(child: list),
+              SizedBox(
+                width: 236,
+                child: Material(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  child: edadat_safaeh.SafaehSettingsPageIndex(
+                    title: 'settingsOnThisPage'.tr(),
+                    sections: _displayedSections,
+                    sectionKeys: _sectionKeys,
+                    labelBuilder: (section) => _sectionTitle(section.titleKey),
+                    activeId: _activeSectionId,
+                    onSelect: _selectSection,
+                  ),
+                ),
+              ),
+            ],
+          )
+        : list;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        content,
+        if (!wide)
+          edadat_safaeh.SafaehSettingsPageIndexOverlay(
+            title: 'settingsOnThisPage'.tr(),
+            sections: _displayedSections,
+            sectionKeys: _sectionKeys,
+            labelBuilder: (section) => _sectionTitle(section.titleKey),
+            activeId: _activeSectionId,
+            onSelect: _selectSection,
+          ),
+        edadat_safaeh.SafaehSettingsSearchOverlay(
+          isOpen: _searchOpen,
+          onClose: () => setState(() => _searchOpen = false),
+          searchIndex: settings.searchIndex,
+          resultFilter: _isSearchResultVisible,
+          onResultSelected: _selectSearchResult,
+          hintText: 'searchSettings'.tr(),
+          sectionTitleBuilder: _sectionTitle,
+          settingTitleBuilder: _settingTitle,
+          settingSubtitleBuilder: _settingSubtitle,
+          emptyMessageBuilder: (query) =>
+              'settingsNoSearchResults'.tr(namedArgs: {'query': query}),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<String>(ref.settings.provider(languageSetting), (
+      previous,
+      next,
+    ) {
+      final locale = localeFromLanguageKey(next);
+      if (locale == null) {
+        context.resetLocale();
+      } else {
+        context.setLocale(locale);
+      }
+    });
+
+    final settings = ref.settings;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('settings'.tr()),
+        actions: [
+          edadat_safaeh.SafaehSettingsSearchButton(
+            isOpen: _searchOpen,
+            hintText: 'searchSettings'.tr(),
+            onPressed: () => setState(() => _searchOpen = !_searchOpen),
+          ),
+        ],
+      ),
+      body: _buildBody(context, settings),
+    );
+  }
+
+  Widget? _buildTileForSetting(
     BuildContext context,
-    WidgetRef ref,
-    String key,
-  ) async {
+    SettingsProviders settings,
+    SettingDefinition<Object?> setting,
+  ) {
+    final defaultTile = _buildDefaultTile(settings, setting);
+    if (setting.key == bleInputSetting.key) {
+      return const BleEngineSettingsTile();
+    }
+    if (setting.key == dateFormatStringSetting.key) {
+      final appSettings = ref.watch(appSettingsProvider);
+      return ListTile(
+        leading: const Icon(Icons.schedule),
+        title: Text('enterTimeFormatScreen'.tr()),
+        subtitle: Text(appSettings.dateFormatString),
+        onTap: () async {
+          final result = await showTimeFormatPickerDialog(
+            context,
+            appSettings.dateFormatString,
+            appSettings.bottomAppBars,
+          );
+          if (result != null) {
+            await ref.updateSetting(dateFormatStringSetting, result);
+          }
+        },
+      );
+    }
+    if (setting is! ActionSetting) return defaultTile;
+    if (setting.key == bodyProfileAction.key) {
+      final appSettings = ref.watch(appSettingsProvider);
+      return ActionSettingsTile(
+        leading: const Icon(Icons.accessibility_new),
+        title: Text('bodyProfile'.tr()),
+        subtitle: Text(
+          appSettings.hasBodyProfile
+              ? '${appSettings.bodyHeightCm!.round()} cm · ${appSettings.birthYear}'
+              : 'bodyProfileIncomplete'.tr(),
+        ),
+        onTap: () => _handleAction(context, setting.key),
+      );
+    }
+    if (setting.key == bluetoothDevicesAction.key) {
+      final appSettings = ref.watch(appSettingsProvider);
+      final enabled = appSettings.bleInput != BluetoothInputMode.disabled;
+      return ActionSettingsTile(
+        leading: const Icon(Icons.bluetooth_searching),
+        title: Text('bluetoothDevices'.tr()),
+        subtitle: appSettings.knownBleDev.isEmpty
+            ? null
+            : Text(
+                appSettings.knownBleDev
+                    .map((device) => device.displayName)
+                    .join(', '),
+              ),
+        enabled: enabled,
+        onTap: enabled ? () => _handleAction(context, setting.key) : null,
+      );
+    }
+    return ActionSettingsTile(
+      leading: setting.icon != null ? Icon(setting.icon) : null,
+      title: Text(setting.titleKey.tr()),
+      subtitle: setting.subtitleKey != null
+          ? Text(setting.subtitleKey!.tr())
+          : null,
+      onTap: () => _handleAction(context, setting.key),
+    );
+  }
+
+  Widget? _buildDefaultTile(
+    SettingsProviders settings,
+    SettingDefinition<Object?> setting,
+  ) {
+    final enabled = isSettingEnabled(settings, setting, ref);
+    final title = setting.titleKey.tr();
+    final subtitle = setting.subtitleKey?.tr();
+
+    String enumLabel(String value) {
+      if (setting is EnumSetting && setting.useRawLabels) return value;
+      if (setting is EnumSetting && setting.optionLabels != null) {
+        final key = setting.optionLabels![value];
+        if (key != null) return _enumLabel(key);
+      }
+      return _enumLabel(value);
+    }
+
+    if (setting is ActionSetting) {
+      return ActionSettingsTile(
+        leading: setting.icon != null ? Icon(setting.icon) : null,
+        title: Text(title),
+        subtitle: subtitle != null ? Text(subtitle) : null,
+        onTap: null,
+      );
+    }
+    if (setting is BoolSetting) {
+      final value = ref.watch(settings.provider(setting));
+      return SwitchSettingsTile.fromSetting(
+        setting: setting,
+        title: title,
+        subtitle: subtitle,
+        value: value,
+        enabled: enabled,
+        onChanged: enabled
+            ? (value) =>
+                  ref.read(settings.provider(setting).notifier).set(value)
+            : null,
+      );
+    }
+    if (setting is EnumSetting) {
+      final value = ref.watch(settings.provider(setting));
+      return EnumSettingsTile.fromSetting(
+        setting: setting,
+        title: title,
+        subtitle: enumLabel(value),
+        value: value,
+        labelBuilder: enumLabel,
+        enabled: enabled,
+        dialogTitle: title,
+        onChanged: enabled
+            ? (value) =>
+                  ref.read(settings.provider(setting).notifier).set(value)
+            : null,
+      );
+    }
+    if (setting is IntSetting) {
+      final value = ref.watch(settings.provider(setting));
+      return IntSettingsTile.fromSetting(
+        setting: setting,
+        title: title,
+        subtitle: value.toString(),
+        value: value,
+        enabled: enabled,
+        dialogTitle: title,
+        onChanged: enabled
+            ? (value) =>
+                  ref.read(settings.provider(setting).notifier).set(value)
+            : null,
+      );
+    }
+    if (setting is DoubleSetting) {
+      final value = ref.watch(settings.provider(setting));
+      return SliderSettingsTile.fromDoubleSetting(
+        setting: setting,
+        title: title,
+        value: value,
+        enabled: enabled,
+        dialogTitle: title,
+        onChanged: enabled
+            ? (value) =>
+                  ref.read(settings.provider(setting).notifier).set(value)
+            : null,
+      );
+    }
+    if (setting is ColorSetting) {
+      final value = ref.watch(settings.provider(setting));
+      return ColorSettingsTile.fromSetting(
+        setting: setting,
+        title: title,
+        value: value,
+        enabled: enabled,
+        dialogTitle: title,
+        onChanged: enabled
+            ? (value) =>
+                  ref.read(settings.provider(setting).notifier).set(value)
+            : null,
+      );
+    }
+    if (setting is StringSetting) {
+      final value = ref.watch(settings.provider(setting));
+      return ListTile(
+        leading: setting.icon != null ? Icon(setting.icon) : null,
+        title: Text(title),
+        subtitle: Text(value),
+        enabled: enabled,
+      );
+    }
+    return null;
+  }
+
+  String _enumLabel(String key) {
+    if (key == 'system') return 'system'.tr();
+    if (languageSettingOptions.contains(key) && key != 'system') {
+      final locale = localeFromLanguageKey(key);
+      return locale == null ? key : getDisplayLanguage(locale);
+    }
+    return key.tr();
+  }
+
+  Future<void> _handleAction(BuildContext context, String key) async {
     switch (key) {
       case 'graph_settings':
         await Navigator.pushNamed(context, AppRoute.settingsGraph.path);
       case 'graph_markings':
-        await Navigator.push(context, MaterialPageRoute<void>(
-          builder: (_) => const GraphMarkingsScreen(),
-        ));
+        await Navigator.push(
+          context,
+          MaterialPageRoute<void>(builder: (_) => const GraphMarkingsScreen()),
+        );
       case 'body_profile':
-        await Navigator.push(context, MaterialPageRoute<void>(
-          builder: (_) => const BodyProfileScreen(),
-        ));
+        await Navigator.push(
+          context,
+          MaterialPageRoute<void>(builder: (_) => const BodyProfileScreen()),
+        );
       case 'medications':
         await Navigator.pushNamed(context, AppRoute.settingsMedications.path);
       case 'bluetooth_devices':
-        await Navigator.push(context, MaterialPageRoute<void>(
-          builder: (_) => const BluetoothDevicesScreen(),
-        ));
+        await Navigator.push(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) => const BluetoothDevicesScreen(),
+          ),
+        );
       case 'health_connect_screen':
         await Navigator.pushNamed(context, AppRoute.settingsHealthConnect.path);
       case 'export_import':
         await Navigator.pushNamed(context, AppRoute.settingsExport.path);
       case 'delete_data':
-        await Navigator.push(context, MaterialPageRoute<void>(
-          builder: (_) => const DeleteDataScreen(),
-        ));
+        await Navigator.push(
+          context,
+          MaterialPageRoute<void>(builder: (_) => const DeleteDataScreen()),
+        );
       case 'replay_onboarding':
         await Navigator.pushNamed(context, AppRoute.onboarding.path);
       case 'version':
-        await Navigator.push(context, MaterialPageRoute<void>(
-          builder: (_) => const VersionScreen(),
-        ));
+        await Navigator.push(
+          context,
+          MaterialPageRoute<void>(builder: (_) => const VersionScreen()),
+        );
       case 'source_code':
-        final url = Uri.parse('https://github.com/Zyzto/blood-pressure-monitor-fl');
+        final url = Uri.parse(
+          'https://github.com/Zyzto/blood-pressure-monitor-fl',
+        );
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
         }
@@ -188,27 +576,35 @@ class SettingsPage extends ConsumerWidget {
       case 'import_settings':
         await _importSettings(context);
       case 'logs_viewer':
-        await Navigator.push(context, MaterialPageRoute<void>(
-          builder: (_) => LogViewer(
-            labels: LogViewerLabels(
-              title: 'logs'.tr(),
-              filterHint: 'searchSettings'.tr(),
+        await Navigator.push(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) => LogViewer(
+              labels: LogViewerLabels(
+                title: 'logs'.tr(),
+                filterHint: 'searchSettings'.tr(),
+              ),
             ),
           ),
-        ));
+        );
     }
   }
 
   Future<void> _exportSettings(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
-    final loader = context.fileSettingsLoader ?? await FileSettingsLoader.load();
-    final controller = ProviderScope.containerOf(context, listen: false)
-        .read(settingsControllerProvider);
+    final fileSettingsLoader = context.fileSettingsLoader;
+    final controller = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(settingsControllerProvider);
+    final loader = fileSettingsLoader ?? await FileSettingsLoader.load();
     final archive = await loader.createArchive(
       edadatJson: jsonEncode(dumpEdadatController(controller)),
     );
     if (archive == null) {
-      messenger.showSnackBar(SnackBar(content: Text('errCantCreateArchive'.tr())));
+      messenger.showSnackBar(
+        SnackBar(content: Text('errCantCreateArchive'.tr())),
+      );
       return;
     }
     final compressed = ZipEncoder().encodeBytes(archive);
@@ -238,9 +634,11 @@ class SettingsPage extends ConsumerWidget {
       return;
     }
     if (path.endsWith('db')) {
-      messenger.showSnackBar(SnackBar(
-        content: Text('error'.tr(namedArgs: {'msg': 'Format too old'})),
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('error'.tr(namedArgs: {'msg': 'Format too old'})),
+        ),
+      );
       return;
     }
     if (!path.endsWith('zip')) {
@@ -263,14 +661,20 @@ class SettingsPage extends ConsumerWidget {
         final raw = jsonDecode(edadatFile.readAsStringSync());
         if (raw is Map<String, dynamic>) {
           if (!context.mounted) return;
-          final controller = ProviderScope.containerOf(context, listen: false)
-              .read(settingsControllerProvider);
+          final controller = ProviderScope.containerOf(
+            context,
+            listen: false,
+          ).read(settingsControllerProvider);
           await importEdadatMap(controller, raw);
         }
       }
-      messenger.showSnackBar(SnackBar(
-        content: Text('success'.tr(namedArgs: {'msg': 'importSettings'.tr()})),
-      ));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'success'.tr(namedArgs: {'msg': 'importSettings'.tr()}),
+          ),
+        ),
+      );
     } on FormatException catch (e, stack) {
       messenger.showSnackBar(SnackBar(content: Text('invalidZip'.tr())));
       Log.warning('invalid zip', error: e, stackTrace: stack);

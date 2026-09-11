@@ -221,55 +221,66 @@ class _AppShellViewState extends State<_AppShellView> {
     assert(pages.length == destinations.length);
     final dataTabCount = _tabs.length - 1;
     final headerExtent = DashboardAppBar.extentOf(context);
-    final titleKeys = [
-      'title',
-      if (widget.showWeight) 'weight',
-      'statistics',
-    ];
-    return PopScope(
-      canPop: _index == 0,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _go(0);
-      },
-      child: Scaffold(
-        body: Stack(
-          children: [
-            PageView(
-              controller: _pageController,
-              onPageChanged: _select,
+    final titleKeys = ['title', if (widget.showWeight) 'weight', 'statistics'];
+    return SafaehBottomNavScope(
+      child: Builder(
+        builder: (context) => PopScope(
+          canPop: _index == 0,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _go(0);
+          },
+          child: Scaffold(
+            // The floating navigation is shell chrome. Keep it stable while a
+            // page-level text field resizes for the keyboard.
+            resizeToAvoidBottomInset: false,
+            body: Stack(
               children: [
-                for (var i = 0; i < pages.length; i++)
-                  _KeepAlivePage(
-                    key: ValueKey<String>('shell-page-$i-$localeTag'),
-                    child: i < dataTabCount
-                        ? Padding(
-                            padding: EdgeInsets.only(top: headerExtent),
-                            child: pages[i],
-                          )
-                        : pages[i],
+                PageView(
+                  controller: _pageController,
+                  onPageChanged: _select,
+                  children: [
+                    for (var i = 0; i < pages.length; i++)
+                      _KeepAlivePage(
+                        key: ValueKey<String>('shell-page-$i-$localeTag'),
+                        child: i < dataTabCount
+                            ? Padding(
+                                padding: EdgeInsets.only(top: headerExtent),
+                                child: pages[i],
+                              )
+                            : pages[i],
+                      ),
+                  ],
+                ),
+                if (_index < dataTabCount)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: headerExtent,
+                    child: DashboardAppBar(page: _page, titleKeys: titleKeys),
                   ),
               ],
             ),
-            if (_index < dataTabCount)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: headerExtent,
-                child: DashboardAppBar(page: _page, titleKeys: titleKeys),
+            floatingActionButton: _index < dataTabCount
+                ? NavigationActionButtons(kind: _actionKind())
+                : null,
+            floatingActionButtonLocation:
+                SafaehBottomNavAwareFabLocation.resolve(
+                  context,
+                  base: FloatingActionButtonLocation.endFloat,
+                ),
+            bottomNavigationBar: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SafaehFloatingNavBar(
+                selectedIndex: _index,
+                onDestinationSelected: _go,
+                destinations: destinations,
+                floatingAppearance: const SafaehFloatingAppearance(
+                  style: SafaehFloatingSurfaceStyle.glass,
+                ),
+                hideWhenKeyboardVisible: true,
               ),
-          ],
-        ),
-        floatingActionButton: _index < dataTabCount
-            ? NavigationActionButtons(kind: _actionKind())
-            : null,
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        bottomNavigationBar: Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: SafaehFloatingNavBar(
-            selectedIndex: _index,
-            onDestinationSelected: _go,
-            destinations: destinations,
+            ),
           ),
         ),
       ),

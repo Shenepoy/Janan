@@ -382,6 +382,8 @@
   "home": "Hem",
   "logs": "Loggar",
   "searchSettings": "Sök i inställningar",
+  "settingsOnThisPage": "På den här sidan",
+  "settingsNoSearchResults": "Inga inställningar hittades för ”{query}”",
   "measurementSemantics": "Blodtryck {sys} över {dia}, puls {pul}",
   "weightSemantics": "Vikt {weight}",
   "graphSemantics": "Diagram för {name} från {start} till {end}",

@@ -382,6 +382,8 @@
   "home": "Startseite",
   "logs": "Protokolle",
   "searchSettings": "Einstellungen durchsuchen",
+  "settingsOnThisPage": "Auf dieser Seite",
+  "settingsNoSearchResults": "Keine Einstellungen für „{query}“ gefunden",
   "measurementSemantics": "Blutdruck {sys} zu {dia}, Puls {pul}",
   "weightSemantics": "Gewicht {weight}",
   "graphSemantics": "Diagramm von {name} von {start} bis {end}",

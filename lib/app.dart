@@ -129,7 +129,9 @@ class _AppState extends ConsumerState<App> with Loggable {
         // already gone
       }
       try {
-        Directory(join(await getDatabasesPath(), 'settings')).deleteSync(recursive: true);
+        Directory(
+          join(await getDatabasesPath(), 'settings'),
+        ).deleteSync(recursive: true);
       } on FileSystemException {
         // already gone
       }
@@ -151,8 +153,10 @@ class _AppState extends ConsumerState<App> with Loggable {
         _csvExportSettings = await _settingsLoader!.loadCsvExportSettings();
         _pdfExportSettings = await _settingsLoader!.loadPdfExportSettings();
         _xlsExportSettings = await _settingsLoader!.loadXlsExportSettings();
-        _intervalStorageManager = await _settingsLoader!.loadIntervalStorageManager();
-        _exportColumnsManager = await _settingsLoader!.loadExportColumnsManager();
+        _intervalStorageManager = await _settingsLoader!
+            .loadIntervalStorageManager();
+        _exportColumnsManager = await _settingsLoader!
+            .loadExportColumnsManager();
         _ownsFileSettings = true;
       } catch (e, stack) {
         await ErrorReporting.reportCriticalError(
@@ -183,10 +187,16 @@ class _AppState extends ConsumerState<App> with Loggable {
         _weightRepo = PowerSyncBodyweightRepository(_entryDB!);
         _ownsDb = true;
       } catch (e, stack) {
-        await ErrorReporting.reportCriticalError('Error loading entry db', '$e\n$stack');
+        await ErrorReporting.reportCriticalError(
+          'Error loading entry db',
+          '$e\n$stack',
+        );
       }
     } catch (e, stack) {
-      await ErrorReporting.reportCriticalError('Error loading entry db', '$e\n$stack');
+      await ErrorReporting.reportCriticalError(
+        'Error loading entry db',
+        '$e\n$stack',
+      );
     }
 
     final settings = ref.read(appSettingsProvider);
@@ -203,7 +213,9 @@ class _AppState extends ConsumerState<App> with Loggable {
         );
       }
 
-      final buildNumber = int.parse((await PackageInfo.fromPlatform()).buildNumber);
+      final buildNumber = int.parse(
+        (await PackageInfo.fromPlatform()).buildNumber,
+      );
       if (settings.lastVersion <= 57 &&
           settings.knownBleDev.isNotEmpty &&
           settings.bleInput != BluetoothInputMode.disabled) {
@@ -219,7 +231,10 @@ class _AppState extends ConsumerState<App> with Loggable {
 
       _intervalStorageManager!.mainPage.setToMostRecentInterval();
     } catch (e, stack) {
-      await ErrorReporting.reportCriticalError('Error performing upgrades:', '$e\n$stack');
+      await ErrorReporting.reportCriticalError(
+        'Error performing upgrades:',
+        '$e\n$stack',
+      );
     }
 
     final dbPath = await getDatabasesPath();
@@ -238,7 +253,10 @@ class _AppState extends ConsumerState<App> with Loggable {
       }
       if (hc.syncWeightMeasurements) {
         logInfo('Syncing weight measurements');
-        await WeightSyncModel(weightRepo: _weightRepo!, health: Health()).sync();
+        await WeightSyncModel(
+          weightRepo: _weightRepo!,
+          health: Health(),
+        ).sync();
       }
     }
 
@@ -247,10 +265,9 @@ class _AppState extends ConsumerState<App> with Loggable {
       if (hc.syncWeightMeasurements) {
         _weightRepo!.subscribe().listen((record) async {
           if (record != null) {
-            final canWrite = await health.requestPermissionsIfMissing(
-              [HealthDataType.WEIGHT],
-              HealthDataAccess.WRITE,
-            );
+            final canWrite = await health.requestPermissionsIfMissing([
+              HealthDataType.WEIGHT,
+            ], HealthDataAccess.WRITE);
             if (!canWrite) {
               logWarning('Health Connect weight write permissions not granted');
             }
@@ -266,13 +283,10 @@ class _AppState extends ConsumerState<App> with Loggable {
       if (hc.syncPressureMeasurements) {
         _bpRepo!.subscribe().listen((record) async {
           if (record?.sys != null && record?.dia != null) {
-            final canWrite = await health.requestPermissionsIfMissing(
-              [
-                HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
-                HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
-              ],
-              HealthDataAccess.WRITE,
-            );
+            final canWrite = await health.requestPermissionsIfMissing([
+              HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+              HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
+            ], HealthDataAccess.WRITE);
             if (!canWrite) {
               logWarning('Health Connect BP write permissions not granted');
             }
@@ -297,7 +311,8 @@ class _AppState extends ConsumerState<App> with Loggable {
         final intent = await ReceiveIntent.getInitialIntent();
         logInfo('Received intent: $intent');
         if (intent?.action == 'android.intent.action.VIEW_PERMISSION_USAGE') {
-          switch (intent!.extra?['android.intent.extra.PERMISSION_GROUP_NAME']) {
+          switch (intent!
+              .extra?['android.intent.extra.PERMISSION_GROUP_NAME']) {
             case 'android.permission-group.HEALTH':
               initialRoute = AppRoute.settingsHealthConnect;
               break;
@@ -321,30 +336,30 @@ class _AppState extends ConsumerState<App> with Loggable {
   }
 
   Widget _bootScope() => ProviderScope(
-        key: _bootScopeKey,
-        overrides: [
-          healthDatabaseProvider.overrideWithValue(_entryDB!),
-          // Same instances as Health Connect / MedCache; subscribe() is per object.
-          bloodPressureRepositoryProvider.overrideWithValue(_bpRepo!),
-          noteRepositoryProvider.overrideWithValue(_noteRepo!),
-          medicineRepositoryProvider.overrideWithValue(_medRepo!),
-          medicineIntakeRepositoryProvider.overrideWithValue(_intakeRepo!),
-          bodyweightRepositoryProvider.overrideWithValue(_weightRepo!),
-          fileSettingsLoaderProvider.overrideWithValue(_settingsLoader),
-          exportSettingsProvider.overrideWithValue(_exportSettings!),
-          csvExportSettingsProvider.overrideWithValue(_csvExportSettings!),
-          pdfExportSettingsProvider.overrideWithValue(_pdfExportSettings!),
-          excelExportSettingsProvider.overrideWithValue(_xlsExportSettings!),
-          intervalStoreManagerProvider.overrideWithValue(_intervalStorageManager!),
-          exportColumnsManagerProvider.overrideWithValue(_exportColumnsManager!),
-          medCacheProvider.overrideWithValue(_medCache!),
-        ],
-        child: _AppRoot(
-          initialRoute: _initialRoute,
-          homePresence: _homePresence,
-          launchSyncHostKey: _launchSyncHostKey,
-        ),
-      );
+    key: _bootScopeKey,
+    overrides: [
+      healthDatabaseProvider.overrideWithValue(_entryDB!),
+      // Same instances as Health Connect / MedCache; subscribe() is per object.
+      bloodPressureRepositoryProvider.overrideWithValue(_bpRepo!),
+      noteRepositoryProvider.overrideWithValue(_noteRepo!),
+      medicineRepositoryProvider.overrideWithValue(_medRepo!),
+      medicineIntakeRepositoryProvider.overrideWithValue(_intakeRepo!),
+      bodyweightRepositoryProvider.overrideWithValue(_weightRepo!),
+      fileSettingsLoaderProvider.overrideWithValue(_settingsLoader),
+      exportSettingsProvider.overrideWithValue(_exportSettings!),
+      csvExportSettingsProvider.overrideWithValue(_csvExportSettings!),
+      pdfExportSettingsProvider.overrideWithValue(_pdfExportSettings!),
+      excelExportSettingsProvider.overrideWithValue(_xlsExportSettings!),
+      intervalStoreManagerProvider.overrideWithValue(_intervalStorageManager!),
+      exportColumnsManagerProvider.overrideWithValue(_exportColumnsManager!),
+      medCacheProvider.overrideWithValue(_medCache!),
+    ],
+    child: _AppRoot(
+      initialRoute: _initialRoute,
+      homePresence: _homePresence,
+      launchSyncHostKey: _launchSyncHostKey,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -389,17 +404,26 @@ class _AppRoot extends ConsumerWidget {
       data: const SafaehThemeData(
         tabletBreakpoint: 600,
         dialogMaxWidth: 560,
+        floatingAppearance: SafaehFloatingAppearance(
+          style: SafaehFloatingSurfaceStyle.glass,
+        ),
       ),
       child: MaterialApp(
         title: 'Janan',
         onGenerateTitle: (context) => 'title'.tr(),
-        theme: _buildTheme(ColorScheme.fromSeed(seedColor: settings.accentColor)),
-        darkTheme: _buildTheme(ColorScheme.fromSeed(
-          seedColor: settings.accentColor,
-          brightness: Brightness.dark,
-        )),
+        theme: _buildTheme(
+          ColorScheme.fromSeed(seedColor: settings.accentColor),
+        ),
+        darkTheme: _buildTheme(
+          ColorScheme.fromSeed(
+            seedColor: settings.accentColor,
+            brightness: Brightness.dark,
+          ),
+        ),
         themeMode: settings.themeMode,
-        localizationsDelegates: withWesternDigits(context.localizationDelegates),
+        localizationsDelegates: withWesternDigits(
+          context.localizationDelegates,
+        ),
         supportedLocales: context.supportedLocales,
         locale: context.locale,
         debugShowCheckedModeBanner: false,
@@ -417,19 +441,16 @@ class _AppRoot extends ConsumerWidget {
         },
         initialRoute: initialRoute.path,
         routes: {
-          AppRoute.onboarding.path: (_) => OnboardingScreen(
-            firstRun: !settings.onboardingCompleted,
-          ),
+          AppRoute.onboarding.path: (_) =>
+              OnboardingScreen(firstRun: !settings.onboardingCompleted),
           AppRoute.home.path: (_) => _shell(ShellTab.home),
-          AppRoute.add.path: (_) => const AddEntryScreen(
-            kind: AddEntryKind.bloodPressure,
-          ),
+          AppRoute.add.path: (_) =>
+              const AddEntryScreen(kind: AddEntryKind.bloodPressure),
           AppRoute.addWeight.path: (_) => settings.weightInput
               ? const AddEntryScreen(kind: AddEntryKind.weight)
               : _shell(ShellTab.home),
-          AppRoute.addMedicine.path: (_) => const AddEntryScreen(
-            kind: AddEntryKind.medicine,
-          ),
+          AppRoute.addMedicine.path: (_) =>
+              const AddEntryScreen(kind: AddEntryKind.medicine),
           AppRoute.weight.path: (_) => settings.weightInput
               ? _shell(ShellTab.weight)
               : _shell(ShellTab.home),
@@ -437,8 +458,10 @@ class _AppRoot extends ConsumerWidget {
           AppRoute.settings.path: (_) => _shell(ShellTab.settings),
           AppRoute.settingsExport.path: (_) => const ExportImportScreen(),
           AppRoute.settingsGraph.path: (_) => const GraphScreen(),
-          AppRoute.settingsHealthConnect.path: (_) => const HealthConnectScreen(),
-          AppRoute.settingsMedications.path: (_) => const MedicineManagerScreen(),
+          AppRoute.settingsHealthConnect.path: (_) =>
+              const HealthConnectScreen(),
+          AppRoute.settingsMedications.path: (_) =>
+              const MedicineManagerScreen(),
         },
       ),
     );
@@ -476,9 +499,7 @@ class _AppRoot extends ConsumerWidget {
         ),
       ),
       snackBarTheme: SnackBarThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }

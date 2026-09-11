@@ -382,6 +382,8 @@
   "home": "Avaleht",
   "logs": "Logid",
   "searchSettings": "Otsi seadetest",
+  "settingsOnThisPage": "Sellel lehel",
+  "settingsNoSearchResults": "Päringule „{query}“ ei leitud seadeid",
   "measurementSemantics": "Vererõhk {sys} üle {dia}, pulss {pul}",
   "weightSemantics": "Kaal {weight}",
   "graphSemantics": "{name} graafik {start}–{end}",

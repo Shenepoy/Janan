@@ -382,6 +382,8 @@
   "home": "Hjem",
   "logs": "Logger",
   "searchSettings": "Søk i innstillinger",
+  "settingsOnThisPage": "På denne siden",
+  "settingsNoSearchResults": "Fant ingen innstillinger for «{query}»",
   "measurementSemantics": "Blodtrykk {sys} over {dia}, puls {pul}",
   "weightSemantics": "Vekt {weight}",
   "graphSemantics": "Graf for {name} fra {start} til {end}",
