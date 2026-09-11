@@ -67,4 +67,17 @@ void main() {
     await tester.tap(find.text('English'));
     await tester.pumpAndSettle();
   });
+
+  testWidgets('theme color uses a flat color list', (tester) async {
+    usePhoneTestSurface(tester);
+
+    await pumpApp(tester, await materialApp(const SettingsPage()));
+
+    await tester.tap(find.text('Theme color').last);
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('#F44336'), findsWidgets);
+    expect(find.bySemanticsLabel('#009688'), findsWidgets);
+    expect(find.text('Red'), findsNothing);
+  });
 }

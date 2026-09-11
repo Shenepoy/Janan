@@ -105,4 +105,12 @@ void main() {
     expect(visible, hasLength(1));
     expect((visible.single as SettingAnchor).settingKey, healthConnectAction.key);
   });
+
+  test('color settings use the shared flat palette', () {
+    expect(accentColorSetting.colorOptions, same(appColorOptions));
+    expect(accentColorSetting.allowCustom, isFalse);
+    expect(sysColorSetting.colorOptions, same(appColorOptions));
+    expect(diaColorSetting.colorOptions, same(appColorOptions));
+    expect(pulColorSetting.colorOptions, same(appColorOptions));
+  });
 }

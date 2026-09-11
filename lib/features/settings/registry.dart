@@ -88,6 +88,34 @@ const themeModeSetting = EnumSetting(
   },
 );
 
+/// Curated material colors used by every concrete color setting.
+///
+/// Keeping this list explicit makes the picker a compact, flat palette rather
+/// than Edadat's expandable material shade browser. The values include the
+/// defaults for the accent and graph colors so existing settings remain
+/// visibly selected.
+const appColorOptions = <int>[
+  0xFFF44336, // red
+  0xFFE91E63, // pink
+  0xFF9C27B0, // purple
+  0xFF673AB7, // deep purple
+  0xFF3F51B5, // indigo
+  0xFF2196F3, // blue
+  0xFF03A9F4, // light blue
+  0xFF00BCD4, // cyan
+  0xFF009688, // teal
+  0xFF4CAF50, // green
+  0xFF8BC34A, // light green
+  0xFFCDDC39, // lime
+  0xFFFFEB3B, // yellow
+  0xFFFFC107, // amber
+  0xFFFF9800, // orange
+  0xFFFF5722, // deep orange
+  0xFF795548, // brown
+  0xFF9E9E9E, // grey
+  0xFF607D8B, // blue grey
+];
+
 const accentColorSetting = ColorSetting(
   'accent_color',
   defaultValue: 0xFF009688,
@@ -95,6 +123,8 @@ const accentColorSetting = ColorSetting(
   icon: Icons.palette_outlined,
   section: 'style',
   order: 3,
+  colorOptions: appColorOptions,
+  allowCustom: false,
 );
 
 const graphSettingsAction = ActionSetting(
@@ -134,6 +164,8 @@ const sysColorSetting = ColorSetting(
   section: 'graph',
   order: 0,
   visible: false,
+  colorOptions: appColorOptions,
+  allowCustom: false,
 );
 
 const diaColorSetting = ColorSetting(
@@ -143,6 +175,8 @@ const diaColorSetting = ColorSetting(
   section: 'graph',
   order: 1,
   visible: false,
+  colorOptions: appColorOptions,
+  allowCustom: false,
 );
 
 const pulColorSetting = ColorSetting(
@@ -152,6 +186,8 @@ const pulColorSetting = ColorSetting(
   section: 'graph',
   order: 2,
   visible: false,
+  colorOptions: appColorOptions,
+  allowCustom: false,
 );
 
 const graphLineThicknessSetting = DoubleSetting(
