@@ -101,7 +101,6 @@ const appColorOptions = <int>[
   0xFF673AB7, // deep purple
   0xFF3F51B5, // indigo
   0xFF2196F3, // blue
-  0xFF03A9F4, // light blue
   0xFF00BCD4, // cyan
   0xFF009688, // teal
   0xFF4CAF50, // green

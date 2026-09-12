@@ -107,6 +107,7 @@ void main() {
   });
 
   test('color settings use the shared flat palette', () {
+    expect(appColorOptions, hasLength(18));
     expect(accentColorSetting.colorOptions, same(appColorOptions));
     expect(accentColorSetting.allowCustom, isFalse);
     expect(sysColorSetting.colorOptions, same(appColorOptions));
