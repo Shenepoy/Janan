@@ -15,7 +15,7 @@ class ColorPicker extends StatefulWidget {
     this.availableColors,
     this.initialColor,
     this.showTransparentColor = true,
-    this.circleSize = 72,
+    this.circleSize = 50,
   });
 
   /// Colors to choose from.
@@ -79,8 +79,8 @@ class ColorPicker extends StatefulWidget {
   /// Maximum size of the color circles in the adaptive grid.
   ///
   /// The picker scales circles down when the available width or number of
-  /// colors requires more columns. The default is deliberately generous so a
-  /// short palette can fill its rows without leaving a large trailing gap.
+  /// colors requires more columns. The default keeps short palettes compact
+  /// while the adaptive cells still fill each row.
   final double circleSize;
 
   @override
