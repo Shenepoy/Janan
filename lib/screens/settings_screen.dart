@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
+import 'package:blood_pressure_app/components/color_picker.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/app.dart';
 import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
@@ -541,15 +542,47 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
     if (setting is ColorSetting) {
       final value = ref.watch(settings.provider(setting));
-      return ColorSettingsTile.fromSetting(
-        setting: setting,
-        title: title,
-        value: value,
+      final colors = [
+        for (final color in setting.colorOptions ?? appColorOptions)
+          Color(color),
+      ];
+      final preview = Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: Color(value),
+          shape: BoxShape.circle,
+          border: Border.all(color: Theme.of(context).dividerColor, width: 2),
+        ),
+      );
+      return ListTile(
+        leading: setting.icon != null ? Icon(setting.icon) : null,
+        title: Text(title),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            preview,
+            const SizedBox(width: 8),
+            settingsChevronEnd(
+              context,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
         enabled: enabled,
-        dialogTitle: title,
-        onChanged: enabled
-            ? (value) =>
-                  ref.read(settings.provider(setting).notifier).set(value)
+        onTap: enabled
+            ? () async {
+                final result = await showConcreteColorPickerSheet(
+                  context,
+                  initialColor: Color(value),
+                  availableColors: colors,
+                  title: title,
+                );
+                if (!mounted || result == null) return;
+                await ref
+                    .read(settings.provider(setting).notifier)
+                    .set(result.toARGB32());
+              }
             : null,
       );
     }

@@ -108,7 +108,7 @@ void main() {
     expect(find.byType(CircleAvatar), findsNothing);
   });
 
-  testWidgets('uses Edadat palette when transparent is disabled', (
+  testWidgets('uses the flat palette when transparent is disabled', (
     tester,
   ) async {
     usePhoneTestSurface(tester);
@@ -127,17 +127,16 @@ void main() {
 
     await tester.tap(find.byType(ListTile));
     await tester.pumpAndSettle();
-    expect(find.byType(ColorPicker), findsNothing);
-    expect(find.bySemanticsLabel('#F44336'), findsOneWidget);
+    expect(find.byType(ColorPicker), findsOneWidget);
+    expect(find.bySemanticsLabel('#F44336'), findsWidgets);
 
     await tester.tap(find.bySemanticsLabel('#F44336'));
-    await tester.tap(find.text('OK').last);
     await tester.pumpAndSettle();
 
-    expect(selected, const Color(0xFFF44336));
+    expect(selected?.toARGB32(), Colors.red.toARGB32());
   });
 
-  testWidgets('handles a transparent initial color in Edadat palette', (
+  testWidgets('handles a transparent initial color in the flat palette', (
     tester,
   ) async {
     usePhoneTestSurface(tester);
@@ -157,7 +156,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.bySemanticsLabel('#F44336'), findsOneWidget);
+    expect(find.byType(ColorPicker), findsOneWidget);
+    expect(find.bySemanticsLabel('#F44336'), findsWidgets);
+    expect(find.text('OK'), findsNothing);
+    expect(find.text('Cancel'), findsNothing);
   });
 }
 

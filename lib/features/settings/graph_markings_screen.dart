@@ -2,6 +2,7 @@ import 'package:blood_pressure_app/components/color_picker.dart';
 import 'package:blood_pressure_app/components/input_dialog.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/model/horizontal_graph_line.dart';
+import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,7 +40,12 @@ class GraphMarkingsScreen extends ConsumerWidget {
                     leading: const Icon(Icons.add),
                     title: Text('addLine'.tr()),
                     onTap: () async {
-                      final color = await showEdadatColorPickerDialog(context);
+                      final color = await showConcreteColorPickerSheet(
+                        context,
+                        availableColors: [
+                          for (final value in appColorOptions) Color(value),
+                        ],
+                      );
                       if (!context.mounted) return;
                       final height = await showNumberInputDialog(
                         context,

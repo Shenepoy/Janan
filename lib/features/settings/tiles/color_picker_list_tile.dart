@@ -15,6 +15,7 @@ class ColorSelectionListTile extends StatelessWidget {
     this.shape,
     this.swatchAtEnd = false,
     this.showTransparentColor = true,
+    this.availableColors,
   });
 
   /// The primary label of the list tile.
@@ -36,9 +37,10 @@ class ColorSelectionListTile extends StatelessWidget {
   final bool swatchAtEnd;
 
   /// Whether the picker offers the transparent/no-color option.
-  ///
-  /// When false, the tile uses Edadat's richer adaptive material palette.
   final bool showTransparentColor;
+
+  /// Colors shown in the picker. Defaults to [ColorPicker.allColors].
+  final List<Color>? availableColors;
 
   @override
   Widget build(BuildContext context) {
@@ -61,12 +63,12 @@ class ColorSelectionListTile extends StatelessWidget {
       leading: swatchAtEnd ? null : swatch,
       trailing: swatchAtEnd ? swatch : null,
       onTap: () async {
-        final color = showTransparentColor
-            ? await showColorPickerDialog(context, initialColor)
-            : await showEdadatColorPickerDialog(
-                context,
-                initialColor: initialColor,
-              );
+        final color = await showColorPaletteSheet(
+          context,
+          availableColors: availableColors ?? ColorPicker.allColors,
+          initialColor: initialColor,
+          showTransparentColor: showTransparentColor,
+        );
         if (color != null) onMainColorChanged(color);
       },
     );

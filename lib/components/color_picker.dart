@@ -4,7 +4,6 @@ import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 
 /// A list of colors in circles where one can be selected at a time.
 class ColorPicker extends StatefulWidget {
@@ -99,107 +98,136 @@ class _ColorPickerState extends State<ColorPicker> {
   Widget build(BuildContext context) => Wrap(
     children: [
       for (final color in availableColors)
-        InkWell(
-          onTap: () {
-            setState(() {
-              _selected = color;
-              widget.onColorSelected(_selected);
-            });
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: _selected == color
-                  ? Theme.of(context).disabledColor
-                  : Colors.transparent,
-              shape: BoxShape.circle,
-            ),
-            padding: const EdgeInsets.all(5),
+        Semantics(
+          button: true,
+          selected: _selected == color,
+          label: _colorLabel(color),
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _selected = color;
+                widget.onColorSelected(_selected);
+              });
+            },
             child: Container(
-              height: widget.circleSize,
-              width: widget.circleSize,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: _selected == color
+                    ? Theme.of(context).disabledColor
+                    : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(5),
+              child: Container(
+                height: widget.circleSize,
+                width: widget.circleSize,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
             ),
           ),
         ),
       if (widget.showTransparentColor)
-        InkWell(
-          onTap: () {
-            setState(() {
-              _selected = Colors.transparent;
-              widget.onColorSelected(_selected);
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: _selected == Colors.transparent
-                  ? Theme.of(context).disabledColor
-                  : Colors.transparent,
-              shape: BoxShape.circle,
-            ),
-            child: SizedBox(
-              height: widget.circleSize,
-              width: widget.circleSize,
-              child: const Icon(Icons.block),
+        Semantics(
+          button: true,
+          selected: _selected == Colors.transparent,
+          label: '#00000000',
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _selected = Colors.transparent;
+                widget.onColorSelected(_selected);
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: _selected == Colors.transparent
+                    ? Theme.of(context).disabledColor
+                    : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: SizedBox(
+                height: widget.circleSize,
+                width: widget.circleSize,
+                child: const Icon(Icons.block),
+              ),
             ),
           ),
         ),
     ],
   );
+
+  String _colorLabel(Color color) =>
+      '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
 }
 
-/// Shows a dialog with a ColorPicker and with an cancel button inside.
+/// Shows a flat color palette in the shared adaptive sheet.
 ///
-/// Returns the selected color or null when cancel is pressed.
-Future<Color?> showColorPickerDialog(
-  BuildContext context, [
+/// A color is returned immediately when a swatch is tapped. Dismissing the
+/// sheet without selecting a swatch returns null; there are no confirmation or
+/// cancellation buttons.
+Future<Color?> showColorPaletteSheet(
+  BuildContext context, {
+  required List<Color> availableColors,
   Color? initialColor,
-]) => showResponsiveSheet<Color?>(
+  bool showTransparentColor = false,
+  String? title,
+}) => showResponsiveSheet<Color?>(
   context: context,
-  title: 'color'.tr(),
+  title: title ?? 'color'.tr(),
   maxHeight: MediaQuery.sizeOf(context).height * 0.78,
   contentPadding: const EdgeInsets.only(top: 8),
   child: buildSheetShell(
     context,
-    title: 'color'.tr(),
+    title: title ?? 'color'.tr(),
     showTitleInBody: false,
     body: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: ColorPicker(
         initialColor: initialColor,
+        availableColors: availableColors,
+        showTransparentColor: showTransparentColor,
         onColorSelected: (color) {
           Navigator.pop(context, color);
         },
       ),
     ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: Text('btnCancel'.tr()),
-      ),
-    ],
+    actions: const [],
   ),
 );
 
-/// Shows Edadat's material palette picker.
+/// Shows the standard flat material color list.
 ///
-/// The picker is a bottom modal on phones and a centered dialog on wider
-/// surfaces. Use this for settings that always represent a concrete color.
+Future<Color?> showColorPickerDialog(
+  BuildContext context, [
+  Color? initialColor,
+]) => showColorPaletteSheet(
+  context,
+  availableColors: ColorPicker.allColors,
+  initialColor: initialColor,
+  showTransparentColor: true,
+  title: 'color'.tr(),
+);
+
+/// Shows the standard flat material color list without a transparent option.
+Future<Color?> showConcreteColorPickerSheet(
+  BuildContext context, {
+  Color? initialColor,
+  List<Color>? availableColors,
+  String? title,
+}) => showColorPaletteSheet(
+  context,
+  availableColors: availableColors ?? ColorPicker.allColors,
+  initialColor: initialColor,
+  showTransparentColor: false,
+  title: title ?? 'color'.tr(),
+);
+
+/// Backwards-compatible name for concrete color selection.
+///
+/// The implementation is now the immediate flat palette, so this legacy name
+/// no longer opens Edadat's confirm/cancel color dialog.
+@Deprecated('Use showConcreteColorPickerSheet instead')
 Future<Color?> showEdadatColorPickerDialog(
   BuildContext context, {
   Color? initialColor,
-}) {
-  // Edadat formats the current color as an eight-digit ARGB value. The
-  // default transparent color is represented by `0x0`, so passing it through
-  // would make that formatter try to substring past the end of the string.
-  // Concrete-color settings should open on the app's primary color instead.
-  final currentColor =
-      initialColor == null || initialColor == Colors.transparent
-      ? Theme.of(context).colorScheme.primary
-      : initialColor;
-  return SettingsDialog.colorPicker(
-    context: context,
-    title: 'color'.tr(),
-    currentColor: currentColor,
-  );
-}
+}) => showConcreteColorPickerSheet(context, initialColor: initialColor);

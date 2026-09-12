@@ -79,5 +79,7 @@ void main() {
     expect(find.bySemanticsLabel('#F44336'), findsWidgets);
     expect(find.bySemanticsLabel('#009688'), findsWidgets);
     expect(find.text('Red'), findsNothing);
+    expect(find.text('OK'), findsNothing);
+    expect(find.text('Cancel'), findsNothing);
   });
 }

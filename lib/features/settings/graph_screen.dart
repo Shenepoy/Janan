@@ -2,6 +2,7 @@ import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/configure_warn_values_screen.dart';
 import 'package:blood_pressure_app/features/settings/graph_markings_screen.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
+import 'package:blood_pressure_app/features/settings/tiles/color_picker_list_tile.dart';
 import 'package:blood_pressure_app/features/settings/tiles/slider_list_tile.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ class GraphScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
+    final colorOptions = [for (final color in appColorOptions) Color(color)];
     return Scaffold(
       appBar: AppBar(title: Text('graphSettings'.tr())),
       body: ListView(
@@ -66,23 +68,32 @@ class GraphScreen extends ConsumerWidget {
             min: 0,
             max: 30,
           ),
-          ColorSettingsTile.fromSetting(
-            setting: sysColorSetting,
-            title: 'sysColor'.tr(),
-            value: settings.sysColor.toARGB32(),
-            onChanged: (color) => ref.updateSetting(sysColorSetting, color),
+          ColorSelectionListTile(
+            title: Text('sysColor'.tr()),
+            initialColor: settings.sysColor,
+            availableColors: colorOptions,
+            showTransparentColor: false,
+            swatchAtEnd: true,
+            onMainColorChanged: (color) =>
+                ref.updateSetting(sysColorSetting, color.toARGB32()),
           ),
-          ColorSettingsTile.fromSetting(
-            setting: diaColorSetting,
-            title: 'diaColor'.tr(),
-            value: settings.diaColor.toARGB32(),
-            onChanged: (color) => ref.updateSetting(diaColorSetting, color),
+          ColorSelectionListTile(
+            title: Text('diaColor'.tr()),
+            initialColor: settings.diaColor,
+            availableColors: colorOptions,
+            showTransparentColor: false,
+            swatchAtEnd: true,
+            onMainColorChanged: (color) =>
+                ref.updateSetting(diaColorSetting, color.toARGB32()),
           ),
-          ColorSettingsTile.fromSetting(
-            setting: pulColorSetting,
-            title: 'pulColor'.tr(),
-            value: settings.pulColor.toARGB32(),
-            onChanged: (color) => ref.updateSetting(pulColorSetting, color),
+          ColorSelectionListTile(
+            title: Text('pulColor'.tr()),
+            initialColor: settings.pulColor,
+            availableColors: colorOptions,
+            showTransparentColor: false,
+            swatchAtEnd: true,
+            onMainColorChanged: (color) =>
+                ref.updateSetting(pulColorSetting, color.toARGB32()),
           ),
           SliderListTile(
             title: Text('graphLineThickness'.tr()),
