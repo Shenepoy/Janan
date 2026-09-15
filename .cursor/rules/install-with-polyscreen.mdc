@@ -24,6 +24,6 @@ APK path: `build/app/outputs/flutter-apk/app-debug.apk`
    - `replace`: `true` (in-place update; keeps data)
    - never set uninstall-only or skip replace
 
-4. If they want it opened, `mobile_app_launch` with `packageName` `com.shenepoy.janan` and `displayId` `0`.
+4. If they want it opened, `mobile_app_launch` with `packageName` `com.shenepoy.janan.debug` (debug APK) and `displayId` `0`. Release installs stay `com.shenepoy.janan`.
 
 Rebuild before install when source is newer than the APK. If replace fails because of a signature mismatch, stop and tell the user — do not uninstall to force it.

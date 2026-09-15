@@ -17,6 +17,11 @@
             here requested for android 11 or lower due to bluetooth_low_energy_android constraints -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="30" />
 
+    <!-- Keep an active meter scan alive while the app is backgrounded. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -68,6 +73,12 @@
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".BluetoothScanForegroundService"
+            android:exported="false"
+            android:stopWithTask="false"
+            android:foregroundServiceType="connectedDevice" />
 
         <!-- TODO: show privacy disclaimer when opened this way -->
         <activity-alias

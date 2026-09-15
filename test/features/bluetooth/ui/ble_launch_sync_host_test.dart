@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:blood_pressure_app/features/bluetooth/background/bluetooth_foreground_service.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_launch_sync.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_card.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
@@ -124,6 +125,36 @@ void main() {
     expect(find.byType(SnackBar), findsNothing);
   });
 
+  testWidgets('does not start the foreground service for a skipped sync', (
+    tester,
+  ) async {
+    final starts = <String>[];
+    var stops = 0;
+    BluetoothForegroundService.startOverrideForTesting = ({required text}) async {
+      starts.add(text);
+    };
+    BluetoothForegroundService.stopOverrideForTesting = () async {
+      stops++;
+    };
+    addTearDown(BluetoothForegroundService.resetOverridesForTesting);
+
+    await pumpApp(tester, await appBase(
+      BleLaunchSyncHost(
+        resultBannerDuration: Duration.zero,
+        sync: _FakeSync(const BleLaunchSyncResult(
+          status: BleLaunchSyncStatus.skipped,
+        )),
+        child: const Text('home'),
+      ),
+      settings: _enabledSettings(),
+    ));
+    await tester.pump();
+    await tester.pump();
+
+    expect(starts, isEmpty);
+    expect(stops, 0);
+  });
+
   testWidgets('keeps stages hidden until the compact indicator is tapped', (tester) async {
     final sync = _HangingSync();
     await pumpApp(tester, await appBase(
@@ -179,7 +210,7 @@ void main() {
   });
 
 
-  testWidgets('stops checking when leaving the home route', (tester) async {
+  testWidgets('keeps checking when moving to another main route', (tester) async {
     final sync = _HangingSync();
     final observer = HomePresenceObserver();
     await pumpApp(tester, await appBase(
@@ -208,13 +239,12 @@ void main() {
       null,
     );
     await tester.pump();
-    expect(sync.cancelled, isTrue);
+    expect(sync.cancelled, isFalse);
     expect(find.byType(BleLaunchSyncCard), findsNothing);
-    expect(find.byIcon(Icons.bluetooth), findsOneWidget);
-    expect(find.text('0'), findsOneWidget);
+    expect(find.byIcon(Icons.sync), findsOneWidget);
   });
 
-  testWidgets('does not restart after returning home from a cancelled sync', (tester) async {
+  testWidgets('stops in settings and restarts on a main route', (tester) async {
     final syncs = <_HangingSync>[];
     final observer = HomePresenceObserver();
     final home = MaterialPageRoute<void>(
@@ -246,7 +276,7 @@ void main() {
 
     observer.didPush(
       MaterialPageRoute<void>(
-        settings: const RouteSettings(name: '/add'),
+        settings: const RouteSettings(name: '/settings'),
         builder: (_) => const SizedBox.shrink(),
       ),
       home,
@@ -256,17 +286,15 @@ void main() {
 
     observer.didPop(
       MaterialPageRoute<void>(
-        settings: const RouteSettings(name: '/add'),
+        settings: const RouteSettings(name: '/settings'),
         builder: (_) => const SizedBox.shrink(),
       ),
       home,
     );
     await tester.pump();
     await tester.pump();
-    expect(syncs, hasLength(1));
-    expect(find.byIcon(Icons.sync), findsNothing);
-    expect(find.byIcon(Icons.bluetooth), findsOneWidget);
-    expect(find.text('0'), findsOneWidget);
+    expect(syncs, hasLength(2));
+    expect(find.byIcon(Icons.sync), findsOneWidget);
   });
 
   testWidgets('shows already up to date when nothing new was imported', (tester) async {
@@ -373,7 +401,7 @@ void main() {
     expect(find.byIcon(Icons.sync), findsOneWidget);
   });
 
-  testWidgets('unnamed overlays are not treated as home', (tester) async {
+  testWidgets('unnamed overlays on a main route keep scanning active', (tester) async {
     final syncs = <_HangingSync>[];
     final observer = HomePresenceObserver();
     final home = MaterialPageRoute<void>(
@@ -410,11 +438,9 @@ void main() {
     );
     await tester.pump();
     expect(observer.onHome, isFalse);
-    expect(syncs.single.cancelled, isTrue);
+    expect(syncs.single.cancelled, isFalse);
     expect(syncs, hasLength(1));
-    expect(find.byIcon(Icons.sync), findsNothing);
-    expect(find.byIcon(Icons.bluetooth), findsOneWidget);
-    expect(find.text('0'), findsOneWidget);
+    expect(find.byIcon(Icons.sync), findsOneWidget);
   });
 
   testWidgets('disabling launch sync mid-scan cancels and does not restart', (tester) async {

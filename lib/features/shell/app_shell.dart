@@ -45,7 +45,7 @@ class AppShell extends ConsumerWidget {
   /// Blood pressure, weight, statistics, and settings pages, in that order.
   final List<Widget> pages;
 
-  /// When set, launch-sync treats only the home tab as home.
+  /// Presence state used by launch-sync to exclude the settings tab.
   final HomePresenceObserver? homePresence;
 
   /// Tab shown first. Falls back to home if [ShellTab.weight] is hidden.
@@ -108,6 +108,7 @@ class _AppShellViewState extends State<_AppShellView> {
   late double _page;
   late final PageController _pageController;
   bool _pageTickScheduled = false;
+  int _tabLayoutVersion = 0;
 
   List<ShellTab> get _tabs => visibleShellTabs(showWeight: widget.showWeight);
 
@@ -128,7 +129,7 @@ class _AppShellViewState extends State<_AppShellView> {
     _page = _index.toDouble();
     _pageController = PageController(initialPage: _index);
     _pageController.addListener(_syncPage);
-    widget.homePresence?.setHomeTab(_index == 0);
+    _updatePresence();
   }
 
   @override
@@ -141,10 +142,17 @@ class _AppShellViewState extends State<_AppShellView> {
     if (next < 0) next = 0;
     _index = next;
     _page = next.toDouble();
-    widget.homePresence?.setHomeTab(_index == 0);
-    if (_pageController.hasClients) {
-      _pageController.jumpToPage(_index);
-    }
+    _updatePresence();
+    final layoutVersion = ++_tabLayoutVersion;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || layoutVersion != _tabLayoutVersion) return;
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(next);
+      }
+      if (_page != next.toDouble() && mounted) {
+        setState(() => _page = next.toDouble());
+      }
+    });
   }
 
   @override
@@ -173,7 +181,15 @@ class _AppShellViewState extends State<_AppShellView> {
     if (index != _tabs.length - 1 && widget.settingsSearchOpen?.value == true) {
       widget.settingsSearchOpen!.value = false;
     }
-    widget.homePresence?.setHomeTab(index == 0);
+    _updatePresence(index: index);
+  }
+
+  void _updatePresence({int? index}) {
+    final selected = index ?? _index;
+    widget.homePresence?.setShellTab(
+      isHome: selected == 0,
+      isSettings: selected == _tabs.length - 1,
+    );
   }
 
   void _go(int index) {
@@ -276,7 +292,13 @@ class _AppShellViewState extends State<_AppShellView> {
               children: [
                 for (var i = 0; i < pages.length; i++)
                   _KeepAlivePage(
-                    key: ValueKey<String>('shell-page-$i-$localeTag'),
+                    // Tabs can be inserted or removed when settings change.
+                    // Keep each page's identity tied to its tab so a visible
+                    // page (especially SettingsPage with a scroll controller)
+                    // is moved instead of recreated.
+                    key: ValueKey<String>(
+                      'shell-page-${_tabs[i].name}-$localeTag',
+                    ),
                     child: pages[i],
                   ),
               ],

@@ -3,7 +3,9 @@ import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.da
 import 'package:blood_pressure_app/features/data_picker/interval_picker.dart';
 import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart';
 import 'package:blood_pressure_app/features/shell/app_shell.dart';
+import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
+import 'package:blood_pressure_app/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
@@ -294,17 +296,177 @@ void main() {
     expect(find.byKey(AppShell.navWeightKey), findsNothing);
     expect(find.text('weight-page'), findsNothing);
   });
+
+  testWidgets('keeps the settings scroll position when weight is enabled', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        showWeight: null,
+        pages: const [
+          Text('home-page'),
+          Text('weight-page'),
+          Text('stats-page'),
+          SettingsPage(),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(AppShell.navSettingsKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(SettingsPage), findsOneWidget);
+    expect(find.byType(ListView), findsOneWidget);
+    expect(find.text('Settings'), findsWidgets);
+    final settingsList = find.byType(ListView);
+    expect(settingsList, findsOneWidget);
+    final settingsScrollable = find.descendant(
+      of: settingsList,
+      matching: find.byType(Scrollable),
+    );
+    expect(settingsScrollable, findsOneWidget);
+    final weightToggle = find.text('Activate weight related features');
+    await tester.scrollUntilVisible(
+      weightToggle,
+      200,
+      scrollable: settingsScrollable,
+    );
+    await tester.pump();
+    final before = tester.widget<ListView>(settingsList).controller!.offset;
+    expect(before, greaterThan(0));
+
+    await tester.tap(
+      find.ancestor(of: weightToggle, matching: find.byType(SwitchListTile)),
+    );
+    await tester.pump();
+    expect(
+      find.descendant(
+        of: find.byType(DashboardAppBar),
+        matching: find.text('Settings'),
+      ),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byKey(AppShell.navWeightKey), findsOneWidget);
+    expect(
+      tester
+          .widget<SafaehFloatingNavBar>(find.byType(SafaehFloatingNavBar))
+          .selectedIndex,
+      3,
+    );
+    final appBar = find.byType(DashboardAppBar);
+    expect(
+      find.descendant(of: appBar, matching: find.text('Settings')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: appBar, matching: find.text('Weight')),
+      findsNothing,
+    );
+    final after = tester
+        .widget<ListView>(find.byType(ListView))
+        .controller!
+        .offset;
+    expect(after, closeTo(before, 1));
+  });
+
+  testWidgets('keeps Settings title synced when weight is toggled twice', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        seed: TestSettingsSeed(weightInput: true),
+        showWeight: null,
+        pages: const [
+          Text('home-page'),
+          Text('weight-page'),
+          Text('stats-page'),
+          SettingsPage(showAppBar: false),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(AppShell.navSettingsKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final weightToggle = find.text('Activate weight related features');
+    final settingsList = find.byType(ListView);
+    final settingsScrollable = find.descendant(
+      of: settingsList,
+      matching: find.byType(Scrollable),
+    );
+    await tester.scrollUntilVisible(
+      weightToggle,
+      200,
+      scrollable: settingsScrollable,
+    );
+    await tester.pump();
+
+    Future<void> toggleWeight() async {
+      await tester.tap(
+        find.ancestor(of: weightToggle, matching: find.byType(SwitchListTile)),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    await toggleWeight();
+    expect(find.byKey(AppShell.navWeightKey), findsNothing);
+    expect(
+      tester
+          .widget<SafaehFloatingNavBar>(find.byType(SafaehFloatingNavBar))
+          .selectedIndex,
+      2,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(DashboardAppBar),
+        matching: find.text('Settings'),
+      ),
+      findsOneWidget,
+    );
+
+    await toggleWeight();
+    expect(find.byKey(AppShell.navWeightKey), findsOneWidget);
+    expect(
+      tester
+          .widget<SafaehFloatingNavBar>(find.byType(SafaehFloatingNavBar))
+          .selectedIndex,
+      3,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(DashboardAppBar),
+        matching: find.text('Settings'),
+      ),
+      findsOneWidget,
+    );
+  });
 }
 
 Future<Widget> _minimalShell({
   HomePresenceObserver? presence,
   required List<Widget> pages,
-  bool showWeight = true,
+  TestSettingsSeed? seed,
+  bool? showWeight = true,
   ValueNotifier<bool>? showWeightListenable,
   ValueNotifier<bool>? settingsSearchOpen,
   VoidCallback? onSettingsSearch,
 }) async {
-  final settings = await createTestSettings();
+  final settings = await createTestSettings(seed);
   final shell = showWeightListenable == null
       ? AppShell(
           homePresence: presence,
