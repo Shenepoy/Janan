@@ -66,7 +66,7 @@ Compared to [derdilla/blood-pressure-monitor-fl](https://github.com/derdilla/blo
 | **Name** | Blood pressure monitor | Janan · الجَنَان |
 | **Android id** | `com.derdilla.bloodPressureApp` | `com.shenepoy.janan` |
 | **Install** | Play, F-Droid, GitHub | GitHub Releases + [Obtainium](https://github.com/ImranR98/Obtainium) |
-| **Version** | Semver `1.8.15+57` | CalVer `YY.0M.MICRO` (now `26.09.3+67`) |
+| **Version** | Semver `1.8.15+57` | CalVer `YY.0M.MICRO` (now `26.09.4+68`) |
 | **Layout** | `app/` plus workspace packages | One Flutter app at the repo root |
 
 **Added here**
