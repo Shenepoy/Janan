@@ -103,7 +103,7 @@ class _MeasurementDetailScreenState extends ConsumerState<MeasurementDetailScree
   void _scheduleHopClear(int tick) {
     Future<void>.delayed(const Duration(milliseconds: 700), () {
       if (!mounted || _hopTick != tick) return;
-      setState(() => _hops.clear());
+      setState(_hops.clear);
     });
   }
 

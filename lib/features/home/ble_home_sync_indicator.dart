@@ -156,8 +156,7 @@ class BleHomeSyncIndicator extends ConsumerWidget {
     BleLaunchSyncResult? result,
     ThemeData theme,
     Color muted,
-  ) {
-    return switch (result?.status) {
+  ) => switch (result?.status) {
       BleLaunchSyncStatus.imported => Colors.green,
       BleLaunchSyncStatus.upToDate => Colors.white70,
       BleLaunchSyncStatus.failed ||
@@ -167,7 +166,6 @@ class BleHomeSyncIndicator extends ConsumerWidget {
       BleLaunchSyncStatus.skipped ||
       null => Colors.white70,
     };
-  }
 
   static String _tooltip(BleLaunchSyncProgress progress) {
     final result = progress.result;

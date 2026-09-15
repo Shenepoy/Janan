@@ -27,30 +27,29 @@ Future<T?> showOptionPickerSheet<T>(
   T? selected,
   double? maxHeight,
   bool centerInFullViewport = true,
-}) {
-  // The body owns the phone title, while the host owns the tablet header.
-  // This is the same title placement used by Hisab's option sheets.
-  return showResponsiveSheet<T>(
-    context: context,
-    title: isWideModal(context) ? title : null,
-    maxHeight: maxHeight,
-    centerInFullViewport: centerInFullViewport,
-    child: SafaehTilePickerBody<T>(
-      title: title,
-      options: [
-        for (final option in options)
-          SafaehTileOption<T>(
-            value: option.value,
-            label: option.label,
-            subtitle: option.subtitle,
-            leading: option.leading,
-            enabled: option.enabled,
-          ),
-      ],
-      selected: selected,
-    ),
-  );
-}
+}) =>
+    // The body owns the phone title, while the host owns the tablet header.
+    // This is the same title placement used by Hisab's option sheets.
+    showResponsiveSheet<T>(
+      context: context,
+      title: isWideModal(context) ? title : null,
+      maxHeight: maxHeight,
+      centerInFullViewport: centerInFullViewport,
+      child: SafaehTilePickerBody<T>(
+        title: title,
+        options: [
+          for (final option in options)
+            SafaehTileOption<T>(
+              value: option.value,
+              label: option.label,
+              subtitle: option.subtitle,
+              leading: option.leading,
+              enabled: option.enabled,
+            ),
+        ],
+        selected: selected,
+      ),
+    );
 
 /// Builds a consistent sheet body with a title and an action row.
 Widget buildSheetShell(

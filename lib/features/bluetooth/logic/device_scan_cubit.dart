@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:blood_pressure_app/core/state/state_holder.dart';
 import 'package:blood_pressure_app/features/bluetooth/backend/bluetooth_backend.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_device_filter.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_read_cubit.dart';
@@ -10,7 +11,6 @@ import 'package:blood_pressure_app/features/bluetooth/logic/bluetooth_cubit.dart
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/known_ble_device.dart';
 import 'package:flutter/foundation.dart';
-import 'package:blood_pressure_app/core/state/state_holder.dart';
 
 part 'device_scan_state.dart';
 

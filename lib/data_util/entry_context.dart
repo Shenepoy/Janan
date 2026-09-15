@@ -5,6 +5,8 @@ import 'package:blood_pressure_app/features/input/forms/add_entry_form.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
+import 'package:blood_pressure_app/model/storage/export_settings.dart' show ExportSettings;
+import 'package:blood_pressure_app/model/storage/storage.dart' show ExportSettings;
 import 'package:blood_pressure_app/screens/add_entry_screen.dart';
 import 'package:blood_pressure_app/screens/error_reporting_screen.dart';
 import 'package:easy_localization/easy_localization.dart';

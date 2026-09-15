@@ -1,5 +1,5 @@
-import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
+import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/input/forms/entry_form_section.dart';
 import 'package:blood_pressure_app/features/input/forms/form_base.dart';
@@ -319,8 +319,7 @@ class MedicineIntakeFormState
   }
 
   @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
+  Widget build(BuildContext context) => ListenableBuilder(
       listenable: context.medCache,
       builder: (context, _) {
         final meds = context.medCache.medications;
@@ -392,7 +391,6 @@ class MedicineIntakeFormState
         );
       },
     );
-  }
 
   Future<void> _addFromPicker(List<Medicine> options) async {
     FocusScope.of(context).unfocus();
@@ -420,15 +418,13 @@ class MedicineIntakeFormState
   Future<Object?> _showPicker({
     required List<Medicine> options,
     required Medicine? selected,
-  }) {
-    return showResponsiveSheet<Object>(
+  }) => showResponsiveSheet<Object>(
       context: context,
       title: 'selectMedication'.tr(),
       maxHeight: MediaQuery.sizeOf(context).height * 0.75,
       showDragHandle: true,
       child: _MedicinePickerSheet(medicines: options, selected: selected),
     );
-  }
 
   Widget _doseCard(List<Medicine> meds, _IntakeSlot slot) {
     final theme = Theme.of(context);
@@ -723,8 +719,7 @@ class _RoundStepButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) {
-    return IconButton.filledTonal(
+  Widget build(BuildContext context) => IconButton.filledTonal(
       onPressed: onPressed,
       tooltip: tooltip,
       icon: Icon(icon, size: 20),
@@ -734,7 +729,6 @@ class _RoundStepButton extends StatelessWidget {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
-  }
 }
 
 class _MedSwatch extends StatelessWidget {
@@ -880,9 +874,7 @@ class _FieldCaption extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) {
-    return Text(text, style: AppText.label(context));
-  }
+  Widget build(BuildContext context) => Text(text, style: AppText.label(context));
 }
 
 class _IntakeTimeField extends StatelessWidget {

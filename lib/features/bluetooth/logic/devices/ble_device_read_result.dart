@@ -1,4 +1,5 @@
 import 'package:blood_pressure_app/features/bluetooth/logic/characteristics/ble_measurement_data.dart';
+import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_device_profile.dart' show BleDeviceProfile;
 import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_weight_data.dart';
 
 /// Outcome of a [BleDeviceProfile.read].

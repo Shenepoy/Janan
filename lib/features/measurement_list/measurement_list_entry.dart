@@ -1,5 +1,6 @@
 import 'package:blood_pressure_app/components/nullable_text.dart';
 import 'package:blood_pressure_app/components/pressure_text.dart';
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/measurement_list/list_timestamp.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_detail_screen.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_table.dart';
@@ -11,7 +12,6 @@ import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// Display of a blood pressure measurement data.
 class MeasurementListRow extends ConsumerWidget {

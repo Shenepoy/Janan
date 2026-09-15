@@ -138,7 +138,7 @@ class _DeviceSelectionState extends State<DeviceSelection> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (searchField != null) searchField,
+          ?searchField,
           if (widget.isScanning) ...[
             if (showSearch) const SizedBox(height: 8),
             _ScanningStatus(label: 'scanningForDevices'.tr()),

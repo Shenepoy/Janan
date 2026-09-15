@@ -30,7 +30,7 @@ enum TimeStep {
     };
   }
 
-  /// Select a displayable string from [localizations].
+  /// Select a displayable string from `localizations`.
   String localize() => switch (this) {
     TimeStep.day => 'day'.tr(),
     TimeStep.month => 'month'.tr(),
@@ -42,7 +42,7 @@ enum TimeStep {
     TimeStep.custom => 'custom'.tr(),
   };
 
-  int serialize() =>switch (this) {
+  int serialize() => switch (this) {
     TimeStep.day => 0,
     TimeStep.month => 1,
     TimeStep.year => 2,

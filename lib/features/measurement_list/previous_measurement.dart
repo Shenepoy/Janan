@@ -1,5 +1,5 @@
-import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:blood_pressure_app/model/combined_entry.dart';
 
 /// Next older weight in a newest-first list, or null.
 BodyweightRecord? previousWeightInList(

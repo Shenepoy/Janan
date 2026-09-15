@@ -1,6 +1,7 @@
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/data_util/combined_entry_builder.dart';
 import 'package:blood_pressure_app/data_util/consistent_future_builder.dart';
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/statistics/blood_pressure_distribution.dart';
 import 'package:blood_pressure_app/features/statistics/clock_bp_graph.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_empty_card.dart';
@@ -15,7 +16,6 @@ import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:blood_pressure_app/model/storage/types/interval_storage_setting.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// A page that shows statistics about stored blood pressure values.
 class StatisticsScreen extends StatelessWidget {

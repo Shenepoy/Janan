@@ -1,6 +1,6 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/model/storage/convert_util.dart';
 import 'package:flutter/material.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// Information about a straight horizontal line through the graph.
 ///

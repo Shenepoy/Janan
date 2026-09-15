@@ -6,17 +6,16 @@ class CombinedEntry {
     required this.time,
     Note? note,
     BloodPressureRecord? record,
-    MedicineIntake? intake,
+    this.intake,
     BodyweightRecord? weight,
     List<MedicineIntake>? dayIntakes,
-  }): assert(note == null || note.time == time),
-      assert(record == null || record.time == time),
-      assert(weight == null || weight.time == time),
-      _note = note,
-      _record = record,
-      _intake = intake,
-      _weight = weight,
-      _dayIntakes = List<MedicineIntake>.of(dayIntakes ?? const []);
+  }) : assert(note == null || note.time == time),
+       assert(record == null || record.time == time),
+       assert(weight == null || weight.time == time),
+       _note = note,
+       _record = record,
+       _weight = weight,
+       _dayIntakes = List<MedicineIntake>.of(dayIntakes ?? const []);
 
   final DateTime time;
 
@@ -34,11 +33,7 @@ class CombinedEntry {
     _record = value;
   }
 
-  MedicineIntake? _intake;
-  MedicineIntake? get intake => _intake;
-  set intake(MedicineIntake? value) {
-    _intake = value;
-  }
+  MedicineIntake? intake;
 
   BodyweightRecord? _weight;
   BodyweightRecord? get weight => _weight;
@@ -57,22 +52,21 @@ class CombinedEntry {
   /// Same-timestamp [intake] plus [dayIntakes], oldest first.
   List<MedicineIntake> get allIntakes {
     final seen = <MedicineIntake>{};
-    if (_intake != null) seen.add(_intake!);
+    if (intake != null) seen.add(intake!);
     seen.addAll(_dayIntakes);
-    return seen.toList()
-      ..sort((a, b) => a.time.compareTo(b.time));
+    return seen.toList()..sort((a, b) => a.time.compareTo(b.time));
   }
 
   /// Intake the add/edit form should load for this row.
   MedicineIntake? get formIntake {
-    if (_intake != null) return _intake;
+    if (intake != null) return intake;
     if (_dayIntakes.isEmpty) return null;
     return _dayIntakes.reduce((a, b) => a.time.isAfter(b.time) ? a : b);
   }
 
   /// Whether this row is only a medicine log (no pressure or weight).
   bool get isMedicineOnly =>
-      _intake != null && _record == null && _weight == null;
+      intake != null && _record == null && _weight == null;
 
   /// Systolic value of the measurement.
   Pressure? get sys => record?.sys;
@@ -101,13 +95,14 @@ class CombinedEntry {
     time: time,
     note: note ?? _note,
     record: record ?? _record,
-    intake: clearIntake ? null : (intake ?? _intake),
+    intake: clearIntake ? null : (intake ?? this.intake),
     weight: weight ?? _weight,
     dayIntakes: dayIntakes ?? _dayIntakes,
   );
 
   @override
-    String toString() => 'CombinedEntry($time, $sys, $dia, $pul, '
+  String toString() =>
+      'CombinedEntry($time, $sys, $dia, $pul, '
       '${note?.note}, $color, ${intake?.medicine}, ${intake?.dosis}, '
       '${weight?.weight}, dayIntakes: ${_dayIntakes.length})';
 
@@ -119,7 +114,7 @@ class CombinedEntry {
           time == other.time &&
           _note == other._note &&
           _record == other._record &&
-          _intake == other._intake &&
+          intake == other.intake &&
           _weight == other._weight &&
           _listEquals(_dayIntakes, other._dayIntakes);
 
@@ -128,7 +123,7 @@ class CombinedEntry {
     time,
     _note,
     _record,
-    _intake,
+    intake,
     _weight,
     Object.hashAll(_dayIntakes),
   );
@@ -143,14 +138,14 @@ bool _listEquals<T>(List<T> a, List<T> b) {
   return true;
 }
 
-DateTime _calendarDay(DateTime time) => DateTime(time.year, time.month, time.day);
+DateTime _calendarDay(DateTime time) =>
+    DateTime(time.year, time.month, time.day);
 
 /// Utility methods to work on full entries.
 extension CombinedEntryList on List<CombinedEntry> {
   /// Create a list that only contains the records field from the entries.
-  List<BloodPressureRecord> get records => map((e) => e.record)
-      .nonNulls
-      .toList();
+  List<BloodPressureRecord> get records =>
+      map((e) => e.record).nonNulls.toList();
 
   /// Create a list that only contains the note field from the entries.
   List<Note> get notes => map((e) => e.note).nonNulls.toList();
@@ -158,8 +153,7 @@ extension CombinedEntryList on List<CombinedEntry> {
   /// Get all medicines that appear anywhere in the list.
   List<Medicine> get distinctMedicines => <Medicine>{
     for (final e in this)
-      for (final intake in e.allIntakes)
-        intake.medicine,
+      for (final intake in e.allIntakes) intake.medicine,
   }.toList();
 
   /// Merges values at the same time from passed lists to FullEntries and
@@ -169,9 +163,9 @@ extension CombinedEntryList on List<CombinedEntry> {
   static List<CombinedEntry> merged(
     List<BloodPressureRecord> records,
     List<Note> notes,
-    List<MedicineIntake> intakes,
-    [List<BodyweightRecord>? weights]
-  ) {
+    List<MedicineIntake> intakes, [
+    List<BodyweightRecord>? weights,
+  ]) {
     final entries = <DateTime, CombinedEntry>{};
 
     for (final r in records) {
@@ -201,7 +195,9 @@ extension CombinedEntryList on List<CombinedEntry> {
   /// day, and attach those intakes to the last (newest) reading of the day.
   ///
   /// [newestFirst] must already be sorted newest to oldest.
-  static List<CombinedEntry> forBloodPressureList(List<CombinedEntry> newestFirst) {
+  static List<CombinedEntry> forBloodPressureList(
+    List<CombinedEntry> newestFirst,
+  ) {
     final byDay = <DateTime, List<CombinedEntry>>{};
     for (final entry in newestFirst) {
       byDay.putIfAbsent(_calendarDay(entry.time), () => []).add(entry);
@@ -227,9 +223,9 @@ extension CombinedEntryList on List<CombinedEntry> {
         attached.addAll(entry.allIntakes);
         hidden.add(entry);
         final note = entry.note;
-        if (note != null
-            && lastBp.note == null
-            && !notesToAttach.containsKey(lastBp)) {
+        if (note != null &&
+            lastBp.note == null &&
+            !notesToAttach.containsKey(lastBp)) {
           notesToAttach[lastBp] = note;
         }
       }
@@ -242,12 +238,13 @@ extension CombinedEntryList on List<CombinedEntry> {
     return [
       for (final entry in newestFirst)
         if (!hidden.contains(entry))
-          extras.containsKey(entry) || notesToAttach.containsKey(entry)
-              ? entry.copyWith(
-                  note: notesToAttach[entry],
-                  dayIntakes: extras[entry],
-                )
-              : entry,
+          if (extras.containsKey(entry) || notesToAttach.containsKey(entry))
+            entry.copyWith(
+              note: notesToAttach[entry],
+              dayIntakes: extras[entry],
+            )
+          else
+            entry,
     ];
   }
 }

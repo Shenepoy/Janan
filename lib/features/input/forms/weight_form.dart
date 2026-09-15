@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/input/forms/entry_form_section.dart';
 import 'package:blood_pressure_app/features/input/forms/form_base.dart';
 import 'package:blood_pressure_app/features/input/forms/measurement_value_field.dart';
@@ -5,7 +6,6 @@ import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// A form to enter [Weight] in the preferred unit.
 class WeightForm extends FormBase<Weight> {

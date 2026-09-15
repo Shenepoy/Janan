@@ -37,16 +37,16 @@ String formatAppDate(DateTime date, String pattern, [String? locale]) =>
 /// [DateFormat] that always emits Western digits.
 class WesternDateFormat extends DateFormat {
   WesternDateFormat(super.newPattern, [super.locale]);
-  WesternDateFormat.y([String? locale]) : super.y(locale);
-  WesternDateFormat.yMd([String? locale]) : super.yMd(locale);
-  WesternDateFormat.yMMM([String? locale]) : super.yMMM(locale);
-  WesternDateFormat.yMMMd([String? locale]) : super.yMMMd(locale);
-  WesternDateFormat.MMMEd([String? locale]) : super.MMMEd(locale);
-  WesternDateFormat.yMMMMEEEEd([String? locale]) : super.yMMMMEEEEd(locale);
-  WesternDateFormat.yMMMM([String? locale]) : super.yMMMM(locale);
-  WesternDateFormat.MMMd([String? locale]) : super.MMMd(locale);
-  WesternDateFormat.MMM([String? locale]) : super.MMM(locale);
-  WesternDateFormat.E([String? locale]) : super.E(locale);
+  WesternDateFormat.y([super.locale]) : super.y();
+  WesternDateFormat.yMd([super.locale]) : super.yMd();
+  WesternDateFormat.yMMM([super.locale]) : super.yMMM();
+  WesternDateFormat.yMMMd([super.locale]) : super.yMMMd();
+  WesternDateFormat.MMMEd([super.locale]) : super.MMMEd();
+  WesternDateFormat.yMMMMEEEEd([super.locale]) : super.yMMMMEEEEd();
+  WesternDateFormat.yMMMM([super.locale]) : super.yMMMM();
+  WesternDateFormat.MMMd([super.locale]) : super.MMMd();
+  WesternDateFormat.MMM([super.locale]) : super.MMM();
+  WesternDateFormat.E([super.locale]) : super.E();
 
   @override
   String format(DateTime date) => toWesternDigits(super.format(date));

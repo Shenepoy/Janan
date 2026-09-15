@@ -19,8 +19,7 @@ class DeleteDataScreen extends StatefulWidget {
 
 class _DeleteDataScreenState extends State<DeleteDataScreen> {
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+  Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(
         title: Text('delete'.tr()),
         leading: IconButton(
@@ -151,5 +150,4 @@ class _DeleteDataScreenState extends State<DeleteDataScreen> {
         ],
       ),
     );
-  }
 }

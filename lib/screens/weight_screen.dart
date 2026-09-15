@@ -9,8 +9,7 @@ class WeightScreen extends StatelessWidget {
   const WeightScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+  Widget build(BuildContext context) => Scaffold(
       primary: false,
       body: SafeArea(
         top: false,
@@ -24,5 +23,4 @@ class WeightScreen extends StatelessWidget {
         ),
       ),
     );
-  }
 }

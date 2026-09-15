@@ -1,10 +1,10 @@
 import 'dart:async';
 
+import 'package:blood_pressure_app/core/state/state_holder.dart';
 import 'package:blood_pressure_app/features/old_bluetooth/logic/characteristics/ble_measurement_data.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
-import 'package:blood_pressure_app/core/state/state_holder.dart';
 import 'package:flutter_blue_ultra/flutter_blue_ultra.dart';
 
 part 'ble_read_state.dart';

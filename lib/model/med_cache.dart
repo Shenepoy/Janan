@@ -1,6 +1,6 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// In-memory cache for reading [MedicineRepository].
 class MedCache with ChangeNotifier {

@@ -1,10 +1,10 @@
 import 'dart:convert';
 
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/model/storage/convert_util.dart';
 import 'package:blood_pressure_app/model/storage/types/time_range.dart';
 import 'package:blood_pressure_app/model/storage/types/time_step.dart';
 import 'package:flutter/foundation.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// Class for storing the current interval, as it is needed in start page, statistics and export.
 class IntervalStorage extends ChangeNotifier {

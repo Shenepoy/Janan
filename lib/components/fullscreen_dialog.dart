@@ -123,7 +123,7 @@ class FullscreenDialog extends StatelessWidget {
 
   Widget? _buildBody() {
     if (body == null) return null;
-    Widget child = GestureDetector(
+    final Widget child = GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       behavior: HitTestBehavior.deferToChild,
       child: body!,

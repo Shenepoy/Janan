@@ -1,7 +1,7 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/health_connect/sync_model.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:health/health.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 class BPSyncModel extends SyncModel with Loggable {
   BPSyncModel({required this.bpRepo, required this.health});

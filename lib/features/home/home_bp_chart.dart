@@ -43,13 +43,11 @@ class HomeBpChart extends StatelessWidget {
   const HomeBpChart({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return CombinedEntryBuilder(
+  Widget build(BuildContext context) => CombinedEntryBuilder(
       rangeType: IntervalStoreManagerLocation.mainPage,
       onData: (context, records, intakes, notes) =>
           _HomeBpChartView(records: records),
     );
-  }
 }
 
 class _HomeBpChartView extends ConsumerStatefulWidget {
@@ -128,8 +126,7 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
     required String text,
     required TextStyle? style,
     required double height,
-  }) {
-    return SizedBox(
+  }) => SizedBox(
       height: height,
       width: double.infinity,
       child: AnimatedSwitcher(
@@ -141,12 +138,10 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
           alignment: AlignmentDirectional.centerStart,
           children: [
             for (final child in previous) IgnorePointer(child: child),
-            if (current != null) current,
+            ?current,
           ],
         ),
-        transitionBuilder: (child, animation) {
-          return FadeTransition(opacity: animation, child: child);
-        },
+        transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
         child: Align(
           key: ValueKey(text),
           alignment: AlignmentDirectional.centerStart,
@@ -159,7 +154,6 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
         ),
       ),
     );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -241,12 +235,10 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
                   children: [
                     for (final child in previous)
                       IgnorePointer(child: child),
-                    if (current != null) current,
+                    ?current,
                   ],
                 ),
-                transitionBuilder: (child, animation) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
+                transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
                 child: KeyedSubtree(
                   key: ValueKey(_kind),
                   child: switch (_kind) {
@@ -273,15 +265,13 @@ class _EmptyChart extends StatelessWidget {
   const _EmptyChart();
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
+  Widget build(BuildContext context) => Center(
       child: Text(
         'errNotEnoughDataToGraph'.tr(),
         textAlign: TextAlign.center,
         style: AppText.subtitle(context),
       ),
     );
-  }
 }
 
 enum _RangeBucket { day, week, month }
@@ -685,8 +675,7 @@ class _MixLegend extends StatelessWidget {
   final TextStyle? valueStyle;
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
+  Widget build(BuildContext context) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
@@ -713,7 +702,6 @@ class _MixLegend extends StatelessWidget {
         Text('$percent%', style: valueStyle),
       ],
     );
-  }
 }
 
 class _PulsePoint {

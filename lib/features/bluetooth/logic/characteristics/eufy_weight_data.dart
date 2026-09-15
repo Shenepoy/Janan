@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_weight_data.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_weight_data.dart';
 
 /// Weight notification from an Eufy C1/P1 scale (T9146 / T9147 / T9120).
 ///

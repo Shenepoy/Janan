@@ -1,6 +1,6 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/characteristics/ble_measurement_data.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_weight_data.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// Identity used to treat a BLE reading as the same measurement as a diary entry.
 String bleMeasurementKey(BleMeasurementData data) {

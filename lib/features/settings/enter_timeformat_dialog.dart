@@ -51,8 +51,7 @@ class _EnterTimeFormatDialogState extends State<EnterTimeFormatDialog> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
+  Widget build(BuildContext context) => SingleChildScrollView(
       child: Column(
         children: [
           Markdown(
@@ -95,7 +94,6 @@ class _EnterTimeFormatDialogState extends State<EnterTimeFormatDialog> {
         ],
       ),
     );
-  }
 }
 
 /// Shows a dialog that explains the ICU DateTime format and allows editing [initialTimeFormat] with a preview.

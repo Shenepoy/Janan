@@ -38,8 +38,7 @@ class ClosedBluetoothInput extends StatelessWidget {
   );
   
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<BluetoothState>(
+  Widget build(BuildContext context) => StreamBuilder<BluetoothState>(
       stream: bluetoothCubit.stream,
       initialData: bluetoothCubit.state,
       builder: (context, snap) {
@@ -72,6 +71,5 @@ class ClosedBluetoothInput extends StatelessWidget {
         };
       },
     );
-  }
   
 }

@@ -62,8 +62,7 @@ class _InputDialogState extends State<InputDialog> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
+  Widget build(BuildContext context) => Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         TextField(
@@ -95,7 +94,6 @@ class _InputDialogState extends State<InputDialog> {
         ),
       ],
     );
-  }
 
   void _onSubmit(String value) {
     final validationResult = widget.validator?.call(value);

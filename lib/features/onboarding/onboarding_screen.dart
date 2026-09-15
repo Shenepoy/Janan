@@ -187,8 +187,7 @@ class _LanguageMenuButton extends StatelessWidget {
   final ValueChanged<String> onSelect;
 
   @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
+  Widget build(BuildContext context) => PopupMenuButton<String>(
       tooltip: 'language'.tr(),
       icon: const Icon(Icons.language),
       initialValue: languageKey,
@@ -205,7 +204,6 @@ class _LanguageMenuButton extends StatelessWidget {
           ),
       ],
     );
-  }
 }
 
 class _ThemeCycleButton extends StatelessWidget {
@@ -502,8 +500,7 @@ class _TrendBar extends StatelessWidget {
   final double height;
 
   @override
-  Widget build(BuildContext context) {
-    return Expanded(
+  Widget build(BuildContext context) => Expanded(
       child: Align(
         alignment: Alignment.bottomCenter,
         child: Container(
@@ -515,7 +512,6 @@ class _TrendBar extends StatelessWidget {
         ),
       ),
     );
-  }
 }
 
 class _FloatingChip extends StatelessWidget {

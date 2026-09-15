@@ -1,8 +1,8 @@
+import 'package:blood_pressure_app/domain/blood_pressure_record.dart';
+import 'package:blood_pressure_app/domain/bodyweight_record.dart';
 import 'package:blood_pressure_app/domain/date_range.dart';
 import 'package:blood_pressure_app/domain/medicine.dart';
 import 'package:blood_pressure_app/domain/medicine_intake.dart';
-import 'package:blood_pressure_app/domain/blood_pressure_record.dart';
-import 'package:blood_pressure_app/domain/bodyweight_record.dart';
 import 'package:blood_pressure_app/domain/note.dart';
 
 /// High-level access to stored health records.

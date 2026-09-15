@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:blood_pressure_app/core/state/state_holder.dart';
 import 'package:blood_pressure_app/features/old_bluetooth/logic/flutter_blue_ultra_mockable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:blood_pressure_app/core/state/state_holder.dart';
 import 'package:flutter_blue_ultra/flutter_blue_ultra.dart';
 
 part 'bluetooth_state.dart';

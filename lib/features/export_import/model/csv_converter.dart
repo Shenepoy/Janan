@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/export_import/model/column.dart';
 import 'package:blood_pressure_app/features/export_import/model/export_preset.dart';
 import 'package:blood_pressure_app/features/export_import/model/import_field_type.dart' show RowDataFieldType;
@@ -9,7 +10,6 @@ import 'package:blood_pressure_app/model/storage/export_csv_settings.dart';
 import 'package:blood_pressure_app/model/storage/export_settings.dart';
 import 'package:collection/collection.dart';
 import 'package:csv/csv.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// Utility class to convert between csv strings and [BloodPressureRecord]s.
 class CsvConverter with Loggable {

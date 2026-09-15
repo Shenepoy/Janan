@@ -8,12 +8,12 @@ import 'package:blood_pressure_app/core/repository/powersync_medicine_repository
 import 'package:blood_pressure_app/core/repository/powersync_note_repository.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/model/med_cache.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:powersync/powersync.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-/// Local-only store opened before [runApp] so the root [ProviderScope] can
-/// override [healthDatabaseProvider] and the repos. Reading the unimplemented
+/// Local-only store opened before `runApp` so the root [ProviderScope] can
+/// override `healthDatabaseProvider` and the repos. Reading the unimplemented
 /// defaults poisons the root container and Home keeps showing that error.
 class BootHealthStore {
   BootHealthStore({

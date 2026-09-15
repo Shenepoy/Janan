@@ -126,8 +126,7 @@ class DetailTitleRow extends StatelessWidget {
   final List<Widget> titles;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
+  Widget build(BuildContext context) => Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,5 +138,4 @@ class DetailTitleRow extends StatelessWidget {
         ],
       ),
     );
-  }
 }

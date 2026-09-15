@@ -29,35 +29,34 @@ Future<T?> showResponsiveSheet<T>({
   bool centerInFullViewport = true,
   SafaehPhoneSheetPlacement phonePlacement = SafaehPhoneSheetPlacement.bottom,
   bool paintPhoneTitle = true,
-}) {
-  // The shell uses a floating bottom bar rather than a side rail, so this
-  // option currently has no alignment work to apply. Keep it for parity with
-  // Hisab and for future tablet navigation rails.
-  return showSafaeh<T>(
-    context: context,
-    child: child,
-    title: title,
-    titleBuilder: title == null || title.isEmpty
-        ? null
-        : (ctx, style) => Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: style,
-          ),
-    tabletTopBarAction: tabletTopBarAction,
-    maxWidth: maxWidth,
-    maxHeight: maxHeight,
-    useSafeArea: useSafeArea,
-    showDragHandle: showDragHandle,
-    enableDrag: enableDrag,
-    sheetShape: sheetShape,
-    barrierDismissible: barrierDismissible,
-    contentPadding: contentPadding,
-    phonePlacement: phonePlacement,
-    paintPhoneTitle: paintPhoneTitle,
-  );
-}
+}) =>
+    // The shell uses a floating bottom bar rather than a side rail, so this
+    // option currently has no alignment work to apply. Keep it for parity with
+    // Hisab and for future tablet navigation rails.
+    showSafaeh<T>(
+      context: context,
+      child: child,
+      title: title,
+      titleBuilder: title == null || title.isEmpty
+          ? null
+          : (ctx, style) => Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: style,
+            ),
+      tabletTopBarAction: tabletTopBarAction,
+      maxWidth: maxWidth,
+      maxHeight: maxHeight,
+      useSafeArea: useSafeArea,
+      showDragHandle: showDragHandle,
+      enableDrag: enableDrag,
+      sheetShape: sheetShape,
+      barrierDismissible: barrierDismissible,
+      contentPadding: contentPadding,
+      phonePlacement: phonePlacement,
+      paintPhoneTitle: paintPhoneTitle,
+    );
 
 /// Whether Safaeh should render a title in its wide modal header.
 bool isWideModal(BuildContext context) =>

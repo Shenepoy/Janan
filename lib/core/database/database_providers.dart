@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/core/database/health_database.dart' show HealthDatabase;
 import 'package:powersync/powersync.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

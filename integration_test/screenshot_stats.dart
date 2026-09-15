@@ -1,9 +1,9 @@
 import 'dart:math';
 
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/screens/statistics_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import '../test/model/blood_pressure_analyzer_test.dart';

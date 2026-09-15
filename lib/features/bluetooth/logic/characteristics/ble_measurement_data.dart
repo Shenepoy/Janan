@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/characteristics/ble_date_time.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/characteristics/ble_measurement_status.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/characteristics/decoding_util.dart';
 import 'package:blood_pressure_app/logging.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// Result of a single bp measurement as by ble spec.
 ///

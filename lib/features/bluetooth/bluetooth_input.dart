@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/bluetooth/backend/bluetooth_backend.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_launch_sync.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_measurement_duplicates.dart';
@@ -29,7 +30,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Class for inputting measurement through bluetooth.

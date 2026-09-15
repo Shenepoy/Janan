@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/model/blood_pressure/pressure_unit.dart';
 import 'package:blood_pressure_app/model/blood_pressure_analyzer.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
@@ -5,7 +6,6 @@ import 'package:blood_pressure_app/model/storage/types/interval_storage_setting.
 import 'package:blood_pressure_app/model/storage/types/time_range.dart';
 import 'package:blood_pressure_app/model/storage/types/time_step.dart';
 import 'package:flutter/material.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// Previous display window for period comparison, or null for lifetime.
 DateRange? previousDisplayRange(IntervalStorage interval) {

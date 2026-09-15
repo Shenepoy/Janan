@@ -59,6 +59,7 @@ dev_dependencies:
   mockito: ^5.6.4
   build_runner: ^2.15.1
   riverpod_generator: ^4.0.8
+  test: any
 
 # flutter_settings_framework 0.8.0 still declares safaeh ^0.2.3. Its
 # integration uses APIs retained by the backwards-compatible 0.4.x release.

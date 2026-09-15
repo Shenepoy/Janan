@@ -1,5 +1,5 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// A unit [Weight] can be in.
 enum WeightUnit {

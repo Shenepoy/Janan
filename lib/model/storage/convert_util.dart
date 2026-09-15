@@ -1,6 +1,6 @@
 
-import 'package:flutter/material.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:flutter/material.dart';
 
 /// Utility class for converting dynamic values to concrete data types.
 ///

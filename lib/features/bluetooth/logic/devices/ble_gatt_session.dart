@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_device_profile.dart' show BleDeviceProfile;
 import 'package:blood_pressure_app/logging.dart';
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:collection/collection.dart';

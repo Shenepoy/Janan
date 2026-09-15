@@ -6,7 +6,7 @@ import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-/// Screen to view and edit medications saved in [Settings].
+/// Screen to view and edit medications saved in `settings`.
 ///
 /// This screen allows adding and removing medication but not modifying them in
 /// order to keep the code simple and maintainable.
@@ -25,7 +25,8 @@ class MedicineManagerScreen extends StatelessWidget {
   Widget _buildMedicine(BuildContext context, Medicine med) {
     final theme = Theme.of(context);
     final raw = med.color;
-    final color = raw == null || raw == 0 || raw == Colors.transparent.toARGB32()
+    final color =
+        raw == null || raw == 0 || raw == Colors.transparent.toARGB32()
         ? theme.colorScheme.primary
         : Color(raw);
     return Padding(
@@ -54,10 +55,7 @@ class MedicineManagerScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      med.designation,
-                      style: AppText.title(context),
-                    ),
+                    Text(med.designation, style: AppText.title(context)),
                     if (med.formattedDosis != null) ...[
                       const SizedBox(height: 4),
                       DecoratedBox(
@@ -87,8 +85,10 @@ class MedicineManagerScreen extends StatelessWidget {
                 tooltip: 'edit'.tr(),
                 onPressed: () async {
                   final medRepo = context.medRepo;
-                  final newMed = await showAddMedicineDialog(context,
-                      initialValue: med);
+                  final newMed = await showAddMedicineDialog(
+                    context,
+                    initialValue: med,
+                  );
                   if (newMed != null) {
                     await medRepo.remove(med);
                     await medRepo.add(newMed);
@@ -99,8 +99,8 @@ class MedicineManagerScreen extends StatelessWidget {
                 icon: const Icon(Icons.delete_outline),
                 tooltip: 'delete'.tr(),
                 onPressed: () async {
-                  if (await showConfirmDeletionDialog(context)
-                      && context.mounted) {
+                  if (await showConfirmDeletionDialog(context) &&
+                      context.mounted) {
                     await context.medRepo.remove(med);
                   }
                 },

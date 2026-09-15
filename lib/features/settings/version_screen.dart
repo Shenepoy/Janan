@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:blood_pressure_app/data_util/consistent_future_builder.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:blood_pressure_app/logging.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,8 +22,7 @@ class VersionScreen extends StatefulWidget {
 
 class _VersionScreenState extends State<VersionScreen> with Loggable {
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+  Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(
         title: Text('version'.tr()),
         actions: [
@@ -113,5 +112,4 @@ class _VersionScreenState extends State<VersionScreen> with Loggable {
         ),
       ),
     );
-  }
 }

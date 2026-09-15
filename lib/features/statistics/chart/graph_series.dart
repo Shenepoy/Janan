@@ -1,5 +1,5 @@
-import 'package:collection/collection.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:collection/collection.dart';
 
 /// Graph series extracted from a list of blood pressure records.
 extension GraphData on List<BloodPressureRecord> {

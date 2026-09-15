@@ -142,15 +142,13 @@ class LegacyBpDb {
   }
 
   Future<({int bp, int notes, int weights, int medicines, int intakes})>
-      counts() async {
-    return (
+      counts() async => (
       bp: (await bloodPressure()).length,
       notes: (await notes()).length,
       weights: (await weights()).length,
       medicines: (await medicines()).length,
       intakes: (await intakes()).length,
     );
-  }
 
   Pressure? _decodePressure(Object? value) {
     if (value is! num) return null;

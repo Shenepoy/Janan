@@ -1,6 +1,6 @@
 import 'package:blood_pressure_app/model/storage/storage.dart';
 
-/// Export and interval stores loaded before [runApp].
+/// Export and interval stores loaded before `runApp`.
 class BootFileSettings {
   BootFileSettings({
     required this.loader,

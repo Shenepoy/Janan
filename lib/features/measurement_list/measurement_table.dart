@@ -12,8 +12,7 @@ const _metricColumnGap = 8.0;
 List<Widget> _spacedColumns({
   required List<MeasurementTableColumn> columns,
   required Widget Function(int index, MeasurementTableColumn column) cell,
-}) {
-  return [
+}) => [
     for (var i = 0; i < columns.length; i++) ...[
       if (i > 0)
         SizedBox(width: i == 1 ? _afterTimeGap : _metricColumnGap),
@@ -23,7 +22,6 @@ List<Widget> _spacedColumns({
       ),
     ],
   ];
-}
 
 /// Blood-pressure columns shared by the list and a standalone row.
 List<MeasurementTableColumn> bloodPressureColumns({

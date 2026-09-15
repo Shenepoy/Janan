@@ -10,15 +10,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Opens a compact export card over the current page.
-Future<void> showExportPopout(BuildContext context) {
-  return showDialog<void>(
+Future<void> showExportPopout(BuildContext context) => showDialog<void>(
     context: context,
     barrierColor: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.32),
     builder: (dialogContext) => _ExportPopout(
       hostContext: context,
     ),
   );
-}
 
 class _ExportPopout extends ConsumerWidget {
   const _ExportPopout({required this.hostContext});

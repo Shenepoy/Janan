@@ -1,12 +1,13 @@
 import 'dart:async';
 
+import 'package:blood_pressure_app/core/settings/storage_providers.dart';
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/input/forms/blood_pressure_form.dart';
 import 'package:blood_pressure_app/features/input/forms/date_time_form.dart';
 import 'package:blood_pressure_app/features/input/forms/form_base.dart';
 import 'package:blood_pressure_app/features/input/forms/medicine_intake_form.dart';
 import 'package:blood_pressure_app/features/input/forms/note_form.dart';
 import 'package:blood_pressure_app/features/input/forms/weight_form.dart';
-import 'package:blood_pressure_app/core/settings/storage_providers.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/logging.dart';
@@ -16,7 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Which measurement this entry screen edits.
@@ -32,16 +32,16 @@ enum AddEntryKind {
 
   /// Infer the form from an existing entry, defaulting to blood pressure.
   static AddEntryKind fromEntry(CombinedEntry? entry) {
-    if (entry != null
-        && entry.weight != null
-        && entry.record == null
-        && entry.intake == null) {
+    if (entry != null &&
+        entry.weight != null &&
+        entry.record == null &&
+        entry.intake == null) {
       return AddEntryKind.weight;
     }
-    if (entry != null
-        && entry.intake != null
-        && entry.record == null
-        && entry.weight == null) {
+    if (entry != null &&
+        entry.intake != null &&
+        entry.record == null &&
+        entry.weight == null) {
       return AddEntryKind.medicine;
     }
     return AddEntryKind.bloodPressure;
@@ -57,7 +57,8 @@ class AddEntryForm extends FormBase<CombinedEntry> with Loggable {
   final AddEntryKind? kind;
 
   @override
-  FormStateBase<CombinedEntry, AddEntryForm> createState() => AddEntryFormState();
+  FormStateBase<CombinedEntry, AddEntryForm> createState() =>
+      AddEntryFormState();
 }
 
 /// State of primary form to enter all types of entries.
@@ -111,7 +112,7 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
     // If an empty input has been focussed before pressing the back key,
     // we move back one Input-Field. We don't do so if the field was
     // just now emptied with this press.
-    if(event.logicalKey == LogicalKeyboardKey.backspace && _emptyFocussed) {
+    if (event.logicalKey == LogicalKeyboardKey.backspace && _emptyFocussed) {
       FocusScope.of(context).previousFocus();
       _emptyFocussed = false;
     }
@@ -124,34 +125,33 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
   }
 
   bool get _emptyFocussedNow =>
-      ((_bpForm.currentState?.isEmptyInputFocused() ?? false)
-    || (_noteForm.currentState?.isEmptyInputFocused() ?? false)
-    || (_weightForm.currentState?.isEmptyInputFocused() ?? false)
-    || (_intakeForm.currentState?.isEmptyInputFocused() ?? false));
+      ((_bpForm.currentState?.isEmptyInputFocused() ?? false) ||
+      (_noteForm.currentState?.isEmptyInputFocused() ?? false) ||
+      (_weightForm.currentState?.isEmptyInputFocused() ?? false) ||
+      (_intakeForm.currentState?.isEmptyInputFocused() ?? false));
 
   @override
-  bool get isEmpty => (
-      (_bpForm.currentState?.isEmpty ?? true)
-        && (_weightForm.currentState?.isEmpty ?? true)
-        && (_intakeForm.currentState?.isEmpty ?? true)
-        && (_noteForm.currentState?.isEmpty ?? true)
-  );
+  bool get isEmpty =>
+      ((_bpForm.currentState?.isEmpty ?? true) &&
+      (_weightForm.currentState?.isEmpty ?? true) &&
+      (_intakeForm.currentState?.isEmpty ?? true) &&
+      (_noteForm.currentState?.isEmpty ?? true));
 
   @override
   bool get isDirty =>
-      (_timeForm.currentState?.isDirty ?? false)
-      || (_bpForm.currentState?.isDirty ?? false)
-      || (_weightForm.currentState?.isDirty ?? false)
-      || (_intakeForm.currentState?.isDirty ?? false)
-      || (_noteForm.currentState?.isDirty ?? false);
+      (_timeForm.currentState?.isDirty ?? false) ||
+      (_bpForm.currentState?.isDirty ?? false) ||
+      (_weightForm.currentState?.isDirty ?? false) ||
+      (_intakeForm.currentState?.isDirty ?? false) ||
+      (_noteForm.currentState?.isDirty ?? false);
 
   @override
   bool validate() {
     final settings = context.readAppSettings();
 
     final timeFormValidation = settings.allowManualTimeInput
-      ? _timeForm.currentState?.validate()
-      : true;
+        ? _timeForm.currentState?.validate()
+        : true;
     final noteFormValidation = _noteForm.currentState?.validate();
     final bpFormValidation = _bpForm.currentState?.validate();
     final weightFormValidation = _weightForm.currentState?.validate();
@@ -163,13 +163,14 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
     logDebug('weight: $weightFormValidation');
     logDebug('intake: $intakeFormValidation');
 
-    return !settings.validateInputs
-    || (timeFormValidation ?? false)
-    && (noteFormValidation ?? false)
-    // the following become null when unopened
-    && (bpFormValidation ?? true)
-    && (weightFormValidation ?? true)
-    && (intakeFormValidation ?? true);
+    return !settings.validateInputs ||
+        (timeFormValidation ?? false) &&
+            (noteFormValidation ?? false)
+            // the following become null when unopened
+            &&
+            (bpFormValidation ?? true) &&
+            (weightFormValidation ?? true) &&
+            (intakeFormValidation ?? true);
   }
 
   @override
@@ -185,38 +186,49 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
 
     final noteFormValue = _noteForm.currentState?.save();
     if (noteFormValue != null) {
-      note = Note(time: time, note: noteFormValue.$1, color: noteFormValue.$2?.toARGB32());
+      note = Note(
+        time: time,
+        note: noteFormValue.$1,
+        color: noteFormValue.$2?.toARGB32(),
+      );
     }
     final recordFormValue = _bpForm.currentState?.save();
     if (recordFormValue != null) {
       record = BloodPressureRecord(
         time: time,
-        sys: recordFormValue.sys == null ? null : Pressure.mmHg(recordFormValue.sys!),
-        dia: recordFormValue.dia == null ? null : Pressure.mmHg(recordFormValue.dia!),
+        sys: recordFormValue.sys == null
+            ? null
+            : Pressure.mmHg(recordFormValue.sys!),
+        dia: recordFormValue.dia == null
+            ? null
+            : Pressure.mmHg(recordFormValue.dia!),
         pul: recordFormValue.pul,
       );
     }
     final weightFormValue = _weightForm.currentState?.save();
     if (weightFormValue != null) {
       final previous = _lastSavedWeight;
-      final sameKg = previous != null
-          && (previous.weight.kg * 100).round() == (weightFormValue.kg * 100).round();
+      final sameKg =
+          previous != null &&
+          (previous.weight.kg * 100).round() ==
+              (weightFormValue.kg * 100).round();
       weight = BodyweightRecord(
         time: time,
         weight: weightFormValue,
         impedanceOhm: sameKg ? previous.impedanceOhm : null,
       );
     }
-    final savedIntakes = _intakeForm.currentState?.saveIntakes(time)
-        ?? (_kind == AddEntryKind.weight ? const <MedicineIntake>[] : _lastSavedIntakes);
+    final savedIntakes =
+        _intakeForm.currentState?.saveIntakes(time) ??
+        (_kind == AddEntryKind.weight
+            ? const <MedicineIntake>[]
+            : _lastSavedIntakes);
     if (_kind != AddEntryKind.weight) {
       (intake, dayIntakes) = _partitionIntakes(savedIntakes, time);
     }
     if (_kind == AddEntryKind.bloodPressure) {
       final preserved = widget.initialValue?.weight;
-      weight = preserved == null
-          ? null
-          : preserved.copyWith(time: time);
+      weight = preserved?.copyWith(time: time);
     } else if (_kind == AddEntryKind.weight) {
       record = null;
       intake = null;
@@ -227,11 +239,11 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
     }
     logDebug('Saving values: $note, $record, $weight, $intake');
 
-    if (note == null
-      && record == null
-      && weight == null
-      && intake == null
-      && dayIntakes.isEmpty) {
+    if (note == null &&
+        record == null &&
+        weight == null &&
+        intake == null &&
+        dayIntakes.isEmpty) {
       logDebug('note, record, weight, and intake are null: returning null');
       return null;
     }
@@ -284,32 +296,35 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
   void onExternalMeasurement(BloodPressureRecord record) {
     if (_kind != AddEntryKind.bloodPressure) return;
     final settings = context.readAppSettings();
-    if (settings.trustBLETime
-        && settings.showBLETimeTrustDialog
-        && record.time.difference(DateTime.now()).inHours.abs() > 5) {
+    if (settings.trustBLETime &&
+        settings.showBLETimeTrustDialog &&
+        record.time.difference(DateTime.now()).inHours.abs() > 5) {
       unawaited(() async {
         final confirmed = await showSafaehConfirm(
           context: context,
           title: 'bluetoothInput'.tr(),
-          content: 'warnBLETimeSus'.tr(namedArgs: {
-            'hours': '${record.time.difference(DateTime.now()).inHours}',
-          }),
+          content: 'warnBLETimeSus'.tr(
+            namedArgs: {
+              'hours': '${record.time.difference(DateTime.now()).inHours}',
+            },
+          ),
           confirmLabel: 'btnConfirm'.tr(),
           cancelLabel: 'dontShowAgain'.tr(),
         );
-        if (confirmed == false && context.mounted) {
-          await context.updateSetting(showBleTimeTrustDialogSetting, false);
-        }
+        if (confirmed != false || !mounted) return;
+        await context.updateSetting(showBleTimeTrustDialogSetting, false);
       }());
     }
 
     final time = settings.trustBLETime
         ? record.time
         : _timeForm.currentState?.save() ?? DateTime.now();
-    fillForm(CombinedEntry(
-      time: time,
-      record: record.copyWith(time: time),
-    ));
+    fillForm(
+      CombinedEntry(
+        time: time,
+        record: record.copyWith(time: time),
+      ),
+    );
   }
 
   /// Prefill the weight form from a scale reading, keeping impedance on save.
@@ -334,84 +349,84 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
   @override
   Widget build(BuildContext context) => Consumer(
     builder: (context, ref, _) {
-    final settings = ref.watch(appSettingsProvider);
-    final medCache = ref.watch(medCacheProvider);
-    return ListenableBuilder(
-      listenable: medCache,
-      builder: (context, _) {
-    final hasMeds = !medCache.isEmpty;
-    final fields = Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (settings.allowManualTimeInput) ...[
-          DateTimeForm(
-            key: _timeForm,
-            initialValue: widget.initialValue?.time,
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (_kind == AddEntryKind.bloodPressure) ...[
-          BloodPressureForm(
-            key: _bpForm,
-            initialValue: (
-              sys: widget.initialValue?.record?.sys?.mmHg,
-              dia: widget.initialValue?.record?.dia?.mmHg,
-              pul: widget.initialValue?.record?.pul,
-            ),
-          ),
-          if (hasMeds) ...[
-            const SizedBox(height: 12),
-            MedicineIntakeForm(
-              key: _intakeForm,
-              initialValue: _formIntake == null ? null : (
-                _formIntake!.medicine,
-                _formIntake!.dosis,
+      final settings = ref.watch(appSettingsProvider);
+      final medCache = ref.watch(medCacheProvider);
+      return ListenableBuilder(
+        listenable: medCache,
+        builder: (context, _) {
+          final hasMeds = !medCache.isEmpty;
+          final fields = Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (settings.allowManualTimeInput) ...[
+                DateTimeForm(
+                  key: _timeForm,
+                  initialValue: widget.initialValue?.time,
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (_kind == AddEntryKind.bloodPressure) ...[
+                BloodPressureForm(
+                  key: _bpForm,
+                  initialValue: (
+                    sys: widget.initialValue?.record?.sys?.mmHg,
+                    dia: widget.initialValue?.record?.dia?.mmHg,
+                    pul: widget.initialValue?.record?.pul,
+                  ),
+                ),
+                if (hasMeds) ...[
+                  const SizedBox(height: 12),
+                  MedicineIntakeForm(
+                    key: _intakeForm,
+                    initialValue: _formIntake == null
+                        ? null
+                        : (_formIntake!.medicine, _formIntake!.dosis),
+                    initialIntakes: _formIntakes,
+                    entryTime: widget.initialValue?.time,
+                    initialIntakeTime: _formIntake?.time,
+                    allowMultiple: true,
+                  ),
+                ],
+              ] else if (_kind == AddEntryKind.weight)
+                WeightForm(
+                  key: _weightForm,
+                  initialValue: widget.initialValue?.weight?.weight,
+                )
+              else
+                MedicineIntakeForm(
+                  key: _intakeForm,
+                  initialValue: _formIntake == null
+                      ? null
+                      : (_formIntake!.medicine, _formIntake!.dosis),
+                  initialIntakes: _formIntakes,
+                  entryTime: widget.initialValue?.time,
+                  initialIntakeTime: _formIntake?.time,
+                ),
+              const SizedBox(height: 12),
+              NoteForm(
+                key: _noteForm,
+                initialValue: () {
+                  logDebug(
+                    'NoteForm.initialValue: ${widget.initialValue?.note}',
+                  );
+                  if (widget.initialValue?.note == null) return null;
+                  final note = widget.initialValue!.note!;
+                  final color = note.color == null ? null : Color(note.color!);
+                  return (note.note, color);
+                }(),
               ),
-              initialIntakes: _formIntakes,
-              entryTime: widget.initialValue?.time,
-              initialIntakeTime: _formIntake?.time,
-              allowMultiple: true,
-            ),
-          ],
-        ] else if (_kind == AddEntryKind.weight)
-          WeightForm(
-            key: _weightForm,
-            initialValue: widget.initialValue?.weight?.weight,
-          )
-        else
-          MedicineIntakeForm(
-            key: _intakeForm,
-            initialValue: _formIntake == null ? null : (
-              _formIntake!.medicine,
-              _formIntake!.dosis,
-            ),
-            initialIntakes: _formIntakes,
-            entryTime: widget.initialValue?.time,
-            initialIntakeTime: _formIntake?.time,
-          ),
-        const SizedBox(height: 12),
-        NoteForm(
-          key: _noteForm,
-          initialValue: (){
-            logDebug('NoteForm.initialValue: ${widget.initialValue?.note}');
-            if (widget.initialValue?.note == null) return null;
-            final note = widget.initialValue!.note!;
-            final color = note.color == null ? null : Color(note.color!);
-            return (note.note, color);
-          }(),
-        ),
-      ],
-    );
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.hasBoundedHeight) {
-          return SingleChildScrollView(child: fields);
-        }
-        return fields;
-      },
-    );
-      },
-    );
+            ],
+          );
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.hasBoundedHeight) {
+                return SingleChildScrollView(child: fields);
+              }
+              return fields;
+            },
+          );
+        },
+      );
     },
   );
 }
@@ -433,8 +448,8 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
 }
 
 bool _sameMinute(DateTime a, DateTime b) =>
-    a.year == b.year
-    && a.month == b.month
-    && a.day == b.day
-    && a.hour == b.hour
-    && a.minute == b.minute;
+    a.year == b.year &&
+    a.month == b.month &&
+    a.day == b.day &&
+    a.hour == b.hour &&
+    a.minute == b.minute;

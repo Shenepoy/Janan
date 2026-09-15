@@ -27,7 +27,7 @@ class PowerSyncMedicineRepository extends MedicineRepository {
           medicine.color,
           medicine.dosis?.mg,
           medicine.unit.name,
-          removed ? 1 : 0,
+          if (removed) 1 else 0,
           existingId,
         ],
       );
@@ -41,7 +41,7 @@ class PowerSyncMedicineRepository extends MedicineRepository {
           medicine.color,
           medicine.dosis?.mg,
           medicine.unit.name,
-          removed ? 1 : 0,
+          if (removed) 1 else 0,
         ],
       );
     }
@@ -72,7 +72,7 @@ class PowerSyncMedicineRepository extends MedicineRepository {
         value.dosis == null ? 'default_dose_mg IS NULL' : 'default_dose_mg = ?';
     await _db.execute(
       'UPDATE medicines SET removed = 1 WHERE designation = ? AND $colorClause '
-      'AND $doseClause AND (dose_unit = ? OR (dose_unit IS NULL AND ? = \'mg\'))',
+      "AND $doseClause AND (dose_unit = ? OR (dose_unit IS NULL AND ? = 'mg'))",
       [
         value.designation,
         if (value.color != null) value.color,
@@ -90,7 +90,7 @@ class PowerSyncMedicineRepository extends MedicineRepository {
         ? 'default_dose_mg IS NULL'
         : 'default_dose_mg = ?';
     const unitClause =
-        '(dose_unit = ? OR (dose_unit IS NULL AND ? = \'mg\'))';
+        "(dose_unit = ? OR (dose_unit IS NULL AND ? = 'mg'))";
     final args = [
       medicine.designation,
       if (medicine.color != null) medicine.color,

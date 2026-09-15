@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:blood_pressure_app/core/state/state_holder.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/characteristics/ble_measurement_data.dart';
+import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_device_profile.dart' show BleDeviceProfile;
 import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_device_read_result.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_device_registry.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_gatt_session.dart';
@@ -12,7 +14,6 @@ import 'package:blood_pressure_app/features/bluetooth/logic/devices/yonker_profi
 import 'package:blood_pressure_app/logging.dart';
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import 'package:flutter/foundation.dart';
-import 'package:blood_pressure_app/core/state/state_holder.dart';
 
 part 'ble_read_state.dart';
 

@@ -14,9 +14,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Input mask for entering measurements.
 class AddEntryDialog extends ConsumerStatefulWidget {
   /// Create a input mask for entering measurements.
-  /// 
+  ///
   /// This is usually created through the [showAddEntryDialog] function.
-  const AddEntryDialog({super.key,
+  const AddEntryDialog({
+    super.key,
     this.initialRecord,
     this.kind,
     this.onCommit,
@@ -31,7 +32,7 @@ class AddEntryDialog extends ConsumerStatefulWidget {
   /// Which measurement form to show. Inferred from [initialRecord] when null.
   final AddEntryKind? kind;
 
-  /// Persist [save] result before the route pops.
+  /// Persist `save` result before the route pops.
   ///
   /// [PopScope.onPopInvokedWithResult] often receives a null result after
   /// [Navigator.pop], so the screen must not rely on that callback to write.
@@ -51,14 +52,17 @@ class _AddEntryDialogState extends ConsumerState<AddEntryDialog> with Loggable {
     if (result != null) {
       await widget.onCommit?.call(result);
     }
-    if (context.mounted) Navigator.pop(context, result);
+    if (!mounted) return;
+    Navigator.pop(context, result);
   }
 
   Future<bool> shouldPop() async {
-    if (ref.read(appSettingsProvider).validateInputs
-        && (formKey.currentState?.isDirty ?? false)) {
-      final res = await showConfirmDeletionDialog(context,
-          'warnDiscardingData'.tr());
+    if (ref.read(appSettingsProvider).validateInputs &&
+        (formKey.currentState?.isDirty ?? false)) {
+      final res = await showConfirmDeletionDialog(
+        context,
+        'warnDiscardingData'.tr(),
+      );
       return res;
     }
     return true;
@@ -69,7 +73,7 @@ class _AddEntryDialogState extends ConsumerState<AddEntryDialog> with Loggable {
     canPop: false,
     // Popping though system buttons
     onPopInvokedWithResult: (didPop, result) async {
-      if(didPop) return;
+      if (didPop) return;
       if (await shouldPop() && context.mounted) Navigator.pop(context, result);
     },
     child: FullscreenDialog(
@@ -81,7 +85,9 @@ class _AddEntryDialogState extends ConsumerState<AddEntryDialog> with Loggable {
       bottomAppBar: ref.watch(appSettingsProvider).bottomAppBars,
       body: AddMultipleEntriesForm(
         key: formKey,
-        initialValue: widget.initialRecord == null ? null : [widget.initialRecord!],
+        initialValue: widget.initialRecord == null
+            ? null
+            : [widget.initialRecord!],
         showBluetooth: widget.initialRecord == null,
         kind: widget.kind ?? AddEntryKind.fromEntry(widget.initialRecord),
       ),
@@ -91,17 +97,15 @@ class _AddEntryDialogState extends ConsumerState<AddEntryDialog> with Loggable {
 
 /// Shows a dialog to input a blood pressure measurement or a medication.
 Future<List<CombinedEntry>?> showAddEntryDialog(
-  BuildContext context,
-  [CombinedEntry? initialRecord,
+  BuildContext context, [
+  CombinedEntry? initialRecord,
   AddEntryKind? kind,
 ]) async {
   if (context.mounted) {
     return showDialog<List<CombinedEntry>>(
-      context: context, builder: (context) =>
-        AddEntryDialog(
-          initialRecord: initialRecord,
-          kind: kind,
-        ),
+      context: context,
+      builder: (context) =>
+          AddEntryDialog(initialRecord: initialRecord, kind: kind),
     );
   }
   return null;

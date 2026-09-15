@@ -85,11 +85,9 @@ class _CartoonHopState extends State<CartoonHop>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
+  Widget build(BuildContext context) => AnimatedBuilder(
       animation: _controller,
-      builder: (context, child) {
-        return Transform.translate(
+      builder: (context, child) => Transform.translate(
           offset: Offset(0, _lift.value),
           child: Transform.scale(
             alignment: Alignment.bottomCenter,
@@ -97,11 +95,9 @@ class _CartoonHopState extends State<CartoonHop>
             scaleY: _scaleY.value,
             child: child,
           ),
-        );
-      },
+        ),
       child: widget.child,
     );
-  }
 }
 
 /// Wraps [child] in a [CartoonHop] only when [playToken] is non-zero.

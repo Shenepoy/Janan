@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:blood_pressure_app/app.dart' show App;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 

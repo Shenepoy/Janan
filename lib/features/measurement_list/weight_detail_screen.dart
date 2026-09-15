@@ -23,11 +23,7 @@ import 'package:safaeh/safaeh.dart';
 /// Full weigh-in with comparison to the previous measurement.
 class WeightDetailScreen extends ConsumerStatefulWidget {
   /// Show [record], optionally compared to [previous].
-  const WeightDetailScreen({
-    super.key,
-    required this.record,
-    this.previous,
-  });
+  const WeightDetailScreen({super.key, required this.record, this.previous});
 
   /// Weigh-in to display.
   final BodyweightRecord record;
@@ -77,10 +73,9 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
     final before = _record;
     setState(() => _editing = true);
     try {
-      final saved = await context.createEntry(CombinedEntry(
-        time: before.time,
-        weight: before,
-      ));
+      final saved = await context.createEntry(
+        CombinedEntry(time: before.time, weight: before),
+      );
       if (!mounted) return;
       final next = saved?.map((e) => e.weight).nonNulls.firstOrNull;
       if (next == null) return;
@@ -106,16 +101,18 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
   void _scheduleHopClear(int tick) {
     Future<void>.delayed(const Duration(milliseconds: 700), () {
       if (!mounted || _hopTick != tick) return;
-      setState(() => _hops.clear());
+      setState(_hops.clear);
     });
   }
 
   Future<void> _delete() async {
     final settings = ref.read(appSettingsProvider);
-    if (settings.confirmDeletion && !await showConfirmDeletionDialog(context)) {
-      return;
+    final weightRepo = context.weightRepo;
+    if (settings.confirmDeletion) {
+      final confirmed = await showConfirmDeletionDialog(context);
+      if (!mounted || !confirmed) return;
     }
-    await context.weightRepo.remove(_record);
+    await weightRepo.remove(_record);
     if (settings.useHealthConnect && settings.syncWeightMeasurements) {
       await Health().delete(
         type: HealthDataType.WEIGHT,
@@ -175,15 +172,9 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    DetailFormValue(
-                      value: date,
-                      hopToken: _token('date'),
-                    ),
+                    DetailFormValue(value: date, hopToken: _token('date')),
                     const SizedBox(width: 12),
-                    DetailFormValue(
-                      value: timeOfDay,
-                      hopToken: _token('time'),
-                    ),
+                    DetailFormValue(value: timeOfDay, hopToken: _token('time')),
                   ],
                 ),
               ],
@@ -206,7 +197,10 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
                           formattedValue: unit.format(_record.weight),
                           weightKg: _record.weight.kg,
                         ),
-                        child: Text('weight'.tr(), style: AppText.title(context)),
+                        child: Text(
+                          'weight'.tr(),
+                          style: AppText.title(context),
+                        ),
                       ),
                     ),
                     if (bmi != null)
@@ -219,7 +213,10 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
                             formattedValue: bmi.toStringAsFixed(1),
                             weightKg: _record.weight.kg,
                           ),
-                          child: Text('bmi'.tr(), style: AppText.title(context)),
+                          child: Text(
+                            'bmi'.tr(),
+                            style: AppText.title(context),
+                          ),
                         ),
                       ),
                   ],
@@ -289,7 +286,8 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
                         current: composition.bodyFatPercent,
                         previous: previousComposition?.bodyFatPercent,
                         hopToken: _token('bodyFat'),
-                        formattedValue: '${composition.bodyFatPercent.toStringAsFixed(1)} %',
+                        formattedValue:
+                            '${composition.bodyFatPercent.toStringAsFixed(1)} %',
                       ),
                       const SizedBox(width: 12),
                       _compositionValue(
@@ -302,7 +300,8 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
                         previous: previousComposition?.muscleKg,
                         hopToken: _token('muscle'),
                         polarity: MetricPolarity.higherIsBetter,
-                        formattedValue: '${composition.muscleKg.toStringAsFixed(1)} kg',
+                        formattedValue:
+                            '${composition.muscleKg.toStringAsFixed(1)} kg',
                       ),
                     ],
                   ),
@@ -320,7 +319,8 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
                         previous: previousComposition?.boneKg,
                         hopToken: _token('bone'),
                         polarity: MetricPolarity.higherIsBetter,
-                        formattedValue: '${composition.boneKg.toStringAsFixed(1)} kg',
+                        formattedValue:
+                            '${composition.boneKg.toStringAsFixed(1)} kg',
                       ),
                       const SizedBox(width: 12),
                       _compositionValue(
@@ -333,7 +333,8 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
                         previous: previousComposition?.waterPercent,
                         hopToken: _token('water'),
                         polarity: MetricPolarity.higherIsBetter,
-                        formattedValue: '${composition.waterPercent.toStringAsFixed(1)} %',
+                        formattedValue:
+                            '${composition.waterPercent.toStringAsFixed(1)} %',
                       ),
                     ],
                   ),
@@ -351,7 +352,8 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
                         previous: previousComposition?.lbmKg,
                         hopToken: _token('lbm'),
                         polarity: MetricPolarity.higherIsBetter,
-                        formattedValue: '${composition.lbmKg.toStringAsFixed(1)} kg',
+                        formattedValue:
+                            '${composition.lbmKg.toStringAsFixed(1)} kg',
                       ),
                       const SizedBox(width: 12),
                       _compositionValue(
@@ -372,7 +374,8 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
                 ],
               ),
             ),
-          ] else if (_record.impedanceOhm != null && !settings.hasBodyProfile) ...[
+          ] else if (_record.impedanceOhm != null &&
+              !settings.hasBodyProfile) ...[
             const SizedBox(height: 12),
             EntryFormSection(
               child: ListTile(
@@ -381,9 +384,12 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
                 title: Text('bodyProfileIncomplete'.tr()),
                 trailing: Icon(safaehChevronEnd(context)),
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute<void>(
-                    builder: (context) => const BodyProfileScreen(),
-                  ));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (context) => const BodyProfileScreen(),
+                    ),
+                  );
                 },
               ),
             ),
@@ -405,26 +411,25 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
     required String formattedValue,
     MetricPolarity polarity = MetricPolarity.lowerIsBetter,
     int fractionDigits = 1,
-  }) =>
-      DetailFormValue(
-        label: label,
-        value: value,
-        unit: unit,
-        hopToken: hopToken,
-        fractionDigits: fractionDigits,
-        change: MetricChange(
-          current: current,
-          previous: previous,
-          polarity: polarity,
-        ),
-        onTap: () => showMetricInfo(
-          context,
-          kind: kind,
-          current: current,
-          formattedValue: formattedValue,
-          weightKg: _record.weight.kg,
-        ),
-      );
+  }) => DetailFormValue(
+    label: label,
+    value: value,
+    unit: unit,
+    hopToken: hopToken,
+    fractionDigits: fractionDigits,
+    change: MetricChange(
+      current: current,
+      previous: previous,
+      polarity: polarity,
+    ),
+    onTap: () => showMetricInfo(
+      context,
+      kind: kind,
+      current: current,
+      formattedValue: formattedValue,
+      weightKg: _record.weight.kg,
+    ),
+  );
 
   double? _bmi(double weightKg, double? heightCm) {
     if (heightCm == null || heightCm <= 0) return null;

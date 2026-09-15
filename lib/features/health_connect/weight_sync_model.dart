@@ -1,6 +1,6 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/health_connect/sync_model.dart';
 import 'package:health/health.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 
 class WeightSyncModel extends SyncModel {

@@ -3,7 +3,7 @@ import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-/// Resolve [kind] from [Settings] and open the visual card.
+/// Resolve [kind] from `settings` and open the visual card.
 Future<void> showMetricInfo(
   BuildContext context, {
   required MetricKind kind,
@@ -61,10 +61,7 @@ class MetricInfoDialog extends StatelessWidget {
                   Icon(info.icon, color: theme.colorScheme.primary),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      info.title,
-                      style: theme.textTheme.titleLarge,
-                    ),
+                    child: Text(info.title, style: theme.textTheme.titleLarge),
                   ),
                 ],
               ),
@@ -104,7 +101,9 @@ class MetricInfoDialog extends StatelessWidget {
                 for (final band in info.bands)
                   _RangeRow(
                     band: band,
-                    selected: identical(band, currentBand) || band.id == currentBand?.id,
+                    selected:
+                        identical(band, currentBand) ||
+                        band.id == currentBand?.id,
                   ),
               ],
               if (info.warnLabel != null) ...[
@@ -263,7 +262,10 @@ class _RangeBar extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: theme.colorScheme.onSurface,
                     borderRadius: BorderRadius.circular(3),
-                    border: Border.all(color: theme.colorScheme.surface, width: 2),
+                    border: Border.all(
+                      color: theme.colorScheme.surface,
+                      width: 2,
+                    ),
                   ),
                 ),
               ),

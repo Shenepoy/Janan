@@ -1,6 +1,6 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/model/body_sex.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// Body composition estimated from a Eufy P1 weigh-in.
 ///

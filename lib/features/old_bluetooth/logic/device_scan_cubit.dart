@@ -1,12 +1,12 @@
 import 'dart:async';
 
+import 'package:blood_pressure_app/core/state/state_holder.dart';
 import 'package:blood_pressure_app/features/old_bluetooth/logic/bluetooth_cubit.dart';
 import 'package:blood_pressure_app/features/old_bluetooth/logic/flutter_blue_ultra_mockable.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/known_ble_device.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
-import 'package:blood_pressure_app/core/state/state_holder.dart';
 import 'package:flutter_blue_ultra/flutter_blue_ultra.dart';
 
 part 'device_scan_state.dart';

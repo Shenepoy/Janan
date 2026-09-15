@@ -1,7 +1,7 @@
 import 'dart:math';
 
-import 'package:collection/collection.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:collection/collection.dart';
 
 /// Analysis utils for a list of blood pressure records.
 class BloodPressureAnalyzer {

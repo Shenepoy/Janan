@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/statistics/chart/chart_legend.dart';
 import 'package:blood_pressure_app/features/statistics/chart/chart_tooltip.dart';
@@ -6,7 +7,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 /// A graph that displays the averages blood pressure values across by time in
 /// the familiar shape of a clock.

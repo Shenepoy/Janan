@@ -1,8 +1,8 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/export_import/model/column.dart';
 import 'package:blood_pressure_app/features/export_import/model/import_field_type.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:function_tree/function_tree.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:intl/intl.dart';
 
 /// Class to serialize and deserialize [BloodPressureRecord] values.

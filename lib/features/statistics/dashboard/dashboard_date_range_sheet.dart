@@ -317,8 +317,7 @@ class _MonthHeader extends StatelessWidget {
   final VoidCallback onNext;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
+  Widget build(BuildContext context) => Row(
       children: [
         IconButton(
           visualDensity: VisualDensity.compact,
@@ -341,7 +340,6 @@ class _MonthHeader extends StatelessWidget {
         ),
       ],
     );
-  }
 }
 
 class _WeekdayRow extends StatelessWidget {
