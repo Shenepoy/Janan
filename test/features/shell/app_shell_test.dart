@@ -15,6 +15,39 @@ import 'package:safaeh/safaeh.dart';
 import '../../util.dart';
 
 void main() {
+  testWidgets('renders the bottom navigation as a body overlay', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        pages: const [
+          Text('home-page'),
+          Text('weight-page'),
+          Text('stats-page'),
+          Text('settings-page'),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    final shellScaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+    expect(shellScaffold.bottomNavigationBar, isNull);
+    expect(
+      SafaehBottomNavScope.maybeOf(
+        tester.element(find.text('home-page')),
+      )?.visualInset,
+      SafaehBottomNavMetrics.defaultVisualClearance,
+    );
+    expect(
+      find.byKey(const ValueKey('app_shell_floating_nav')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('keeps the nav bar while sliding to another tab', (tester) async {
     final presence = HomePresenceObserver();
     await pumpApp(

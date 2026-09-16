@@ -263,9 +263,8 @@ class _AppShellViewState extends State<_AppShellView> {
       'settings',
     ];
     return SafaehBottomNavScope(
-      // Scaffold reserves the bottom-navigation slot already; keep only a
-      // small visual gap for controls that float above that slot.
-      visualClearance: 16,
+      // The navigation is painted over the page, so expose its full visual
+      // clearance to floating controls and page-index overlays.
       child: Builder(
         builder: (context) => PopScope(
           canPop: _index == 0,
@@ -276,31 +275,47 @@ class _AppShellViewState extends State<_AppShellView> {
             // The floating navigation is shell chrome. Keep it stable while a
             // page-level text field resizes for the keyboard.
             resizeToAvoidBottomInset: false,
-            // Let page content continue under the floating bar. Scrollable
-            // pages add the shared content inset so their last item can still
-            // be brought fully above the bar.
-            extendBody: true,
             appBar: DashboardAppBar(
               page: _page,
               titleKeys: titleKeys,
               settingsSearchOpen: widget.settingsSearchOpen,
               onSettingsSearch: widget.onSettingsSearch,
             ),
-            body: PageView(
-              controller: _pageController,
-              onPageChanged: _select,
+            body: Stack(
+              fit: StackFit.expand,
               children: [
-                for (var i = 0; i < pages.length; i++)
-                  _KeepAlivePage(
-                    // Tabs can be inserted or removed when settings change.
-                    // Keep each page's identity tied to its tab so a visible
-                    // page (especially SettingsPage with a scroll controller)
-                    // is moved instead of recreated.
-                    key: ValueKey<String>(
-                      'shell-page-${_tabs[i].name}-$localeTag',
+                PageView(
+                  controller: _pageController,
+                  onPageChanged: _select,
+                  children: [
+                    for (var i = 0; i < pages.length; i++)
+                      _KeepAlivePage(
+                        // Tabs can be inserted or removed when settings
+                        // change. Keep each page's identity tied to its tab
+                        // so a visible page (especially SettingsPage with a
+                        // scroll controller) is moved instead of recreated.
+                        key: ValueKey<String>(
+                          'shell-page-${_tabs[i].name}-$localeTag',
+                        ),
+                        child: pages[i],
+                      ),
+                  ],
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 8,
+                  child: SafaehFloatingNavBar(
+                    key: const ValueKey('app_shell_floating_nav'),
+                    selectedIndex: _index,
+                    onDestinationSelected: _go,
+                    destinations: destinations,
+                    floatingAppearance: const SafaehFloatingAppearance(
+                      style: SafaehFloatingSurfaceStyle.glass,
                     ),
-                    child: pages[i],
+                    hideWhenKeyboardVisible: true,
                   ),
+                ),
               ],
             ),
             floatingActionButton: _index < dataTabCount
@@ -311,18 +326,6 @@ class _AppShellViewState extends State<_AppShellView> {
                   context,
                   base: FloatingActionButtonLocation.endFloat,
                 ),
-            bottomNavigationBar: Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: SafaehFloatingNavBar(
-                selectedIndex: _index,
-                onDestinationSelected: _go,
-                destinations: destinations,
-                floatingAppearance: const SafaehFloatingAppearance(
-                  style: SafaehFloatingSurfaceStyle.glass,
-                ),
-                hideWhenKeyboardVisible: true,
-              ),
-            ),
           ),
         ),
       ),
