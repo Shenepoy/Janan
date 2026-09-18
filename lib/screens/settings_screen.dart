@@ -384,7 +384,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
     if (setting.key == dateFormatStringSetting.key) {
       final appSettings = ref.watch(appSettingsProvider);
-      final locale = context.locale.toString();
+      final locale = Localizations.localeOf(context).toString();
       final current = appSettings.dateFormatString;
       final previewAt = DateTime.now();
       String preview(String pattern) {
