@@ -45,6 +45,34 @@ class _HangingSync extends BleLaunchSync {
   }
 }
 
+class _ControllableSync extends BleLaunchSync {
+  _ControllableSync() : super(
+    controller: testSettingsController!,
+    repo: MockBloodPressureRepository(),
+  );
+
+  final Completer<BleLaunchSyncResult> _done = Completer();
+
+  @override
+  Future<BleLaunchSyncResult> run() {
+    progress.value = const BleLaunchSyncProgress(
+      phase: BleLaunchSyncPhase.scanning,
+      deviceName: 'BM59',
+    );
+    return _done.future;
+  }
+
+  void complete(BleLaunchSyncResult result) {
+    progress.value = BleLaunchSyncProgress(
+      phase: BleLaunchSyncPhase.done,
+      deviceName: result.deviceName,
+      receivedCount: result.receivedCount,
+      result: result,
+    );
+    _done.complete(result);
+  }
+}
+
 class _FakeSync extends BleLaunchSync {
   _FakeSync(this.result) : super(
     controller: testSettingsController!,
@@ -392,9 +420,9 @@ void main() {
     await tester.tap(find.byType(BleHomeSyncIndicator));
     await tester.pump();
     expect(find.text('Meter not found'), findsWidgets);
-    expect(find.byTooltip('Resume'), findsOneWidget);
+    expect(find.byTooltip('Search again'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Resume'));
+    await tester.tap(find.byTooltip('Search again'));
     await tester.pump();
     await tester.pump();
     expect(syncs, hasLength(2));
@@ -571,5 +599,75 @@ void main() {
     await tester.tap(find.byType(BleHomeSyncIndicator));
     await tester.pump();
     expect(find.text('Meter sync paused'), findsOneWidget);
+  });
+
+  testWidgets('finish is called with text only when something was imported', (
+    tester,
+  ) async {
+    final finishes = <String?>[];
+    var stops = 0;
+    BluetoothForegroundService.startOverrideForTesting = ({required text}) async {};
+    BluetoothForegroundService.stopOverrideForTesting = () async {
+      stops++;
+    };
+    BluetoothForegroundService.finishOverrideForTesting = ({text}) async {
+      finishes.add(text);
+    };
+    addTearDown(BluetoothForegroundService.resetOverridesForTesting);
+
+    final sync = _ControllableSync();
+    await pumpApp(tester, await appBase(
+      BleLaunchSyncHost(
+        resultBannerDuration: Duration.zero,
+        sync: sync,
+        child: const Text('home'),
+      ),
+      settings: _enabledSettings(),
+    ));
+    await tester.pump();
+    await tester.pump();
+    sync.complete(const BleLaunchSyncResult(
+      status: BleLaunchSyncStatus.imported,
+      count: 3,
+      deviceName: 'BM59',
+    ));
+    await tester.pump();
+    await tester.pump();
+
+    expect(finishes, ['Imported 3 new measurements']);
+    expect(stops, 0);
+  });
+
+  testWidgets('stops the notification when nothing was imported', (tester) async {
+    final finishes = <String?>[];
+    var stops = 0;
+    BluetoothForegroundService.startOverrideForTesting = ({required text}) async {};
+    BluetoothForegroundService.stopOverrideForTesting = () async {
+      stops++;
+    };
+    BluetoothForegroundService.finishOverrideForTesting = ({text}) async {
+      finishes.add(text);
+    };
+    addTearDown(BluetoothForegroundService.resetOverridesForTesting);
+
+    final sync = _ControllableSync();
+    await pumpApp(tester, await appBase(
+      BleLaunchSyncHost(
+        resultBannerDuration: Duration.zero,
+        sync: sync,
+        child: const Text('home'),
+      ),
+      settings: _enabledSettings(),
+    ));
+    await tester.pump();
+    await tester.pump();
+    sync.complete(const BleLaunchSyncResult(
+      status: BleLaunchSyncStatus.upToDate,
+    ));
+    await tester.pump();
+    await tester.pump();
+
+    expect(finishes, isEmpty);
+    expect(stops, 1);
   });
 }

@@ -134,6 +134,20 @@ const graphSettingsAction = ActionSetting(
   order: 5,
 );
 
+const dateFormatStringOptions = [
+  'yyyy-MM-dd HH:mm',
+  'dd-MM-yyyy HH:mm',
+  'dd/MM/yyyy HH:mm',
+  'MM/dd/yyyy HH:mm',
+  'dd.MM.yyyy HH:mm',
+  'yyyy/MM/dd HH:mm',
+  'MMM d, yyyy HH:mm',
+  'd MMM yyyy HH:mm',
+  'yyyy-MM-dd h:mm a',
+  'dd/MM/yyyy h:mm a',
+  'MM/dd/yyyy h:mm a',
+];
+
 const dateFormatStringSetting = StringSetting(
   'date_format_string',
   defaultValue: 'yyyy-MM-dd HH:mm',
@@ -141,6 +155,10 @@ const dateFormatStringSetting = StringSetting(
   icon: Icons.schedule,
   section: 'style',
   order: 2,
+  searchTerms: {
+    'en': ['date', 'time', 'format', 'clock'],
+    'ar': ['تاريخ', 'وقت', 'تنسيق'],
+  },
 );
 
 const animationSpeedSetting = IntSetting(

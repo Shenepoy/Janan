@@ -399,8 +399,11 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
   Future<void> _importMeasurements(List<BleMeasurementData> data) async {
     List<BleMeasurementData> incoming;
     try {
-      final saved = await context.bpRepo.get(DateRange.all());
-      incoming = newBleMeasurements(data, saved);
+      final repo = context.bpRepo;
+      final blacklist = context.blacklistRepo;
+      final saved = await repo.get(DateRange.all());
+      final blocked = await blacklist.getKeys('bp');
+      incoming = newBleMeasurements(data, saved, blacklisted: blocked);
     } catch (error, stack) {
       logSevere('_importMeasurements failed', error: error, stackTrace: stack);
       if (!mounted) return;
@@ -430,11 +433,17 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
     }
     if (repo != null) {
       try {
+        final blacklist = context.blacklistRepo;
         final saved = await repo.get(DateRange.all());
-        if (newBleWeights([data], saved).isNotEmpty) {
+        final blocked = await blacklist.getKeys('weight');
+        if (newBleWeights([data], saved, blacklisted: blocked).isNotEmpty) {
           await repo.add(data.asBodyweightRecord());
         } else {
-          for (final (old, incoming) in bleWeightsToUpgrade([data], saved)) {
+          for (final (old, incoming) in bleWeightsToUpgrade(
+            [data],
+            saved,
+            blacklisted: blocked,
+          )) {
             await repo.remove(old);
             await repo.add(incoming.asBodyweightRecord());
           }

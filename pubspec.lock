@@ -548,10 +548,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_settings_framework
-      sha256: "868b12b7e12f0f91424b3ef9797e59b1b28d7951ad77287d2e85d91b30fca09f"
+      sha256: "8c723f565faf7c83ec730f73492418db56f3282963b5a53af9062feadf863488"
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.0"
+    version: "0.9.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -1104,10 +1104,10 @@ packages:
     dependency: "direct main"
     description:
       name: safaeh
-      sha256: ad709299df4352d01bc3665511b0868e047571ba0926d0de5d1c007580f68643
+      sha256: "5b486be68f3230c171f51965c71ee2fb9318871b3be0329c91037a4f7385cdf9"
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "0.5.0"
   share_plus:
     dependency: "direct main"
     description:

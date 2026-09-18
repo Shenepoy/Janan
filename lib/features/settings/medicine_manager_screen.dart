@@ -5,6 +5,7 @@ import 'package:blood_pressure_app/features/settings/add_medication_dialog.dart'
 import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:safaeh/safaeh.dart';
 
 /// Screen to view and edit medications saved in `settings`.
 ///
@@ -133,7 +134,13 @@ class MedicineManagerScreen extends StatelessWidget {
                   child: const Icon(Icons.add),
                 ),
           body: meds.isEmpty
-              ? _EmptyMedications(onAdd: () => _addMedicine(context))
+              ? SafaehEmptyState(
+                  icon: Icons.medication_outlined,
+                  title: 'medications'.tr(),
+                  subtitle: 'noMedicationsHint'.tr(),
+                  actionLabel: 'addMedication'.tr(),
+                  onAction: () => _addMedicine(context),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(0, 12, 0, 88),
                   itemCount: meds.length,
@@ -141,52 +148,6 @@ class MedicineManagerScreen extends StatelessWidget {
                 ),
         );
       },
-    );
-  }
-}
-
-class _EmptyMedications extends StatelessWidget {
-  const _EmptyMedications({required this.onAdd});
-
-  final VoidCallback onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.medication_outlined,
-              size: 56,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'medications'.tr(),
-              style: theme.textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'noMedicationsHint'.tr(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add),
-              label: Text('addMedication'.tr()),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

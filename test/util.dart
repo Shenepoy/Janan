@@ -403,6 +403,7 @@ Future<Widget> materialApp(Widget child, {
       medicineIntakeRepositoryProvider.overrideWithValue(db.intakeRepo),
       noteRepositoryProvider.overrideWithValue(db.noteRepo),
       bodyweightRepositoryProvider.overrideWithValue(db.weightRepo),
+      bleBlacklistRepositoryProvider.overrideWithValue(db.blacklistRepo),
     ],
   );
 }
@@ -449,6 +450,7 @@ Future<Widget> appBase(Widget child,  {
   NoteRepository? noteRepo,
   MedicineIntakeRepository? intakeRepo,
   BodyweightRepository? weightRepo,
+  BleBlacklistRepository? blacklistRepo,
   Locale locale = const Locale('en'),
 }) async {
   final db = MockHealthStore();
@@ -486,6 +488,9 @@ Future<Widget> appBase(Widget child,  {
       medicineIntakeRepositoryProvider.overrideWithValue(intakeRepo ?? db.intakeRepo),
       noteRepositoryProvider.overrideWithValue(noteRepo ?? db.noteRepo),
       bodyweightRepositoryProvider.overrideWithValue(weightRepo ?? db.weightRepo),
+      bleBlacklistRepositoryProvider.overrideWithValue(
+        blacklistRepo ?? db.blacklistRepo,
+      ),
       medCacheProvider.overrideWithValue(medCache),
     ],
   );
@@ -538,6 +543,7 @@ Future<Widget> appBaseWithData(Widget child,  {
     noteRepo: noteRepo,
     intakeRepo: intakeRepo,
     weightRepo: weightRepo,
+    blacklistRepo: db.blacklistRepo,
   );
 }
 
@@ -578,6 +584,7 @@ Future<Widget> appBaseForScreen(Widget child,  {
   NoteRepository? noteRepo,
   MedicineIntakeRepository? intakeRepo,
   BodyweightRepository? weightRepo,
+  BleBlacklistRepository? blacklistRepo,
 }) async {
   final db = MockHealthStore();
   return _easyApp(
@@ -594,6 +601,9 @@ Future<Widget> appBaseForScreen(Widget child,  {
       medicineIntakeRepositoryProvider.overrideWithValue(intakeRepo ?? db.intakeRepo),
       noteRepositoryProvider.overrideWithValue(noteRepo ?? db.noteRepo),
       bodyweightRepositoryProvider.overrideWithValue(weightRepo ?? db.weightRepo),
+      bleBlacklistRepositoryProvider.overrideWithValue(
+        blacklistRepo ?? db.blacklistRepo,
+      ),
     ],
   );
 }
@@ -720,6 +730,26 @@ class MockHealthStore {
   NoteRepository noteRepo = MockNoteRepository();
 
   BodyweightRepository weightRepo = MockBodyweightRepository();
+
+  BleBlacklistRepository blacklistRepo = MockBleBlacklistRepository();
+}
+
+class MockBleBlacklistRepository implements BleBlacklistRepository {
+  final Map<String, Set<String>> keys = {};
+
+  @override
+  Future<void> add(String kind, String key) async {
+    keys.putIfAbsent(kind, () => <String>{}).add(key);
+  }
+
+  @override
+  Future<void> remove(String kind, String key) async {
+    keys[kind]?.remove(key);
+  }
+
+  @override
+  Future<Set<String>> getKeys(String kind) async =>
+      Set<String>.of(keys[kind] ?? const <String>{});
 }
 
 class _MockRepo<T> extends Repository<T> {

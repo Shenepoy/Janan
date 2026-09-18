@@ -140,6 +140,7 @@ class BleLaunchSync with Loggable {
     this.adapterTimeout = const Duration(seconds: 20),
     this.tryParallel = true,
     this.readers,
+    this.blacklistRepo,
   });
 
   /// Settings controller used to read and persist launch-sync preferences.
@@ -183,6 +184,9 @@ class BleLaunchSync with Loggable {
 
   /// Optional readers for tests, used instead of creating cubits from scan.
   final List<BleReadCubit> Function()? readers;
+
+  /// Optional store of readings the user asked not to re-import.
+  final BleBlacklistRepository? blacklistRepo;
 
   /// Live stage shown by the launch-sync card.
   final ValueNotifier<BleLaunchSyncProgress> progress =
@@ -423,15 +427,30 @@ class BleLaunchSync with Loggable {
         receivedCount: receivedCount,
       );
       final saved = await repo.get(DateRange.all());
-      final incoming = newBleMeasurements(measurements, saved);
+      final blockedBp = await blacklistRepo?.getKeys('bp') ?? const <String>{};
+      final incoming = newBleMeasurements(
+        measurements,
+        saved,
+        blacklisted: blockedBp,
+      );
       for (final measurement in incoming) {
         await repo.add(measurement.asBloodPressureRecord());
       }
       var importedWeights = 0;
       if (weightRepo != null && weights.isNotEmpty) {
         final savedWeights = await weightRepo!.get(DateRange.all());
-        final incomingWeights = newBleWeights(weights, savedWeights);
-        final upgrades = bleWeightsToUpgrade(weights, savedWeights);
+        final blockedWeights =
+            await blacklistRepo?.getKeys('weight') ?? const <String>{};
+        final incomingWeights = newBleWeights(
+          weights,
+          savedWeights,
+          blacklisted: blockedWeights,
+        );
+        final upgrades = bleWeightsToUpgrade(
+          weights,
+          savedWeights,
+          blacklisted: blockedWeights,
+        );
         for (final weight in incomingWeights) {
           await weightRepo!.add(weight.asBodyweightRecord());
         }

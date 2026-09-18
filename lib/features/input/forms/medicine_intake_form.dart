@@ -7,6 +7,7 @@ import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:safaeh/safaeh.dart';
 
 const _noneSentinel = Object();
 const medicationPickerKey = ValueKey('medication-picker');
@@ -326,20 +327,16 @@ class MedicineIntakeFormState
         if (meds.isEmpty) {
           return EntryFormSection(
             title: 'medications'.tr(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('noMedicationsHint'.tr()),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: () => Navigator.of(
-                      context,
-                    ).pushNamed('/settings/medications'),
-                    icon: const Icon(Icons.medication_outlined),
-                    label: Text('manageMedications'.tr()),
-                  ),
+            child: SafaehInlineBanner(
+              message: 'noMedicationsHint'.tr(),
+              tone: SafaehBannerTone.info,
+              actions: [
+                TextButton.icon(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pushNamed('/settings/medications'),
+                  icon: const Icon(Icons.medication_outlined),
+                  label: Text('manageMedications'.tr()),
                 ),
               ],
             ),

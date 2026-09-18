@@ -51,6 +51,15 @@ class MainActivity: FlutterFragmentActivity() {
                         result.error("FOREGROUND_SERVICE_UNAVAILABLE", null, null)
                     }
                 }
+                "finish" -> {
+                    val text = call.argument<String>("text")
+                    try {
+                        BluetoothScanForegroundService.finish(this, text)
+                        result.success(null)
+                    } catch (_: RuntimeException) {
+                        result.error("FOREGROUND_SERVICE_UNAVAILABLE", null, null)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }

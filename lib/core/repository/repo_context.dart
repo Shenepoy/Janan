@@ -19,6 +19,8 @@ extension AppProvidersContext on BuildContext {
   MedicineRepository get medRepo => _c.read(medicineRepositoryProvider);
   MedicineIntakeRepository get intakeRepo => _c.read(medicineIntakeRepositoryProvider);
   BodyweightRepository get weightRepo => _c.read(bodyweightRepositoryProvider);
+  BleBlacklistRepository get blacklistRepo =>
+      _c.read(bleBlacklistRepositoryProvider);
 
   ExportSettings get exportSettings => _c.read(exportSettingsProvider);
   CsvExportSettings get csvExportSettings => _c.read(csvExportSettingsProvider);

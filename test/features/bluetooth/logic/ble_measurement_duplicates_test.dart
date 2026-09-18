@@ -78,6 +78,55 @@ void main() {
     expect(bleWeightsToUpgrade([incoming], saved), [(saved.first, incoming)]);
   });
 
+  test('skips a blacklisted blood-pressure key', () {
+    final incoming = reading();
+    expect(
+      newBleMeasurements(
+        [incoming],
+        const [],
+        blacklisted: {bloodPressureRecordKey(BloodPressureRecord(
+          time: time,
+          sys: Pressure.mmHg(145),
+          dia: Pressure.mmHg(81),
+          pul: 80,
+        ))},
+      ),
+      isEmpty,
+    );
+  });
+
+  test('does not upgrade a blacklisted weight', () {
+    final incoming = BleWeightData(
+      kg: 102.3,
+      time: time,
+      impedance: 500,
+    );
+    final saved = [
+      BodyweightRecord(time: time, weight: Weight.kg(102.3)),
+    ];
+    final blocked = bodyweightRecordKey(
+      BodyweightRecord(time: time, weight: Weight.kg(102.3)),
+    );
+    expect(
+      bleWeightsToUpgrade([incoming], saved, blacklisted: {blocked}),
+      isEmpty,
+    );
+  });
+
+  test('skips a blacklisted weight within five minutes', () {
+    final incoming = BleWeightData(
+      kg: 102.3,
+      time: time.add(const Duration(minutes: 2)),
+    );
+    final blocked = bodyweightRecordKey(
+      BodyweightRecord(time: time, weight: Weight.kg(102.3)),
+    );
+    expect(
+      newBleWeights([incoming], const [], blacklisted: {blocked}),
+      isEmpty,
+    );
+  });
+
   test('does not upgrade a save that already has impedance', () {
     final incoming = BleWeightData(kg: 102.3, time: time, impedance: 510);
     final saved = [

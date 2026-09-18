@@ -1,17 +1,70 @@
+import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
+import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:safaeh/safaeh.dart';
+
+/// Outcome of the deletion confirmation sheet.
+enum DeleteChoice {
+  /// User dismissed or cancelled.
+  cancel,
+
+  /// Delete without blocking a later BLE re-import.
+  delete,
+
+  /// Delete and remember the reading so a device dump will not re-add it.
+  deleteAndBlacklist,
+}
 
 /// Show a dialog that prompts the user to confirm a deletion.
-Future<bool> showConfirmDeletionDialog(BuildContext context, [String? customDescription]) async {
-  final ok = await showSafaehConfirm(
-    context: context,
-    title: 'confirmDelete'.tr(),
-    content: customDescription ?? 'confirmDeleteDesc'.tr(),
-    confirmLabel: 'btnConfirm'.tr(),
-    cancelLabel: 'btnCancel'.tr(),
-    isDestructive: true,
-    titleBuilder: (context, style) => Text('confirmDelete'.tr(), style: style),
+Future<bool> showConfirmDeletionDialog(
+  BuildContext context, [
+  String? customDescription,
+]) async {
+  final choice = await showConfirmDeletionChoice(
+    context,
+    customDescription: customDescription,
   );
-  return ok == true;
+  return choice != DeleteChoice.cancel;
+}
+
+/// Confirm deletion, optionally offering to block the reading from BLE re-import.
+Future<DeleteChoice> showConfirmDeletionChoice(
+  BuildContext context, {
+  String? customDescription,
+  bool allowBlacklist = false,
+}) async {
+  final title = 'confirmDelete'.tr();
+  final result = await showResponsiveSheet<DeleteChoice>(
+    context: context,
+    title: isWideModal(context) ? title : null,
+    child: buildSheetShell(
+      context,
+      title: title,
+      body: Text(customDescription ?? 'confirmDeleteDesc'.tr()),
+      actions: [
+        TextButton(
+          key: const ValueKey('safaeh_cancel'),
+          onPressed: () => Navigator.pop(context, DeleteChoice.cancel),
+          child: Text('btnCancel'.tr()),
+        ),
+        TextButton(
+          key: const ValueKey('safaeh_confirm'),
+          onPressed: () => Navigator.pop(context, DeleteChoice.delete),
+          child: Text('delete'.tr()),
+        ),
+        if (allowBlacklist)
+          FilledButton(
+            key: const ValueKey('deleteAndBlacklist'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () =>
+                Navigator.pop(context, DeleteChoice.deleteAndBlacklist),
+            child: Text('deleteAndBlacklist'.tr()),
+          ),
+      ],
+    ),
+  );
+  return result ?? DeleteChoice.cancel;
 }

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive_io.dart';
 import 'package:blood_pressure_app/app.dart';
 import 'package:blood_pressure_app/components/color_picker.dart';
+import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
@@ -11,13 +12,13 @@ import 'package:blood_pressure_app/features/settings/bluetooth_devices_screen.da
 import 'package:blood_pressure_app/features/settings/body_profile_screen.dart';
 import 'package:blood_pressure_app/features/settings/delete_data_screen.dart';
 import 'package:blood_pressure_app/features/settings/edadat_prefs.dart';
-import 'package:blood_pressure_app/features/settings/enter_timeformat_dialog.dart';
 import 'package:blood_pressure_app/features/settings/graph_markings_screen.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/settings/storage/edadat_file_storage.dart';
 import 'package:blood_pressure_app/features/settings/tiles/ble_engine_settings_tile.dart';
 import 'package:blood_pressure_app/features/settings/version_screen.dart';
 import 'package:blood_pressure_app/l10n/app_locales.dart';
+import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
 import 'package:blood_pressure_app/model/storage/storage.dart';
@@ -27,9 +28,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
-import 'package:flutter_settings_framework/safaeh.dart' as edadat_safaeh;
+import 'package:flutter_settings_framework/safaeh.dart';
 import 'package:path/path.dart';
-import 'package:safaeh/safaeh.dart' as safaeh;
 import 'package:url_launcher/url_launcher.dart';
 
 /// Drop rows whose registry definition marks them invisible. The catalog page
@@ -132,7 +132,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   bool _isWide(BuildContext context) =>
       MediaQuery.sizeOf(context).width >=
-      safaeh.SafaehTheme.of(context).tabletBreakpoint;
+      SafaehTheme.of(context).tabletBreakpoint;
 
   String _sectionTitle(String key) => key.tr();
 
@@ -150,7 +150,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       if (!mounted || _isSearchOpen) return;
       final scrollContext = _scrollViewportKey.currentContext;
       if (scrollContext == null) return;
-      final active = edadat_safaeh.activeSafaehSettingsSectionId(
+      final active = activeSafaehSettingsSectionId(
         sections: _displayedSections,
         sectionKeys: _sectionKeys,
         scrollContext: scrollContext,
@@ -179,7 +179,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       await Future<void>.delayed(const Duration(milliseconds: 220));
     }
     if (!mounted) return;
-    await edadat_safaeh.scrollToPageSection(key, controller: _scrollController);
+    await scrollToPageSection(key, controller: _scrollController);
     _scheduleActiveSectionUpdate();
   }
 
@@ -265,7 +265,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Widget _buildSettingsList(BuildContext context, SettingsProviders settings) {
     final bottomInset =
-        safaeh.SafaehBottomNavScope.maybeOf(
+        SafaehBottomNavScope.maybeOf(
           context,
         )?.contentInsetWithSafeArea ??
         0.0;
@@ -296,7 +296,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 width: 236,
                 child: Material(
                   color: Theme.of(context).scaffoldBackgroundColor,
-                  child: edadat_safaeh.SafaehSettingsPageIndex(
+                  child: SafaehSettingsPageIndex(
                     title: 'settingsOnThisPage'.tr(),
                     sections: _displayedSections,
                     sectionKeys: _sectionKeys,
@@ -315,7 +315,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       children: [
         content,
         if (!wide)
-          edadat_safaeh.SafaehSettingsPageIndexOverlay(
+          SafaehSettingsPageIndexOverlay(
             title: 'settingsOnThisPage'.tr(),
             sections: _displayedSections,
             sectionKeys: _sectionKeys,
@@ -323,7 +323,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             activeId: _activeSectionId,
             onSelect: _selectSection,
           ),
-        edadat_safaeh.SafaehSettingsSearchOverlay(
+        SafaehSettingsSearchOverlay(
           isOpen: _isSearchOpen,
           onClose: () => _setSearchOpen(false),
           searchIndex: settings.searchIndex,
@@ -361,7 +361,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ? AppBar(
               title: Text('settings'.tr()),
               actions: [
-                edadat_safaeh.SafaehSettingsSearchButton(
+                SafaehSettingsSearchButton(
                   isOpen: _isSearchOpen,
                   hintText: 'searchSettings'.tr(),
                   onPressed: () => _setSearchOpen(!_isSearchOpen),
@@ -384,19 +384,47 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
     if (setting.key == dateFormatStringSetting.key) {
       final appSettings = ref.watch(appSettingsProvider);
+      final locale = context.locale.toString();
+      final current = appSettings.dateFormatString;
+      final previewAt = DateTime.now();
+      String preview(String pattern) {
+        try {
+          return WesternDateFormat(pattern, locale).format(previewAt);
+        } catch (_) {
+          return pattern;
+        }
+      }
+
       return ListTile(
         leading: const Icon(Icons.schedule),
         title: Text('enterTimeFormatScreen'.tr()),
-        subtitle: Text(appSettings.dateFormatString),
+        subtitle: Text(preview(current)),
+        trailing: settingsChevronEnd(context),
         onTap: () async {
-          final result = await showTimeFormatPickerDialog(
-            context,
-            appSettings.dateFormatString,
-            appSettings.bottomAppBars,
+          final patterns = [
+            if (!dateFormatStringOptions.contains(current)) current,
+            ...dateFormatStringOptions,
+          ];
+          final title = 'enterTimeFormatScreen'.tr();
+          final result = await showResponsiveSheet<String>(
+            context: context,
+            title: isWideModal(context) ? title : null,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+            child: SafaehTilePickerBody<String>(
+              title: title,
+              selected: current,
+              options: [
+                for (final pattern in patterns)
+                  SafaehTileOption<String>(
+                    value: pattern,
+                    label: preview(pattern),
+                    subtitle: pattern,
+                  ),
+              ],
+            ),
           );
-          if (result != null) {
-            await ref.updateSetting(dateFormatStringSetting, result);
-          }
+          if (!mounted || result == null) return;
+          await ref.updateSetting(dateFormatStringSetting, result);
         },
       );
     }

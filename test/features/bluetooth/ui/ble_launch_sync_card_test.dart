@@ -54,7 +54,7 @@ void main() {
     expect(resumed, isTrue);
   });
 
-  testWidgets('offers resume when the meter was not found', (tester) async {
+  testWidgets('offers search again when the meter was not found', (tester) async {
     var resumed = false;
     await pumpApp(tester, await materialApp(BleLaunchSyncCard(
       progress: const BleLaunchSyncProgress(
@@ -65,10 +65,34 @@ void main() {
     )));
 
     expect(find.text('Meter not found'), findsOneWidget);
-    expect(find.byTooltip('Resume'), findsOneWidget);
-    expect(find.text('Resume'), findsNothing);
-    await tester.tap(find.byIcon(Icons.play_arrow));
+    expect(find.byTooltip('Search again'), findsOneWidget);
+    expect(find.byKey(const Key('searchAgainMeter')), findsOneWidget);
+    expect(find.byTooltip('Resume'), findsNothing);
+    await tester.tap(find.byIcon(Icons.refresh));
     expect(resumed, isTrue);
+  });
+
+  testWidgets('offers search again after imported, up to date, and failed', (
+    tester,
+  ) async {
+    const results = [
+      BleLaunchSyncResult(status: BleLaunchSyncStatus.imported, count: 2),
+      BleLaunchSyncResult(status: BleLaunchSyncStatus.upToDate),
+      BleLaunchSyncResult(status: BleLaunchSyncStatus.failed),
+    ];
+    for (final result in results) {
+      var resumed = false;
+      await pumpApp(tester, await materialApp(BleLaunchSyncCard(
+        progress: BleLaunchSyncProgress(
+          phase: BleLaunchSyncPhase.done,
+          result: result,
+        ),
+        onResume: () => resumed = true,
+      )));
+      expect(find.byKey(const Key('searchAgainMeter')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('searchAgainMeter')));
+      expect(resumed, isTrue);
+    }
   });
 
   testWidgets('shows found meter and connect info', (tester) async {

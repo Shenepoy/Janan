@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:safaeh/safaeh.dart';
 
 import '../../util.dart';
 
@@ -14,10 +15,10 @@ void main() {
       values: [],
     ),),);
     expect(find.byType(ValueDistribution), findsOneWidget);
-    expect(find.byType(Text), findsOneWidget);
+    expect(find.byType(SafaehStatusBody), findsOneWidget);
     expect(find.text('no data'), findsOneWidget);
 
-    final errorCenter = tester.getCenter(find.byType(Text));
+    final errorCenter = tester.getCenter(find.byType(SafaehStatusBody));
     final canvasCenter = tester.getCenter(find.byType(MaterialApp));
     expect(errorCenter, equals(canvasCenter));
   },);

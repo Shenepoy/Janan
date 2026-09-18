@@ -2,6 +2,8 @@ import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_list.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_list_entry.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_change_chip.dart';
+import 'package:blood_pressure_app/features/measurement_list/selection/list_selection.dart';
+import 'package:blood_pressure_app/features/measurement_list/selection/selection_action_bar.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -189,5 +191,80 @@ void main() {
     expect(find.text('TIME'), findsOneWidget);
     expect(find.text('SYS'), findsOneWidget);
     expect(find.text('no data'), findsOneWidget);
+  });
+
+  testWidgets('long-press enters selection and tap toggles', (tester) async {
+    final selection = ListSelectionController<CombinedEntry>();
+    addTearDown(selection.dispose);
+    final older = mockEntry(time: DateTime(2024, 2, 1), sys: 120, dia: 80, pul: 70);
+    final newer = mockEntry(time: DateTime(2024, 2, 2), sys: 130, dia: 80, pul: 70);
+
+    await pumpApp(tester, await materialApp(
+      ListSelectionScope<CombinedEntry>(
+        notifier: selection,
+        child: ListenableBuilder(
+          listenable: selection,
+          builder: (context, _) => Stack(
+            children: [
+              MeasurementList(entries: [newer, older]),
+              if (selection.isSelecting)
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SelectionActionBar(
+                    count: selection.count,
+                    onClose: selection.clear,
+                    onChangeDate: () {},
+                    onDelete: () {},
+                    onNote: () {},
+                    onColor: () {},
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    ));
+
+    expect(find.byType(SelectionActionBar), findsNothing);
+    await tester.longPress(find.text('130'));
+    await tester.pump();
+    expect(selection.count, 1);
+    expect(find.byType(SelectionActionBar), findsOneWidget);
+    expect(find.text('1 selected'), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle), findsOneWidget);
+
+    await tester.tap(find.text('120'));
+    await tester.pump();
+    expect(selection.count, 2);
+    expect(find.text('2 selected'), findsOneWidget);
+
+    await tester.tap(find.text('120'));
+    await tester.pump();
+    expect(selection.count, 1);
+  });
+
+  testWidgets('select-all header selects every visible row', (tester) async {
+    final selection = ListSelectionController<CombinedEntry>();
+    addTearDown(selection.dispose);
+    final older = mockEntry(time: DateTime(2024, 2, 1), sys: 120, dia: 80, pul: 70);
+    final newer = mockEntry(time: DateTime(2024, 2, 2), sys: 130, dia: 80, pul: 70);
+
+    await pumpApp(tester, await materialApp(
+      ListSelectionScope<CombinedEntry>(
+        notifier: selection,
+        child: ListenableBuilder(
+          listenable: selection,
+          builder: (context, _) => MeasurementList(entries: [newer, older]),
+        ),
+      ),
+    ));
+
+    await tester.longPress(find.text('130'));
+    await tester.pump();
+    expect(find.byKey(const Key('selectAll')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('selectAll')));
+    await tester.pump();
+    expect(selection.count, 2);
+    expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
   });
 }

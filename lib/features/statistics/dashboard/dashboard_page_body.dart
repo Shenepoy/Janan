@@ -11,7 +11,6 @@ class DashboardPageBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = SafaehTheme.of(context);
     final bottomInset =
         SafaehBottomNavScope.maybeOf(context)?.contentInsetWithSafeArea ?? 88.0;
     final spaced = <Widget>[];
@@ -19,14 +18,10 @@ class DashboardPageBody extends StatelessWidget {
       if (i > 0) spaced.add(const SizedBox(height: 12));
       spaced.add(children[i]);
     }
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: tokens.contentMaxWidth),
-        child: ListView(
-          padding: EdgeInsetsDirectional.fromSTEB(16, 16, 16, bottomInset),
-          children: spaced,
-        ),
+    return SafaehContentBand(
+      child: ListView(
+        padding: EdgeInsetsDirectional.fromSTEB(16, 16, 16, bottomInset),
+        children: spaced,
       ),
     );
   }

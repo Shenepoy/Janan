@@ -1,4 +1,5 @@
 import 'package:blood_pressure_app/data_util/entry_context.dart';
+import 'package:blood_pressure_app/features/bluetooth/logic/ble_measurement_duplicates.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:health/health.dart';
@@ -81,6 +82,65 @@ void main() {
     expect(fakeHealth.deletionRequests,
         contains(HealthDataType.BLOOD_PRESSURE_DIASTOLIC));
     expect(fakeHealth.deletionRequests, hasLength(2));
+  });
+
+  testWidgets('writes a blacklist row only for deleteAndBlacklist', (tester) async {
+    usePhoneTestSurface(tester);
+    final entry = mockEntry(time: DateTime.utc(2026, 4, 5, 16, 19, 10), sys: 123);
+    final bpRepo = MockBloodPressureRepository();
+    final blacklist = MockBleBlacklistRepository();
+    await bpRepo.add(entry.record!);
+
+    await pumpApp(tester, await appBase(
+      settings: TestSettingsSeed(confirmDeletion: true),
+      bpRepo: bpRepo,
+      blacklistRepo: blacklist,
+      Builder(
+        builder: (context) => TextButton(
+          onPressed: () => context.deleteEntry(entry),
+          child: const Text('X'),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('X'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('safaeh_confirm')));
+    await tester.pumpAndSettle();
+    expect(await blacklist.getKeys('bp'), isEmpty);
+
+    await bpRepo.add(entry.record!);
+    await tester.tap(find.text('X'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('deleteAndBlacklist')));
+    await tester.pumpAndSettle();
+    expect(
+      await blacklist.getKeys('bp'),
+      {bloodPressureRecordKey(entry.record!)},
+    );
+  });
+
+  testWidgets('does not blacklist when confirmations are off', (tester) async {
+    final entry = mockEntry(time: DateTime.utc(2026, 4, 5, 16, 19, 10), sys: 123);
+    final bpRepo = MockBloodPressureRepository();
+    final blacklist = MockBleBlacklistRepository();
+    await bpRepo.add(entry.record!);
+
+    await pumpApp(tester, await appBase(
+      settings: TestSettingsSeed(confirmDeletion: false),
+      bpRepo: bpRepo,
+      blacklistRepo: blacklist,
+      Builder(
+        builder: (context) => TextButton(
+          onPressed: () => context.deleteEntry(entry),
+          child: const Text('X'),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('X'));
+    await tester.pumpAndSettle();
+    expect(await blacklist.getKeys('bp'), isEmpty);
   });
 }
 

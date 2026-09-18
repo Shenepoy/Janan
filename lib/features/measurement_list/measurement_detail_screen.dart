@@ -16,6 +16,7 @@ import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:safaeh/safaeh.dart';
 
 /// Full blood-pressure entry with comparison to the previous reading.
 class MeasurementDetailScreen extends ConsumerStatefulWidget {
@@ -236,7 +237,7 @@ class _MeasurementDetailScreenState extends ConsumerState<MeasurementDetailScree
               title: 'note'.tr(),
               child: hopping(
                 _token('note'),
-                Text(
+                SafaehUserText(
                   entry.note!.note!,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),

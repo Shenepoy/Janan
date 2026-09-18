@@ -42,6 +42,7 @@ class MeasurementMultiple extends StatefulWidget {
 
 class _MeasurementMultipleState extends State<MeasurementMultiple> {
   List<BloodPressureRecord> _saved = const [];
+  Set<String> _blocked = const {};
   bool _loading = true;
   bool _showAll = false;
   bool _startedLoad = false;
@@ -51,23 +52,34 @@ class _MeasurementMultipleState extends State<MeasurementMultiple> {
     super.didChangeDependencies();
     if (_startedLoad) return;
     _startedLoad = true;
-    if (widget.alreadySaved != null) {
-      _saved = widget.alreadySaved!;
-      _loading = false;
-      return;
-    }
     BloodPressureRepository? repo;
+    BleBlacklistRepository? blacklist;
     try {
       repo = context.bpRepo;
+      blacklist = context.blacklistRepo;
     } catch (_) {}
-    if (repo == null) {
+    final provided = widget.alreadySaved;
+    if (provided != null) {
+      _saved = provided;
+    }
+    if (provided != null && blacklist == null) {
       _loading = false;
       return;
     }
-    repo.get(DateRange.all()).then((records) {
+    if (provided == null && repo == null) {
+      _loading = false;
+      return;
+    }
+    Future.wait<Object?>([
+      provided == null
+          ? repo!.get(DateRange.all())
+          : Future<List<BloodPressureRecord>>.value(provided),
+      blacklist?.getKeys('bp') ?? Future.value(const <String>{}),
+    ]).then((results) {
       if (!mounted) return;
       setState(() {
-        _saved = records;
+        _saved = results[0]! as List<BloodPressureRecord>;
+        _blocked = results[1]! as Set<String>;
         _loading = false;
       });
     });
@@ -90,7 +102,7 @@ class _MeasurementMultipleState extends State<MeasurementMultiple> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final sorted = _sorted(widget.measurements);
-    final newOnes = newBleMeasurements(sorted, _saved);
+    final newOnes = newBleMeasurements(sorted, _saved, blacklisted: _blocked);
     final newKeys = newOnes.map(bleMeasurementKey).toSet();
     final duplicateCount = sorted.length - newOnes.length;
     final visible = _showAll ? sorted : newOnes;

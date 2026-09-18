@@ -24,10 +24,14 @@ class BluetoothForegroundService {
   static Future<void> Function()? stopOverrideForTesting;
 
   @visibleForTesting
+  static Future<void> Function({String? text})? finishOverrideForTesting;
+
+  @visibleForTesting
   static void resetOverridesForTesting() {
     startOverrideForTesting = null;
     updateOverrideForTesting = null;
     stopOverrideForTesting = null;
+    finishOverrideForTesting = null;
   }
 
   static const _channel = MethodChannel(
@@ -53,6 +57,13 @@ class BluetoothForegroundService {
     final override = stopOverrideForTesting;
     if (override != null) return override();
     return _invoke('stop');
+  }
+
+  /// End the ongoing sync notification. A non-null [text] becomes dismissible.
+  static Future<void> finish({String? text}) {
+    final override = finishOverrideForTesting;
+    if (override != null) return override(text: text);
+    return _invoke('finish', {'text': text});
   }
 
   static Future<void> _invoke(

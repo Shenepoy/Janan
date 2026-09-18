@@ -2,6 +2,7 @@ import 'package:blood_pressure_app/components/confirm_deletion_dialog.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/data_util/entry_context.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:blood_pressure_app/features/bluetooth/logic/ble_measurement_duplicates.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/eufy_body_composition.dart';
 import 'package:blood_pressure_app/features/input/forms/entry_form_section.dart';
 import 'package:blood_pressure_app/features/measurement_list/detail_form_value.dart';
@@ -108,11 +109,22 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
   Future<void> _delete() async {
     final settings = ref.read(appSettingsProvider);
     final weightRepo = context.weightRepo;
+    var choice = DeleteChoice.delete;
     if (settings.confirmDeletion) {
-      final confirmed = await showConfirmDeletionDialog(context);
-      if (!mounted || !confirmed) return;
+      choice = await showConfirmDeletionChoice(
+        context,
+        allowBlacklist: true,
+      );
+      if (!mounted || choice == DeleteChoice.cancel) return;
     }
+    final blacklistRepo = context.blacklistRepo;
+    final messenger = ScaffoldMessenger.of(context);
     await weightRepo.remove(_record);
+    String? blockedKey;
+    if (choice == DeleteChoice.deleteAndBlacklist) {
+      blockedKey = bodyweightRecordKey(_record);
+      await blacklistRepo.add('weight', blockedKey);
+    }
     if (settings.useHealthConnect && settings.syncWeightMeasurements) {
       await Health().delete(
         type: HealthDataType.WEIGHT,
@@ -120,6 +132,19 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
         endTime: _record.time.add(const Duration(milliseconds: 500)),
       );
     }
+    messenger.removeCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(
+      content: Text('deletionConfirmed'.tr()),
+      action: SnackBarAction(
+        label: 'btnUndo'.tr(),
+        onPressed: () async {
+          await weightRepo.add(_record);
+          if (blockedKey != null) {
+            await blacklistRepo.remove('weight', blockedKey);
+          }
+        },
+      ),
+    ));
     if (mounted) Navigator.of(context).pop();
   }
 

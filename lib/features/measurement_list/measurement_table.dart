@@ -98,6 +98,9 @@ class MeasurementTableEntry {
   const MeasurementTableEntry({
     required this.cells,
     required this.onTap,
+    this.onLongPress,
+    this.selected = false,
+    this.selecting = false,
     this.accentColor,
     this.semanticsLabel,
     this.marks = const [],
@@ -106,8 +109,17 @@ class MeasurementTableEntry {
   /// Cells matching the table columns.
   final List<MeasurementTableCell> cells;
 
-  /// Opens the detail screen.
+  /// Opens the detail screen, or toggles selection.
   final VoidCallback onTap;
+
+  /// Starts multi-select with this row.
+  final VoidCallback? onLongPress;
+
+  /// Whether this row is in the current selection.
+  final bool selected;
+
+  /// Whether the list is in multi-select mode.
+  final bool selecting;
 
   /// Note-color stripe.
   final Color? accentColor;
@@ -129,6 +141,9 @@ class MeasurementTable extends StatelessWidget {
     this.dense = false,
     this.reserveHintSlot = true,
     this.shrinkWrap = false,
+    this.selecting = false,
+    this.allSelected = false,
+    this.onToggleSelectAll,
   });
 
   /// Header columns.
@@ -146,6 +161,15 @@ class MeasurementTable extends StatelessWidget {
   /// Size to the rows and let a parent scroll, instead of an inner list.
   final bool shrinkWrap;
 
+  /// Whether the list is in multi-select mode.
+  final bool selecting;
+
+  /// Whether every visible row is selected.
+  final bool allSelected;
+
+  /// Toggles select-all from the header checkbox.
+  final VoidCallback? onToggleSelectAll;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -153,8 +177,13 @@ class MeasurementTable extends StatelessWidget {
       columns: columns,
       dense: dense,
       reserveHintSlot: reserveHintSlot,
+      selecting: selecting,
+      allSelected: allSelected,
+      onToggleSelectAll: onToggleSelectAll,
     );
-    final empty = Center(child: Text('errNoData'.tr()));
+    final empty = Center(
+      child: SafaehStatusBody(message: Text('errNoData'.tr())),
+    );
     return DefaultTextStyle.merge(
       style: theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14),
       child: Column(
@@ -210,9 +239,12 @@ class MeasurementTableRow extends StatelessWidget {
       button: true,
       label: entry.semanticsLabel,
       child: Material(
-        color: Colors.transparent,
+        color: entry.selected
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.45)
+            : Colors.transparent,
         child: InkWell(
           onTap: entry.onTap,
+          onLongPress: entry.onLongPress,
           child: DecoratedBox(
             decoration: BoxDecoration(
               border: Border(
@@ -273,11 +305,21 @@ class MeasurementTableRow extends StatelessWidget {
                         ),
                       SizedBox(
                         width: _chevronSlot,
-                        child: Icon(
-                          safaehChevronEnd(context),
-                          size: 18,
-                          color: theme.colorScheme.outline,
-                        ),
+                        child: entry.selecting
+                            ? Icon(
+                                entry.selected
+                                    ? Icons.check_circle
+                                    : Icons.circle_outlined,
+                                size: 18,
+                                color: entry.selected
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.outline,
+                              )
+                            : Icon(
+                                safaehChevronEnd(context),
+                                size: 18,
+                                color: theme.colorScheme.outline,
+                              ),
                       ),
                     ],
                   ),
@@ -296,11 +338,17 @@ class _Header extends StatelessWidget {
     required this.columns,
     required this.dense,
     required this.reserveHintSlot,
+    required this.selecting,
+    required this.allSelected,
+    this.onToggleSelectAll,
   });
 
   final List<MeasurementTableColumn> columns;
   final bool dense;
   final bool reserveHintSlot;
+  final bool selecting;
+  final bool allSelected;
+  final VoidCallback? onToggleSelectAll;
 
   @override
   Widget build(BuildContext context) {
@@ -349,7 +397,21 @@ class _Header extends StatelessWidget {
             ),
           ),
           if (reserveHintSlot) const SizedBox(width: _hintSlot),
-          const SizedBox(width: _chevronSlot),
+          SizedBox(
+            width: _chevronSlot,
+            child: selecting
+                ? Checkbox(
+                    key: const Key('selectAll'),
+                    value: allSelected,
+                    semanticLabel: 'selectAll'.tr(),
+                    onChanged: onToggleSelectAll == null
+                        ? null
+                        : (_) => onToggleSelectAll!(),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  )
+                : null,
+          ),
         ],
       ),
     );

@@ -68,6 +68,24 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('date format uses a Safaeh picker of presets', (tester) async {
+    usePhoneTestSurface(tester);
+
+    await pumpApp(tester, await materialApp(const SettingsPage()));
+
+    await tester.tap(find.text('Time format').last);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('safaeh_drag_handle')), findsOneWidget);
+    expect(find.byType(SafaehTilePickerBody<String>), findsOneWidget);
+    expect(find.text('yyyy-MM-dd HH:mm'), findsOneWidget);
+    expect(find.text('dd/MM/yyyy HH:mm'), findsOneWidget);
+    expect(find.text('MM/dd/yyyy h:mm a'), findsOneWidget);
+
+    await tester.tap(find.text('dd/MM/yyyy HH:mm'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('safaeh_drag_handle')), findsNothing);
+  });
+
   testWidgets('theme color uses a flat color list', (tester) async {
     usePhoneTestSurface(tester);
 

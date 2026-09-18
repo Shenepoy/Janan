@@ -96,8 +96,8 @@ void main() {
     await tester.tap(find.byIcon(Icons.delete));
     await tester.pumpAndSettle();
 
-    expect(find.text('Confirm deletion'), findsOneWidget);
-    expect(find.text('OK'), findsOneWidget);
+    expect(find.text('Confirm deletion'), findsWidgets);
+    expect(find.byKey(const ValueKey('safaeh_confirm')), findsOneWidget);
 
     await tapSafaehConfirm(tester);
     await tester.pumpAndSettle();

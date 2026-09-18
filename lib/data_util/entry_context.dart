@@ -1,5 +1,6 @@
 import 'package:blood_pressure_app/components/confirm_deletion_dialog.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
+import 'package:blood_pressure_app/features/bluetooth/logic/ble_measurement_duplicates.dart';
 import 'package:blood_pressure_app/features/input/add_entry_dialog.dart';
 import 'package:blood_pressure_app/features/input/forms/add_entry_form.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
@@ -49,67 +50,87 @@ extension EntryUtils on BuildContext {
       final weightRepo = this.weightRepo;
       final messenger = ScaffoldMessenger.of(this);
 
-      bool confirmedDeletion = true;
+      var choice = DeleteChoice.delete;
       if (settings.confirmDeletion) {
-        confirmedDeletion = await showConfirmDeletionDialog(this);
+        choice = await showConfirmDeletionChoice(
+          this,
+          allowBlacklist: entry.record != null || entry.weight != null,
+        );
+        if (!mounted) return false;
+      }
+      if (choice == DeleteChoice.cancel) return false;
+
+      final blacklist = choice == DeleteChoice.deleteAndBlacklist;
+      final blocked = <(String, String)>[];
+      if (entry.record != null) await bpRepo.remove(entry.record!);
+      if (entry.note != null) await noteRepo.remove(entry.note!);
+      for (final intake in entry.allIntakes) {
+        if (intake.time.year == entry.time.year
+            && intake.time.month == entry.time.month
+            && intake.time.day == entry.time.day
+            && intake.time.hour == entry.time.hour
+            && intake.time.minute == entry.time.minute) {
+          await intakeRepo.remove(intake);
+        }
+      }
+      if (entry.weight != null) await weightRepo.remove(entry.weight!);
+      if (blacklist) {
+        if (entry.record != null) {
+          final key = bloodPressureRecordKey(entry.record!);
+          await blacklistRepo.add('bp', key);
+          blocked.add(('bp', key));
+        }
+        if (entry.weight != null) {
+          final key = bodyweightRecordKey(entry.weight!);
+          await blacklistRepo.add('weight', key);
+          blocked.add(('weight', key));
+        }
       }
 
-      if (confirmedDeletion) {
-        if (entry.record != null) await bpRepo.remove(entry.record!);
-        if (entry.note != null) await noteRepo.remove(entry.note!);
-        for (final intake in entry.allIntakes) {
-          if (intake.time.year == entry.time.year
-              && intake.time.month == entry.time.month
-              && intake.time.day == entry.time.day
-              && intake.time.hour == entry.time.hour
-              && intake.time.minute == entry.time.minute) {
-            await intakeRepo.remove(intake);
-          }
+      // Avoid automatically re-adding deleted measurements on app start
+      if (settings.useHealthConnect && settings.syncPressureMeasurements){
+        health ??= Health();
+        if (entry.sys != null) {
+          await health.delete(
+            type: HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+            startTime: entry.time.subtract(Duration(milliseconds: 500)),
+            endTime: entry.time.add(Duration(milliseconds: 500)),
+          );
         }
-        if (entry.weight != null) await weightRepo.remove(entry.weight!);
-
-        // Avoid automatically re-adding deleted measurements on app start
-        if (settings.useHealthConnect && settings.syncPressureMeasurements){
-          health ??= Health();
-          if (entry.sys != null) {
-            await health.delete(
-              type: HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
-              startTime: entry.time.subtract(Duration(milliseconds: 500)),
-              endTime: entry.time.add(Duration(milliseconds: 500)),
-            );
-          }
-          if (entry.dia != null) {
-            await health.delete(
-              type: HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
-              startTime: entry.time.subtract(Duration(milliseconds: 500)),
-              endTime: entry.time.add(Duration(milliseconds: 500)),
-            );
-          }
+        if (entry.dia != null) {
+          await health.delete(
+            type: HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
+            startTime: entry.time.subtract(Duration(milliseconds: 500)),
+            endTime: entry.time.add(Duration(milliseconds: 500)),
+          );
         }
+      }
 
-        messenger.removeCurrentSnackBar();
-        messenger.showSnackBar(SnackBar(
-          content: Text('deletionConfirmed'.tr()),
-          action: SnackBarAction(
-            label: 'btnUndo'.tr(),
-            onPressed: () async {
-              if (entry.record != null) await bpRepo.add(entry.record!);
-              if (entry.note != null) await noteRepo.add(entry.note!);
-              for (final intake in entry.allIntakes) {
-                if (intake.time.year == entry.time.year
-                    && intake.time.month == entry.time.month
-                    && intake.time.day == entry.time.day
-                    && intake.time.hour == entry.time.hour
-                    && intake.time.minute == entry.time.minute) {
-                  await intakeRepo.add(intake);
-                }
+      messenger.removeCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(
+        content: Text('deletionConfirmed'.tr()),
+        action: SnackBarAction(
+          label: 'btnUndo'.tr(),
+          onPressed: () async {
+            if (entry.record != null) await bpRepo.add(entry.record!);
+            if (entry.note != null) await noteRepo.add(entry.note!);
+            for (final intake in entry.allIntakes) {
+              if (intake.time.year == entry.time.year
+                  && intake.time.month == entry.time.month
+                  && intake.time.day == entry.time.day
+                  && intake.time.hour == entry.time.hour
+                  && intake.time.minute == entry.time.minute) {
+                await intakeRepo.add(intake);
               }
-              if (entry.weight != null) await weightRepo.add(entry.weight!);
-            },
-          ),
-        ),);
-        return true;
-      }
+            }
+            if (entry.weight != null) await weightRepo.add(entry.weight!);
+            for (final item in blocked) {
+              await blacklistRepo.remove(item.$1, item.$2);
+            }
+          },
+        ),
+      ),);
+      return true;
     } on StateError {
       Log.severe('[extension.EntryUtils] deleteEntry($entry) was called from a context without Provider.');
     }

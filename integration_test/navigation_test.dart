@@ -5,7 +5,6 @@ import 'package:blood_pressure_app/features/export_import/ui/export_column_manag
 import 'package:blood_pressure_app/features/settings/add_medication_dialog.dart';
 import 'package:blood_pressure_app/features/settings/configure_warn_values_screen.dart';
 import 'package:blood_pressure_app/features/settings/delete_data_screen.dart';
-import 'package:blood_pressure_app/features/settings/enter_timeformat_dialog.dart';
 import 'package:blood_pressure_app/features/settings/export_import_screen.dart';
 import 'package:blood_pressure_app/features/settings/graph_markings_screen.dart';
 import 'package:blood_pressure_app/features/settings/graph_screen.dart';
@@ -38,16 +37,14 @@ void main() {
     expect(find.byType(SettingsPage), findsOneWidget);
     // settings
 
-    expect(find.byType(EnterTimeFormatDialog), findsNothing);
     expect(find.text('Time format'), findsOneWidget);
     await tester.tap(find.text('Time format'));
     await tester.pumpAndSettle();
-    expect(find.byType(EnterTimeFormatDialog), findsOneWidget);
-    // time format
-    expect(find.text('SAVE'), findsOneWidget);
-    await tester.tap(find.text('SAVE'));
+    expect(find.byKey(const ValueKey('safaeh_drag_handle')), findsOneWidget);
+    expect(find.text('yyyy-MM-dd HH:mm'), findsOneWidget);
+    await tester.tap(find.text('yyyy-MM-dd HH:mm'));
     await tester.pumpAndSettle();
-    expect(find.byType(EnterTimeFormatDialog), findsNothing);
+    expect(find.byKey(const ValueKey('safaeh_drag_handle')), findsNothing);
     // settings
 
     expect(find.byType(MedicineManagerScreen), findsNothing);

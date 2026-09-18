@@ -148,7 +148,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.delete));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('OK'));
+    await tester.tap(find.byKey(const ValueKey('safaeh_confirm')));
     await tester.pumpAndSettle();
 
     expect(repo.data, isEmpty);

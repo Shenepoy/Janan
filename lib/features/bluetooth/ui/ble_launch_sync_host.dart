@@ -382,6 +382,22 @@ class _BleLaunchSyncHostState extends ConsumerState<BleLaunchSyncHost> {
     await BluetoothForegroundService.stop();
   }
 
+  Future<void> _finishForegroundService(BleLaunchSyncResult result) async {
+    final start = _foregroundServiceStart;
+    if (start == null) return;
+    _foregroundServiceStart = null;
+    await start;
+    if (result.status == BleLaunchSyncStatus.imported) {
+      await BluetoothForegroundService.finish(
+        text: 'importedNewMeasurements'.tr(
+          namedArgs: {'count': '${result.count}'},
+        ),
+      );
+      return;
+    }
+    await BluetoothForegroundService.stop();
+  }
+
   Future<void> _maybeStart() async {
     if (!mounted ||
         !_onMainScreen ||
@@ -401,6 +417,7 @@ class _BleLaunchSyncHostState extends ConsumerState<BleLaunchSyncHost> {
           controller: ref.read(settingsControllerProvider),
           repo: context.bpRepo,
           weightRepo: context.weightRepo,
+          blacklistRepo: context.blacklistRepo,
           manager: widget.manager,
           bluetoothCubit: widget.bluetoothCubit,
           deviceScanCubit: widget.deviceScanCubit,
@@ -409,7 +426,7 @@ class _BleLaunchSyncHostState extends ConsumerState<BleLaunchSyncHost> {
     sync.progress.addListener(_onProgress);
     _onProgress();
     final result = await sync.run();
-    await _stopForegroundService();
+    await _finishForegroundService(result);
     if (!mounted) return;
     if (result.status == BleLaunchSyncStatus.cancelled) {
       sync.progress.removeListener(_onProgress);

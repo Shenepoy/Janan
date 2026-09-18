@@ -6,8 +6,7 @@ import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_settings_framework/safaeh.dart' as edadat_safaeh;
-import 'package:safaeh/safaeh.dart';
+import 'package:flutter_settings_framework/safaeh.dart';
 
 /// Shared chrome for every tab in the main shell.
 ///
@@ -101,7 +100,7 @@ class _ShellAppBarAction extends StatelessWidget {
           builder: (context, isOpen, _) => SafaehMorphingAppBarAction(
             page: page,
             targetPage: settingsPage,
-            child: edadat_safaeh.SafaehSettingsSearchButton(
+            child: SafaehSettingsSearchButton(
               isOpen: isOpen,
               hintText: 'searchSettings'.tr(),
               onPressed: onSettingsSearch!,

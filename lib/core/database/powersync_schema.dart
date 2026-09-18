@@ -30,4 +30,9 @@ const schema = Schema([
     Column.text('med_id'),
     Column.real('dosis_mg'),
   ]),
+  Table.localOnly('ble_blacklist', [
+    Column.text('kind'),
+    Column.text('key'),
+    Column.integer('created_unix_s'),
+  ]),
 ]);

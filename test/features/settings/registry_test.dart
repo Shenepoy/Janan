@@ -106,6 +106,13 @@ void main() {
     expect((visible.single as SettingAnchor).settingKey, healthConnectAction.key);
   });
 
+  test('date format presets include the default pattern', () {
+    expect(
+      dateFormatStringOptions,
+      contains(dateFormatStringSetting.defaultValue),
+    );
+  });
+
   test('color settings use the shared flat palette', () {
     expect(appColorOptions, hasLength(18));
     expect(accentColorSetting.colorOptions, same(appColorOptions));

@@ -34,11 +34,11 @@ class BleLaunchSyncCard extends StatelessWidget {
     final theme = Theme.of(context);
     final result = progress.result;
     final busy = progress.isBusy && !paused;
-    final showResume = onResume != null
+    final showResume = onResume != null && !busy && paused;
+    final showSearchAgain = onResume != null
         && !busy
-        && (paused
-            || result?.status == BleLaunchSyncStatus.notFound
-            || result?.status == BleLaunchSyncStatus.cancelled);
+        && !paused
+        && result != null;
     return Card(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       child: Padding(
@@ -76,6 +76,14 @@ class BleLaunchSyncCard extends StatelessWidget {
                     tooltip: 'resumeMeterSync'.tr(),
                     onPressed: onResume,
                     icon: const Icon(Icons.play_arrow),
+                  )
+                else if (showSearchAgain)
+                  IconButton(
+                    key: const Key('searchAgainMeter'),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'searchAgainMeter'.tr(),
+                    onPressed: onResume,
+                    icon: const Icon(Icons.refresh),
                   )
                 else if (busy && onPause != null)
                   IconButton(

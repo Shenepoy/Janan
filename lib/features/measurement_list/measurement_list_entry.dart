@@ -5,6 +5,7 @@ import 'package:blood_pressure_app/features/measurement_list/list_timestamp.dart
 import 'package:blood_pressure_app/features/measurement_list/measurement_detail_screen.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_table.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_change.dart';
+import 'package:blood_pressure_app/features/measurement_list/selection/list_selection.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/l10n/bidi.dart';
 import 'package:blood_pressure_app/model/blood_pressure/pressure_unit.dart';
@@ -65,8 +66,12 @@ MeasurementTableEntry bloodPressureTableEntry({
   );
   final digits = unit == PressureUnit.kPa ? 1 : 0;
   final hasNoteText = data.note?.note?.isNotEmpty ?? false;
+  final selection = ListSelectionScope.maybeOf<CombinedEntry>(context);
+  final selecting = selection?.isSelecting ?? false;
   return MeasurementTableEntry(
     accentColor: data.color == null ? null : Color(data.color!),
+    selected: selection?.contains(data) ?? false,
+    selecting: selecting,
     semanticsLabel: 'measurementSemantics'.tr(namedArgs: {
       'sys': isolateLtr(data.sys?.mmHg.toString() ?? '—'),
       'dia': isolateLtr(data.dia?.mmHg.toString() ?? '—'),
@@ -74,6 +79,10 @@ MeasurementTableEntry bloodPressureTableEntry({
       'time': isolateLtr(stamp),
     }),
     onTap: () {
+      if (selecting) {
+        selection!.toggle(data);
+        return;
+      }
       Navigator.of(context).push(MaterialPageRoute<void>(
         builder: (_) => MeasurementDetailScreen(
           entry: data,
@@ -81,6 +90,7 @@ MeasurementTableEntry bloodPressureTableEntry({
         ),
       ));
     },
+    onLongPress: selection == null ? null : () => selection.toggle(data),
     marks: [
       if (data.allIntakes.isNotEmpty)
         ExcludeSemantics(

@@ -7,6 +7,7 @@ import 'package:blood_pressure_app/features/measurement_list/list_timestamp.dart
 import 'package:blood_pressure_app/features/measurement_list/measurement_table.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_change.dart';
 import 'package:blood_pressure_app/features/measurement_list/previous_measurement.dart';
+import 'package:blood_pressure_app/features/measurement_list/selection/list_selection.dart';
 import 'package:blood_pressure_app/features/measurement_list/weight_detail_screen.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_empty_card.dart';
@@ -51,10 +52,25 @@ class WeightList extends ConsumerWidget {
         if (shrinkWrap && records.isEmpty) {
           return const DashboardEmptyCard(icon: Icons.scale_outlined);
         }
+        final selection = ListSelectionScope.maybeOf<BodyweightRecord>(context);
+        final allSelected = selection != null
+            && records.isNotEmpty
+            && records.every(selection.contains);
         final table = MeasurementTable(
           dense: settings.compactList,
           shrinkWrap: shrinkWrap,
           reserveHintSlot: false,
+          selecting: selection?.isSelecting ?? false,
+          allSelected: allSelected,
+          onToggleSelectAll: selection == null
+              ? null
+              : () {
+                  if (allSelected) {
+                    selection.clear();
+                  } else {
+                    selection.selectAll(records);
+                  }
+                },
           columns: weightColumns(settings.weightUnit.displayName),
           rows: [
             for (var i = 0; i < records.length; i++)
@@ -129,12 +145,20 @@ MeasurementTableEntry weightTableEntry({
   final previousBmi = previous == null
       ? null
       : _bmi(previous.weight.kg, heightCm);
+  final selection = ListSelectionScope.maybeOf<BodyweightRecord>(context);
+  final selecting = selection?.isSelecting ?? false;
   return MeasurementTableEntry(
+    selected: selection?.contains(record) ?? false,
+    selecting: selecting,
     semanticsLabel: 'weightSemantics'.tr(namedArgs: {
       'weight': isolateLtr(formatted),
       'time': isolateLtr(stamp),
     }),
     onTap: () {
+      if (selecting) {
+        selection!.toggle(record);
+        return;
+      }
       Navigator.of(context).push(MaterialPageRoute<void>(
         builder: (_) => WeightDetailScreen(
           record: record,
@@ -142,6 +166,7 @@ MeasurementTableEntry weightTableEntry({
         ),
       ));
     },
+    onLongPress: selection == null ? null : () => selection.toggle(record),
     cells: [
       MeasurementTableCell.stamp(stamp),
       MeasurementTableCell(
