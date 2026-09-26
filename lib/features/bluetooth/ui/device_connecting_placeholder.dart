@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/features/bluetooth/ui/input_card.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
@@ -22,9 +23,7 @@ class DeviceConnectingPlaceholder extends StatelessWidget {
     final title = deviceName == null || deviceName!.trim().isEmpty
         ? 'connectingToMeter'.tr()
         : 'connectingToDevice'.tr(namedArgs: {'name': deviceName!});
-    return Card(
-      color: theme.colorScheme.primaryContainer,
-      margin: const EdgeInsets.only(bottom: 8),
+    return BluetoothGlassCard(
       child: ListTile(
         leading: SizedBox(
           width: 24,

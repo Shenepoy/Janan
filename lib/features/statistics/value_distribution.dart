@@ -166,6 +166,7 @@ class _ValueDistributionChartState extends State<_ValueDistributionChart> {
                       }
                       return SideTitleWidget(
                         meta: meta,
+                        fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
                         child: Text(text, style: labelStyle),
                       );
                     },

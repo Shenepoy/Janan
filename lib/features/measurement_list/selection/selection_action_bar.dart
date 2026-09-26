@@ -1,6 +1,80 @@
+import 'package:blood_pressure_app/features/shell/shell_tab.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:safaeh/safaeh.dart';
+
+/// Renders the selection bar in the app's root overlay, above shell chrome.
+class SelectionActionBarOverlay extends StatefulWidget {
+  /// Create a root-overlay host for the selection bar.
+  const SelectionActionBarOverlay({
+    super.key,
+    required this.visible,
+    required this.page,
+    required this.child,
+  });
+
+  /// Whether the selection bar is currently visible.
+  final bool visible;
+
+  /// Shell page that owns this selection state.
+  final ShellTab page;
+
+  /// The selection bar to display.
+  final Widget child;
+
+  @override
+  State<SelectionActionBarOverlay> createState() =>
+      _SelectionActionBarOverlayState();
+}
+
+class _SelectionActionBarOverlayState extends State<SelectionActionBarOverlay> {
+  final _controller = OverlayPortalController();
+  int _visibilityRevision = 0;
+
+  void _scheduleVisibilityUpdate() {
+    final revision = ++_visibilityRevision;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || revision != _visibilityRevision) return;
+      if (widget.visible) {
+        _controller.show();
+      } else {
+        _controller.hide();
+      }
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.visible) {
+      _scheduleVisibilityUpdate();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant SelectionActionBarOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.visible == widget.visible) return;
+    _scheduleVisibilityUpdate();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activeTab = ShellTabScope.maybeOf(context);
+    final isActive = activeTab == null || activeTab == widget.page;
+    return OverlayPortal(
+      controller: _controller,
+      overlayLocation: OverlayChildLocation.rootOverlay,
+      overlayChildBuilder: (_) => Positioned.fill(
+        child: Offstage(
+          offstage: !isActive,
+          child: Align(alignment: Alignment.bottomCenter, child: widget.child),
+        ),
+      ),
+      child: const SizedBox.shrink(),
+    );
+  }
+}
 
 /// Bottom bar of bulk actions while list rows are selected.
 class SelectionActionBar extends StatelessWidget {

@@ -2,33 +2,13 @@ import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.da
 import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
+import 'package:blood_pressure_app/features/shell/shell_tab.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safaeh/safaeh.dart';
 
-/// Tabs in the main shell, in display order when weight is enabled.
-enum ShellTab {
-  /// Blood-pressure home.
-  home,
-
-  /// Weight history. Omitted from the bar when weight features are off.
-  weight,
-
-  /// Statistics.
-  statistics,
-
-  /// Settings catalog.
-  settings,
-}
-
-/// Visible shell tabs for the current weight-features flag.
-List<ShellTab> visibleShellTabs({required bool showWeight}) => [
-  ShellTab.home,
-  if (showWeight) ShellTab.weight,
-  ShellTab.statistics,
-  ShellTab.settings,
-];
+export 'package:blood_pressure_app/features/shell/shell_tab.dart';
 
 /// Home / statistics / settings chrome with a persistent destination bar.
 class AppShell extends ConsumerWidget {
@@ -284,22 +264,25 @@ class _AppShellViewState extends State<_AppShellView> {
             body: Stack(
               fit: StackFit.expand,
               children: [
-                PageView(
-                  controller: _pageController,
-                  onPageChanged: _select,
-                  children: [
-                    for (var i = 0; i < pages.length; i++)
-                      _KeepAlivePage(
-                        // Tabs can be inserted or removed when settings
-                        // change. Keep each page's identity tied to its tab
-                        // so a visible page (especially SettingsPage with a
-                        // scroll controller) is moved instead of recreated.
-                        key: ValueKey<String>(
-                          'shell-page-${_tabs[i].name}-$localeTag',
+                ShellTabScope(
+                  activeTab: _tabs[_index],
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: _select,
+                    children: [
+                      for (var i = 0; i < pages.length; i++)
+                        _KeepAlivePage(
+                          // Tabs can be inserted or removed when settings
+                          // change. Keep each page's identity tied to its tab
+                          // so a visible page (especially SettingsPage with a
+                          // scroll controller) is moved instead of recreated.
+                          key: ValueKey<String>(
+                            'shell-page-${_tabs[i].name}-$localeTag',
+                          ),
+                          child: pages[i],
                         ),
-                        child: pages[i],
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
                 Positioned(
                   left: 0,

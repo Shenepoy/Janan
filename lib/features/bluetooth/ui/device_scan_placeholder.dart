@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/features/bluetooth/ui/input_card.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
@@ -56,9 +57,7 @@ class DeviceScanPlaceholder extends StatelessWidget {
         ),
       );
     }
-    return Card(
-      color: theme.colorScheme.primaryContainer,
-      margin: const EdgeInsets.only(bottom: 8),
+    return BluetoothGlassCard(
       child: ListTile(
         leading: SizedBox(
           width: 24,

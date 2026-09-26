@@ -30,10 +30,35 @@ abstract class NoteRepository extends Repository<Note> {}
 abstract class BodyweightRepository extends Repository<BodyweightRecord> {}
 
 /// Repository for [MedicineIntake]s.
-abstract class MedicineIntakeRepository extends Repository<MedicineIntake> {}
+abstract class MedicineIntakeRepository extends Repository<MedicineIntake> {
+  /// Returns the most recently used intake for each medicine, newest first.
+  ///
+  /// Implementations can override this to avoid loading the full history.
+  Future<List<MedicineIntake>> getMostRecentlyUsed({int limit = 5}) async {
+    if (limit <= 0) return <MedicineIntake>[];
+
+    final intakes = await get(DateRange.all())
+      ..sort((a, b) => b.time.compareTo(a.time));
+    final used = <Medicine>{};
+    final recent = <MedicineIntake>[];
+    for (final intake in intakes) {
+      if (!used.add(intake.medicine)) continue;
+      recent.add(intake);
+      if (recent.length == limit) break;
+    }
+    return recent;
+  }
+}
 
 /// Repository for medicines that are taken by the user.
 abstract class MedicineRepository extends Repository<Medicine> {
   /// Get medicines that have not been marked as removed.
   Future<List<Medicine>> getAll();
+
+  /// Get active medicines in the order they were created.
+  ///
+  /// Implementations without creation metadata can preserve their repository
+  /// order. This is used to fill quick-add choices when fewer than five
+  /// medicines have an intake history.
+  Future<List<Medicine>> getAllInCreationOrder() => getAll();
 }

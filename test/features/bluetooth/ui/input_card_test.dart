@@ -2,15 +2,19 @@ import 'package:blood_pressure_app/features/bluetooth/ui/input_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../util.dart';
+
 void main() {
   testWidgets('shows all elements', (WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: InputCard(
-        onClosed: () {},
-        title: const Text('Some title'),
-        child: const CircularProgressIndicator(),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: InputCard(
+          onClosed: () {},
+          title: const Text('Some title'),
+          child: const CircularProgressIndicator(),
+        ),
       ),
-    ));
+    );
 
     expect(find.text('Some title'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -27,11 +31,9 @@ void main() {
   });
 
   testWidgets('hides correct elements', (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(
-      home: InputCard(
-        child: Text('content'),
-      ),
-    ));
+    await tester.pumpWidget(
+      const MaterialApp(home: InputCard(child: Text('content'))),
+    );
 
     expect(find.text('content'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -39,19 +41,43 @@ void main() {
   });
 
   testWidgets('triggers close listener', (WidgetTester tester) async {
-    int closeCount = 0;
-    await tester.pumpWidget(MaterialApp(
-      home: InputCard(
-        child: const SizedBox.shrink(),
-        onClosed: () {
-          closeCount++;
-        },
+    var closeCount = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: InputCard(
+          child: const SizedBox.shrink(),
+          onClosed: () => closeCount++,
+        ),
       ),
-    ));
+    );
 
     expect(find.byIcon(Icons.close), findsOneWidget);
     await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
     expect(closeCount, 1);
+  });
+
+  testWidgets('glass card gives ListTile a matching Material surface', (
+    tester,
+  ) async {
+    var tapped = false;
+    await pumpApp(
+      tester,
+      await materialApp(
+        BluetoothGlassCard(
+          child: ListTile(
+            title: const Text('Bluetooth device'),
+            onTap: () => tapped = true,
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Bluetooth device'));
+    await tester.pump();
+
+    expect(tapped, isTrue);
+    expect(tester.takeException(), isNull);
   });
 }

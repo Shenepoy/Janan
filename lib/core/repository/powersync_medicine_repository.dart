@@ -49,11 +49,21 @@ class PowerSyncMedicineRepository extends MedicineRepository {
   }
 
   @override
-  Future<List<Medicine>> getAll() async {
-    final medData = await _db.getAll(
-      'SELECT designation, default_dose_mg, dose_unit, color FROM medicines '
-      'WHERE removed = 0',
-    );
+  Future<List<Medicine>> getAll() => _getAll(orderByCreation: false);
+
+  @override
+  Future<List<Medicine>> getAllInCreationOrder() =>
+      _getAll(orderByCreation: true);
+
+  Future<List<Medicine>> _getAll({required bool orderByCreation}) async {
+    final query = orderByCreation
+        ? 'SELECT m.designation, m.default_dose_mg, m.dose_unit, m.color '
+              'FROM medicines AS m '
+              'JOIN ps_data_local__medicines AS created_m ON created_m.id = m.id '
+              'WHERE m.removed = 0 ORDER BY created_m.rowid ASC'
+        : 'SELECT designation, default_dose_mg, dose_unit, color '
+              'FROM medicines WHERE removed = 0';
+    final medData = await _db.getAll(query);
     return [
       for (final m in medData)
         Medicine(

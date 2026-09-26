@@ -81,10 +81,13 @@ class BluetoothInput extends ConsumerStatefulWidget {
 /// - onMeasurement callback triggered
 @visibleForTesting
 class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
+  static const _stateTransition = Duration(milliseconds: 260);
+
   /// Whether the user initiated reading bluetooth input
   @visibleForTesting
   bool isActive = false;
-  /// Guard against auto-importing the same batch of measurements twice.
+
+  /// Guard against handling the same successful BLE read more than once.
   @visibleForTesting
   bool hasImported = false;
 
@@ -111,7 +114,9 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
   void initState() {
     super.initState();
     BleLaunchSync.holdForInput();
-    _bluetoothCubit = widget.bluetoothCubit?.call() ?? BluetoothCubit(manager: widget.manager);
+    _bluetoothCubit =
+        widget.bluetoothCubit?.call() ??
+        BluetoothCubit(manager: widget.manager);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _bluetoothSubscription = _bluetoothCubit.stream.listen(_onAdapterState);
@@ -149,7 +154,9 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
       if (state is BluetoothStateReady) {
         logDebug('_bluetoothSubscription.listen: state=$state');
       } else {
-        logDebug('_bluetoothSubscription.listen: state=$state, calling _returnToIdle');
+        logDebug(
+          '_bluetoothSubscription.listen: state=$state, calling _returnToIdle',
+        );
         _returnToIdle();
       }
       return;
@@ -204,6 +211,35 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
     setState(() => isActive = true);
   }
 
+  Widget _animateState(String stateKey, Widget child) => AnimatedSize(
+    duration: _stateTransition,
+    curve: Curves.easeOutCubic,
+    alignment: Alignment.topCenter,
+    child: AnimatedSwitcher(
+      duration: _stateTransition,
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      layoutBuilder: (current, previous) => Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          for (final oldChild in previous) IgnorePointer(child: oldChild),
+          ?current,
+        ],
+      ),
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.025),
+            end: Offset.zero,
+          ).animate(animation),
+          child: child,
+        ),
+      ),
+      child: KeyedSubtree(key: ValueKey(stateKey), child: child),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     const SizeChangedLayoutNotification().dispatch(context);
@@ -217,31 +253,33 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
     });
 
     if (_importError != null) {
-      return MeasurementFailure(
-        onTap: _returnToIdle,
-        reason: _importError!,
+      return _animateState(
+        'failure',
+        MeasurementFailure(onTap: _returnToIdle, reason: _importError!),
       );
     }
 
     if (_finishedData != null) {
-      return MeasurementSuccess(
-        onTap: _returnToIdle,
-        data: _finishedData!,
+      return _animateState(
+        'success',
+        MeasurementSuccess(onTap: _returnToIdle, data: _finishedData!),
       );
     }
 
     if (_finishedWeight != null) {
-      return WeightMeasurementSuccess(
-        onTap: _returnToIdle,
-        data: _finishedWeight!,
+      return _animateState(
+        'weight-success',
+        WeightMeasurementSuccess(onTap: _returnToIdle, data: _finishedWeight!),
       );
     }
 
     if (isActive) {
-      return _buildActive(context);
+      return _animateState('active', _buildActive(context));
     }
 
-    return ClosedBluetoothInput(
+    return _animateState(
+      'idle',
+      ClosedBluetoothInput(
         bluetoothCubit: _bluetoothCubit,
         onStarted: () {
           unawaited(_beginScan());
@@ -257,17 +295,20 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
             );
           }
         },
+      ),
     );
   }
 
   /// Build widget for 'adapter ready & discovering devices from bluetooth' state
   Widget _buildActive(BuildContext context) {
     final settings = ref.watch(appSettingsProvider);
-    _deviceScanCubit ??= widget.deviceScanCubit?.call() ?? DeviceScanCubit(
-      manager: widget.manager,
-      knownBleDev: settings.knownBleDev,
-      writeKnownBle: (list) => ref.writeKnownBleDevices(list),
-    );
+    _deviceScanCubit ??=
+        widget.deviceScanCubit?.call() ??
+        DeviceScanCubit(
+          manager: widget.manager,
+          knownBleDev: settings.knownBleDev,
+          writeKnownBle: (list) => ref.writeKnownBleDevices(list),
+        );
 
     return StreamBuilder<DeviceScanState>(
       stream: _deviceScanCubit!.stream,
@@ -276,7 +317,7 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
         final DeviceScanState state = snap.data!;
         logDebug('DeviceScanCubit.builder deviceScanState: $state');
         const SizeChangedLayoutNotification().dispatch(context);
-        return switch(state) {
+        return switch (state) {
           DeviceListLoading() => DeviceScanPlaceholder(
             onClosed: _returnToIdle,
             deviceName: settings.knownBleDev.length == 1
@@ -289,10 +330,10 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
             onAccepted: (dev) => _deviceScanCubit!.acceptDevice(dev),
           ),
           SingleDeviceAvailable() => DeviceSelection(
-            scanResults: [ state.device ],
+            scanResults: [state.device],
             onAccepted: (dev) => _deviceScanCubit!.acceptDevice(dev),
           ),
-          DeviceSelected() => _buildReadDevice(state)
+          DeviceSelected() => _buildReadDevice(state),
         };
       },
     );
@@ -309,7 +350,9 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
         final BleReadState state = snap.data!;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          final bluetoothImportMode = ref.read(appSettingsProvider).bluetoothImportMode;
+          final bluetoothImportMode = ref
+              .read(appSettingsProvider)
+              .bluetoothImportMode;
           if (state is BleReadSuccess) {
             if (bluetoothImportMode.isAutomatic) {
               if (!hasImported) {
@@ -317,7 +360,8 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
                 setState(() {});
                 unawaited(_importMeasurements([state.data]));
               }
-            } else {
+            } else if (!hasImported) {
+              hasImported = true;
               widget.onMeasurement(state.data.asBloodPressureRecord());
               setState(() => _finishedData = state.data);
             }
@@ -333,19 +377,25 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
                 setState(() => _finishedWeight = state.data);
               }
             }
-          } else if (state is BleReadMultiple && bluetoothImportMode.isAutomatic && !hasImported) {
+          } else if (state is BleReadMultiple &&
+              bluetoothImportMode.isAutomatic &&
+              !hasImported) {
             hasImported = true;
             setState(() {});
-            unawaited(_importMeasurements(
-              bluetoothImportMode == BluetoothMeasurementImportMode.all
-                  ? state.data
-                  : [state.data.first],
-            ));
+            unawaited(
+              _importMeasurements(
+                bluetoothImportMode == BluetoothMeasurementImportMode.all
+                    ? state.data
+                    : [state.data.first],
+              ),
+            );
           }
         });
         logDebug('BleReadCubit.builder: $state');
         const SizeChangedLayoutNotification().dispatch(context);
-        final bluetoothImportMode = ref.watch(appSettingsProvider).bluetoothImportMode;
+        final bluetoothImportMode = ref
+            .watch(appSettingsProvider)
+            .bluetoothImportMode;
         return switch (state) {
           BleReadInProgress() => DeviceConnectingPlaceholder(
             onClosed: _returnToIdle,
@@ -386,14 +436,11 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
     );
   }
 
-  Widget _buildMainCard(BuildContext context, {
+  Widget _buildMainCard(
+    BuildContext context, {
     required Widget child,
     Widget? title,
-  }) => InputCard(
-    onClosed: _returnToIdle,
-    title: title,
-    child: child,
-  );
+  }) => InputCard(onClosed: _returnToIdle, title: title, child: child);
 
   /// Import measurements without letting the user review them first.
   Future<void> _importMeasurements(List<BleMeasurementData> data) async {

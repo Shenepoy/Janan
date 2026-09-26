@@ -2,6 +2,7 @@ import 'package:blood_pressure_app/core/settings/storage_providers.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
 import 'package:blood_pressure_app/features/data_picker/interval_picker.dart';
 import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart';
+import 'package:blood_pressure_app/features/measurement_list/selection/selection_action_bar.dart';
 import 'package:blood_pressure_app/features/shell/app_shell.dart';
 import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
@@ -84,6 +85,52 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('home-page'), findsOneWidget);
     expect(presence.onHome, isTrue);
+  });
+
+  testWidgets('shows a selection bar only on its active shell tab', (
+    tester,
+  ) async {
+    Widget pageBar(ShellTab tab, String label) => SelectionActionBarOverlay(
+      visible: true,
+      page: tab,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 120),
+        child: Material(child: SizedBox(height: 48, child: Text(label))),
+      ),
+    );
+
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        pages: [
+          pageBar(ShellTab.home, 'home-selection'),
+          pageBar(ShellTab.weight, 'weight-selection'),
+          const Text('stats-page'),
+          const Text('settings-page'),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('home-selection'), findsOneWidget);
+    expect(find.text('weight-selection'), findsNothing);
+
+    await tester.tap(find.byKey(AppShell.navWeightKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+
+    expect(find.text('home-selection'), findsNothing);
+    expect(find.text('weight-selection'), findsOneWidget);
+
+    await tester.tap(find.byKey(AppShell.navHomeKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+
+    expect(find.text('home-selection'), findsOneWidget);
+    expect(find.text('weight-selection'), findsNothing);
   });
 
   testWidgets('swiping left and right changes the selected tab', (

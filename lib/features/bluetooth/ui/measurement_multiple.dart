@@ -11,7 +11,8 @@ import 'package:flutter/material.dart';
 /// Indication of a successful bluetooth read that returned multiple measurements.
 class MeasurementMultiple extends StatefulWidget {
   /// Indicate a successful read while taking a bluetooth measurement.
-  const MeasurementMultiple({super.key,
+  const MeasurementMultiple({
+    super.key,
     required this.onClosed,
     required this.onSelect,
     required this.onSelectAll,
@@ -71,9 +72,10 @@ class _MeasurementMultipleState extends State<MeasurementMultiple> {
       return;
     }
     Future.wait<Object?>([
-      provided == null
-          ? repo!.get(DateRange.all())
-          : Future<List<BloodPressureRecord>>.value(provided),
+      if (provided == null)
+        repo!.get(DateRange.all())
+      else
+        Future<List<BloodPressureRecord>>.value(provided),
       blacklist?.getKeys('bp') ?? Future.value(const <String>{}),
     ]).then((results) {
       if (!mounted) return;
@@ -163,8 +165,12 @@ class _MeasurementMultipleState extends State<MeasurementMultiple> {
                       icon: const Icon(Icons.download),
                       label: Text(
                         duplicateCount == 0
-                            ? 'importAll'.tr(namedArgs: {'count': '${newOnes.length}'})
-                            : 'importNew'.tr(namedArgs: {'count': '${newOnes.length}'}),
+                            ? 'importAll'.tr(
+                                namedArgs: {'count': '${newOnes.length}'},
+                              )
+                            : 'importNew'.tr(
+                                namedArgs: {'count': '${newOnes.length}'},
+                              ),
                       ),
                     ),
                   ),
@@ -181,7 +187,9 @@ class _MeasurementMultipleState extends State<MeasurementMultiple> {
                               _MeasurementTile(
                                 index: index,
                                 data: data,
-                                alreadySaved: !newKeys.contains(bleMeasurementKey(data)),
+                                alreadySaved: !newKeys.contains(
+                                  bleMeasurementKey(data),
+                                ),
                                 onSelect: widget.onSelect,
                               ),
                           ],
@@ -212,26 +220,25 @@ class _MeasurementTile extends StatelessWidget {
     final color = alreadySaved ? theme.colorScheme.onSurfaceVariant : null;
     return ListTile(
       title: Text(
-        data.timestamp?.toIso8601String() ?? 'measurementIndex'.tr(namedArgs: {'number': '${index + 1}'}),
+        data.timestamp?.toIso8601String() ??
+            'measurementIndex'.tr(namedArgs: {'number': '${index + 1}'}),
         style: TextStyle(color: color),
       ),
-      subtitle: Text(
-        () {
-          var str = '';
-          if (data.userID != null) {
-            str += '${'userID'.tr()}: ${data.userID}, ';
-          }
-          str += '${'bloodPressure'.tr()}: ${data.systolic.round()}/${data.diastolic.round()}';
-          if (data.pulse != null) {
-            str += ', ${'pulLong'.tr()}: ${data.pulse?.round()}';
-          }
-          if (alreadySaved) {
-            str += ' · ${'alreadySaved'.tr()}';
-          }
-          return str;
-        }(),
-        style: TextStyle(color: color),
-      ),
+      subtitle: Text(() {
+        var str = '';
+        if (data.userID != null) {
+          str += '${'userID'.tr()}: ${data.userID}, ';
+        }
+        str +=
+            '${'bloodPressure'.tr()}: ${data.systolic.round()}/${data.diastolic.round()}';
+        if (data.pulse != null) {
+          str += ', ${'pulLong'.tr()}: ${data.pulse?.round()}';
+        }
+        if (alreadySaved) {
+          str += ' · ${'alreadySaved'.tr()}';
+        }
+        return str;
+      }(), style: TextStyle(color: color)),
       trailing: alreadySaved
           ? Chip(
               visualDensity: VisualDensity.compact,

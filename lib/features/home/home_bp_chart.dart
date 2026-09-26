@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:blood_pressure_app/core/settings/storage_providers.dart';
 import 'package:blood_pressure_app/data_util/combined_entry_builder.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:blood_pressure_app/features/home/chart_bucket_calendar.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_info.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/statistics/chart/chart_tooltip.dart';
@@ -44,10 +46,10 @@ class HomeBpChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => CombinedEntryBuilder(
-      rangeType: IntervalStoreManagerLocation.mainPage,
-      onData: (context, records, intakes, notes) =>
-          _HomeBpChartView(records: records),
-    );
+    rangeType: IntervalStoreManagerLocation.mainPage,
+    onData: (context, records, intakes, notes) =>
+        _HomeBpChartView(records: records),
+  );
 }
 
 class _HomeBpChartView extends ConsumerStatefulWidget {
@@ -82,8 +84,9 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
   };
 
   String _subtitleOf(HomeBpChartKind kind) => switch (kind) {
+    HomeBpChartKind.dailyRange => 'chartDailyRangeSubtitle'.tr(),
+    HomeBpChartKind.classification => 'chartClassificationSubtitle'.tr(),
     HomeBpChartKind.pulsePressure => 'chartPulsePressureSubtitle'.tr(),
-    _ => '',
   };
 
   IconData _iconOf(HomeBpChartKind kind) => switch (kind) {
@@ -110,9 +113,8 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
 
   void _cycle() {
     _spin.forward(from: 0);
-    final next = HomeBpChartKind.values[
-      (_kind.index + 1) % HomeBpChartKind.values.length
-    ];
+    final next = HomeBpChartKind
+        .values[(_kind.index + 1) % HomeBpChartKind.values.length];
     _height = Tween<double>(
       begin: _height.value,
       end: _heightFor(next),
@@ -127,42 +129,48 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
     required TextStyle? style,
     required double height,
   }) => SizedBox(
-      height: height,
-      width: double.infinity,
-      child: AnimatedSwitcher(
-        duration: _swap,
-        switchInCurve: Curves.easeInOutCubic,
-        switchOutCurve: Curves.easeInOutCubic,
-        layoutBuilder: (current, previous) => Stack(
-          fit: StackFit.expand,
-          alignment: AlignmentDirectional.centerStart,
-          children: [
-            for (final child in previous) IgnorePointer(child: child),
-            ?current,
-          ],
-        ),
-        transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-        child: Align(
-          key: ValueKey(text),
-          alignment: AlignmentDirectional.centerStart,
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: style,
-          ),
+    height: height,
+    width: double.infinity,
+    child: AnimatedSwitcher(
+      duration: _swap,
+      switchInCurve: Curves.easeInOutCubic,
+      switchOutCurve: Curves.easeInOutCubic,
+      layoutBuilder: (current, previous) => Stack(
+        fit: StackFit.expand,
+        alignment: AlignmentDirectional.centerStart,
+        children: [
+          for (final child in previous) IgnorePointer(child: child),
+          ?current,
+        ],
+      ),
+      transitionBuilder: (child, animation) =>
+          FadeTransition(opacity: animation, child: child),
+      child: Align(
+        key: ValueKey(text),
+        alignment: AlignmentDirectional.centerStart,
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: style,
         ),
       ),
-    );
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     Localizations.localeOf(context);
+    final selectedRange = ref.watch(
+      currentDateRangeProvider(IntervalStoreManagerLocation.mainPage),
+    );
+    final period = _chartPeriodForSpan(selectedRange.duration);
     final theme = Theme.of(context);
     final titleStyle = AppText.title(context);
     final subtitleStyle = AppText.subtitle(context);
     final titleHeight = titleStyle.fontSize! * (titleStyle.height ?? 1.25);
-    final subtitleHeight = subtitleStyle.fontSize! * (subtitleStyle.height ?? 1.3);
+    final subtitleHeight =
+        subtitleStyle.fontSize! * (subtitleStyle.height ?? 1.3);
     return DashboardSection(
       padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 16),
       child: Column(
@@ -233,23 +241,29 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
                   fit: StackFit.expand,
                   alignment: Alignment.topCenter,
                   children: [
-                    for (final child in previous)
-                      IgnorePointer(child: child),
+                    for (final child in previous) IgnorePointer(child: child),
                     ?current,
                   ],
                 ),
-                transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+                transitionBuilder: (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
                 child: KeyedSubtree(
                   key: ValueKey(_kind),
                   child: switch (_kind) {
-                    HomeBpChartKind.dailyRange =>
-                      _DailyRangeChart(records: widget.records),
+                    HomeBpChartKind.dailyRange => _DailyRangeChart(
+                      records: widget.records,
+                      range: selectedRange,
+                      period: period,
+                    ),
                     HomeBpChartKind.classification => Align(
                       alignment: Alignment.topCenter,
                       child: _ClassificationChart(records: widget.records),
                     ),
-                    HomeBpChartKind.pulsePressure =>
-                      _PulsePressureChart(records: widget.records),
+                    HomeBpChartKind.pulsePressure => _PulsePressureChart(
+                      records: widget.records,
+                      range: selectedRange,
+                      period: period,
+                    ),
                   },
                 ),
               ),
@@ -266,15 +280,22 @@ class _EmptyChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-      child: Text(
-        'errNotEnoughDataToGraph'.tr(),
-        textAlign: TextAlign.center,
-        style: AppText.subtitle(context),
-      ),
-    );
+    child: Text(
+      'errNotEnoughDataToGraph'.tr(),
+      textAlign: TextAlign.center,
+      style: AppText.subtitle(context),
+    ),
+  );
 }
 
 enum _RangeBucket { day, week, month }
+
+class _ChartPeriod {
+  const _ChartPeriod({required this.dataBucket, required this.axisBucket});
+
+  final _RangeBucket dataBucket;
+  final _RangeBucket axisBucket;
+}
 
 class _RangeSlot {
   const _RangeSlot(this.start, this.min, this.max, this.avg);
@@ -287,93 +308,170 @@ class _RangeSlot {
   bool get hasData => min != null && max != null && avg != null;
 }
 
-_RangeBucket _bucketForSpan(Duration span) {
+_ChartPeriod _chartPeriodForSpan(Duration span) {
   final days = span.inDays;
-  if (days <= 45) return _RangeBucket.day;
-  if (days <= 400) return _RangeBucket.week;
-  return _RangeBucket.month;
+  if (days <= 14) {
+    return const _ChartPeriod(
+      dataBucket: _RangeBucket.day,
+      axisBucket: _RangeBucket.day,
+    );
+  }
+  if (days <= 45) {
+    return const _ChartPeriod(
+      dataBucket: _RangeBucket.week,
+      axisBucket: _RangeBucket.week,
+    );
+  }
+  if (days <= 400) {
+    return const _ChartPeriod(
+      dataBucket: _RangeBucket.week,
+      axisBucket: _RangeBucket.month,
+    );
+  }
+  return const _ChartPeriod(
+    dataBucket: _RangeBucket.month,
+    axisBucket: _RangeBucket.month,
+  );
 }
 
-DateTime _bucketStart(DateTime time, _RangeBucket bucket) {
-  final local = time.toLocal();
-  final day = DateTime(local.year, local.month, local.day);
-  return switch (bucket) {
-    _RangeBucket.day => day,
-    _RangeBucket.week => day.subtract(Duration(days: day.weekday - DateTime.monday)),
-    _RangeBucket.month => DateTime(local.year, local.month),
-  };
+DateTime _bucketStart(DateTime time, _RangeBucket bucket) =>
+    chartBucketStart(time, switch (bucket) {
+      _RangeBucket.day => ChartCalendarBucket.day,
+      _RangeBucket.week => ChartCalendarBucket.week,
+      _RangeBucket.month => ChartCalendarBucket.month,
+    });
+
+DateTime _nextBucket(DateTime start, _RangeBucket bucket) =>
+    nextChartBucket(start, switch (bucket) {
+      _RangeBucket.day => ChartCalendarBucket.day,
+      _RangeBucket.week => ChartCalendarBucket.week,
+      _RangeBucket.month => ChartCalendarBucket.month,
+    });
+
+List<DateTime> _bucketStarts(
+  DateRange range,
+  _RangeBucket bucket, {
+  required DateTime firstRecord,
+  required DateTime lastRecord,
+}) {
+  final useRecordBounds = bucket == _RangeBucket.month;
+  var cursor = _bucketStart(
+    useRecordBounds ? firstRecord : range.start,
+    bucket,
+  );
+  final last = _bucketStart(useRecordBounds ? lastRecord : range.end, bucket);
+  final starts = <DateTime>[];
+  while (!cursor.isAfter(last)) {
+    starts.add(cursor);
+    cursor = _nextBucket(cursor, bucket);
+  }
+  return starts;
 }
 
-DateTime _nextBucket(DateTime start, _RangeBucket bucket) => switch (bucket) {
-  _RangeBucket.day => start.add(const Duration(days: 1)),
-  _RangeBucket.week => start.add(const Duration(days: 7)),
-  _RangeBucket.month => DateTime(start.year, start.month + 1),
-};
-
-List<_RangeSlot> _dailyRangeSlots(Iterable<BloodPressureRecord> records) {
+List<_RangeSlot> _dailyRangeSlots(
+  Iterable<BloodPressureRecord> records,
+  DateRange range,
+  _ChartPeriod period,
+) {
   final dated = records.where((r) => r.sys != null || r.dia != null).toList()
     ..sort((a, b) => a.time.compareTo(b.time));
   if (dated.isEmpty) return const [];
 
-  final bucket = _bucketForSpan(dated.last.time.difference(dated.first.time));
   final sysBy = <DateTime, List<double>>{};
   final diaBy = <DateTime, List<double>>{};
   for (final record in dated) {
-    final start = _bucketStart(record.time, bucket);
+    final start = _bucketStart(record.time, period.dataBucket);
     final sys = record.sys?.mmHg.toDouble();
     final dia = record.dia?.mmHg.toDouble();
     if (sys != null) sysBy.putIfAbsent(start, () => []).add(sys);
     if (dia != null) diaBy.putIfAbsent(start, () => []).add(dia);
   }
 
-  var cursor = _bucketStart(dated.first.time, bucket);
-  final last = _bucketStart(dated.last.time, bucket);
+  final starts = _bucketStarts(
+    range,
+    period.dataBucket,
+    firstRecord: dated.first.time,
+    lastRecord: dated.last.time,
+  );
   final slots = <_RangeSlot>[];
-  while (!cursor.isAfter(last)) {
-    final values = sysBy[cursor]?.isNotEmpty == true ? sysBy[cursor]! : diaBy[cursor];
+  for (final start in starts) {
+    final values = sysBy[start]?.isNotEmpty == true
+        ? sysBy[start]!
+        : diaBy[start];
     if (values == null || values.isEmpty) {
-      slots.add(_RangeSlot(cursor, null, null, null));
+      slots.add(_RangeSlot(start, null, null, null));
     } else {
       final min = values.reduce(math.min);
       final max = values.reduce(math.max);
       final avg = values.reduce((a, b) => a + b) / values.length;
-      slots.add(_RangeSlot(cursor, min, max, avg));
+      slots.add(_RangeSlot(start, min, max, avg));
     }
-    cursor = _nextBucket(cursor, bucket);
   }
   return slots;
 }
 
 class _DailyRangeChart extends StatelessWidget {
-  const _DailyRangeChart({required this.records});
+  const _DailyRangeChart({
+    required this.records,
+    required this.range,
+    required this.period,
+  });
 
   final List<BloodPressureRecord> records;
+  final DateRange range;
+  final _ChartPeriod period;
 
   @override
   Widget build(BuildContext context) {
-    final slots = _dailyRangeSlots(records);
+    final slots = _dailyRangeSlots(records, range, period);
     if (slots.every((s) => !s.hasData)) return const _EmptyChart();
 
     final theme = Theme.of(context);
     final locale = context.locale.toString();
-    final bucket = _bucketForSpan(
-      slots.last.start.difference(slots.first.start),
-    );
-    final dateFormat = switch (bucket) {
+    final axisDateFormat = switch (period.axisBucket) {
       _RangeBucket.day => WesternDateFormat('ccc', locale),
-      _RangeBucket.week => WesternDateFormat.MMMd(locale),
-      _RangeBucket.month => WesternDateFormat.MMM(locale),
+      _RangeBucket.week => WesternDateFormat('d/M', locale),
+      _RangeBucket.month => WesternDateFormat(
+        period.dataBucket == _RangeBucket.week || slots.length <= 12
+            ? 'M'
+            : 'M/yy',
+        locale,
+      ),
     };
+    String? labelAt(int index, DateTime start) {
+      if (period.dataBucket == _RangeBucket.week &&
+          period.axisBucket == _RangeBucket.month) {
+        final labelDate = index == 0
+            ? range.start
+            : start.add(const Duration(days: 3));
+        final month = labelDate.month;
+        final previousMonth = index <= 1
+            ? range.start.month
+            : slots[index - 1].start.add(const Duration(days: 3)).month;
+        if (index != 0 && month == previousMonth) return null;
+        return axisDateFormat.format(DateTime(labelDate.year, month));
+      }
+
+      final labelEvery = slots.length > 8 ? (slots.length / 6).ceil() : 1;
+      final isLabel =
+          index == 0 || index == slots.length - 1 || index % labelEvery == 0;
+      final nearLastLabel =
+          labelEvery > 1 &&
+          index != slots.length - 1 &&
+          slots.length - 1 - index < 3;
+      if (!isLabel || nearLastLabel) return null;
+      return axisDateFormat.format(start);
+    }
 
     return CustomPaint(
       painter: _RangeBarPainter(
         slots: slots,
         barColor: theme.colorScheme.primary,
         gridColor: theme.colorScheme.onSurface.withValues(alpha: 0.22),
-        labelStyle: AppText.subtitle(context).copyWith(
-          color: theme.colorScheme.onSurface,
-        ),
-        labelOf: dateFormat.format,
+        labelStyle: AppText.subtitle(
+          context,
+        ).copyWith(color: theme.colorScheme.onSurface),
+        labelAt: labelAt,
         textDirection: Directionality.of(context),
       ),
     );
@@ -386,7 +484,7 @@ class _RangeBarPainter extends CustomPainter {
     required this.barColor,
     required this.gridColor,
     required this.labelStyle,
-    required this.labelOf,
+    required this.labelAt,
     required this.textDirection,
   });
 
@@ -394,7 +492,7 @@ class _RangeBarPainter extends CustomPainter {
   final Color barColor;
   final Color gridColor;
   final TextStyle labelStyle;
-  final String Function(DateTime) labelOf;
+  final String? Function(int, DateTime) labelAt;
   final TextDirection textDirection;
 
   @override
@@ -412,7 +510,11 @@ class _RangeBarPainter extends CustomPainter {
     final minY = ((rawMin - pad) / 10).floor() * 10.0;
     final maxY = ((rawMax + pad) / 10).ceil() * 10.0;
     final span = math.max(10.0, maxY - minY);
-    final step = span <= 30 ? 10.0 : span <= 80 ? 20.0 : 40.0;
+    final step = span <= 30
+        ? 10.0
+        : span <= 80
+        ? 20.0
+        : 40.0;
 
     const left = 32.0;
     const top = 16.0;
@@ -425,8 +527,7 @@ class _RangeBarPainter extends CustomPainter {
     );
     if (plot.width <= 0 || plot.height <= 0) return;
 
-    double yOf(double value) =>
-        plot.top + (maxY - value) / span * plot.height;
+    double yOf(double value) => plot.top + (maxY - value) / span * plot.height;
 
     final gridPaint = Paint()
       ..color = gridColor
@@ -452,8 +553,7 @@ class _RangeBarPainter extends CustomPainter {
 
     final count = slots.length;
     final cell = plot.width / count;
-    final barWidth = (cell * 0.42).clamp(10.0, 22.0);
-    final labelEvery = count > 8 ? (count / 6).ceil() : 1;
+    final barWidth = (cell * 0.42).clamp(2.0, 22.0);
     final barPaint = Paint()..color = barColor;
     final tickPaint = Paint()
       ..color = Color.alphaBlend(Colors.white.withValues(alpha: 0.88), barColor)
@@ -471,7 +571,12 @@ class _RangeBarPainter extends CustomPainter {
           top = mid - barWidth / 2;
           bottomY = mid + barWidth / 2;
         }
-        final rect = Rect.fromLTRB(cx - barWidth / 2, top, cx + barWidth / 2, bottomY);
+        final rect = Rect.fromLTRB(
+          cx - barWidth / 2,
+          top,
+          cx + barWidth / 2,
+          bottomY,
+        );
         canvas.drawRRect(
           RRect.fromRectAndRadius(rect, Radius.circular(barWidth / 2)),
           barPaint,
@@ -483,15 +588,17 @@ class _RangeBarPainter extends CustomPainter {
           tickPaint,
         );
       }
-      if (i == 0 || i == count - 1 || i % labelEvery == 0) {
+      final labelText = labelAt(i, slot.start);
+      if (labelText != null) {
         final label = TextPainter(
-          text: TextSpan(text: labelOf(slot.start), style: labelStyle),
+          text: TextSpan(text: labelText, style: labelStyle),
           textDirection: textDirection,
         )..layout();
-        label.paint(
-          canvas,
-          Offset(cx - label.width / 2, plot.bottom + 6),
+        final labelLeft = (cx - label.width / 2).clamp(
+          plot.left,
+          plot.right - label.width,
         );
+        label.paint(canvas, Offset(labelLeft, plot.bottom + 6));
       }
     }
   }
@@ -513,12 +620,12 @@ class _RangeBarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RangeBarPainter oldDelegate) =>
-      oldDelegate.slots != slots
-      || oldDelegate.barColor != barColor
-      || oldDelegate.gridColor != gridColor
-      || oldDelegate.labelStyle != labelStyle
-      || oldDelegate.textDirection != textDirection
-      || oldDelegate.labelOf != labelOf;
+      oldDelegate.slots != slots ||
+      oldDelegate.barColor != barColor ||
+      oldDelegate.gridColor != gridColor ||
+      oldDelegate.labelStyle != labelStyle ||
+      oldDelegate.textDirection != textDirection ||
+      oldDelegate.labelAt != labelAt;
 }
 
 int _toneRank(MetricBandTone tone) => switch (tone) {
@@ -546,6 +653,7 @@ MetricBandTone? _classify(BloodPressureRecord record) {
       worst = tone;
     }
   }
+
   final sys = record.sys?.mmHg;
   if (sys != null) {
     if (sys < 120) {
@@ -676,77 +784,95 @@ class _MixLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: _toneColor(tone),
-                shape: BoxShape.circle,
-              ),
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: _toneColor(tone),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                _toneLabel(tone),
-                style: labelStyle,
-                overflow: TextOverflow.ellipsis,
-              ),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              _toneLabel(tone),
+              style: labelStyle,
+              overflow: TextOverflow.ellipsis,
             ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text('$percent%', style: valueStyle),
-      ],
-    );
+          ),
+        ],
+      ),
+      const SizedBox(height: 4),
+      Text('$percent%', style: valueStyle),
+    ],
+  );
 }
 
 class _PulsePoint {
-  const _PulsePoint(this.day, this.value);
+  const _PulsePoint(this.start, this.value);
 
-  final DateTime day;
-  final double value;
+  final DateTime start;
+  final double? value;
 }
 
 class _PulsePressureChart extends StatelessWidget {
-  const _PulsePressureChart({required this.records});
+  const _PulsePressureChart({
+    required this.records,
+    required this.range,
+    required this.period,
+  });
 
   final List<BloodPressureRecord> records;
+  final DateRange range;
+  final _ChartPeriod period;
 
   @override
   Widget build(BuildContext context) {
-    final byDay = <DateTime, List<double>>{};
-    for (final record in records) {
-      if (record.sys == null || record.dia == null) continue;
-      final local = record.time.toLocal();
-      final day = DateTime(local.year, local.month, local.day);
-      byDay.putIfAbsent(day, () => []).add(
-        (record.sys!.mmHg - record.dia!.mmHg).toDouble(),
-      );
+    final byBucket = <DateTime, List<double>>{};
+    final dated =
+        records
+            .where((record) => record.sys != null && record.dia != null)
+            .toList()
+          ..sort((a, b) => a.time.compareTo(b.time));
+    if (dated.isEmpty) return const _EmptyChart();
+    for (final record in dated) {
+      final start = _bucketStart(record.time, period.dataBucket);
+      byBucket
+          .putIfAbsent(start, () => [])
+          .add((record.sys!.mmHg - record.dia!.mmHg).toDouble());
     }
-    final points = byDay.entries
-        .map((e) => _PulsePoint(
-          e.key,
-          e.value.reduce((a, b) => a + b) / e.value.length,
-        ))
-        .toList()
-      ..sort((a, b) => a.day.compareTo(b.day));
-    if (points.length < 2) return const _EmptyChart();
+    final points =
+        _bucketStarts(
+          range,
+          period.dataBucket,
+          firstRecord: dated.first.time,
+          lastRecord: dated.last.time,
+        ).map((start) {
+          final values = byBucket[start];
+          final average = values == null || values.isEmpty
+              ? null
+              : values.reduce((a, b) => a + b) / values.length;
+          return _PulsePoint(start, average);
+        }).toList();
+    final measured = points.map((point) => point.value).whereType<double>();
+    final values = measured.toList();
+    if (values.length < 2) return const _EmptyChart();
 
     final theme = Theme.of(context);
     final locale = context.locale.toString();
     final color = theme.colorScheme.primary;
-    final labelStyle = AppText.subtitle(context).copyWith(
-      color: theme.colorScheme.onSurface,
-    );
+    final labelStyle = AppText.subtitle(
+      context,
+    ).copyWith(color: theme.colorScheme.onSurface);
     final gridColor = theme.colorScheme.onSurface.withValues(alpha: 0.28);
     final axisColor = theme.colorScheme.onSurface.withValues(alpha: 0.45);
 
-    var minY = points.map((p) => p.value).reduce(math.min);
-    var maxY = points.map((p) => p.value).reduce(math.max);
+    var minY = values.reduce(math.min);
+    var maxY = values.reduce(math.max);
     if (minY == maxY) {
       minY -= 5;
       maxY += 5;
@@ -756,10 +882,32 @@ class _PulsePressureChart extends StatelessWidget {
     maxY = ((maxY + pad) / 10).ceil() * 10.0;
     final yStep = (maxY - minY) <= 30 ? 10.0 : 20.0;
 
-    final weekday = WesternDateFormat('ccc', locale);
-    final monthDay = WesternDateFormat.MMMd(locale);
-    final labelEvery = points.length > 8 ? (points.length / 6).ceil() : 1;
+    final axisDateFormat = switch (period.axisBucket) {
+      _RangeBucket.day => WesternDateFormat('ccc', locale),
+      _RangeBucket.week => WesternDateFormat('d/M', locale),
+      _RangeBucket.month => WesternDateFormat(
+        period.dataBucket == _RangeBucket.week || points.length <= 12
+            ? 'M'
+            : 'M/yy',
+        locale,
+      ),
+    };
+    final labelEvery =
+        period.axisBucket == _RangeBucket.month &&
+            (period.dataBucket == _RangeBucket.week || points.length <= 12)
+        ? 1
+        : points.length > 8
+        ? (points.length / 5).ceil()
+        : 1;
     final dateFormat = WesternDateFormat.yMMMd(locale);
+    final isMonthlyIndex =
+        period.dataBucket == _RangeBucket.week &&
+        period.axisBucket == _RangeBucket.month;
+    DateTime monthDateAt(int index) => index == 0
+        ? range.start
+        : points[index].start.add(const Duration(days: 3));
+    bool isMonthBoundary(int index) =>
+        index == 0 || monthDateAt(index).month != monthDateAt(index - 1).month;
 
     return LineChart(
       LineChartData(
@@ -773,16 +921,18 @@ class _PulsePressureChart extends StatelessWidget {
           drawHorizontalLine: true,
           horizontalInterval: yStep,
           verticalInterval: 1,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: gridColor,
-            strokeWidth: 1,
-            dashArray: const [3, 5],
-          ),
-          getDrawingVerticalLine: (_) => FlLine(
-            color: gridColor,
-            strokeWidth: 1,
-            dashArray: const [3, 5],
-          ),
+          getDrawingHorizontalLine: (_) =>
+              FlLine(color: gridColor, strokeWidth: 1, dashArray: const [3, 5]),
+          getDrawingVerticalLine: (value) {
+            if (isMonthlyIndex && !isMonthBoundary(value.round())) {
+              return const FlLine(color: Colors.transparent, strokeWidth: 0);
+            }
+            return FlLine(
+              color: gridColor,
+              strokeWidth: 1,
+              dashArray: const [3, 5],
+            );
+          },
         ),
         borderData: FlBorderData(
           show: true,
@@ -800,11 +950,8 @@ class _PulsePressureChart extends StatelessWidget {
               reservedSize: 32,
               interval: yStep,
               maxIncluded: false,
-              getTitlesWidget: (value, meta) => valueAxisTitle(
-                value: value,
-                meta: meta,
-                style: labelStyle,
-              ),
+              getTitlesWidget: (value, meta) =>
+                  valueAxisTitle(value: value, meta: meta, style: labelStyle),
             ),
           ),
           bottomTitles: AxisTitles(
@@ -820,16 +967,38 @@ class _PulsePressureChart extends StatelessWidget {
                 if ((value - index).abs() > 0.01) {
                   return const SizedBox.shrink();
                 }
-                if (index != 0
-                    && index != points.length - 1
-                    && index % labelEvery != 0) {
+                final point = points[index];
+                if (isMonthlyIndex) {
+                  if (!isMonthBoundary(index)) {
+                    return const SizedBox.shrink();
+                  }
+                  final labelDate = monthDateAt(index);
+                  final month = labelDate.month;
+                  final text = axisDateFormat.format(
+                    DateTime(labelDate.year, month),
+                  );
+                  return SideTitleWidget(
+                    meta: meta,
+                    fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
+                    child: Text(text, style: labelStyle),
+                  );
+                }
+                final isLast = index == points.length - 1;
+                final sparseLabels =
+                    points.length > 10 &&
+                    (period.dataBucket == _RangeBucket.day ||
+                        (period.dataBucket == _RangeBucket.month &&
+                            points.length > 12));
+                final nearLastLabel =
+                    sparseLabels && !isLast && points.length - 1 - index < 3;
+                if (nearLastLabel ||
+                    (index != 0 && !isLast && index % labelEvery != 0)) {
                   return const SizedBox.shrink();
                 }
-                final text = points.length <= 10
-                    ? weekday.format(points[index].day)
-                    : monthDay.format(points[index].day);
+                final text = axisDateFormat.format(point.start);
                 return SideTitleWidget(
                   meta: meta,
+                  fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
                   child: Text(text, style: labelStyle),
                 );
               },
@@ -840,7 +1009,10 @@ class _PulsePressureChart extends StatelessWidget {
           LineChartBarData(
             spots: [
               for (var i = 0; i < points.length; i++)
-                FlSpot(i.toDouble(), points[i].value),
+                if (points[i].value == null)
+                  FlSpot.nullSpot
+                else
+                  FlSpot(i.toDouble(), points[i].value!),
             ],
             color: color,
             barWidth: 2.6,
@@ -873,7 +1045,7 @@ class _PulsePressureChart extends StatelessWidget {
               return [
                 for (final spot in touched)
                   LineTooltipItem(
-                    '${dateFormat.format(points[spot.x.round()].day)}\n'
+                    '${dateFormat.format(points[spot.x.round()].start)}\n'
                     '${spot.y.round()}',
                     chartTooltipValueStyle(context, color),
                   ),

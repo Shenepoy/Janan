@@ -75,6 +75,26 @@ void main() {
     expect(joined, contains('7 Ø'));
   },);
 
+  testWidgets('keeps edge labels inside the chart in English', (tester) async {
+    await pumpApp(tester, await materialApp(
+      SizedBox(
+        height: 200,
+        width: 400,
+        child: ValueDistribution(
+          color: Colors.red,
+          values: [for (var value = 116; value <= 158; value++) value],
+        ),
+      ),
+      locale: const Locale('en'),
+    ));
+
+    final chartRect = tester.getRect(find.byType(BarChart));
+    expect(tester.getRect(find.text('116 min.')).left,
+        greaterThanOrEqualTo(chartRect.left));
+    expect(tester.getRect(find.text('158 max.')).right,
+        lessThanOrEqualTo(chartRect.right));
+  });
+
   testWidgets('rebuilds axis labels when the locale changes', (tester) async {
     await pumpApp(tester, await materialApp(const SizedBox(
       height: 200,
