@@ -675,6 +675,9 @@ class MockMedRepo implements MedicineRepository {
   Future<List<Medicine>> getAll() async=> _meds;
 
   @override
+  Future<List<Medicine>> getAllInCreationOrder() => getAll();
+
+  @override
   Future<void> remove(Medicine value) async {
     _meds.remove(value);
     _controller.add(null);
