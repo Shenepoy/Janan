@@ -47,63 +47,6 @@
 
 ---
 
-## This is a fork
-
-Janan is a fork of [blood-pressure-monitor-fl](https://github.com/derdilla/blood-pressure-monitor-fl) by [derdilla](https://github.com/derdilla).
-
-This repository is [Zyzto/blood-pressure-monitor-fl](https://github.com/Zyzto/blood-pressure-monitor-fl). Issues, pull requests, and releases belong here. Work from this tree is not sent upstream.
-
-The original app is still published by its author on [Google Play](https://play.google.com/store/apps/details?id=com.derdilla.bloodPressureApp) as *Blood pressure monitor* (`com.derdilla.bloodPressureApp`). That listing is upstream, not this fork. Janan uses `com.shenepoy.janan` and installs next to the original.
-
----
-
-## What's different from upstream
-
-Compared to [derdilla/blood-pressure-monitor-fl](https://github.com/derdilla/blood-pressure-monitor-fl) `main` (v1.8.15). This tree is not a drop-in update of a Play or F-Droid install.
-
-| | Upstream | This fork |
-|---|---|---|
-| **Name** | Blood pressure monitor | Janan · الجَنَان |
-| **Android id** | `com.derdilla.bloodPressureApp` | `com.shenepoy.janan` |
-| **Install** | Play, F-Droid, GitHub | GitHub Releases + [Obtainium](https://github.com/ImranR98/Obtainium) |
-| **Version** | Semver `1.8.15+57` | CalVer `YY.0M.MICRO` (now `26.09.6+70`) |
-| **Layout** | `app/` plus workspace packages | One Flutter app at the repo root |
-
-**Added here**
-
-| | |
-|---|---|
-| **BLE profiles** | Per-device routes for standard GATT, Yonker, and Microlife meters. |
-| **Saved meters** | Remember a device as an id and a name (Settings → Bluetooth devices). |
-| **Launch sync** | Pull from a saved meter on open; status in the AppBar. |
-| **Eufy P1** | Weight plus optional impedance. Body composition when a body profile is set. P2 is unsupported. |
-| **Details** | A screen per blood-pressure or weight record (composition when ohms and a profile are present). |
-| **Home** | First-run onboarding, a latest-reading dashboard, and a bottom-nav shell (home / weight / stats / settings). |
-
-**Internals that differ**
-
-- Local store is PowerSync `health.db` (local-only tables). A leftover upstream `bp.db` is copied in on launch.
-- State is generated Riverpod. Strings are `easy_localization` JSON under `assets/translations/`, not generated ARB.
-- Upstream packages `health_data_store`, `settings_annotation`, and `settings_builder` are gone from this tree.
-
-What upstream already has and this fork still has: manual input, graphs, CSV / PDF / SQLite export, Health Connect, and the [tested devices](docs/bluetooth.md) list.
-
----
-
-## What you get
-
-| | |
-|---|---|
-| **Blood pressure** | Systolic, diastolic, pulse, notes, and medicine doses. |
-| **Weight** | Optional log, BMI, and body composition from a compatible scale. |
-| **Charts** | Trends, distribution, and time of day. |
-| **Bluetooth** | Pull from a [meter or scale](docs/bluetooth.md). |
-| **Export** | CSV, PDF, Excel, or a database backup. |
-| **Health Connect** | Optional Android sync. |
-| **Offline** | On the device. No account. |
-
----
-
 ## Screenshots
 
 <div dir="ltr">
@@ -189,6 +132,63 @@ Deeper notes live in [`docs/`](docs/).
 Open issues and pull requests on [Zyzto/blood-pressure-monitor-fl](https://github.com/Zyzto/blood-pressure-monitor-fl). See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Do not send patches to the upstream derdilla repository from this fork.
+
+---
+
+## This is a fork
+
+Janan is a fork of [blood-pressure-monitor-fl](https://github.com/derdilla/blood-pressure-monitor-fl) by [derdilla](https://github.com/derdilla).
+
+This repository is [Zyzto/blood-pressure-monitor-fl](https://github.com/Zyzto/blood-pressure-monitor-fl). Issues, pull requests, and releases belong here. Work from this tree is not sent upstream.
+
+The original app is still published by its author on [Google Play](https://play.google.com/store/apps/details?id=com.derdilla.bloodPressureApp) as *Blood pressure monitor* (`com.derdilla.bloodPressureApp`). That listing is upstream, not this fork. Janan uses `com.shenepoy.janan` and installs next to the original.
+
+---
+
+## What's different from upstream
+
+Compared to [derdilla/blood-pressure-monitor-fl](https://github.com/derdilla/blood-pressure-monitor-fl) `main` (v1.8.15). This tree is not a drop-in update of a Play or F-Droid install.
+
+| | Upstream | This fork |
+|---|---|---|
+| **Name** | Blood pressure monitor | Janan · الجَنَان |
+| **Android id** | `com.derdilla.bloodPressureApp` | `com.shenepoy.janan` |
+| **Install** | Play, F-Droid, GitHub | GitHub Releases + [Obtainium](https://github.com/ImranR98/Obtainium) |
+| **Version** | Semver `1.8.15+57` | CalVer `YY.0M.MICRO` (now `26.09.6+70`) |
+| **Layout** | `app/` plus workspace packages | One Flutter app at the repo root |
+
+**Added here**
+
+| | |
+|---|---|
+| **BLE profiles** | Per-device routes for standard GATT, Yonker, and Microlife meters. |
+| **Saved meters** | Remember a device as an id and a name (Settings → Bluetooth devices). |
+| **Launch sync** | Pull from a saved meter on open; status in the AppBar. |
+| **Eufy P1** | Weight plus optional impedance. Body composition when a body profile is set. P2 is unsupported. |
+| **Details** | A screen per blood-pressure or weight record (composition when ohms and a profile are present). |
+| **Home** | First-run onboarding, a latest-reading dashboard, and a bottom-nav shell (home / weight / stats / settings). |
+
+**Internals that differ**
+
+- Local store is PowerSync `health.db` (local-only tables). A leftover upstream `bp.db` is copied in on launch.
+- State is generated Riverpod. Strings are `easy_localization` JSON under `assets/translations/`, not generated ARB.
+- Upstream packages `health_data_store`, `settings_annotation`, and `settings_builder` are gone from this tree.
+
+What upstream already has and this fork still has: manual input, graphs, CSV / PDF / SQLite export, Health Connect, and the [tested devices](docs/bluetooth.md) list.
+
+---
+
+## What you get
+
+| | |
+|---|---|
+| **Blood pressure** | Systolic, diastolic, pulse, notes, and medicine doses. |
+| **Weight** | Optional log, BMI, and body composition from a compatible scale. |
+| **Charts** | Trends, distribution, and time of day. |
+| **Bluetooth** | Pull from a [meter or scale](docs/bluetooth.md). |
+| **Export** | CSV, PDF, Excel, or a database backup. |
+| **Health Connect** | Optional Android sync. |
+| **Offline** | On the device. No account. |
 
 ---
 

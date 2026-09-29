@@ -48,76 +48,6 @@
 
 ---
 
-## هذه نسخة مفرّعة
-
-الجَنَان نسخة مفرّعة من
-[blood-pressure-monitor-fl](https://github.com/derdilla/blood-pressure-monitor-fl)
-لـ [derdilla](https://github.com/derdilla).
-
-هذا المستودع هو
-[Zyzto/blood-pressure-monitor-fl](https://github.com/Zyzto/blood-pressure-monitor-fl).
-المسائل والطلبات والإصدارات تُفتح هنا. لا نرسل العمل من هذا الفرع إلى المشروع الأصلي.
-
-التطبيق الأصلي ما زال ينشره صاحبه على
-[Google Play](https://play.google.com/store/apps/details?id=com.derdilla.bloodPressureApp)
-باسم *Blood pressure monitor*
-(<span dir="ltr"><code>com.derdilla.bloodPressureApp</code></span>).
-ذلك المتجر للمشروع الأصلي، وليس لهذا الفرع.
-الجَنَان يستخدم <span dir="ltr"><code>com.shenepoy.janan</code></span>
-ويتثبّت إلى جانب النسخة الأصلية.
-
----
-
-## ما الذي يختلف عن الأصل
-
-مقارنةً بـ
-[derdilla/blood-pressure-monitor-fl](https://github.com/derdilla/blood-pressure-monitor-fl)
-على <span dir="ltr"><code>main</code></span> (الإصدار <span dir="ltr">v1.8.15</span>).
-هذا الفرع ليس تحديثاً لتثبيت بلاي أو إف-درويد.
-
-| | الأصل | هذا الفرع |
-|---|---|---|
-| **الاسم** | Blood pressure monitor | الجَنَان · Janan |
-| **معرّف أندرويد** | <span dir="ltr"><code>com.derdilla.bloodPressureApp</code></span> | <span dir="ltr"><code>com.shenepoy.janan</code></span> |
-| **التثبيت** | بلاي، إف-درويد، GitHub | إصدارات GitHub و[Obtainium](https://github.com/ImranR98/Obtainium) |
-| **الإصدار** | Semver <span dir="ltr"><code>1.8.15+57</code></span> | CalVer <span dir="ltr"><code>YY.0M.MICRO</code></span> (الآن <span dir="ltr"><code>26.08.5+63</code></span>) |
-| **البنية** | مجلد <span dir="ltr"><code>app/</code></span> وحزم مساحة عمل | تطبيق Flutter واحد في جذر المستودع |
-
-**ما أُضيف هنا**
-
-| | |
-|---|---|
-| **ملفات BLE** | توجيه لكل جهاز: GATT القياسي، ويونكر، ومايكرولايف. |
-| **أجهزة محفوظة** | حفظ الجهاز بمعرّف واسم (الإعدادات ← أجهزة البلوتوث). |
-| **مزامنة عند الفتح** | سحب من جهاز محفوظ عند التشغيل؛ الحالة في شريط التطبيق. |
-| **Eufy P1** | وزن ومعاوقة اختيارية. تركيب الجسم إن وُجد ملف شخصي. P2 غير مدعوم. |
-| **التفاصيل** | شاشة لكل سجل ضغط أو وزن (والتركيب إن وُجدت أوم وملف شخصي). |
-| **الرئيسية** | جولة أول تشغيل، لوحة لآخر قراءة، وشريط تنقّل (الرئيسية / الوزن / الإحصاءات / الإعدادات). |
-
-**اختلافات داخلية**
-
-- التخزين المحلي PowerSync في <span dir="ltr"><code>health.db</code></span> (جداول محلية فقط). يُنسخ <span dir="ltr"><code>bp.db</code></span> القديم عند الإطلاق إن وُجد.
-- الحالة Riverpod مولَّد. النصوص <span dir="ltr"><code>easy_localization</code></span> في <span dir="ltr"><code>assets/translations/</code></span>، لا ملفات ARB المولَّدة.
-- حزم الأصل <span dir="ltr"><code>health_data_store</code></span> و<span dir="ltr"><code>settings_annotation</code></span> و<span dir="ltr"><code>settings_builder</code></span> ليست في هذا الفرع.
-
-ما بقي من الأصل هنا أيضاً: الإدخال اليدوي، الرسوم، التصدير (CSV / PDF / SQLite)، Health Connect، و[الأجهزة المجرّبة](docs/bluetooth.md).
-
----
-
-## ماذا تقدّم؟
-
-| | |
-|---|---|
-| **ضغط الدم** | الانقباضي، الانبساطي، النبض، ملاحظات، وجرعات الدواء. |
-| **الوزن** | سجل اختياري، مؤشر كتلة الجسم، وتركيب الجسم من ميزان متوافق. |
-| **الرسوم** | اتجاهات، توزيع، ووقت اليوم. |
-| **بلوتوث** | سحب من [جهاز قياس أو ميزان](docs/bluetooth.md). |
-| **التصدير** | <span dir="ltr">CSV</span> و<span dir="ltr">PDF</span> وExcel أو نسخة من قاعدة البيانات. |
-| **Health Connect** | مزامنة اختيارية على أندرويد. |
-| **أوفلاين** | على الجهاز. بلا حساب. |
-
----
-
 ## لقطات
 
 <div dir="ltr">
@@ -205,6 +135,76 @@ flutter build apk
 انظر [CONTRIBUTING.md](CONTRIBUTING.md).
 
 لا ترسل ترقيعات إلى مستودع derdilla الأصلي من هذا الفرع.
+
+---
+
+## هذه نسخة مفرّعة
+
+الجَنَان نسخة مفرّعة من
+[blood-pressure-monitor-fl](https://github.com/derdilla/blood-pressure-monitor-fl)
+لـ [derdilla](https://github.com/derdilla).
+
+هذا المستودع هو
+[Zyzto/blood-pressure-monitor-fl](https://github.com/Zyzto/blood-pressure-monitor-fl).
+المسائل والطلبات والإصدارات تُفتح هنا. لا نرسل العمل من هذا الفرع إلى المشروع الأصلي.
+
+التطبيق الأصلي ما زال ينشره صاحبه على
+[Google Play](https://play.google.com/store/apps/details?id=com.derdilla.bloodPressureApp)
+باسم *Blood pressure monitor*
+(<span dir="ltr"><code>com.derdilla.bloodPressureApp</code></span>).
+ذلك المتجر للمشروع الأصلي، وليس لهذا الفرع.
+الجَنَان يستخدم <span dir="ltr"><code>com.shenepoy.janan</code></span>
+ويتثبّت إلى جانب النسخة الأصلية.
+
+---
+
+## ما الذي يختلف عن الأصل
+
+مقارنةً بـ
+[derdilla/blood-pressure-monitor-fl](https://github.com/derdilla/blood-pressure-monitor-fl)
+على <span dir="ltr"><code>main</code></span> (الإصدار <span dir="ltr">v1.8.15</span>).
+هذا الفرع ليس تحديثاً لتثبيت بلاي أو إف-درويد.
+
+| | الأصل | هذا الفرع |
+|---|---|---|
+| **الاسم** | Blood pressure monitor | الجَنَان · Janan |
+| **معرّف أندرويد** | <span dir="ltr"><code>com.derdilla.bloodPressureApp</code></span> | <span dir="ltr"><code>com.shenepoy.janan</code></span> |
+| **التثبيت** | بلاي، إف-درويد، GitHub | إصدارات GitHub و[Obtainium](https://github.com/ImranR98/Obtainium) |
+| **الإصدار** | Semver <span dir="ltr"><code>1.8.15+57</code></span> | CalVer <span dir="ltr"><code>YY.0M.MICRO</code></span> (الآن <span dir="ltr"><code>26.08.5+63</code></span>) |
+| **البنية** | مجلد <span dir="ltr"><code>app/</code></span> وحزم مساحة عمل | تطبيق Flutter واحد في جذر المستودع |
+
+**ما أُضيف هنا**
+
+| | |
+|---|---|
+| **ملفات BLE** | توجيه لكل جهاز: GATT القياسي، ويونكر، ومايكرولايف. |
+| **أجهزة محفوظة** | حفظ الجهاز بمعرّف واسم (الإعدادات ← أجهزة البلوتوث). |
+| **مزامنة عند الفتح** | سحب من جهاز محفوظ عند التشغيل؛ الحالة في شريط التطبيق. |
+| **Eufy P1** | وزن ومعاوقة اختيارية. تركيب الجسم إن وُجد ملف شخصي. P2 غير مدعوم. |
+| **التفاصيل** | شاشة لكل سجل ضغط أو وزن (والتركيب إن وُجدت أوم وملف شخصي). |
+| **الرئيسية** | جولة أول تشغيل، لوحة لآخر قراءة، وشريط تنقّل (الرئيسية / الوزن / الإحصاءات / الإعدادات). |
+
+**اختلافات داخلية**
+
+- التخزين المحلي PowerSync في <span dir="ltr"><code>health.db</code></span> (جداول محلية فقط). يُنسخ <span dir="ltr"><code>bp.db</code></span> القديم عند الإطلاق إن وُجد.
+- الحالة Riverpod مولَّد. النصوص <span dir="ltr"><code>easy_localization</code></span> في <span dir="ltr"><code>assets/translations/</code></span>، لا ملفات ARB المولَّدة.
+- حزم الأصل <span dir="ltr"><code>health_data_store</code></span> و<span dir="ltr"><code>settings_annotation</code></span> و<span dir="ltr"><code>settings_builder</code></span> ليست في هذا الفرع.
+
+ما بقي من الأصل هنا أيضاً: الإدخال اليدوي، الرسوم، التصدير (CSV / PDF / SQLite)، Health Connect، و[الأجهزة المجرّبة](docs/bluetooth.md).
+
+---
+
+## ماذا تقدّم؟
+
+| | |
+|---|---|
+| **ضغط الدم** | الانقباضي، الانبساطي، النبض، ملاحظات، وجرعات الدواء. |
+| **الوزن** | سجل اختياري، مؤشر كتلة الجسم، وتركيب الجسم من ميزان متوافق. |
+| **الرسوم** | اتجاهات، توزيع، ووقت اليوم. |
+| **بلوتوث** | سحب من [جهاز قياس أو ميزان](docs/bluetooth.md). |
+| **التصدير** | <span dir="ltr">CSV</span> و<span dir="ltr">PDF</span> وExcel أو نسخة من قاعدة البيانات. |
+| **Health Connect** | مزامنة اختيارية على أندرويد. |
+| **أوفلاين** | على الجهاز. بلا حساب. |
 
 ---
 
