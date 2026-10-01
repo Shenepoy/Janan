@@ -198,7 +198,10 @@ void main() {
     await tester.pump();
 
     expect(
-      find.descendant(of: find.byType(AppBar), matching: find.text('Janan')),
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Measurements'),
+      ),
       findsOneWidget,
     );
     expect(find.text('home-page'), findsOneWidget);
@@ -280,7 +283,7 @@ void main() {
 
     final appBarTitle = find.descendant(
       of: find.byType(AppBar),
-      matching: find.text('Janan'),
+      matching: find.text('Measurements'),
     );
     expect(appBarTitle, findsOneWidget);
     expect(tester.getRect(appBarTitle).center.dx, closeTo(200, 0.5));

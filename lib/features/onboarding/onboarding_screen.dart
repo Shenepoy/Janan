@@ -5,18 +5,16 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
-const _tutorialPages = 3;
+const _tutorialPages = 4;
 
 /// Classic carousel onboarding: hero, short centered copy, dots, full-width CTA.
 ///
 /// Used for first run and as a replayable tour.
 class OnboardingScreen extends ConsumerStatefulWidget {
   /// Create the tour. [firstRun] drives Skip vs Close and Get started vs Done.
-  const OnboardingScreen({
-    super.key,
-    required this.firstRun,
-  });
+  const OnboardingScreen({super.key, required this.firstRun});
 
   /// Whether this is the first launch (not a replay from Settings).
   final bool firstRun;
@@ -133,6 +131,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     _OnboardingPage(page: 0),
                     _OnboardingPage(page: 1),
                     _OnboardingPage(page: 2),
+                    _FeatureSetupPage(),
                   ],
                 ),
               ),
@@ -162,8 +161,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       !_onLastPage
                           ? 'onboardingNext'.tr()
                           : widget.firstRun
-                              ? 'onboardingGetStarted'.tr()
-                              : 'onboardingDone'.tr(),
+                          ? 'onboardingGetStarted'.tr()
+                          : 'onboardingDone'.tr(),
                     ),
                   ),
                 ),
@@ -172,6 +171,72 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FeatureSetupPage extends ConsumerWidget {
+  const _FeatureSetupPage();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsProvider);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Column(
+        children: [
+          Icon(
+            Icons.tune,
+            size: 44,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'featuresSetting'.tr(),
+            style: Theme.of(context).textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'onboardingFeaturesHint'.tr(),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          SwitchListTile(
+            key: const Key('onboarding-feature-blood-pressure'),
+            title: Text('bloodPressure'.tr()),
+            secondary: const Icon(Symbols.heart_plus),
+            value: settings.bloodPressureEnabled,
+            onChanged: (value) =>
+                ref.updateSetting(bloodPressureEnabledSetting, value),
+          ),
+          SwitchListTile(
+            key: const Key('onboarding-feature-medicine'),
+            title: Text('medications'.tr()),
+            secondary: const Icon(Icons.medication_outlined),
+            value: settings.medicineFeatureEnabled,
+            onChanged: (value) =>
+                ref.updateSetting(medicineFeatureEnabledSetting, value),
+          ),
+          SwitchListTile(
+            key: const Key('onboarding-feature-weight'),
+            title: Text('weight'.tr()),
+            secondary: const Icon(Icons.scale_outlined),
+            value: settings.weightInput,
+            onChanged: (value) => ref.updateSetting(weightInputSetting, value),
+          ),
+          SwitchListTile(
+            key: const Key('onboarding-feature-bluetooth'),
+            title: Text('bluetoothMeasurements'.tr()),
+            secondary: const Icon(Icons.bluetooth),
+            value: settings.bluetoothMeasurementsEnabled,
+            onChanged: ref.setBluetoothMeasurementsEnabled,
+          ),
+        ],
       ),
     );
   }
@@ -188,29 +253,26 @@ class _LanguageMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => PopupMenuButton<String>(
-      tooltip: 'language'.tr(),
-      icon: const Icon(Icons.language),
-      initialValue: languageKey,
-      onSelected: onSelect,
-      itemBuilder: (context) => [
-        for (final key in languageSettingOptions)
-          PopupMenuItem(
-            value: key,
-            child: Text(
-              key == 'system'
-                  ? 'system'.tr()
-                  : getDisplayLanguage(localeFromLanguageKey(key)!),
-            ),
+    tooltip: 'language'.tr(),
+    icon: const Icon(Icons.language),
+    initialValue: languageKey,
+    onSelected: onSelect,
+    itemBuilder: (context) => [
+      for (final key in languageSettingOptions)
+        PopupMenuItem(
+          value: key,
+          child: Text(
+            key == 'system'
+                ? 'system'.tr()
+                : getDisplayLanguage(localeFromLanguageKey(key)!),
           ),
-      ],
-    );
+        ),
+    ],
+  );
 }
 
 class _ThemeCycleButton extends StatelessWidget {
-  const _ThemeCycleButton({
-    required this.themeMode,
-    required this.onPressed,
-  });
+  const _ThemeCycleButton({required this.themeMode, required this.onPressed});
 
   final ThemeMode themeMode;
   final VoidCallback onPressed;
@@ -312,7 +374,7 @@ class _WelcomeHero extends StatelessWidget {
               color: colors.primaryContainer,
             ),
             child: Icon(
-              Icons.monitor_heart_outlined,
+              Symbols.heart_plus,
               size: 72,
               color: colors.onPrimaryContainer,
             ),
@@ -404,16 +466,16 @@ class _ReadingRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(color: colors.onSurfaceVariant),
           ),
         ),
         Text(
           value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: colors.onSurface,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(color: colors.onSurface),
         ),
       ],
     );
@@ -501,17 +563,17 @@ class _TrendBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Expanded(
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Container(
-          height: height,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(8),
-          ),
+    child: Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(8),
         ),
       ),
-    );
+    ),
+  );
 }
 
 class _FloatingChip extends StatelessWidget {

@@ -22,7 +22,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// - Multi element display a short list of entries and allow quickly removing
 ///   single entries.
 class AddMultipleEntriesForm extends FormBase<List<CombinedEntry>> {
-  const AddMultipleEntriesForm({super.key,
+  const AddMultipleEntriesForm({
+    super.key,
     super.initialValue,
     this.kind = AddEntryKind.bloodPressure,
     this.showBluetooth = true,
@@ -47,8 +48,8 @@ class AddMultipleEntriesForm extends FormBase<List<CombinedEntry>> {
   final Widget Function(void Function(List<BloodPressureRecord>))? mockBleInput;
 
   @override
-  FormStateBase<List<CombinedEntry>, FormBase<List<CombinedEntry>>> createState() => AddMultipleEntriesFormState();
-
+  FormStateBase<List<CombinedEntry>, FormBase<List<CombinedEntry>>>
+  createState() => AddMultipleEntriesFormState();
 }
 
 class AddMultipleEntriesFormState
@@ -106,8 +107,9 @@ class AddMultipleEntriesFormState
   }
 
   @override
-  bool get isEmpty => (_multipleValues != null && _multipleValues!.length > 1)
-            || (_singleEntryForm.currentState?.isEmpty ?? true);
+  bool get isEmpty =>
+      (_multipleValues != null && _multipleValues!.length > 1) ||
+      (_singleEntryForm.currentState?.isEmpty ?? true);
 
   @override
   bool get isDirty {
@@ -150,6 +152,7 @@ class AddMultipleEntriesFormState
   /// Gets called on inputs from a bluetooth device or similar. (multiple records)
   void _onExternalMeasurements(List<BloodPressureRecord> records) {
     if (records.isEmpty || !mounted) return;
+    if (!context.readAppSettings().bloodPressureEnabled) return;
     logDebug('_onExternalMeasurements: importing ${records.length} records');
     if (records.length == 1) return _onExternalMeasurement(records.first);
     _setMultipleValues([
@@ -168,6 +171,7 @@ class AddMultipleEntriesFormState
   }
 
   void _onExternalWeight(BodyweightRecord record) {
+    if (!context.readAppSettings().weightInput) return;
     if (_singleEntryForm.currentState case final AddEntryFormState state) {
       state.onExternalWeight(record);
     } else {
@@ -178,80 +182,98 @@ class AddMultipleEntriesFormState
   @override
   Widget build(BuildContext context) => Consumer(
     builder: (context, ref, _) {
-    final settings = ref.watch(appSettingsProvider);
-    if (_multipleValues case final List<CombinedEntry> values) {
-      assert(values.length > 1);
-      final formatter = WesternDateFormat(settings.dateFormatString, context.locale.toString());
-      return ListView.builder(
-        itemCount: values.length,
-        itemBuilder: (context, idx) => ListTile(
-          title: Text(formatter.format(values[idx].time)),
-          subtitle: Row(
-            spacing: 6.0,
-            children: [
-              Text(values[idx].sys?.toString() ?? '-'),
-              Text(values[idx].dia?.toString() ?? '-'),
-              Text(values[idx].pul?.toString() ?? '-'),
-            ],
-          ),
-          trailing: IconButton(
-            icon: const Icon(Icons.delete_forever),
-            onPressed: () {
-              values.removeAt(idx);
-              _setMultipleValues(values);
-            },
-          ),
-        ),
-      );
-    }
-    final bleInput = settings.bleInput;
-    final showBle = widget.showBluetooth
-        && widget.kind != AddEntryKind.medicine;
-    return ListView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
-      children: [
-        if (showBle && widget.kind == AddEntryKind.bloodPressure && widget.mockBleInput != null)
-          widget.mockBleInput!.call(_onExternalMeasurements),
-        if (showBle)
-          switch (bleInput) {
-            BluetoothInputMode.disabled => const SizedBox.shrink(),
-            BluetoothInputMode.oldBluetoothInput =>
-              widget.kind == AddEntryKind.bloodPressure
-                  ? OldBluetoothInput(onMeasurement: _onExternalMeasurement)
-                  : const SizedBox.shrink(),
-            BluetoothInputMode.newBluetoothInputCrossPlatform => BluetoothInput(
-              manager: BluetoothManager.create(),
-              onMeasurement: widget.kind == AddEntryKind.bloodPressure
-                  ? _onExternalMeasurement
-                  : (_) {},
-              onAllMeasurements: widget.kind == AddEntryKind.bloodPressure
-                  ? _onExternalMeasurements
-                  : (_) {},
-              onWeight: widget.kind == AddEntryKind.weight
-                  ? _onExternalWeight
-                  : null,
-              bluetoothCubit: widget.bluetoothCubit,
+      final settings = ref.watch(appSettingsProvider);
+      if ((widget.kind == AddEntryKind.bloodPressure &&
+              !settings.bloodPressureEnabled) ||
+          (widget.kind == AddEntryKind.weight && !settings.weightInput) ||
+          (widget.kind == AddEntryKind.medicine &&
+              !settings.medicineFeatureEnabled)) {
+        return const SizedBox.shrink();
+      }
+      if (_multipleValues case final List<CombinedEntry> values) {
+        assert(values.length > 1);
+        final formatter = WesternDateFormat(
+          settings.dateFormatString,
+          context.locale.toString(),
+        );
+        return ListView.builder(
+          itemCount: values.length,
+          itemBuilder: (context, idx) => ListTile(
+            title: Text(formatter.format(values[idx].time)),
+            subtitle: Row(
+              spacing: 6.0,
+              children: [
+                Text(values[idx].sys?.toString() ?? '-'),
+                Text(values[idx].dia?.toString() ?? '-'),
+                Text(values[idx].pul?.toString() ?? '-'),
+              ],
             ),
-          },
-        if (showBle
-            && widget.kind == AddEntryKind.bloodPressure
-            && (widget.mockBleInput != null || bleInput != BluetoothInputMode.disabled))
-          const _OrEnterManually(),
-        if (showBle
-            && widget.kind == AddEntryKind.weight
-            && bleInput == BluetoothInputMode.newBluetoothInputCrossPlatform)
-          const _OrEnterManually(),
-        AddEntryForm(
-          key: _singleEntryForm,
-          initialValue: _singleEntry,
-          kind: widget.kind,
-        ),
-      ],
-    );
-  },
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_forever),
+              onPressed: () {
+                values.removeAt(idx);
+                _setMultipleValues(values);
+              },
+            ),
+          ),
+        );
+      }
+      final bleInput = settings.bleInput;
+      final showMockBle =
+          widget.showBluetooth &&
+          widget.kind == AddEntryKind.bloodPressure &&
+          settings.bloodPressureEnabled &&
+          widget.mockBleInput != null;
+      final showBle =
+          widget.showBluetooth &&
+          settings.bluetoothMeasurementsEnabled &&
+          (widget.kind == AddEntryKind.bloodPressure
+              ? settings.bloodPressureEnabled
+              : widget.kind == AddEntryKind.weight && settings.weightInput);
+      return ListView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+        children: [
+          if (showMockBle) widget.mockBleInput!.call(_onExternalMeasurements),
+          if (showBle)
+            switch (bleInput) {
+              BluetoothInputMode.disabled => const SizedBox.shrink(),
+              BluetoothInputMode.oldBluetoothInput =>
+                widget.kind == AddEntryKind.bloodPressure
+                    ? OldBluetoothInput(onMeasurement: _onExternalMeasurement)
+                    : const SizedBox.shrink(),
+              BluetoothInputMode.newBluetoothInputCrossPlatform =>
+                BluetoothInput(
+                  manager: BluetoothManager.create(),
+                  onMeasurement: widget.kind == AddEntryKind.bloodPressure
+                      ? _onExternalMeasurement
+                      : (_) {},
+                  onAllMeasurements: widget.kind == AddEntryKind.bloodPressure
+                      ? _onExternalMeasurements
+                      : (_) {},
+                  onWeight: widget.kind == AddEntryKind.weight
+                      ? _onExternalWeight
+                      : null,
+                  bluetoothCubit: widget.bluetoothCubit,
+                ),
+            },
+          if (widget.kind == AddEntryKind.bloodPressure &&
+              (showMockBle ||
+                  (showBle && bleInput != BluetoothInputMode.disabled)))
+            const _OrEnterManually(),
+          if (showBle &&
+              widget.kind == AddEntryKind.weight &&
+              bleInput == BluetoothInputMode.newBluetoothInputCrossPlatform)
+            const _OrEnterManually(),
+          AddEntryForm(
+            key: _singleEntryForm,
+            initialValue: _singleEntry,
+            kind: widget.kind,
+          ),
+        ],
+      );
+    },
   );
-
 }
 
 class _OrEnterManually extends StatelessWidget {

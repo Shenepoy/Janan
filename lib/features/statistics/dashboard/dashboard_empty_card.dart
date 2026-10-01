@@ -2,14 +2,12 @@ import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_secti
 import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Empty-range card used by the dashboard, blood-pressure, and weight pages.
 class DashboardEmptyCard extends StatelessWidget {
   /// Create the shared empty-range illustration.
-  const DashboardEmptyCard({
-    super.key,
-    this.icon = Icons.monitor_heart_outlined,
-  });
+  const DashboardEmptyCard({super.key, this.icon = Symbols.heart_plus});
 
   /// Center glyph.
   final IconData icon;

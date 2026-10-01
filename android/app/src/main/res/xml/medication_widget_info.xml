@@ -1,0 +1,11 @@
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/medication_widget_description"
+    android:initialLayout="@layout/medication_widget"
+    android:minHeight="56dp"
+    android:minWidth="56dp"
+    android:previewLayout="@layout/medication_widget"
+    android:resizeMode="none"
+    android:targetCellWidth="1"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

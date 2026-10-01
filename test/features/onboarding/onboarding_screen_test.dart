@@ -31,10 +31,7 @@ Future<Widget> _tourApp(Widget child) async {
         settingsSearchIndexProvider.overrideWithValue(settings.searchIndex),
         settingsProvidersProvider.overrideWithValue(settings),
       ],
-      child: MaterialApp(
-        locale: const Locale('en'),
-        home: child,
-      ),
+      child: MaterialApp(locale: const Locale('en'), home: child),
     ),
   );
 }
@@ -49,8 +46,13 @@ String _ctaLabel(WidgetTester tester) {
 }
 
 void main() {
-  testWidgets('first-run shows Skip and Get started on the last page', (tester) async {
-    await pumpApp(tester, await _tourApp(const OnboardingScreen(firstRun: true)));
+  testWidgets('first-run shows Skip and Get started on the last page', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      await _tourApp(const OnboardingScreen(firstRun: true)),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -67,12 +69,19 @@ void main() {
     await tester.tap(_cta);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(_cta);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(_ctaLabel(tester), anyOf('Get started', 'onboardingGetStarted'));
     expect(_skip, findsOneWidget);
   });
 
   testWidgets('replay shows Close and Done on the last page', (tester) async {
-    await pumpApp(tester, await _tourApp(const OnboardingScreen(firstRun: false)));
+    await pumpApp(
+      tester,
+      await _tourApp(const OnboardingScreen(firstRun: false)),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -80,6 +89,9 @@ void main() {
     expect(_close, findsOneWidget);
     expect(_ctaLabel(tester), anyOf('Next', 'onboardingNext'));
 
+    await tester.tap(_cta);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     await tester.tap(_cta);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));

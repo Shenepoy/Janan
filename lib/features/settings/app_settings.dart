@@ -42,10 +42,14 @@ class AppSettings {
     required this.syncBluetoothOnLaunch,
     required this.bluetoothImportMode,
     required this.compactList,
+    required this.roundedReminderButton,
     required this.needlePinBarWidth,
     required this.bottomAppBars,
     required this.preferredPressureUnit,
     required this.bleInput,
+    required this.bluetoothMeasurementsEnabled,
+    required this.bloodPressureEnabled,
+    required this.medicineFeatureEnabled,
     required this.weightInput,
     required this.knownBleDev,
     required this.weightUnit,
@@ -67,6 +71,10 @@ class AppSettings {
     final height = controller.get(bodyHeightCmSetting);
     final year = controller.get(birthYearSetting);
     final sexKey = controller.get(bodySexSetting);
+    final bleInput = BluetoothInputMode.values.firstWhere(
+      (m) => m.name == controller.get(bleInputSetting),
+      orElse: () => BluetoothInputMode.disabled,
+    );
     return AppSettings(
       languageKey: controller.get(languageSetting),
       accentColor: Color(controller.get(accentColorSetting)),
@@ -88,8 +96,9 @@ class AppSettings {
       validateInputs: controller.get(validateInputsSetting),
       allowMissingValues: controller.get(allowMissingValuesSetting),
       drawRegressionLines: controller.get(drawRegressionLinesSetting),
-      startWithAddMeasurementPage:
-          controller.get(startWithAddMeasurementPageSetting),
+      startWithAddMeasurementPage: controller.get(
+        startWithAddMeasurementPageSetting,
+      ),
       autostartBluetoothInput: controller.get(autostartBluetoothInputSetting),
       syncBluetoothOnLaunch: controller.get(syncBluetoothOnLaunchSetting),
       bluetoothImportMode: BluetoothMeasurementImportMode.values.firstWhere(
@@ -97,16 +106,17 @@ class AppSettings {
         orElse: () => BluetoothMeasurementImportMode.disabled,
       ),
       compactList: controller.get(compactListSetting),
+      roundedReminderButton: controller.get(roundedReminderButtonSetting),
       needlePinBarWidth: controller.get(needlePinBarWidthSetting),
       bottomAppBars: controller.get(bottomAppBarsSetting),
       preferredPressureUnit: PressureUnit.values.firstWhere(
         (u) => u.name == controller.get(preferredPressureUnitSetting),
         orElse: () => PressureUnit.mmHg,
       ),
-      bleInput: BluetoothInputMode.values.firstWhere(
-        (m) => m.name == controller.get(bleInputSetting),
-        orElse: () => BluetoothInputMode.disabled,
-      ),
+      bleInput: bleInput,
+      bluetoothMeasurementsEnabled: bleInput != BluetoothInputMode.disabled,
+      bloodPressureEnabled: controller.get(bloodPressureEnabledSetting),
+      medicineFeatureEnabled: controller.get(medicineFeatureEnabledSetting),
       weightInput: controller.get(weightInputSetting),
       knownBleDev: decodeKnownBleDevices(
         controller.get(knownBleDevicesSetting),
@@ -158,10 +168,14 @@ class AppSettings {
   final bool syncBluetoothOnLaunch;
   final BluetoothMeasurementImportMode bluetoothImportMode;
   final bool compactList;
+  final bool roundedReminderButton;
   final double needlePinBarWidth;
   final bool bottomAppBars;
   final PressureUnit preferredPressureUnit;
   final BluetoothInputMode bleInput;
+  final bool bluetoothMeasurementsEnabled;
+  final bool bloodPressureEnabled;
+  final bool medicineFeatureEnabled;
   final bool weightInput;
   final List<KnownBleDevice> knownBleDev;
   final WeightUnit weightUnit;
@@ -215,8 +229,7 @@ String encodeKnownBleDevicesJson(List<KnownBleDevice> devices) =>
 Future<void> persistKnownBleDevices(
   SettingsController controller,
   List<KnownBleDevice> devices,
-) =>
-    controller.set(knownBleDevicesSetting, encodeKnownBleDevicesJson(devices));
+) => controller.set(knownBleDevicesSetting, encodeKnownBleDevicesJson(devices));
 
 List<KnownBleDevice> decodeKnownBleDevices(String raw) {
   try {
@@ -257,10 +270,14 @@ AppSettings appSettings(Ref ref) {
   ref.watch(settings.provider(syncBluetoothOnLaunchSetting));
   ref.watch(settings.provider(bluetoothImportModeSetting));
   ref.watch(settings.provider(compactListSetting));
+  ref.watch(settings.provider(roundedReminderButtonSetting));
   ref.watch(settings.provider(needlePinBarWidthSetting));
   ref.watch(settings.provider(bottomAppBarsSetting));
   ref.watch(settings.provider(preferredPressureUnitSetting));
   ref.watch(settings.provider(bleInputSetting));
+  ref.watch(settings.provider(bluetoothMeasurementsEnabledSetting));
+  ref.watch(settings.provider(bloodPressureEnabledSetting));
+  ref.watch(settings.provider(medicineFeatureEnabledSetting));
   ref.watch(settings.provider(weightInputSetting));
   ref.watch(settings.provider(knownBleDevicesSetting));
   ref.watch(settings.provider(preferredWeightUnitSetting));
@@ -293,20 +310,35 @@ extension AppSettingsRef on WidgetRef {
         jsonEncode(lines.map((l) => l.toJson()).toList()),
       );
 
-  Future<void> setThemeMode(ThemeMode mode) => updateSetting(
-        themeModeSetting,
-        switch (mode) {
-          ThemeMode.dark => 'dark',
-          ThemeMode.light => 'light',
-          ThemeMode.system => 'system',
-        },
-      );
+  Future<void> setThemeMode(ThemeMode mode) =>
+      updateSetting(themeModeSetting, switch (mode) {
+        ThemeMode.dark => 'dark',
+        ThemeMode.light => 'light',
+        ThemeMode.system => 'system',
+      });
 
   Future<void> setLanguage(Locale? locale) =>
       updateSetting(languageSetting, languageKeyFromLocale(locale));
 
-  Future<void> setBleInput(BluetoothInputMode mode) =>
-      updateSetting(bleInputSetting, mode.name);
+  Future<void> setBleInput(BluetoothInputMode mode) async {
+    await updateSetting(bleInputSetting, mode.name);
+    await updateSetting(
+      bluetoothMeasurementsEnabledSetting,
+      mode != BluetoothInputMode.disabled,
+    );
+  }
+
+  Future<void> setBluetoothMeasurementsEnabled(bool enabled) async {
+    final mode = read(appSettingsProvider).bleInput;
+    await updateSetting(bluetoothMeasurementsEnabledSetting, enabled);
+    await setBleInput(
+      enabled
+          ? mode == BluetoothInputMode.disabled
+                ? BluetoothInputMode.newBluetoothInputCrossPlatform
+                : mode
+          : BluetoothInputMode.disabled,
+    );
+  }
 
   Future<void> setBluetoothImportMode(BluetoothMeasurementImportMode mode) =>
       updateSetting(bluetoothImportModeSetting, mode.name);
@@ -326,10 +358,14 @@ extension AppSettingsContext on BuildContext {
       ProviderScope.containerOf(this, listen: false).read(appSettingsProvider);
 
   Future<void> updateSetting<T>(SettingDefinition<T> setting, T value) =>
-      ProviderScope.containerOf(this, listen: false)
-          .read(settingsControllerProvider)
-          .set(setting, value);
+      ProviderScope.containerOf(
+        this,
+        listen: false,
+      ).read(settingsControllerProvider).set(setting, value);
 
   Future<void> writeKnownBleDevices(List<KnownBleDevice> devices) =>
-      updateSetting(knownBleDevicesSetting, jsonEncode(devices.map((d) => d.toJson()).toList()));
+      updateSetting(
+        knownBleDevicesSetting,
+        jsonEncode(devices.map((d) => d.toJson()).toList()),
+      );
 }

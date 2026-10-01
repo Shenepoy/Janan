@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/bluetooth/backend/bluetooth_backend.dart';
-import 'package:blood_pressure_app/features/bluetooth/bluetooth_input.dart' show BluetoothInput;
+import 'package:blood_pressure_app/features/bluetooth/bluetooth_input.dart'
+    show BluetoothInput;
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_device_filter.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_measurement_duplicates.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_read_cubit.dart';
@@ -11,7 +12,6 @@ import 'package:blood_pressure_app/features/bluetooth/logic/characteristics/ble_
 import 'package:blood_pressure_app/features/bluetooth/logic/device_scan_cubit.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_weight_data.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
-import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
 import 'package:blood_pressure_app/model/known_ble_device.dart';
@@ -22,16 +22,22 @@ import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 enum BleLaunchSyncStatus {
   /// Setting off, Bluetooth input disabled, or no saved meter.
   skipped,
+
   /// Adapter is off, so the meter could not be reached.
   bluetoothOff,
+
   /// New readings were written to the diary.
   imported,
+
   /// The meter responded but every reading was already saved.
   upToDate,
+
   /// Scan, connect, or decode failed.
   failed,
+
   /// The saved meter did not appear before the scan window ended.
   notFound,
+
   /// The user left the home screen or dismissed the card.
   cancelled,
 }
@@ -67,14 +73,19 @@ class BleLaunchSyncResult {
 enum BleLaunchSyncPhase {
   /// Sync has not started.
   idle,
+
   /// Searching for a saved meter.
   scanning,
+
   /// A saved meter was found and a connection is opening.
   connecting,
+
   /// Connected and waiting for stored readings.
   reading,
+
   /// Filtering duplicates and writing new readings.
   importing,
+
   /// Finished, failed, or Bluetooth was off.
   done,
 }
@@ -120,8 +131,8 @@ class BleLaunchSyncProgress {
 
   /// Whether the AppBar icon and popout can show this snapshot.
   bool get hasVisibleStatus =>
-      isBusy
-      || (result != null && result!.status != BleLaunchSyncStatus.skipped);
+      isBusy ||
+      (result != null && result!.status != BleLaunchSyncStatus.skipped);
 }
 
 /// Connects to a saved meter when the app opens and imports unread measurements.
@@ -131,6 +142,8 @@ class BleLaunchSync with Loggable {
     required this.controller,
     required this.repo,
     this.weightRepo,
+    this.includeBloodPressure = true,
+    this.includeWeight = true,
     this.manager,
     this.bluetoothCubit,
     this.deviceScanCubit,
@@ -153,6 +166,12 @@ class BleLaunchSync with Loggable {
 
   /// Optional diary for body-weight readings from a saved scale.
   final BodyweightRepository? weightRepo;
+
+  /// Whether this sync may import blood-pressure readings.
+  final bool includeBloodPressure;
+
+  /// Whether this sync may import scale readings.
+  final bool includeWeight;
 
   /// Backend used when cubits are created here.
   final BluetoothManager<DiscoveredEventArgs>? manager;
@@ -189,8 +208,9 @@ class BleLaunchSync with Loggable {
   final BleBlacklistRepository? blacklistRepo;
 
   /// Live stage shown by the launch-sync card.
-  final ValueNotifier<BleLaunchSyncProgress> progress =
-      ValueNotifier(const BleLaunchSyncProgress());
+  final ValueNotifier<BleLaunchSyncProgress> progress = ValueNotifier(
+    const BleLaunchSyncProgress(),
+  );
 
   /// Whether a launch sync is currently connecting or importing.
   static bool isRunning = false;
@@ -251,9 +271,15 @@ class BleLaunchSync with Loggable {
     if (_completedThisSession || isRunning || isHeldByInput) {
       return const BleLaunchSyncResult(status: BleLaunchSyncStatus.skipped);
     }
-    if (!_app.syncBluetoothOnLaunch
-        || _app.bleInput == BluetoothInputMode.disabled
-        || _autoSyncDevices.isEmpty) {
+    final app = _app;
+    final importBloodPressure =
+        includeBloodPressure && app.bloodPressureEnabled;
+    final importWeight = includeWeight && app.weightInput;
+    if (!_app.syncBluetoothOnLaunch ||
+        !_app.bluetoothMeasurementsEnabled ||
+        app.bleInput == BluetoothInputMode.disabled ||
+        (!importBloodPressure && !importWeight) ||
+        _autoSyncDevices.isEmpty) {
       return const BleLaunchSyncResult(status: BleLaunchSyncStatus.skipped);
     }
 
@@ -263,7 +289,10 @@ class BleLaunchSync with Loggable {
     _abort = Completer<void>();
     _emit(BleLaunchSyncPhase.scanning);
     try {
-      final result = await _sync();
+      final result = await _sync(
+        importBloodPressure: importBloodPressure,
+        importWeight: importWeight,
+      );
       _emit(
         BleLaunchSyncPhase.done,
         result: result,
@@ -289,9 +318,8 @@ class BleLaunchSync with Loggable {
     }
   }
 
-  String? get _fallbackName => _app.knownBleDev.length == 1
-      ? _app.knownBleDev.first.displayName
-      : null;
+  String? get _fallbackName =>
+      _app.knownBleDev.length == 1 ? _app.knownBleDev.first.displayName : null;
 
   String? _joinedNames(Iterable<String?> names) {
     final found = names
@@ -326,28 +354,35 @@ class BleLaunchSync with Loggable {
       receivedCount: receivedCount,
       result: result,
       lookingForMore: lookingForMore,
-      scanUntil: scanUntil ??
+      scanUntil:
+          scanUntil ??
           (lookingForMore
               ? DateTime.now().add(extraScanTimeout)
               : phase == BleLaunchSyncPhase.scanning
-                  ? DateTime.now().add(scanTimeout)
-                  : null),
+              ? DateTime.now().add(scanTimeout)
+              : null),
     );
   }
 
-  Future<BleLaunchSyncResult> _sync() async {
-    final resolvedManager = manager ??
+  Future<BleLaunchSyncResult> _sync({
+    required bool importBloodPressure,
+    required bool importWeight,
+  }) async {
+    final resolvedManager =
+        manager ??
         (bluetoothCubit == null && deviceScanCubit == null && readers == null
             ? BluetoothManager.create()
             : null);
-    final bluetooth = bluetoothCubit?.call()
-        ?? BluetoothCubit(manager: resolvedManager!);
+    final bluetooth =
+        bluetoothCubit?.call() ?? BluetoothCubit(manager: resolvedManager!);
     DeviceScanCubit? scan;
     final opened = <BleReadCubit>[];
     try {
       final adapter = await _waitForAdapter(bluetooth);
       if (adapter is BluetoothStateDisabled) {
-        return const BleLaunchSyncResult(status: BleLaunchSyncStatus.bluetoothOff);
+        return const BleLaunchSyncResult(
+          status: BleLaunchSyncStatus.bluetoothOff,
+        );
       }
       if (adapter is! BluetoothStateReady) {
         return const BleLaunchSyncResult(status: BleLaunchSyncStatus.failed);
@@ -379,8 +414,9 @@ class BleLaunchSync with Loggable {
         );
         reads = await _readTargets(targets, opened);
       } else {
-        scan = deviceScanCubit?.call()
-            ?? DeviceScanCubit(
+        scan =
+            deviceScanCubit?.call() ??
+            DeviceScanCubit(
               manager: resolvedManager!,
               knownBleDev: _app.knownBleDev,
               writeKnownBle: (list) => persistKnownBleDevices(controller, list),
@@ -405,11 +441,12 @@ class BleLaunchSync with Loggable {
       }
       final measurements = [
         for (final read in reads)
-          if (read.measurements != null) ...read.measurements!,
+          if (importBloodPressure && read.measurements != null)
+            ...read.measurements!,
       ];
       final weights = [
         for (final read in reads)
-          if (read.weights != null) ...read.weights!,
+          if (importWeight && read.weights != null) ...read.weights!,
       ];
       final synced = reads.where((read) => read.ok).length;
       if (synced == 0) {
@@ -437,7 +474,7 @@ class BleLaunchSync with Loggable {
         await repo.add(measurement.asBloodPressureRecord());
       }
       var importedWeights = 0;
-      if (weightRepo != null && weights.isNotEmpty) {
+      if (importWeight && weightRepo != null && weights.isNotEmpty) {
         final savedWeights = await weightRepo!.get(DateRange.all());
         final blockedWeights =
             await blacklistRepo?.getKeys('weight') ?? const <String>{};
@@ -459,13 +496,10 @@ class BleLaunchSync with Loggable {
           await weightRepo!.add(incoming.asBodyweightRecord());
         }
         importedWeights = incomingWeights.length + upgrades.length;
-        if (importedWeights > 0) {
-          unawaited(controller.set(weightInputSetting, true));
-        }
       }
       for (final read in reads) {
         final device = read.device;
-        if (device != null && read.weights != null) {
+        if (importWeight && device != null && read.weights != null) {
           _rememberDevice(device);
         }
       }
@@ -502,9 +536,9 @@ class BleLaunchSync with Loggable {
   }
 
   bool _isSettledAdapter(BluetoothState state) =>
-      state is BluetoothStateReady
-      || state is BluetoothStateDisabled
-      || state is BluetoothStateUnfeasible;
+      state is BluetoothStateReady ||
+      state is BluetoothStateDisabled ||
+      state is BluetoothStateUnfeasible;
 
   Future<T?> _waitOrAbort<T>(Future<T> future, Duration timeout) async {
     final abort = _abort;
@@ -525,8 +559,9 @@ class BleLaunchSync with Loggable {
   /// Extra scan and parallel reads only make sense with more than one saved meter.
   bool get _hasMultipleSavedDevices => _app.knownBleDev.length > 1;
 
-  bool _isKnown(BluetoothDevice device) =>
-      _autoSyncDevices.any((known) => known.matches(device.deviceId, device.name));
+  bool _isKnown(BluetoothDevice device) => _autoSyncDevices.any(
+    (known) => known.matches(device.deviceId, device.name),
+  );
 
   void _rememberDevice(BluetoothDevice device) {
     final list = _app.knownBleDev.toList();
@@ -549,8 +584,10 @@ class BleLaunchSync with Loggable {
   Iterable<BluetoothDevice> _knownIn(DeviceScanState state) => switch (state) {
     SingleDeviceAvailable(:final device) =>
       _isKnown(device) ? [device] : const <BluetoothDevice>[],
-    DeviceListAvailable(:final devices, :final otherDevices) =>
-      [...devices, ...otherDevices].where(_isKnown),
+    DeviceListAvailable(:final devices, :final otherDevices) => [
+      ...devices,
+      ...otherDevices,
+    ].where(_isKnown),
     _ => const <BluetoothDevice>[],
   };
 
@@ -567,8 +604,9 @@ class BleLaunchSync with Loggable {
 
     void consider(DeviceScanState state) {
       if (state is DeviceSelected) {
-        found[state.readCubit.deviceName ?? 'selected'] =
-            _SyncTarget.reader(state.readCubit);
+        found[state.readCubit.deviceName ?? 'selected'] = _SyncTarget.reader(
+          state.readCubit,
+        );
         return;
       }
       for (final device in _knownIn(state)) {
@@ -579,8 +617,8 @@ class BleLaunchSync with Loggable {
     bool expectingScale() =>
         _autoSyncDevices.any((device) => isEufyP1ScaleName(device.name));
     bool hasExpectedScale() =>
-        !expectingScale()
-        || found.values.any((target) => isEufyP1ScaleName(target.name));
+        !expectingScale() ||
+        found.values.any((target) => isEufyP1ScaleName(target.name));
     bool hasAllKnown() =>
         _autoSyncDevices.isNotEmpty && found.length >= _autoSyncDevices.length;
     bool wantMore() =>
@@ -600,7 +638,8 @@ class BleLaunchSync with Loggable {
       for (final entry in newcomers) {
         startedKeys.add(entry.key);
         final target = entry.value;
-        if (parallelTargets.isEmpty || (tryParallel && _hasMultipleSavedDevices)) {
+        if (parallelTargets.isEmpty ||
+            (tryParallel && _hasMultipleSavedDevices)) {
           parallelTargets.add(target);
           inFlight.add(_readTarget(target, opened));
         } else {
@@ -661,16 +700,18 @@ class BleLaunchSync with Loggable {
       final extraDone = Completer<void>();
       final extraSub = scan.stream.listen((state) {
         consider(state);
-        unawaited(enqueueStart(resumeAfter: true).then((_) {
-          _emit(
-            BleLaunchSyncPhase.reading,
-            deviceName: names(),
-            deviceCount: found.length,
-            lookingForMore: wantMore(),
-            scanUntil: extraUntil,
-          );
-          if (!wantMore() && !extraDone.isCompleted) extraDone.complete();
-        }));
+        unawaited(
+          enqueueStart(resumeAfter: true).then((_) {
+            _emit(
+              BleLaunchSyncPhase.reading,
+              deviceName: names(),
+              deviceCount: found.length,
+              lookingForMore: wantMore(),
+              scanUntil: extraUntil,
+            );
+            if (!wantMore() && !extraDone.isCompleted) extraDone.complete();
+          }),
+        );
       });
       await _waitOrAbort(extraDone.future, extraScanTimeout);
       await extraSub.cancel();
@@ -689,10 +730,10 @@ class BleLaunchSync with Loggable {
 
     final results = <_DeviceRead>[];
     final succeeded = firstPass.where((read) => read.ok).length;
-    if (tryParallel
-        && firstPass.length > 1
-        && succeeded > 0
-        && succeeded < firstPass.length) {
+    if (tryParallel &&
+        firstPass.length > 1 &&
+        succeeded > 0 &&
+        succeeded < firstPass.length) {
       logInfo(
         'Parallel meter sync failed for ${firstPass.length - succeeded} '
         'device(s); retrying one at a time',
@@ -729,9 +770,7 @@ class BleLaunchSync with Loggable {
     List<BleReadCubit> opened,
   ) async {
     if (targets.length == 1 || !tryParallel || !_hasMultipleSavedDevices) {
-      return [
-        for (final target in targets) await _readTarget(target, opened),
-      ];
+      return [for (final target in targets) await _readTarget(target, opened)];
     }
 
     final firstPass = await Future.wait([
@@ -770,11 +809,13 @@ class BleLaunchSync with Loggable {
     _SyncTarget target,
     List<BleReadCubit> opened,
   ) async {
-    final read = target.reader ?? BleReadCubit(
-      device: target.device!.source.peripheral,
-      cm: target.device!.manager,
-      deviceName: target.device!.name,
-    );
+    final read =
+        target.reader ??
+        BleReadCubit(
+          device: target.device!.source.peripheral,
+          cm: target.device!.manager,
+          deviceName: target.device!.name,
+        );
     if (!opened.contains(read)) opened.add(read);
     if (read.state is BleReadInProgress) {
       unawaited(read.takeMeasurement());
@@ -789,22 +830,26 @@ class BleLaunchSync with Loggable {
     );
   }
 
-  Future<({List<BleMeasurementData>? measurements, List<BleWeightData>? weights})>
-      _waitForRead(BleReadCubit read) async {
+  Future<
+    ({List<BleMeasurementData>? measurements, List<BleWeightData>? weights})
+  >
+  _waitForRead(BleReadCubit read) async {
     BleReadState state = read.state;
-    if (state is! BleReadSuccess
-        && state is! BleReadMultiple
-        && state is! BleReadWeightSuccess
-        && state is! BleReadFailure) {
+    if (state is! BleReadSuccess &&
+        state is! BleReadMultiple &&
+        state is! BleReadWeightSuccess &&
+        state is! BleReadFailure) {
       if (_isCancelled) {
         return (measurements: null, weights: null);
       }
       final next = await _waitOrAbort(
-        read.stream.firstWhere((value) =>
-            value is BleReadSuccess
-            || value is BleReadMultiple
-            || value is BleReadWeightSuccess
-            || value is BleReadFailure),
+        read.stream.firstWhere(
+          (value) =>
+              value is BleReadSuccess ||
+              value is BleReadMultiple ||
+              value is BleReadWeightSuccess ||
+              value is BleReadFailure,
+        ),
         readTimeout,
       );
       if (next == null) {
@@ -818,7 +863,10 @@ class BleLaunchSync with Loggable {
     return switch (state) {
       BleReadSuccess(:final data) => (measurements: [data], weights: null),
       BleReadMultiple(:final data) => (measurements: data, weights: null),
-      BleReadWeightSuccess(:final data) => (measurements: null, weights: [data]),
+      BleReadWeightSuccess(:final data) => (
+        measurements: null,
+        weights: [data],
+      ),
       BleReadFailure() => (measurements: null, weights: null),
       BleReadInProgress() => (measurements: null, weights: null),
     };

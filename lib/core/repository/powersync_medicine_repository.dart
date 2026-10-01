@@ -78,8 +78,9 @@ class PowerSyncMedicineRepository extends MedicineRepository {
   @override
   Future<void> remove(Medicine value) async {
     final colorClause = value.color == null ? 'color IS NULL' : 'color = ?';
-    final doseClause =
-        value.dosis == null ? 'default_dose_mg IS NULL' : 'default_dose_mg = ?';
+    final doseClause = value.dosis == null
+        ? 'default_dose_mg IS NULL'
+        : 'default_dose_mg = ?';
     await _db.execute(
       'UPDATE medicines SET removed = 1 WHERE designation = ? AND $colorClause '
       "AND $doseClause AND (dose_unit = ? OR (dose_unit IS NULL AND ? = 'mg'))",
@@ -94,13 +95,15 @@ class PowerSyncMedicineRepository extends MedicineRepository {
     _controller.add(null);
   }
 
-  Future<String?> idFor(Medicine medicine, {bool includeRemoved = false}) async {
+  Future<String?> idFor(
+    Medicine medicine, {
+    bool includeRemoved = false,
+  }) async {
     final colorClause = medicine.color == null ? 'color IS NULL' : 'color = ?';
     final doseClause = medicine.dosis == null
         ? 'default_dose_mg IS NULL'
         : 'default_dose_mg = ?';
-    const unitClause =
-        "(dose_unit = ? OR (dose_unit IS NULL AND ? = 'mg'))";
+    const unitClause = "(dose_unit = ? OR (dose_unit IS NULL AND ? = 'mg'))";
     final args = [
       medicine.designation,
       if (medicine.color != null) medicine.color,

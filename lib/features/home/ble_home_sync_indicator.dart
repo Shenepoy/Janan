@@ -17,22 +17,25 @@ class BleHomeSyncIndicator extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
-    if (!settings.syncBluetoothOnLaunch
-        || settings.bleInput == BluetoothInputMode.disabled) {
+    if (!settings.syncBluetoothOnLaunch ||
+        !settings.bluetoothMeasurementsEnabled ||
+        settings.bleInput == BluetoothInputMode.disabled ||
+        (!settings.bloodPressureEnabled && !settings.weightInput)) {
       return const SizedBox.shrink();
     }
 
     final view = BleLaunchSyncScope.maybeOf(context);
-    final progress = view?.progress ?? const BleLaunchSyncProgress();
-    if (!progress.hasVisibleStatus && view?.paused != true) {
+    if (view == null) return const SizedBox.shrink();
+    final progress = view.progress;
+    if (!progress.hasVisibleStatus && !view.paused) {
       return const SizedBox.shrink();
     }
 
     final theme = Theme.of(context);
-    final muted = theme.appBarTheme.foregroundColor
-        ?? theme.colorScheme.onSurface;
-    final stopped = view?.paused == true
-        || progress.result?.status == BleLaunchSyncStatus.cancelled;
+    final muted =
+        theme.appBarTheme.foregroundColor ?? theme.colorScheme.onSurface;
+    final stopped =
+        view.paused || progress.result?.status == BleLaunchSyncStatus.cancelled;
     final style = stopped
         ? _StageStyle(
             icon: Icons.bluetooth,
@@ -42,40 +45,49 @@ class BleHomeSyncIndicator extends ConsumerWidget {
             count: 0,
           )
         : _styleFor(progress, muted, theme);
-    final tooltip = view?.paused == true
-        ? 'meterSyncPaused'.tr()
-        : _tooltip(progress);
+    final tooltip = view.paused ? 'meterSyncPaused'.tr() : _tooltip(progress);
     return Padding(
       padding: const EdgeInsetsDirectional.only(end: 8),
       child: Semantics(
         liveRegion: true,
         label: tooltip,
         child: Tooltip(
-        message: tooltip,
-        child: InkWell(
-          onTap: view?.openDetails,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _StageIcon(
-                  icon: style.icon,
-                  color: style.color,
-                  motion: style.motion,
-                ),
-                if (style.reserveCount)
-                  _CountSlot(
-                    count: style.count,
-                    color: style.color,
-                    textStyle: theme.textTheme.labelLarge,
+          message: tooltip,
+          child: CompositedTransformTarget(
+            link: view.indicatorLink,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+              child: InkWell(
+                onTap: view.openDetails,
+                borderRadius: BorderRadius.circular(16),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _StageIcon(
+                          icon: style.icon,
+                          color: style.color,
+                          motion: style.motion,
+                        ),
+                        if (style.reserveCount)
+                          _CountSlot(
+                            count: style.count,
+                            color: style.color,
+                            textStyle: theme.textTheme.labelLarge,
+                          ),
+                      ],
+                    ),
                   ),
-              ],
+                ),
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -124,8 +136,7 @@ class BleHomeSyncIndicator extends ConsumerWidget {
         reserveCount: true,
         count: count,
       ),
-      BleLaunchSyncPhase.idle ||
-      BleLaunchSyncPhase.done => _StageStyle(
+      BleLaunchSyncPhase.idle || BleLaunchSyncPhase.done => _StageStyle(
         icon: Icons.bluetooth,
         color: muted,
         motion: _IconMotion.still,
@@ -147,8 +158,7 @@ class BleHomeSyncIndicator extends ConsumerWidget {
         BleLaunchSyncStatus.failed => 1,
         _ => 0,
       },
-      BleLaunchSyncPhase.idle ||
-      BleLaunchSyncPhase.scanning => 0,
+      BleLaunchSyncPhase.idle || BleLaunchSyncPhase.scanning => 0,
     };
   }
 
@@ -157,22 +167,21 @@ class BleHomeSyncIndicator extends ConsumerWidget {
     ThemeData theme,
     Color muted,
   ) => switch (result?.status) {
-      BleLaunchSyncStatus.imported => Colors.green,
-      BleLaunchSyncStatus.upToDate => Colors.white70,
-      BleLaunchSyncStatus.failed ||
-      BleLaunchSyncStatus.bluetoothOff => theme.colorScheme.error,
-      BleLaunchSyncStatus.notFound ||
-      BleLaunchSyncStatus.cancelled => muted,
-      BleLaunchSyncStatus.skipped ||
-      null => Colors.white70,
-    };
+    BleLaunchSyncStatus.imported => Colors.green,
+    BleLaunchSyncStatus.upToDate => Colors.white70,
+    BleLaunchSyncStatus.failed ||
+    BleLaunchSyncStatus.bluetoothOff => theme.colorScheme.error,
+    BleLaunchSyncStatus.notFound || BleLaunchSyncStatus.cancelled => muted,
+    BleLaunchSyncStatus.skipped || null => Colors.white70,
+  };
 
   static String _tooltip(BleLaunchSyncProgress progress) {
     final result = progress.result;
     if (result != null) {
       return switch (result.status) {
-        BleLaunchSyncStatus.imported =>
-          'importedNewMeasurements'.tr(namedArgs: {'count': '${result.count}'}),
+        BleLaunchSyncStatus.imported => 'importedNewMeasurements'.tr(
+          namedArgs: {'count': '${result.count}'},
+        ),
         BleLaunchSyncStatus.upToDate => 'noNewMeasurements'.tr(),
         BleLaunchSyncStatus.bluetoothOff => 'bluetoothOffSyncSkipped'.tr(),
         BleLaunchSyncStatus.failed => 'bluetoothSyncFailed'.tr(),
@@ -184,16 +193,17 @@ class BleHomeSyncIndicator extends ConsumerWidget {
     final name = progress.deviceName?.trim();
     final hasName = name != null && name.isNotEmpty;
     return switch (progress.phase) {
-      BleLaunchSyncPhase.scanning => hasName
-          ? 'lookingForDevice'.tr(namedArgs: {'name': name})
-          : 'scanningForDevices'.tr(),
-      BleLaunchSyncPhase.connecting => hasName
-          ? 'foundMeterNamed'.tr(namedArgs: {'name': name})
-          : 'connectingToMeter'.tr(),
+      BleLaunchSyncPhase.scanning =>
+        hasName
+            ? 'lookingForDevice'.tr(namedArgs: {'name': name})
+            : 'scanningForDevices'.tr(),
+      BleLaunchSyncPhase.connecting =>
+        hasName
+            ? 'foundMeterNamed'.tr(namedArgs: {'name': name})
+            : 'connectingToMeter'.tr(),
       BleLaunchSyncPhase.reading => 'readingStoredMeasurements'.tr(),
       BleLaunchSyncPhase.importing => 'savingNewMeasurements'.tr(),
-      BleLaunchSyncPhase.idle ||
-      BleLaunchSyncPhase.done => 'syncingMeter'.tr(),
+      BleLaunchSyncPhase.idle || BleLaunchSyncPhase.done => 'syncingMeter'.tr(),
     };
   }
 }
@@ -312,10 +322,7 @@ class _StageIconState extends State<_StageIcon>
     final icon = Icon(widget.icon, size: 22, color: widget.color);
     return switch (widget.motion) {
       _IconMotion.still => icon,
-      _IconMotion.rotate => RotationTransition(
-        turns: _controller,
-        child: icon,
-      ),
+      _IconMotion.rotate => RotationTransition(turns: _controller, child: icon),
       _IconMotion.colorPulse => AnimatedBuilder(
         animation: _controller,
         builder: (context, _) => Icon(

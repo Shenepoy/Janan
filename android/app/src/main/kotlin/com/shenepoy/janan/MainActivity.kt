@@ -1,6 +1,8 @@
 package com.shenepoy.janan
 
 import android.Manifest
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.os.Build
 import io.flutter.embedding.android.FlutterFragmentActivity
@@ -59,6 +61,27 @@ class MainActivity: FlutterFragmentActivity() {
                     } catch (_: RuntimeException) {
                         result.error("FOREGROUND_SERVICE_UNAVAILABLE", null, null)
                     }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.shenepoy.janan/medication_widget",
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "update" -> {
+                    val summary = call.argument<String>("summary") ?: "[]"
+                    getSharedPreferences("medication_widget", MODE_PRIVATE)
+                        .edit()
+                        .putString("summary", summary)
+                        .apply()
+                    val manager = AppWidgetManager.getInstance(this)
+                    val provider = ComponentName(this, MedicationHomeWidgetProvider::class.java)
+                    val ids = manager.getAppWidgetIds(provider)
+                    MedicationHomeWidgetProvider().onUpdate(this, manager, ids)
+                    result.success(null)
                 }
                 else -> result.notImplemented()
             }

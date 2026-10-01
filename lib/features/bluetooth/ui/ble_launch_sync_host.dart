@@ -151,6 +151,9 @@ class BleLaunchSyncView extends ChangeNotifier {
   bool _detailsOpen = false;
   bool _paused = false;
 
+  /// Link shared by the AppBar indicator and its attached detail panel.
+  final LayerLink indicatorLink = LayerLink();
+
   /// Current sync stage.
   BleLaunchSyncProgress get progress => _progress;
 
@@ -279,7 +282,9 @@ class _BleLaunchSyncHostState extends ConsumerState<BleLaunchSyncHost> {
 
   bool _launchSyncEnabled(AppSettings settings) =>
       settings.syncBluetoothOnLaunch &&
-      settings.bleInput != BluetoothInputMode.disabled;
+      settings.bluetoothMeasurementsEnabled &&
+      settings.bleInput != BluetoothInputMode.disabled &&
+      (settings.bloodPressureEnabled || settings.weightInput);
 
   void _onPresence() {
     if (_onMainScreen) {
@@ -362,16 +367,12 @@ class _BleLaunchSyncHostState extends ConsumerState<BleLaunchSyncHost> {
     }
   }
 
-  Future<void> _updateForegroundServiceWhenReady(
-    Future<void> start,
-  ) async {
+  Future<void> _updateForegroundServiceWhenReady(Future<void> start) async {
     await start;
     if (!mounted || !identical(_foregroundServiceStart, start)) return;
     final progress = _sync?.progress.value;
     if (progress?.isBusy != true) return;
-    await BluetoothForegroundService.update(
-      text: _backgroundStatus(progress!),
-    );
+    await BluetoothForegroundService.update(text: _backgroundStatus(progress!));
   }
 
   Future<void> _stopForegroundService() async {
@@ -417,6 +418,8 @@ class _BleLaunchSyncHostState extends ConsumerState<BleLaunchSyncHost> {
           controller: ref.read(settingsControllerProvider),
           repo: context.bpRepo,
           weightRepo: context.weightRepo,
+          includeBloodPressure: settings.bloodPressureEnabled,
+          includeWeight: settings.weightInput,
           blacklistRepo: context.blacklistRepo,
           manager: widget.manager,
           bluetoothCubit: widget.bluetoothCubit,
@@ -507,9 +510,7 @@ class _BleLaunchSyncHostState extends ConsumerState<BleLaunchSyncHost> {
   }
 }
 
-/// Overlay card shown below the home AppBar when the compact indicator is opened.
-///
-/// [child] is laid out as usual. The card paints on top and does not push it.
+/// Opens an attached, dimmed detail panel for the compact Bluetooth indicator.
 class BleLaunchSyncPopout extends StatelessWidget {
   /// Wrap [child] with a launch-sync overlay.
   const BleLaunchSyncPopout({super.key, this.child});
@@ -518,32 +519,142 @@ class BleLaunchSyncPopout extends StatelessWidget {
   final Widget? child;
 
   @override
-  Widget build(BuildContext context) {
-    final view = BleLaunchSyncScope.maybeOf(context);
-    final show =
-        view != null &&
+  Widget build(BuildContext context) => _BleLaunchSyncOverlayHost(child: child);
+}
+
+class _BleLaunchSyncOverlayHost extends StatefulWidget {
+  const _BleLaunchSyncOverlayHost({this.child});
+
+  final Widget? child;
+
+  @override
+  State<_BleLaunchSyncOverlayHost> createState() =>
+      _BleLaunchSyncOverlayHostState();
+}
+
+class _BleLaunchSyncOverlayHostState extends State<_BleLaunchSyncOverlayHost>
+    with SingleTickerProviderStateMixin {
+  BleLaunchSyncView? _view;
+  OverlayEntry? _entry;
+  late final AnimationController _transition = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 320),
+    reverseDuration: const Duration(milliseconds: 220),
+  )..addListener(_refreshEntry);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final nextView = BleLaunchSyncScope.maybeOf(context);
+    if (identical(nextView, _view)) return;
+    _view?.removeListener(_syncOverlay);
+    _view = nextView;
+    _view?.addListener(_syncOverlay);
+    _syncOverlay();
+  }
+
+  bool get _shouldShow {
+    final view = _view;
+    return view != null &&
         view.detailsOpen &&
         (view.paused || view.progress.hasVisibleStatus);
-    final overlay = show
-        ? Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: BleLaunchSyncCard(
-              progress: view.progress,
-              paused: view.paused,
-              onClosed: view.closeDetails,
-              onPause: view.onPause,
-              onResume: view.onResume,
+  }
+
+  void _syncOverlay() {
+    final view = _view;
+    if (view == null) return;
+    if (_shouldShow) {
+      if (_entry == null) {
+        _entry = OverlayEntry(
+          builder: (context) =>
+              _BleLaunchSyncAttachedPanel(view: view, transition: _transition),
+        );
+        Overlay.of(context, rootOverlay: true).insert(_entry!);
+      }
+      _transition.forward();
+    } else if (_entry != null) {
+      _transition.reverse().then((_) {
+        if (mounted && !_shouldShow) _removeEntry();
+      });
+    }
+    _refreshEntry();
+  }
+
+  void _refreshEntry() => _entry?.markNeedsBuild();
+
+  void _removeEntry() {
+    _entry?.remove();
+    _entry?.dispose();
+    _entry = null;
+  }
+
+  @override
+  void dispose() {
+    _view?.removeListener(_syncOverlay);
+    _removeEntry();
+    _transition.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child ?? const SizedBox.shrink();
+}
+
+class _BleLaunchSyncAttachedPanel extends StatelessWidget {
+  const _BleLaunchSyncAttachedPanel({
+    required this.view,
+    required this.transition,
+  });
+
+  final BleLaunchSyncView view;
+  final Animation<double> transition;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    return AnimatedBuilder(
+      animation: transition,
+      builder: (context, _) => Stack(
+        fit: StackFit.expand,
+        clipBehavior: Clip.none,
+        children: [
+          ModalBarrier(
+            color: Colors.black.withValues(alpha: 0.54 * transition.value),
+            dismissible: true,
+            onDismiss: view.closeDetails,
+            semanticsLabel: MaterialLocalizations.of(
+              context,
+            ).modalBarrierDismissLabel,
+          ),
+          Align(
+            alignment: Alignment.topLeft,
+            child: CompositedTransformFollower(
+              link: view.indicatorLink,
+              showWhenUnlinked: false,
+              targetAnchor: Alignment.bottomRight,
+              followerAnchor: Alignment.topRight,
+              offset: const Offset(0, 12),
+              child: Opacity(
+                opacity: transition.value,
+                child: Transform.scale(
+                  alignment: Alignment.topRight,
+                  scale: 0.9 + transition.value * 0.1,
+                  child: SizedBox(
+                    width: screenWidth < 444 ? screenWidth - 24 : 420,
+                    child: BleLaunchSyncCard(
+                      progress: view.progress,
+                      paused: view.paused,
+                      onClosed: view.closeDetails,
+                      onPause: view.onPause,
+                      onResume: view.onResume,
+                    ),
+                  ),
+                ),
+              ),
             ),
-          )
-        : null;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        if (child case final Widget content) content,
-        if (overlay case final Widget content) content,
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

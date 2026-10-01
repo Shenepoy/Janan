@@ -23,13 +23,11 @@ import 'package:blood_pressure_app/features/bluetooth/ui/measurement_multiple.da
 import 'package:blood_pressure_app/features/bluetooth/ui/measurement_success.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/weight_measurement_success.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
-import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/bluetooth_measurement_import_mode.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Class for inputting measurement through bluetooth.
@@ -350,10 +348,15 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
         final BleReadState state = snap.data!;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          final bluetoothImportMode = ref
-              .read(appSettingsProvider)
-              .bluetoothImportMode;
-          if (state is BleReadSuccess) {
+          final settings = ref.read(appSettingsProvider);
+          final bluetoothImportMode = settings.bluetoothImportMode;
+          if (!settings.bloodPressureEnabled &&
+              (state is BleReadSuccess || state is BleReadMultiple)) {
+            if (!hasImported) {
+              hasImported = true;
+              setState(() {});
+            }
+          } else if (state is BleReadSuccess) {
             if (bluetoothImportMode.isAutomatic) {
               if (!hasImported) {
                 hasImported = true;
@@ -372,9 +375,10 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
               if (bluetoothImportMode.isAutomatic || widget.onWeight == null) {
                 unawaited(_importWeight(state.data));
               } else {
-                unawaited(ref.updateSetting(weightInputSetting, true));
-                widget.onWeight!(state.data.asBodyweightRecord());
-                setState(() => _finishedWeight = state.data);
+                if (ref.read(appSettingsProvider).weightInput) {
+                  widget.onWeight!(state.data.asBodyweightRecord());
+                  setState(() => _finishedWeight = state.data);
+                }
               }
             }
           } else if (state is BleReadMultiple &&
@@ -393,9 +397,8 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
         });
         logDebug('BleReadCubit.builder: $state');
         const SizeChangedLayoutNotification().dispatch(context);
-        final bluetoothImportMode = ref
-            .watch(appSettingsProvider)
-            .bluetoothImportMode;
+        final settings = ref.watch(appSettingsProvider);
+        final bluetoothImportMode = settings.bluetoothImportMode;
         return switch (state) {
           BleReadInProgress() => DeviceConnectingPlaceholder(
             onClosed: _returnToIdle,
@@ -408,6 +411,10 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
           // When auto-import is enabled the measurement(s) are imported
           // automatically, so show a loading indicator instead of the
           // flickering the list
+          BleReadMultiple() when !settings.bloodPressureEnabled =>
+            _disabledBloodPressureResult(context),
+          BleReadSuccess() when !settings.bloodPressureEnabled =>
+            _disabledBloodPressureResult(context),
           BleReadMultiple() when bluetoothImportMode.isAutomatic =>
             _buildMainCard(context, child: const CircularProgressIndicator()),
           BleReadSuccess() when bluetoothImportMode.isAutomatic =>
@@ -442,6 +449,17 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
     Widget? title,
   }) => InputCard(onClosed: _returnToIdle, title: title, child: child);
 
+  Widget _disabledBloodPressureResult(BuildContext context) => _buildMainCard(
+    context,
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Text(
+        'bloodPressureDisabledHint'.tr(),
+        textAlign: TextAlign.center,
+      ),
+    ),
+  );
+
   /// Import measurements without letting the user review them first.
   Future<void> _importMeasurements(List<BleMeasurementData> data) async {
     List<BleMeasurementData> incoming;
@@ -472,6 +490,7 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
   }
 
   Future<void> _importWeight(BleWeightData data) async {
+    if (!ref.read(appSettingsProvider).weightInput) return;
     BodyweightRepository? repo;
     try {
       repo = context.weightRepo;
@@ -506,7 +525,6 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
       }
     }
     if (!mounted) return;
-    await ref.updateSetting(weightInputSetting, true);
     setState(() => _finishedWeight = data);
   }
 }

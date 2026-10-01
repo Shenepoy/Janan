@@ -21,20 +21,32 @@ class PowerSyncMedicineIntakeRepository extends MedicineIntakeRepository {
     if (medId == null) return;
 
     final timeSec = intake.time.secondsSinceEpoch;
-    final existing = await _db.getAll(
-      'SELECT id FROM intakes WHERE timestamp_unix_s = ?',
-      [timeSec],
-    );
+    final existing = intake.occurrenceId == null
+        ? await _db.getAll(
+            'SELECT id FROM intakes WHERE timestamp_unix_s = ? AND med_id = ?',
+            [timeSec, medId],
+          )
+        : await _db.getAll('SELECT id FROM intakes WHERE occurrence_id = ?', [
+            intake.occurrenceId,
+          ]);
     if (existing.isEmpty) {
       await _db.execute(
-        'INSERT INTO intakes (id, timestamp_unix_s, med_id, dosis_mg) '
-        'VALUES (?, ?, ?, ?)',
-        [_uuid.v4(), timeSec, medId, intake.dosis.mg],
+        'INSERT INTO intakes '
+        '(id, timestamp_unix_s, med_id, dosis_mg, occurrence_id) '
+        'VALUES (?, ?, ?, ?, ?)',
+        [_uuid.v4(), timeSec, medId, intake.dosis.mg, intake.occurrenceId],
       );
     } else {
       await _db.execute(
-        'UPDATE intakes SET med_id = ?, dosis_mg = ? WHERE id = ?',
-        [medId, intake.dosis.mg, existing.first['id']],
+        'UPDATE intakes SET timestamp_unix_s = ?, med_id = ?, dosis_mg = ?, '
+        'occurrence_id = ? WHERE id = ?',
+        [
+          timeSec,
+          medId,
+          intake.dosis.mg,
+          intake.occurrenceId,
+          existing.first['id'],
+        ],
       );
     }
     _controller.add(intake);
@@ -43,7 +55,7 @@ class PowerSyncMedicineIntakeRepository extends MedicineIntakeRepository {
   @override
   Future<List<MedicineIntake>> get(DateRange range) async {
     final results = await _db.getAll(
-      'SELECT i.timestamp_unix_s, i.dosis_mg, m.designation, m.color, '
+      'SELECT i.timestamp_unix_s, i.dosis_mg, i.occurrence_id, m.designation, m.color, '
       'm.default_dose_mg, m.dose_unit '
       'FROM intakes AS i '
       'JOIN medicines AS m ON m.id = i.med_id '
@@ -61,6 +73,7 @@ class PowerSyncMedicineIntakeRepository extends MedicineIntakeRepository {
             unit: MedicationUnit.parse(r['dose_unit']),
             color: r['color'] as int?,
           ),
+          occurrenceId: r['occurrence_id'] as String?,
         ),
     ];
   }
@@ -70,7 +83,7 @@ class PowerSyncMedicineIntakeRepository extends MedicineIntakeRepository {
     if (limit <= 0) return <MedicineIntake>[];
 
     final results = await _db.getAll(
-      'SELECT i.timestamp_unix_s, i.dosis_mg, m.designation, m.color, '
+      'SELECT i.timestamp_unix_s, i.dosis_mg, i.occurrence_id, m.designation, m.color, '
       'm.default_dose_mg, m.dose_unit '
       'FROM ('
       'SELECT i.med_id, MAX(i.timestamp_unix_s) AS timestamp_unix_s '
@@ -97,16 +110,32 @@ class PowerSyncMedicineIntakeRepository extends MedicineIntakeRepository {
             unit: MedicationUnit.parse(r['dose_unit']),
             color: r['color'] as int?,
           ),
+          occurrenceId: r['occurrence_id'] as String?,
         ),
     ];
   }
 
   @override
   Future<void> remove(MedicineIntake intake) async {
-    await _db.execute(
-      'DELETE FROM intakes WHERE timestamp_unix_s = ? AND dosis_mg = ?',
-      [intake.time.secondsSinceEpoch, intake.dosis.mg],
-    );
+    if (intake.occurrenceId != null) {
+      await _db.execute('DELETE FROM intakes WHERE occurrence_id = ?', [
+        intake.occurrenceId,
+      ]);
+      await _db.execute(
+        'UPDATE dose_occurrences SET status = ?, taken_at_unix_s = NULL, '
+        'intake_id = NULL WHERE id = ?',
+        ['pending', intake.occurrenceId],
+      );
+    } else {
+      final medRepo = PowerSyncMedicineRepository(_db);
+      final medId = await medRepo.idFor(intake.medicine, includeRemoved: true);
+      if (medId != null) {
+        await _db.execute(
+          'DELETE FROM intakes WHERE timestamp_unix_s = ? AND med_id = ? AND dosis_mg = ?',
+          [intake.time.secondsSinceEpoch, medId, intake.dosis.mg],
+        );
+      }
+    }
     _controller.add(null);
   }
 

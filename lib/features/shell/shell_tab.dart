@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-/// Tabs in the main shell, in display order when weight is enabled.
+/// Tabs in the main shell, in display order for enabled features.
 enum ShellTab {
-  /// Blood-pressure home.
+  /// Measurements landing page.
   home,
 
   /// Weight history. Omitted from the bar when weight features are off.
@@ -15,11 +15,14 @@ enum ShellTab {
   settings,
 }
 
-/// Visible shell tabs for the current weight-features flag.
-List<ShellTab> visibleShellTabs({required bool showWeight}) => [
+/// Visible shell tabs for the enabled measurement features.
+List<ShellTab> visibleShellTabs({
+  required bool showWeight,
+  bool showBloodPressure = true,
+}) => [
   ShellTab.home,
   if (showWeight) ShellTab.weight,
-  ShellTab.statistics,
+  if (showBloodPressure) ShellTab.statistics,
   ShellTab.settings,
 ];
 

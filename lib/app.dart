@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -18,6 +19,8 @@ import 'package:blood_pressure_app/features/health_connect/health_connect_screen
 import 'package:blood_pressure_app/features/health_connect/sync_model.dart';
 import 'package:blood_pressure_app/features/health_connect/weight_sync_model.dart';
 import 'package:blood_pressure_app/features/input/forms/add_entry_form.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminder_runtime.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_screen.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/export_import_screen.dart';
@@ -211,6 +214,9 @@ class _AppState extends ConsumerState<App> with Loggable {
           BluetoothInputMode.newBluetoothInputCrossPlatform.name,
         );
       }
+      if (settings.bleInput != BluetoothInputMode.disabled) {
+        await ref.updateSetting(bluetoothMeasurementsEnabledSetting, true);
+      }
 
       final buildNumber = int.parse(
         (await PackageInfo.fromPlatform()).buildNumber,
@@ -246,11 +252,11 @@ class _AppState extends ConsumerState<App> with Loggable {
 
     final hc = ref.read(appSettingsProvider);
     if (hc.useHealthConnect && hc.syncOnAppStart) {
-      if (hc.syncPressureMeasurements) {
+      if (hc.bloodPressureEnabled && hc.syncPressureMeasurements) {
         logInfo('Syncing blood pressure measurements');
         await BPSyncModel(bpRepo: _bpRepo!, health: Health()).sync();
       }
-      if (hc.syncWeightMeasurements) {
+      if (hc.weightInput && hc.syncWeightMeasurements) {
         logInfo('Syncing weight measurements');
         await WeightSyncModel(
           weightRepo: _weightRepo!,
@@ -261,9 +267,13 @@ class _AppState extends ConsumerState<App> with Loggable {
 
     if (hc.useHealthConnect) {
       final health = Health();
-      if (hc.syncWeightMeasurements) {
+      if (hc.weightInput && hc.syncWeightMeasurements) {
         _weightRepo!.subscribe().listen((record) async {
-          if (record != null) {
+          final current = ref.read(appSettingsProvider);
+          if (record != null &&
+              current.useHealthConnect &&
+              current.weightInput &&
+              current.syncWeightMeasurements) {
             final canWrite = await health.requestPermissionsIfMissing([
               HealthDataType.WEIGHT,
             ], HealthDataAccess.WRITE);
@@ -279,9 +289,14 @@ class _AppState extends ConsumerState<App> with Loggable {
           }
         });
       }
-      if (hc.syncPressureMeasurements) {
+      if (hc.bloodPressureEnabled && hc.syncPressureMeasurements) {
         _bpRepo!.subscribe().listen((record) async {
-          if (record?.sys != null && record?.dia != null) {
+          final current = ref.read(appSettingsProvider);
+          if (record?.sys != null &&
+              record?.dia != null &&
+              current.useHealthConnect &&
+              current.bloodPressureEnabled &&
+              current.syncPressureMeasurements) {
             final canWrite = await health.requestPermissionsIfMissing([
               HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
               HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
@@ -302,14 +317,18 @@ class _AppState extends ConsumerState<App> with Loggable {
     AppRoute initialRoute = AppRoute.home;
     if (!hc.onboardingCompleted) {
       initialRoute = AppRoute.onboarding;
-    } else if (hc.startWithAddMeasurementPage) {
+    } else if (hc.startWithAddMeasurementPage && hc.bloodPressureEnabled) {
       initialRoute = AppRoute.add;
     }
     if (hc.onboardingCompleted && Platform.isAndroid) {
       try {
         final intent = await ReceiveIntent.getInitialIntent();
         logInfo('Received intent: $intent');
-        if (intent?.action == 'android.intent.action.VIEW_PERMISSION_USAGE') {
+        if (hc.medicineFeatureEnabled &&
+            intent?.extra?['route'] == AppRoute.medicationToday.path) {
+          initialRoute = AppRoute.medicationToday;
+        } else if (intent?.action ==
+            'android.intent.action.VIEW_PERMISSION_USAGE') {
           switch (intent!
               .extra?['android.intent.extra.PERMISSION_GROUP_NAME']) {
             case 'android.permission-group.HEALTH':
@@ -324,14 +343,43 @@ class _AppState extends ConsumerState<App> with Loggable {
         // Don't try too hard
       }
     }
+    if (hc.medicineFeatureEnabled &&
+        hc.onboardingCompleted &&
+        Platform.isAndroid &&
+        await MedicationReminderRuntime.instance.launchedFromNotification) {
+      initialRoute = AppRoute.medicationToday;
+    }
 
     try {
       _medCache = ref.read(medCacheProvider);
     } on UnimplementedError {
       _medCache = MedCache(_medRepo!, await _medRepo!.getAll());
     }
+    try {
+      if (hc.medicineFeatureEnabled) {
+        final reminderRepo = ref.read(medicationScheduleRepositoryProvider);
+        final occurrences = await reminderRepo.getOccurrences(DateTime.now());
+        await MedicationReminderRuntime.instance.syncSchedules(
+          await reminderRepo.getAll(),
+          snoozedOccurrences: occurrences
+              .where((occurrence) => occurrence.status == 'snoozed')
+              .toList(),
+        );
+        await MedicationReminderRuntime.instance.updateWidget(occurrences);
+      } else {
+        await MedicationReminderRuntime.instance.syncSchedules(const []);
+        await MedicationReminderRuntime.instance.updateWidget(const []);
+      }
+    } catch (e, stack) {
+      logWarning('Medication reminder refresh failed: $e\n$stack');
+    }
     _initialRoute = initialRoute;
-    if (mounted) setState(() => _ready = true);
+    if (mounted) {
+      setState(() => _ready = true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        MedicationReminderRuntime.instance.flushPendingWidgetRoute();
+      });
+    }
   }
 
   Widget _bootScope() => ProviderScope(
@@ -397,6 +445,28 @@ class _AppRootState extends ConsumerState<_AppRoot> {
     super.dispose();
   }
 
+  Future<void> _refreshMedicationRuntime(bool enabled) async {
+    try {
+      final runtime = MedicationReminderRuntime.instance;
+      if (!enabled) {
+        await runtime.syncSchedules(const []);
+        await runtime.updateWidget(const []);
+        return;
+      }
+      final repository = ref.read(medicationScheduleRepositoryProvider);
+      final occurrences = await repository.getOccurrences(DateTime.now());
+      await runtime.syncSchedules(
+        await repository.getAll(),
+        snoozedOccurrences: occurrences
+            .where((occurrence) => occurrence.status == 'snoozed')
+            .toList(),
+      );
+      await runtime.updateWidget(occurrences);
+    } catch (error, stack) {
+      debugPrint('Medication reminder refresh failed: $error\n$stack');
+    }
+  }
+
   Widget _shell(ShellTab tab) => AppShell(
     homePresence: widget.homePresence,
     initialTab: tab,
@@ -414,6 +484,11 @@ class _AppRootState extends ConsumerState<_AppRoot> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(appSettingsProvider);
+    ref.listen(appSettingsProvider, (previous, next) {
+      if (previous?.medicineFeatureEnabled != next.medicineFeatureEnabled) {
+        unawaited(_refreshMedicationRuntime(next.medicineFeatureEnabled));
+      }
+    });
     final isRtl = context.locale.languageCode == 'ar';
     return SafaehTheme(
       data: const SafaehThemeData(
@@ -424,6 +499,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
         ),
       ),
       child: MaterialApp(
+        navigatorKey: medicationNavigatorKey,
         title: 'Janan',
         onGenerateTitle: (context) => 'title'.tr(),
         theme: _buildTheme(
@@ -459,24 +535,39 @@ class _AppRootState extends ConsumerState<_AppRoot> {
           AppRoute.onboarding.path: (_) =>
               OnboardingScreen(firstRun: !settings.onboardingCompleted),
           AppRoute.home.path: (_) => _shell(ShellTab.home),
-          AppRoute.add.path: (_) =>
-              const AddEntryScreen(kind: AddEntryKind.bloodPressure),
+          AppRoute.add.path: (_) => settings.bloodPressureEnabled
+              ? const AddEntryScreen(kind: AddEntryKind.bloodPressure)
+              : _shell(ShellTab.home),
           AppRoute.addWeight.path: (_) => settings.weightInput
               ? const AddEntryScreen(kind: AddEntryKind.weight)
               : _shell(ShellTab.home),
-          AppRoute.addMedicine.path: (_) =>
-              const AddEntryScreen(kind: AddEntryKind.medicine),
+          AppRoute.addMedicine.path: (_) => settings.medicineFeatureEnabled
+              ? const AddEntryScreen(kind: AddEntryKind.medicine)
+              : _shell(ShellTab.home),
           AppRoute.weight.path: (_) => settings.weightInput
               ? _shell(ShellTab.weight)
               : _shell(ShellTab.home),
-          AppRoute.statistics.path: (_) => _shell(ShellTab.statistics),
+          AppRoute.statistics.path: (_) => settings.bloodPressureEnabled
+              ? _shell(ShellTab.statistics)
+              : _shell(ShellTab.home),
           AppRoute.settings.path: (_) => _shell(ShellTab.settings),
           AppRoute.settingsExport.path: (_) => const ExportImportScreen(),
-          AppRoute.settingsGraph.path: (_) => const GraphScreen(),
+          AppRoute.settingsGraph.path: (_) => settings.bloodPressureEnabled
+              ? const GraphScreen()
+              : _shell(ShellTab.home),
           AppRoute.settingsHealthConnect.path: (_) =>
               const HealthConnectScreen(),
           AppRoute.settingsMedications.path: (_) =>
-              const MedicineManagerScreen(),
+              settings.medicineFeatureEnabled
+              ? const MedicineManagerScreen()
+              : _shell(ShellTab.home),
+          AppRoute.medicationSchedules.path: (_) =>
+              settings.medicineFeatureEnabled
+              ? const MedicationSchedulesScreen()
+              : _shell(ShellTab.home),
+          AppRoute.medicationToday.path: (_) => settings.medicineFeatureEnabled
+              ? const TodayMedicinesScreen()
+              : _shell(ShellTab.home),
         },
       ),
     );
@@ -496,6 +587,10 @@ class _AppRootState extends ConsumerState<_AppRoot> {
     return ThemeData(
       colorScheme: colorScheme,
       useMaterial3: true,
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+      ),
       inputDecorationTheme: InputDecorationTheme(
         errorMaxLines: 5,
         border: inputBorder,
@@ -532,7 +627,9 @@ enum AppRoute {
   settingsExport('/settings/export'),
   settingsGraph('/settings/graph'),
   settingsHealthConnect('/settings/healthConnect'),
-  settingsMedications('/settings/medications');
+  settingsMedications('/settings/medications'),
+  medicationSchedules('/medications'),
+  medicationToday('/medications/today');
 
   const AppRoute(this.path);
 

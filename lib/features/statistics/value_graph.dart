@@ -22,7 +22,8 @@ export 'package:blood_pressure_app/features/statistics/chart/graph_series.dart';
 /// to put all data on one graph
 class BloodPressureValueGraph extends ConsumerWidget {
   /// Create a new graph of [BloodPressureRecord] values.
-  const BloodPressureValueGraph({super.key,
+  const BloodPressureValueGraph({
+    super.key,
     required this.records,
     required this.colors,
     required this.intakes,
@@ -42,17 +43,18 @@ class BloodPressureValueGraph extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (records.sysGraph().length < 2
-      && records.diaGraph().length < 2
-      && records.pulGraph().length < 2) {
-      return Center(
-        child: Text('errNotEnoughDataToGraph'.tr()),
-      );
+    final settings = ref.watch(appSettingsProvider);
+    if (records.sysGraph().length < 2 &&
+        records.diaGraph().length < 2 &&
+        records.pulGraph().length < 2) {
+      return Center(child: Text('errNotEnoughDataToGraph'.tr()));
     }
     return _BloodPressureValueChart(
       records: records,
       colors: colors,
-      intakes: intakes,
+      intakes: settings.medicineFeatureEnabled
+          ? intakes
+          : const <MedicineIntake>[],
     );
   }
 }
@@ -69,10 +71,12 @@ class _BloodPressureValueChart extends ConsumerStatefulWidget {
   final List<MedicineIntake> intakes;
 
   @override
-  ConsumerState<_BloodPressureValueChart> createState() => _BloodPressureValueChartState();
+  ConsumerState<_BloodPressureValueChart> createState() =>
+      _BloodPressureValueChartState();
 }
 
-class _BloodPressureValueChartState extends ConsumerState<_BloodPressureValueChart> {
+class _BloodPressureValueChartState
+    extends ConsumerState<_BloodPressureValueChart> {
   TransformationController? _transform;
   bool? _lastDisconnected;
   bool _isZoomed = false;
@@ -102,13 +106,16 @@ class _BloodPressureValueChartState extends ConsumerState<_BloodPressureValueCha
       final messenger = ScaffoldMessenger.of(context);
       messenger.hideCurrentSnackBar();
       if (disconnected) {
-        messenger.showSnackBar(SnackBar(
-          content: Text('bigGraphSplit'.tr()),
-          action: SnackBarAction(
-            onPressed: () => Navigator.of(context).pushNamed(AppRoute.settingsGraph.path),
-            label: 'openSettings'.tr(),
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('bigGraphSplit'.tr()),
+            action: SnackBarAction(
+              onPressed: () =>
+                  Navigator.of(context).pushNamed(AppRoute.settingsGraph.path),
+              label: 'openSettings'.tr(),
+            ),
           ),
-        ));
+        );
       }
     });
   }
@@ -160,6 +167,7 @@ class _BloodPressureValueChartState extends ConsumerState<_BloodPressureValueCha
       minY = math.min(minY, value);
       maxY = math.max(maxY, value);
     }
+
     for (final r in records) {
       consider(r.sys?.mmHg.toDouble());
       consider(r.dia?.mmHg.toDouble());
@@ -186,13 +194,18 @@ class _BloodPressureValueChartState extends ConsumerState<_BloodPressureValueCha
       Color color, {
       double? warnValue,
     }) {
-      for (final segment in splitSeriesByGap(series, settings.interruptGraphAfterNDays)) {
-        bars.add(_metricBar(
-          segment,
-          color: color,
-          thickness: settings.graphLineThickness,
-          warnValue: warnValue,
-        ));
+      for (final segment in splitSeriesByGap(
+        series,
+        settings.interruptGraphAfterNDays,
+      )) {
+        bars.add(
+          _metricBar(
+            segment,
+            color: color,
+            thickness: settings.graphLineThickness,
+            warnValue: warnValue,
+          ),
+        );
         metricBarCount++;
       }
     }
@@ -205,15 +218,17 @@ class _BloodPressureValueChartState extends ConsumerState<_BloodPressureValueCha
       for (final series in [sys.toList(), dia.toList()]) {
         final fit = linearRegression(series);
         if (fit == null) continue;
-        bars.add(LineChartBarData(
-          spots: [
-            FlSpot(minX, fit.slope * minX + fit.intercept),
-            FlSpot(maxX, fit.slope * maxX + fit.intercept),
-          ],
-          color: Colors.grey,
-          barWidth: 3,
-          dotData: const FlDotData(show: false),
-        ));
+        bars.add(
+          LineChartBarData(
+            spots: [
+              FlSpot(minX, fit.slope * minX + fit.intercept),
+              FlSpot(maxX, fit.slope * maxX + fit.intercept),
+            ],
+            color: Colors.grey,
+            barWidth: 3,
+            dotData: const FlDotData(show: false),
+          ),
+        );
       }
     }
 
@@ -221,30 +236,36 @@ class _BloodPressureValueChartState extends ConsumerState<_BloodPressureValueCha
       final medicineColor = intake.medicine.color == null
           ? theme.colorScheme.onSurface
           : Color(intake.medicine.color!);
-      bars.add(LineChartBarData(
-        spots: [FlSpot(intake.time.millisecondsSinceEpoch.toDouble(), minY)],
-        color: Colors.transparent,
-        barWidth: 0,
-        dotData: FlDotData(
-          getDotPainter: (spot, percent, bar, index) => MedicationDotPainter(
-            color: medicineColor,
-            brightness: theme.brightness,
+      bars.add(
+        LineChartBarData(
+          spots: [FlSpot(intake.time.millisecondsSinceEpoch.toDouble(), minY)],
+          color: Colors.transparent,
+          barWidth: 0,
+          dotData: FlDotData(
+            getDotPainter: (spot, percent, bar, index) => MedicationDotPainter(
+              color: medicineColor,
+              brightness: theme.brightness,
+            ),
           ),
         ),
-      ));
+      );
     }
 
     final dateFormatter = WesternDateFormat(settings.dateFormatString, locale);
 
-    final startLabel = WesternDateFormat.yMMMd(locale).format(records.first.time);
+    final startLabel = WesternDateFormat.yMMMd(
+      locale,
+    ).format(records.first.time);
     final endLabel = WesternDateFormat.yMMMd(locale).format(records.last.time);
 
     return Semantics(
-      label: 'graphSemantics'.tr(namedArgs: {
-        'name': 'bloodPressure'.tr(),
-        'start': startLabel,
-        'end': endLabel,
-      }),
+      label: 'graphSemantics'.tr(
+        namedArgs: {
+          'name': 'bloodPressure'.tr(),
+          'start': startLabel,
+          'end': endLabel,
+        },
+      ),
       child: Column(
         children: [
           Padding(
@@ -252,11 +273,13 @@ class _BloodPressureValueChartState extends ConsumerState<_BloodPressureValueCha
             child: Row(
               children: [
                 Expanded(
-                  child: ChartLegend(items: [
-                    ('sysShort'.tr(), settings.sysColor),
-                    ('diaShort'.tr(), settings.diaColor),
-                    ('pulShort'.tr(), settings.pulColor),
-                  ]),
+                  child: ChartLegend(
+                    items: [
+                      ('sysShort'.tr(), settings.sysColor),
+                      ('diaShort'.tr(), settings.diaColor),
+                      ('pulShort'.tr(), settings.pulColor),
+                    ],
+                  ),
                 ),
                 if (_isZoomed)
                   IconButton(
@@ -279,14 +302,10 @@ class _BloodPressureValueChartState extends ConsumerState<_BloodPressureValueCha
                 gridData: FlGridData(
                   drawVerticalLine: true,
                   drawHorizontalLine: true,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                    color: gridColor,
-                    strokeWidth: 1,
-                  ),
-                  getDrawingVerticalLine: (_) => FlLine(
-                    color: gridColor,
-                    strokeWidth: 1,
-                  ),
+                  getDrawingHorizontalLine: (_) =>
+                      FlLine(color: gridColor, strokeWidth: 1),
+                  getDrawingVerticalLine: (_) =>
+                      FlLine(color: gridColor, strokeWidth: 1),
                 ),
                 borderData: FlBorderData(
                   show: true,
@@ -317,7 +336,9 @@ class _BloodPressureValueChartState extends ConsumerState<_BloodPressureValueCha
                 extraLinesData: ExtraLinesData(
                   extraLinesOnTop: false,
                   verticalLines: [
-                    for (final note in widget.colors.where((n) => n.color != null))
+                    for (final note in widget.colors.where(
+                      (n) => n.color != null,
+                    ))
                       VerticalLine(
                         x: note.time.millisecondsSinceEpoch.toDouble(),
                         color: Color(note.color!).withAlpha(102),
@@ -348,9 +369,14 @@ class _BloodPressureValueChartState extends ConsumerState<_BloodPressureValueCha
                           .where((s) => s.barIndex < metricBarCount)
                           .toList();
                       if (metric.isEmpty) {
-                        return List<LineTooltipItem?>.filled(touched.length, null);
+                        return List<LineTooltipItem?>.filled(
+                          touched.length,
+                          null,
+                        );
                       }
-                      final time = DateTime.fromMillisecondsSinceEpoch(metric.first.x.round());
+                      final time = DateTime.fromMillisecondsSinceEpoch(
+                        metric.first.x.round(),
+                      );
                       final items = <LineTooltipItem?>[];
                       var first = true;
                       for (final spot in touched) {
@@ -360,21 +386,24 @@ class _BloodPressureValueChartState extends ConsumerState<_BloodPressureValueCha
                         }
                         if (first) {
                           first = false;
-                          items.add(LineTooltipItem(
-                            dateFormatter.format(time),
-                            chartTooltipTitleStyle(context),
-                            textAlign: TextAlign.start,
-                            children: [
-                              for (final m in metric)
-                                TextSpan(
-                                  text: '\n${m.y.round()}',
-                                  style: chartTooltipValueStyle(
-                                    context,
-                                    m.bar.color ?? theme.colorScheme.onSurface,
+                          items.add(
+                            LineTooltipItem(
+                              dateFormatter.format(time),
+                              chartTooltipTitleStyle(context),
+                              textAlign: TextAlign.start,
+                              children: [
+                                for (final m in metric)
+                                  TextSpan(
+                                    text: '\n${m.y.round()}',
+                                    style: chartTooltipValueStyle(
+                                      context,
+                                      m.bar.color ??
+                                          theme.colorScheme.onSurface,
+                                    ),
                                   ),
-                                ),
-                            ],
-                          ));
+                              ],
+                            ),
+                          );
                         } else {
                           items.add(null);
                         }

@@ -2,6 +2,7 @@ import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/data_util/combined_entry_builder.dart';
 import 'package:blood_pressure_app/data_util/consistent_future_builder.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/statistics/blood_pressure_distribution.dart';
 import 'package:blood_pressure_app/features/statistics/clock_bp_graph.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_empty_card.dart';
@@ -16,15 +17,29 @@ import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:blood_pressure_app/model/storage/types/interval_storage_setting.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A page that shows statistics about stored blood pressure values.
-class StatisticsScreen extends StatelessWidget {
+class StatisticsScreen extends ConsumerWidget {
   /// Create a screen to various display statistics.
   const StatisticsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     Localizations.localeOf(context);
+    if (!ref.watch(appSettingsProvider).bloodPressureEnabled) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'bloodPressureDisabledHint'.tr(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       primary: false,
       body: CombinedEntryBuilder(
@@ -64,7 +79,7 @@ class _StatisticsDashboard extends StatelessWidget {
               previousRange == null
                   ? 'none'
                   : '${previousRange.start.millisecondsSinceEpoch}-'
-                      '${previousRange.end.millisecondsSinceEpoch}',
+                        '${previousRange.end.millisecondsSinceEpoch}',
             ),
             interval: interval,
             period: snapshot.period,
@@ -121,10 +136,8 @@ class _PreviousWindowKpis extends StatelessWidget {
         return BloodPressureAnalyzer(List.of(filtered));
       }),
       onWaiting: PeriodMetricCards(period: period),
-      onData: (context, previous) => PeriodMetricCards(
-        period: period,
-        previous: previous,
-      ),
+      onData: (context, previous) =>
+          PeriodMetricCards(period: period, previous: previous),
     );
   }
 }

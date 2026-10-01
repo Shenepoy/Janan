@@ -44,11 +44,13 @@ void main() {
   );
 
   Future<SettingsController> enabledController() async {
-    final providers = await createTestSettings(TestSettingsSeed(
-      syncBluetoothOnLaunch: true,
-      bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
-      knownBleDev: const [KnownBleDevice(id: 'aa', name: 'BM59')],
-    ));
+    final providers = await createTestSettings(
+      TestSettingsSeed(
+        syncBluetoothOnLaunch: true,
+        bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
+        knownBleDev: const [KnownBleDevice(id: 'aa', name: 'BM59')],
+      ),
+    );
     return providers.controller;
   }
 
@@ -62,11 +64,13 @@ void main() {
   test('waitUntilIdle completes after run finishes', () async {
     final future = BleLaunchSync.waitUntilIdle();
     await BleLaunchSync(
-      controller: await controllerFor(TestSettingsSeed(
-        syncBluetoothOnLaunch: false,
-        bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
-        knownBleDev: const [KnownBleDevice(id: 'aa', name: 'BM59')],
-      )),
+      controller: await controllerFor(
+        TestSettingsSeed(
+          syncBluetoothOnLaunch: false,
+          bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
+          knownBleDev: const [KnownBleDevice(id: 'aa', name: 'BM59')],
+        ),
+      ),
       repo: MockBloodPressureRepository(),
     ).run();
     await future;
@@ -86,11 +90,13 @@ void main() {
 
   test('skips when the setting is off', () async {
     final result = await BleLaunchSync(
-      controller: await controllerFor(TestSettingsSeed(
-        syncBluetoothOnLaunch: false,
-        bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
-        knownBleDev: const [KnownBleDevice(id: 'aa', name: 'BM59')],
-      )),
+      controller: await controllerFor(
+        TestSettingsSeed(
+          syncBluetoothOnLaunch: false,
+          bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
+          knownBleDev: const [KnownBleDevice(id: 'aa', name: 'BM59')],
+        ),
+      ),
       repo: MockBloodPressureRepository(),
     ).run();
     expect(result.status, BleLaunchSyncStatus.skipped);
@@ -98,11 +104,13 @@ void main() {
 
   test('runs after the setting is turned on later in the session', () async {
     await BleLaunchSync(
-      controller: await controllerFor(TestSettingsSeed(
-        syncBluetoothOnLaunch: false,
-        bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
-        knownBleDev: const [KnownBleDevice(id: 'aa', name: 'BM59')],
-      )),
+      controller: await controllerFor(
+        TestSettingsSeed(
+          syncBluetoothOnLaunch: false,
+          bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
+          knownBleDev: const [KnownBleDevice(id: 'aa', name: 'BM59')],
+        ),
+      ),
       repo: MockBloodPressureRepository(),
     ).run();
 
@@ -123,10 +131,12 @@ void main() {
 
   test('skips when bluetooth input is disabled', () async {
     final result = await BleLaunchSync(
-      controller: await controllerFor(TestSettingsSeed(
-        syncBluetoothOnLaunch: true,
-        knownBleDev: const [KnownBleDevice(id: 'aa', name: 'BM59')],
-      )),
+      controller: await controllerFor(
+        TestSettingsSeed(
+          syncBluetoothOnLaunch: true,
+          knownBleDev: const [KnownBleDevice(id: 'aa', name: 'BM59')],
+        ),
+      ),
       repo: MockBloodPressureRepository(),
     ).run();
     expect(result.status, BleLaunchSyncStatus.skipped);
@@ -134,13 +144,15 @@ void main() {
 
   test('skips when every saved meter has auto-sync off', () async {
     final result = await BleLaunchSync(
-      controller: await controllerFor(TestSettingsSeed(
-        syncBluetoothOnLaunch: true,
-        bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
-        knownBleDev: const [
-          KnownBleDevice(id: 'aa', name: 'BM59', autoSync: false),
-        ],
-      )),
+      controller: await controllerFor(
+        TestSettingsSeed(
+          syncBluetoothOnLaunch: true,
+          bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
+          knownBleDev: const [
+            KnownBleDevice(id: 'aa', name: 'BM59', autoSync: false),
+          ],
+        ),
+      ),
       repo: MockBloodPressureRepository(),
     ).run();
     expect(result.status, BleLaunchSyncStatus.skipped);
@@ -148,10 +160,12 @@ void main() {
 
   test('skips when no meter is saved', () async {
     final result = await BleLaunchSync(
-      controller: await controllerFor(TestSettingsSeed(
-        syncBluetoothOnLaunch: true,
-        bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
-      )),
+      controller: await controllerFor(
+        TestSettingsSeed(
+          syncBluetoothOnLaunch: true,
+          bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
+        ),
+      ),
       repo: MockBloodPressureRepository(),
     ).run();
     expect(result.status, BleLaunchSyncStatus.skipped);
@@ -181,12 +195,14 @@ void main() {
       initialState: selected,
     );
     final repo = MockBloodPressureRepository();
-    await repo.add(BloodPressureRecord(
-      time: time,
-      sys: Pressure.mmHg(145),
-      dia: Pressure.mmHg(81),
-      pul: 80,
-    ));
+    await repo.add(
+      BloodPressureRecord(
+        time: time,
+        sys: Pressure.mmHg(145),
+        dia: Pressure.mmHg(81),
+        pul: 80,
+      ),
+    );
 
     final future = BleLaunchSync(
       controller: await enabledController(),
@@ -240,12 +256,14 @@ void main() {
       initialState: selected,
     );
     final repo = MockBloodPressureRepository();
-    await repo.add(BloodPressureRecord(
-      time: time,
-      sys: Pressure.mmHg(145),
-      dia: Pressure.mmHg(81),
-      pul: 80,
-    ));
+    await repo.add(
+      BloodPressureRecord(
+        time: time,
+        sys: Pressure.mmHg(145),
+        dia: Pressure.mmHg(81),
+        pul: 80,
+      ),
+    );
 
     final sync = BleLaunchSync(
       controller: await enabledController(),
@@ -287,12 +305,14 @@ void main() {
       initialState: selected,
     );
     final repo = MockBloodPressureRepository();
-    await repo.add(BloodPressureRecord(
-      time: time,
-      sys: Pressure.mmHg(145),
-      dia: Pressure.mmHg(81),
-      pul: 80,
-    ));
+    await repo.add(
+      BloodPressureRecord(
+        time: time,
+        sys: Pressure.mmHg(145),
+        dia: Pressure.mmHg(81),
+        pul: 80,
+      ),
+    );
 
     final result = await BleLaunchSync(
       controller: await enabledController(),
@@ -316,11 +336,7 @@ void main() {
     final scan = _MockDeviceScanCubit();
     final scanResults = StreamController<DeviceScanState>();
     addTearDown(scanResults.close);
-    whenListen(
-      scan,
-      scanResults.stream,
-      initialState: DeviceListLoading(),
-    );
+    whenListen(scan, scanResults.stream, initialState: DeviceListLoading());
     final sync = BleLaunchSync(
       controller: await enabledController(),
       repo: MockBloodPressureRepository(),
@@ -345,11 +361,7 @@ void main() {
     final scan = _MockDeviceScanCubit();
     final scanResults = StreamController<DeviceScanState>();
     addTearDown(scanResults.close);
-    whenListen(
-      scan,
-      scanResults.stream,
-      initialState: DeviceListLoading(),
-    );
+    whenListen(scan, scanResults.stream, initialState: DeviceListLoading());
     final result = await BleLaunchSync(
       controller: await enabledController(),
       repo: MockBloodPressureRepository(),
@@ -412,14 +424,16 @@ void main() {
     );
 
     final result = await BleLaunchSync(
-      controller: await controllerFor(TestSettingsSeed(
-        syncBluetoothOnLaunch: true,
-        bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
-        knownBleDev: const [
-          KnownBleDevice(id: 'aa', name: 'BM59'),
-          KnownBleDevice(id: 'bb', name: 'BM58'),
-        ],
-      )),
+      controller: await controllerFor(
+        TestSettingsSeed(
+          syncBluetoothOnLaunch: true,
+          bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
+          knownBleDev: const [
+            KnownBleDevice(id: 'aa', name: 'BM59'),
+            KnownBleDevice(id: 'bb', name: 'BM58'),
+          ],
+        ),
+      ),
       repo: MockBloodPressureRepository(),
       bluetoothCubit: () => bluetooth,
       readers: () => [first, second],
@@ -451,14 +465,16 @@ void main() {
       initialState: DeviceSelected(read),
     );
     final sync = BleLaunchSync(
-      controller: await controllerFor(TestSettingsSeed(
-        syncBluetoothOnLaunch: true,
-        bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
-        knownBleDev: const [
-          KnownBleDevice(id: 'aa', name: 'BM59'),
-          KnownBleDevice(id: 'bb', name: 'BM58'),
-        ],
-      )),
+      controller: await controllerFor(
+        TestSettingsSeed(
+          syncBluetoothOnLaunch: true,
+          bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
+          knownBleDev: const [
+            KnownBleDevice(id: 'aa', name: 'BM59'),
+            KnownBleDevice(id: 'bb', name: 'BM58'),
+          ],
+        ),
+      ),
       repo: MockBloodPressureRepository(),
       bluetoothCubit: () => bluetooth,
       deviceScanCubit: () => scan,
@@ -466,9 +482,9 @@ void main() {
     );
     final looking = Completer<void>();
     sync.progress.addListener(() {
-      if (sync.progress.value.lookingForMore
-          && sync.progress.value.phase == BleLaunchSyncPhase.reading
-          && !looking.isCompleted) {
+      if (sync.progress.value.lookingForMore &&
+          sync.progress.value.phase == BleLaunchSyncPhase.reading &&
+          !looking.isCompleted) {
         looking.complete();
       }
     });
@@ -530,10 +546,9 @@ void main() {
       initialState: BluetoothStateReady(),
     );
     final read = _MockBleReadCubit('eufy T9147');
-    final readState = BleReadWeightSuccess(BleWeightData(
-      kg: 102.3,
-      time: time,
-    ));
+    final readState = BleReadWeightSuccess(
+      BleWeightData(kg: 102.3, time: time),
+    );
     whenListen(
       read,
       Stream<BleReadState>.fromIterable([readState]),
@@ -547,11 +562,14 @@ void main() {
       initialState: selected,
     );
     final weights = MockBodyweightRepository();
-    final controller = await controllerFor(TestSettingsSeed(
-      syncBluetoothOnLaunch: true,
-      bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
-      knownBleDev: const [KnownBleDevice(id: 'scale', name: 'eufy T9147')],
-    ));
+    final controller = await controllerFor(
+      TestSettingsSeed(
+        syncBluetoothOnLaunch: true,
+        bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
+        weightInput: true,
+        knownBleDev: const [KnownBleDevice(id: 'scale', name: 'eufy T9147')],
+      ),
+    );
 
     final result = await BleLaunchSync(
       controller: controller,
@@ -577,11 +595,9 @@ void main() {
       initialState: BluetoothStateReady(),
     );
     final read = _MockBleReadCubit('eufy T9147');
-    final readState = BleReadWeightSuccess(BleWeightData(
-      kg: 102.3,
-      time: time,
-      impedance: 500,
-    ));
+    final readState = BleReadWeightSuccess(
+      BleWeightData(kg: 102.3, time: time, impedance: 500),
+    );
     whenListen(
       read,
       Stream<BleReadState>.fromIterable([readState]),
@@ -595,15 +611,20 @@ void main() {
       initialState: selected,
     );
     final weights = MockBodyweightRepository();
-    await weights.add(BodyweightRecord(
-      time: time.subtract(const Duration(minutes: 1)),
-      weight: Weight.kg(102.3),
-    ));
-    final controller = await controllerFor(TestSettingsSeed(
-      syncBluetoothOnLaunch: true,
-      bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
-      knownBleDev: const [KnownBleDevice(id: 'scale', name: 'eufy T9147')],
-    ));
+    await weights.add(
+      BodyweightRecord(
+        time: time.subtract(const Duration(minutes: 1)),
+        weight: Weight.kg(102.3),
+      ),
+    );
+    final controller = await controllerFor(
+      TestSettingsSeed(
+        syncBluetoothOnLaunch: true,
+        bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
+        weightInput: true,
+        knownBleDev: const [KnownBleDevice(id: 'scale', name: 'eufy T9147')],
+      ),
+    );
 
     final result = await BleLaunchSync(
       controller: controller,

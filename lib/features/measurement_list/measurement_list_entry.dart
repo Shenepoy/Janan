@@ -22,6 +22,8 @@ class MeasurementListRow extends ConsumerWidget {
     required this.data,
     this.previous,
     this.dense = false,
+    this.showBloodPressure,
+    this.showMedicineMark,
   });
 
   /// Combined measurement shown in this row.
@@ -33,21 +35,38 @@ class MeasurementListRow extends ConsumerWidget {
   /// Hide change chips and use tighter padding.
   final bool dense;
 
+  /// Whether this row should render pressure values instead of medication.
+  /// Defaults to the enabled app feature.
+  final bool? showBloodPressure;
+
+  /// Whether to show the medication mark on a pressure row.
+  /// Defaults to the enabled app feature.
+  final bool? showMedicineMark;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
+    final displayBloodPressure =
+        showBloodPressure ?? settings.bloodPressureEnabled;
+    final displayMedicineMark =
+        showMedicineMark ??
+        (settings.bloodPressureEnabled && settings.medicineFeatureEnabled);
     return MeasurementTableRow(
       dense: dense,
+      reserveHintSlot: displayBloodPressure,
       columns: bloodPressureColumns(
         sysColor: settings.sysColor,
         diaColor: settings.diaColor,
         pulColor: settings.pulColor,
+        showBloodPressure: displayBloodPressure,
       ),
       entry: bloodPressureTableEntry(
         context: context,
         data: data,
         previous: previous,
         unit: settings.preferredPressureUnit,
+        showBloodPressure: displayBloodPressure,
+        showMedicineMark: displayMedicineMark,
       ),
     );
   }
@@ -59,6 +78,8 @@ MeasurementTableEntry bloodPressureTableEntry({
   required CombinedEntry data,
   required CombinedEntry? previous,
   required PressureUnit unit,
+  bool showBloodPressure = true,
+  bool showMedicineMark = true,
 }) {
   final stamp = formatListTimestamp(
     data.time,
@@ -66,37 +87,56 @@ MeasurementTableEntry bloodPressureTableEntry({
   );
   final digits = unit == PressureUnit.kPa ? 1 : 0;
   final hasNoteText = data.note?.note?.isNotEmpty ?? false;
+  final intakes = data.allIntakes;
+  final medicineNames = intakes
+      .map((intake) => intake.medicine.designation)
+      .join(', ');
+  final medicineDoses = intakes
+      .map(
+        (intake) => formatMedicationDose(intake.dosis.mg, intake.medicine.unit),
+      )
+      .where((dose) => dose.isNotEmpty)
+      .join(', ');
+  final firstMedicine = intakes.isEmpty ? null : intakes.first.medicine;
+  final rawMedicineColor = firstMedicine?.color;
+  final medicineColor = _medicineDisplayColor(context, rawMedicineColor);
   final selection = ListSelectionScope.maybeOf<CombinedEntry>(context);
   final selecting = selection?.isSelecting ?? false;
   return MeasurementTableEntry(
-    accentColor: data.color == null ? null : Color(data.color!),
+    accentColor: showBloodPressure
+        ? data.color == null
+              ? null
+              : Color(data.color!)
+        : null,
     selected: selection?.contains(data) ?? false,
     selecting: selecting,
-    semanticsLabel: 'measurementSemantics'.tr(namedArgs: {
-      'sys': isolateLtr(data.sys?.mmHg.toString() ?? '—'),
-      'dia': isolateLtr(data.dia?.mmHg.toString() ?? '—'),
-      'pul': isolateLtr(data.pul?.toString() ?? '—'),
-      'time': isolateLtr(stamp),
-    }),
+    semanticsLabel: showBloodPressure
+        ? 'measurementSemantics'.tr(
+            namedArgs: {
+              'sys': isolateLtr(data.sys?.mmHg.toString() ?? '—'),
+              'dia': isolateLtr(data.dia?.mmHg.toString() ?? '—'),
+              'pul': isolateLtr(data.pul?.toString() ?? '—'),
+              'time': isolateLtr(stamp),
+            },
+          )
+        : '$medicineNames, $medicineDoses, $stamp',
     onTap: () {
       if (selecting) {
         selection!.toggle(data);
         return;
       }
-      Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => MeasurementDetailScreen(
-          entry: data,
-          previous: previous,
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              MeasurementDetailScreen(entry: data, previous: previous),
         ),
-      ));
+      );
     },
     onLongPress: selection == null ? null : () => selection.toggle(data),
     marks: [
-      if (data.allIntakes.isNotEmpty)
-        ExcludeSemantics(
-          child: _MedicationMark(intakes: data.allIntakes),
-        ),
-      if (data.color != null || hasNoteText)
+      if (showMedicineMark && intakes.isNotEmpty)
+        ExcludeSemantics(child: _MedicationMark(intakes: intakes)),
+      if (showBloodPressure && (data.color != null || hasNoteText))
         ExcludeSemantics(
           child: Container(
             width: 8,
@@ -110,31 +150,100 @@ MeasurementTableEntry bloodPressureTableEntry({
           ),
         ),
     ],
-    cells: [
-      MeasurementTableCell.stamp(stamp),
-      MeasurementTableCell(
-        value: PressureText(data.sys),
-        change: _pressureChange(data.sys, previous?.sys, unit),
-        fractionDigits: digits,
-      ),
-      MeasurementTableCell(
-        value: PressureText(data.dia),
-        change: _pressureChange(data.dia, previous?.dia, unit),
-        fractionDigits: digits,
-      ),
-      MeasurementTableCell(
-        value: NullableText(data.pul?.toString()),
-        change: data.pul == null
-            ? null
-            : MetricChange(
-                current: data.pul!.toDouble(),
-                previous: previous?.pul?.toDouble(),
-                unchangedEpsilon: 0.5,
+    cells: showBloodPressure
+        ? [
+            MeasurementTableCell.stamp(stamp),
+            MeasurementTableCell(
+              value: PressureText(data.sys),
+              change: _pressureChange(data.sys, previous?.sys, unit),
+              fractionDigits: digits,
+            ),
+            MeasurementTableCell(
+              value: PressureText(data.dia),
+              change: _pressureChange(data.dia, previous?.dia, unit),
+              fractionDigits: digits,
+            ),
+            MeasurementTableCell(
+              value: NullableText(data.pul?.toString()),
+              change: data.pul == null
+                  ? null
+                  : MetricChange(
+                      current: data.pul!.toDouble(),
+                      previous: previous?.pul?.toDouble(),
+                      unchangedEpsilon: 0.5,
+                    ),
+              fractionDigits: 0,
+            ),
+          ]
+        : [
+            MeasurementTableCell.stamp(stamp),
+            MeasurementTableCell(
+              value: Row(
+                children: [
+                  _MedicineColorDot(color: medicineColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      medicineNames,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-        fractionDigits: 0,
-      ),
-    ],
+              emphasize: false,
+            ),
+            MeasurementTableCell(
+              value: Text(
+                medicineDoses,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              emphasize: false,
+            ),
+          ],
   );
+}
+
+Color _medicineDisplayColor(BuildContext context, int? rawColor) {
+  if (rawColor == null ||
+      rawColor == 0 ||
+      rawColor == Colors.transparent.toARGB32()) {
+    return Theme.of(context).colorScheme.primary;
+  }
+  return Color(rawColor);
+}
+
+class _MedicineColorDot extends StatelessWidget {
+  const _MedicineColorDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Theme.of(context).colorScheme.surface,
+              width: 0.75,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 MetricChange? _pressureChange(

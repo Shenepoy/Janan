@@ -24,31 +24,35 @@ class BleEngineSettingsTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mode = ref.watch(appSettingsProvider).bleInput;
+    final settings = ref.watch(appSettingsProvider);
+    final mode = settings.bleInput;
     return ListTile(
       leading: const Icon(Icons.bluetooth),
       title: Text('bluetoothInput'.tr()),
       subtitle: Text(mode.localize()),
       trailing: settingsChevronEnd(context),
-      onTap: () async {
-        final result = await showOptionPickerSheet<BluetoothInputMode>(
-          context,
-          title: 'bluetoothInput'.tr(),
-          selected: mode,
-          maxHeight: MediaQuery.sizeOf(context).height * 0.75,
-          options: [
-            for (final option in _options)
-              SheetPickerOption<BluetoothInputMode>(
-                value: option,
-                label: option.localize(),
-                subtitle: _description(option),
-              ),
-          ],
-        );
-        if (result != null) {
-          await ref.setBleInput(result);
-        }
-      },
+      enabled: settings.bluetoothMeasurementsEnabled,
+      onTap: settings.bluetoothMeasurementsEnabled
+          ? () async {
+              final result = await showOptionPickerSheet<BluetoothInputMode>(
+                context,
+                title: 'bluetoothInput'.tr(),
+                selected: mode,
+                maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+                options: [
+                  for (final option in _options)
+                    SheetPickerOption<BluetoothInputMode>(
+                      value: option,
+                      label: option.localize(),
+                      subtitle: _description(option),
+                    ),
+                ],
+              );
+              if (result != null) {
+                await ref.setBleInput(result);
+              }
+            }
+          : null,
     );
   }
 }

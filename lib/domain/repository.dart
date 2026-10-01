@@ -3,6 +3,7 @@ import 'package:blood_pressure_app/domain/bodyweight_record.dart';
 import 'package:blood_pressure_app/domain/date_range.dart';
 import 'package:blood_pressure_app/domain/medicine.dart';
 import 'package:blood_pressure_app/domain/medicine_intake.dart';
+import 'package:blood_pressure_app/domain/medication_schedule.dart';
 import 'package:blood_pressure_app/domain/note.dart';
 
 /// High-level access to stored health records.
@@ -21,7 +22,8 @@ abstract class Repository<T> {
 }
 
 /// Repository for [BloodPressureRecord]s.
-abstract class BloodPressureRepository extends Repository<BloodPressureRecord> {}
+abstract class BloodPressureRepository
+    extends Repository<BloodPressureRecord> {}
 
 /// Repository for [Note]s.
 abstract class NoteRepository extends Repository<Note> {}
@@ -48,6 +50,25 @@ abstract class MedicineIntakeRepository extends Repository<MedicineIntake> {
     }
     return recent;
   }
+}
+
+/// Local schedules and occurrence outcomes for scheduled medicine doses.
+abstract class MedicationScheduleRepository {
+  /// Get all saved schedules, including paused and ended schedules.
+  Future<List<MedicationSchedule>> getAll();
+
+  /// Save a new schedule or update one with the same id.
+  Future<MedicationSchedule> save(MedicationSchedule schedule);
+
+  /// Get today's scheduled occurrences, materializing them if needed.
+  Future<List<DoseOccurrence>> getOccurrences(DateTime date);
+
+  /// Change an occurrence state and, when taken, add a linked medicine intake.
+  Future<void> setOccurrenceStatus(
+    DoseOccurrence occurrence,
+    String status, {
+    DateTime? snoozeUntil,
+  });
 }
 
 /// Repository for medicines that are taken by the user.

@@ -124,6 +124,13 @@ class MedicineManagerScreen extends StatelessWidget {
           appBar: AppBar(
             forceMaterialTransparency: true,
             title: Text('medications'.tr()),
+            actions: [
+              IconButton(
+                tooltip: 'reminderSchedulesTitle'.tr(),
+                icon: const Icon(Icons.notifications_active_outlined),
+                onPressed: () => Navigator.pushNamed(context, '/medications'),
+              ),
+            ],
           ),
           floatingActionButton: meds.isEmpty
               ? null

@@ -4,6 +4,7 @@ export 'bodyweight_record.dart';
 export 'date_range.dart';
 export 'datetime_seconds.dart';
 export 'medication_unit.dart';
+export 'medication_schedule.dart';
 export 'medicine.dart';
 export 'medicine_intake.dart';
 export 'note.dart';

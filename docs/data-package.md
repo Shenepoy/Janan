@@ -23,7 +23,9 @@ PowerSync adds a text `id` on every table. Do not declare `id`.
 - `notes`: `timestamp_unix_s`, `note`, `color`
 - `weights`: `timestamp_unix_s`, `weight_kg`, `impedance_ohm`
 - `medicines`: `designation`, `color`, `default_dose_mg`, `removed`
-- `intakes`: `timestamp_unix_s`, `med_id`, `dosis_mg`
+- `intakes`: `timestamp_unix_s`, `med_id`, `dosis_mg`, optional `occurrence_id`
+- `medication_schedules`: `med_id`, dose amount and unit, local time slots with per-dose timing notes, weekday mask, optional date range, active state
+- `dose_occurrences`: `schedule_id`, local occurrence key, scheduled timestamp, status, optional snooze/taken timestamps, linked intake id
 
 SI storage: pressure kPa, weight kg, medicine dose mg, timestamps in seconds.
 

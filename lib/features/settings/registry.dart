@@ -1,6 +1,7 @@
 import 'package:blood_pressure_app/l10n/app_locales.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 const styleSection = SettingSection(
   key: 'style',
@@ -10,11 +11,18 @@ const styleSection = SettingSection(
   initiallyExpanded: true,
 );
 
+const generalSection = SettingSection(
+  key: 'general',
+  titleKey: 'generalSettingsSection',
+  icon: Icons.tune,
+  order: 1,
+);
+
 const featuresSection = SettingSection(
   key: 'features',
   titleKey: 'featuresSetting',
   icon: Icons.toggle_off_outlined,
-  order: 1,
+  order: 2,
   initiallyExpanded: true,
 );
 
@@ -22,7 +30,7 @@ const bluetoothSection = SettingSection(
   key: 'bluetooth',
   titleKey: 'bluetoothSettings',
   icon: Icons.bluetooth,
-  order: 2,
+  order: 3,
   initiallyExpanded: true,
 );
 
@@ -30,15 +38,8 @@ const dataSection = SettingSection(
   key: 'data',
   titleKey: 'data',
   icon: Icons.storage_outlined,
-  order: 3,
-  initiallyExpanded: true,
-);
-
-const generalSection = SettingSection(
-  key: 'general',
-  titleKey: 'generalSettingsSection',
-  icon: Icons.tune,
   order: 4,
+  initiallyExpanded: true,
 );
 
 const aboutSection = SettingSection(
@@ -74,11 +75,7 @@ const themeModeSetting = EnumSetting(
   defaultValue: 'system',
   titleKey: 'theme',
   options: ['system', 'light', 'dark'],
-  optionLabels: {
-    'system': 'system',
-    'light': 'light',
-    'dark': 'dark',
-  },
+  optionLabels: {'system': 'system', 'light': 'light', 'dark': 'dark'},
   icon: Icons.brightness_4,
   section: 'style',
   order: 0,
@@ -130,8 +127,8 @@ const graphSettingsAction = ActionSetting(
   'graph_settings',
   titleKey: 'graphSettings',
   icon: Icons.trending_down_outlined,
-  section: 'style',
-  order: 5,
+  section: 'features',
+  order: 6,
 );
 
 const dateFormatStringOptions = [
@@ -181,6 +178,8 @@ const sysColorSetting = ColorSetting(
   section: 'graph',
   order: 0,
   visible: false,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
   colorOptions: appColorOptions,
   allowCustom: false,
 );
@@ -192,6 +191,8 @@ const diaColorSetting = ColorSetting(
   section: 'graph',
   order: 1,
   visible: false,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
   colorOptions: appColorOptions,
   allowCustom: false,
 );
@@ -203,6 +204,8 @@ const pulColorSetting = ColorSetting(
   section: 'graph',
   order: 2,
   visible: false,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
   colorOptions: appColorOptions,
   allowCustom: false,
 );
@@ -213,6 +216,8 @@ const graphLineThicknessSetting = DoubleSetting(
   titleKey: 'graphLineThickness',
   section: 'graph',
   order: 3,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
   min: 1,
   max: 10,
   step: 0.5,
@@ -226,6 +231,8 @@ const needlePinBarWidthSetting = DoubleSetting(
   subtitleKey: 'needlePinBarWidthDesc',
   section: 'graph',
   order: 4,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
   min: 1,
   max: 20,
   step: 1,
@@ -238,6 +245,8 @@ const sysWarnSetting = IntSetting(
   titleKey: 'sysWarn',
   section: 'graph',
   order: 5,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
   min: 0,
   max: 300,
   visible: false,
@@ -249,6 +258,8 @@ const diaWarnSetting = IntSetting(
   titleKey: 'diaWarn',
   section: 'graph',
   order: 6,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
   min: 0,
   max: 200,
   visible: false,
@@ -263,6 +274,8 @@ const drawRegressionLinesSetting = BoolSetting(
   section: 'graph',
   order: 7,
   visible: false,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
 );
 
 const interruptGraphAfterNDaysSetting = IntSetting(
@@ -275,6 +288,8 @@ const interruptGraphAfterNDaysSetting = IntSetting(
   min: 0,
   max: 365,
   visible: false,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
 );
 
 const homeBpChartSetting = EnumSetting(
@@ -284,6 +299,8 @@ const homeBpChartSetting = EnumSetting(
   options: ['dailyRange', 'classification', 'pulsePressure'],
   useRawLabels: true,
   visible: false,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
 );
 
 const graphMarkingsAction = ActionSetting(
@@ -301,6 +318,8 @@ const horizontalGraphLinesSetting = StringSetting(
   titleKey: 'horizontalLines',
   section: 'graph',
   visible: false,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
 );
 
 const startWithAddMeasurementPageSetting = BoolSetting(
@@ -311,6 +330,8 @@ const startWithAddMeasurementPageSetting = BoolSetting(
   icon: Icons.electric_bolt_outlined,
   section: 'general',
   order: 0,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
 );
 
 const allowManualTimeInputSetting = BoolSetting(
@@ -359,6 +380,15 @@ const compactListSetting = BoolSetting(
   order: 4,
 );
 
+const roundedReminderButtonSetting = BoolSetting(
+  'rounded_reminder_button',
+  defaultValue: true,
+  titleKey: 'useRoundedSquareReminderButton',
+  icon: Icons.rounded_corner,
+  section: 'style',
+  order: 5,
+);
+
 const preferredPressureUnitSetting = EnumSetting(
   'preferred_pressure_unit',
   defaultValue: 'mmHg',
@@ -367,7 +397,9 @@ const preferredPressureUnitSetting = EnumSetting(
   useRawLabels: true,
   icon: Icons.speed,
   section: 'features',
-  order: 2,
+  order: 5,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
 );
 
 const preferredWeightUnitSetting = EnumSetting(
@@ -378,7 +410,7 @@ const preferredWeightUnitSetting = EnumSetting(
   useRawLabels: true,
   icon: Icons.scale,
   section: 'features',
-  order: 1,
+  order: 4,
   dependsOn: 'weight_input',
   enabledWhen: true,
 );
@@ -392,6 +424,8 @@ const autostartBluetoothInputSetting = BoolSetting(
   section: 'bluetooth',
   order: 2,
   visible: false,
+  dependsOn: 'bluetooth_measurements_enabled',
+  enabledWhen: true,
 );
 
 const syncBluetoothOnLaunchSetting = BoolSetting(
@@ -403,6 +437,8 @@ const syncBluetoothOnLaunchSetting = BoolSetting(
   section: 'bluetooth',
   order: 3,
   visible: false,
+  dependsOn: 'bluetooth_measurements_enabled',
+  enabledWhen: true,
 );
 
 const bluetoothImportModeSetting = EnumSetting(
@@ -420,6 +456,8 @@ const bluetoothImportModeSetting = EnumSetting(
   section: 'bluetooth',
   order: 4,
   visible: false,
+  dependsOn: 'bluetooth_measurements_enabled',
+  enabledWhen: true,
 );
 
 const trustBleTimeSetting = BoolSetting(
@@ -430,6 +468,8 @@ const trustBleTimeSetting = BoolSetting(
   section: 'bluetooth',
   order: 5,
   visible: false,
+  dependsOn: 'bluetooth_measurements_enabled',
+  enabledWhen: true,
 );
 
 const showBleTimeTrustDialogSetting = BoolSetting(
@@ -459,7 +499,34 @@ const weightInputSetting = BoolSetting(
   titleKey: 'activateWeightFeatures',
   icon: Icons.scale,
   section: 'features',
+  order: 2,
+);
+
+const bloodPressureEnabledSetting = BoolSetting(
+  'blood_pressure_enabled',
+  defaultValue: true,
+  titleKey: 'bloodPressure',
+  icon: Symbols.heart_plus,
+  section: 'features',
   order: 0,
+);
+
+const medicineFeatureEnabledSetting = BoolSetting(
+  'medicine_feature_enabled',
+  defaultValue: true,
+  titleKey: 'medications',
+  icon: Icons.medication_outlined,
+  section: 'features',
+  order: 1,
+);
+
+const bluetoothMeasurementsEnabledSetting = BoolSetting(
+  'bluetooth_measurements_enabled',
+  defaultValue: false,
+  titleKey: 'bluetoothMeasurements',
+  icon: Icons.bluetooth,
+  section: 'features',
+  order: 3,
 );
 
 const bleInputSetting = EnumSetting(
@@ -476,6 +543,8 @@ const bleInputSetting = EnumSetting(
   icon: Icons.bluetooth,
   section: 'bluetooth',
   order: 0,
+  dependsOn: 'bluetooth_measurements_enabled',
+  enabledWhen: true,
 );
 
 const athleteModeSetting = BoolSetting(
@@ -521,15 +590,15 @@ const bodyProfileAction = ActionSetting(
   subtitleKey: 'bodyProfileIncomplete',
   icon: Icons.accessibility_new,
   section: 'features',
-  order: 3,
+  order: 7,
 );
 
 const medicationsAction = ActionSetting(
   'medications',
-  titleKey: 'medications',
+  titleKey: 'manageMedications',
   icon: Icons.medication,
   section: 'features',
-  order: 4,
+  order: 8,
 );
 
 const bluetoothDevicesAction = ActionSetting(
@@ -680,10 +749,10 @@ const logsViewerAction = ActionSetting(
 SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
   sections: [
     styleSection,
+    generalSection,
     featuresSection,
     bluetoothSection,
     dataSection,
-    generalSection,
     aboutSection,
     graphSection,
   ],
@@ -694,6 +763,7 @@ SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
     allowMissingValuesSetting,
     confirmDeletionSetting,
     compactListSetting,
+    roundedReminderButtonSetting,
     preferredPressureUnitSetting,
     preferredWeightUnitSetting,
     autostartBluetoothInputSetting,
@@ -722,6 +792,9 @@ SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
     accentColorSetting,
     graphSettingsAction,
     weightInputSetting,
+    bloodPressureEnabledSetting,
+    medicineFeatureEnabledSetting,
+    bluetoothMeasurementsEnabledSetting,
     bleInputSetting,
     athleteModeSetting,
     bodyHeightCmSetting,

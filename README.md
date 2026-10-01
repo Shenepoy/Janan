@@ -7,9 +7,10 @@
 <h1 align="center">Janan - الجَنَان</h1>
 
 <p align="center">
-  <strong>Track blood pressure. Keep it on the device.</strong><br/>
-  Log readings, see trends, export for a doctor, and pull measurements from a
-  Bluetooth meter. Flutter · offline-first · no account.
+  <strong>Your health diary, kept on your device.</strong><br/>
+  Track blood pressure and weight, automatically import readings from saved
+  Bluetooth monitors and scales when you open the app, follow trends, and
+  export your records. Flutter · offline-first · no account.
 </p>
 
 <p align="center">
@@ -163,7 +164,7 @@ Compared to [derdilla/blood-pressure-monitor-fl](https://github.com/derdilla/blo
 |---|---|
 | **BLE profiles** | Per-device routes for standard GATT, Yonker, and Microlife meters. |
 | **Saved meters** | Remember a device as an id and a name (Settings → Bluetooth devices). |
-| **Launch sync** | Pull from a saved meter on open; status in the AppBar. |
+| **Automatic sync** | Import readings from saved Bluetooth monitors and supported scales when the app opens; status in the AppBar. |
 | **Eufy P1** | Weight plus optional impedance. Body composition when a body profile is set. P2 is unsupported. |
 | **Details** | A screen per blood-pressure or weight record (composition when ohms and a profile are present). |
 | **Home** | First-run onboarding, a latest-reading dashboard, and a bottom-nav shell (home / weight / stats / settings). |
@@ -185,7 +186,7 @@ What upstream already has and this fork still has: manual input, graphs, CSV / P
 | **Blood pressure** | Systolic, diastolic, pulse, notes, and medicine doses. |
 | **Weight** | Optional log, BMI, and body composition from a compatible scale. |
 | **Charts** | Trends, distribution, and time of day. |
-| **Bluetooth** | Pull from a [meter or scale](docs/bluetooth.md). |
+| **Bluetooth** | Automatically sync saved [monitors and scales](docs/bluetooth.md) on launch, or import a reading manually. |
 | **Export** | CSV, PDF, Excel, or a database backup. |
 | **Health Connect** | Optional Android sync. |
 | **Offline** | On the device. No account. |

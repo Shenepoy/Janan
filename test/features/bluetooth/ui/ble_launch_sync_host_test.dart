@@ -14,10 +14,11 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../util.dart';
 
 class _HangingSync extends BleLaunchSync {
-  _HangingSync([this.phase = BleLaunchSyncPhase.scanning]) : super(
-    controller: testSettingsController!,
-    repo: MockBloodPressureRepository(),
-  );
+  _HangingSync([this.phase = BleLaunchSyncPhase.scanning])
+    : super(
+        controller: testSettingsController!,
+        repo: MockBloodPressureRepository(),
+      );
 
   final BleLaunchSyncPhase phase;
   final Completer<BleLaunchSyncResult> _done = Completer();
@@ -25,10 +26,7 @@ class _HangingSync extends BleLaunchSync {
 
   @override
   Future<BleLaunchSyncResult> run() {
-    progress.value = BleLaunchSyncProgress(
-      phase: phase,
-      deviceName: 'BM59',
-    );
+    progress.value = BleLaunchSyncProgress(phase: phase, deviceName: 'BM59');
     return _done.future;
   }
 
@@ -46,10 +44,11 @@ class _HangingSync extends BleLaunchSync {
 }
 
 class _ControllableSync extends BleLaunchSync {
-  _ControllableSync() : super(
-    controller: testSettingsController!,
-    repo: MockBloodPressureRepository(),
-  );
+  _ControllableSync()
+    : super(
+        controller: testSettingsController!,
+        repo: MockBloodPressureRepository(),
+      );
 
   final Completer<BleLaunchSyncResult> _done = Completer();
 
@@ -74,10 +73,11 @@ class _ControllableSync extends BleLaunchSync {
 }
 
 class _FakeSync extends BleLaunchSync {
-  _FakeSync(this.result) : super(
-    controller: testSettingsController!,
-    repo: MockBloodPressureRepository(),
-  );
+  _FakeSync(this.result)
+    : super(
+        controller: testSettingsController!,
+        repo: MockBloodPressureRepository(),
+      );
 
   final BleLaunchSyncResult result;
 
@@ -107,23 +107,27 @@ void main() {
 
   test('home is only the named root route', () {
     expect(
-      HomePresenceObserver.isHomeRoute(MaterialPageRoute<void>(
-        settings: const RouteSettings(name: '/'),
-        builder: (_) => const SizedBox.shrink(),
-      )),
+      HomePresenceObserver.isHomeRoute(
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: '/'),
+          builder: (_) => const SizedBox.shrink(),
+        ),
+      ),
       isTrue,
     );
     expect(
-      HomePresenceObserver.isHomeRoute(MaterialPageRoute<void>(
-        builder: (_) => const SizedBox.shrink(),
-      )),
+      HomePresenceObserver.isHomeRoute(
+        MaterialPageRoute<void>(builder: (_) => const SizedBox.shrink()),
+      ),
       isFalse,
     );
     expect(
-      HomePresenceObserver.isHomeRoute(MaterialPageRoute<void>(
-        settings: const RouteSettings(name: '/settings'),
-        builder: (_) => const SizedBox.shrink(),
-      )),
+      HomePresenceObserver.isHomeRoute(
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: '/settings'),
+          builder: (_) => const SizedBox.shrink(),
+        ),
+      ),
       isFalse,
     );
   });
@@ -138,13 +142,16 @@ void main() {
   });
 
   testWidgets('does not show a banner when launch sync is off', (tester) async {
-    await pumpApp(tester, await appBase(
-      const BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        child: Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        const BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          child: Text('home'),
+        ),
+        settings: TestSettingsSeed(syncBluetoothOnLaunch: false),
       ),
-      settings: TestSettingsSeed(syncBluetoothOnLaunch: false),
-    ));
+    );
     await tester.pump();
     await tester.pump();
 
@@ -158,24 +165,28 @@ void main() {
   ) async {
     final starts = <String>[];
     var stops = 0;
-    BluetoothForegroundService.startOverrideForTesting = ({required text}) async {
-      starts.add(text);
-    };
+    BluetoothForegroundService.startOverrideForTesting =
+        ({required text}) async {
+          starts.add(text);
+        };
     BluetoothForegroundService.stopOverrideForTesting = () async {
       stops++;
     };
     addTearDown(BluetoothForegroundService.resetOverridesForTesting);
 
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        sync: _FakeSync(const BleLaunchSyncResult(
-          status: BleLaunchSyncStatus.skipped,
-        )),
-        child: const Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          sync: _FakeSync(
+            const BleLaunchSyncResult(status: BleLaunchSyncStatus.skipped),
+          ),
+          child: const Text('home'),
+        ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
 
@@ -183,21 +194,24 @@ void main() {
     expect(stops, 0);
   });
 
-  testWidgets('keeps stages hidden until the compact indicator is tapped', (tester) async {
+  testWidgets('keeps stages hidden until the compact indicator is tapped', (
+    tester,
+  ) async {
     final sync = _HangingSync();
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        sync: sync,
-        child: Scaffold(
-          appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
-          body: const BleLaunchSyncPopout(
-            child: Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          sync: sync,
+          child: Scaffold(
+            appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
+            body: const BleLaunchSyncPopout(child: Text('home')),
           ),
         ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
 
@@ -216,18 +230,23 @@ void main() {
   });
 
   testWidgets('shows imported count after a successful sync', (tester) async {
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        sync: _FakeSync(const BleLaunchSyncResult(
-          status: BleLaunchSyncStatus.imported,
-          count: 3,
-          deviceName: 'BM59',
-        )),
-        child: const Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          sync: _FakeSync(
+            const BleLaunchSyncResult(
+              status: BleLaunchSyncStatus.imported,
+              count: 3,
+              deviceName: 'BM59',
+            ),
+          ),
+          child: const Text('home'),
+        ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
 
@@ -237,24 +256,26 @@ void main() {
     expect(find.text('home'), findsOneWidget);
   });
 
-
-  testWidgets('keeps checking when moving to another main route', (tester) async {
+  testWidgets('keeps checking when moving to another main route', (
+    tester,
+  ) async {
     final sync = _HangingSync();
     final observer = HomePresenceObserver();
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        homePresence: observer,
-        sync: sync,
-        child: Scaffold(
-          appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
-          body: const BleLaunchSyncPopout(
-            child: Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          homePresence: observer,
+          sync: sync,
+          child: Scaffold(
+            appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
+            body: const BleLaunchSyncPopout(child: Text('home')),
           ),
         ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
     expect(find.byIcon(Icons.sync), findsOneWidget);
@@ -279,24 +300,25 @@ void main() {
       settings: const RouteSettings(name: '/'),
       builder: (_) => const SizedBox.shrink(),
     );
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        homePresence: observer,
-        createSync: () {
-          final sync = _HangingSync();
-          syncs.add(sync);
-          return sync;
-        },
-        child: Scaffold(
-          appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
-          body: const BleLaunchSyncPopout(
-            child: Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          homePresence: observer,
+          createSync: () {
+            final sync = _HangingSync();
+            syncs.add(sync);
+            return sync;
+          },
+          child: Scaffold(
+            appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
+            body: const BleLaunchSyncPopout(child: Text('home')),
           ),
         ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
     expect(syncs, hasLength(1));
@@ -325,17 +347,22 @@ void main() {
     expect(find.byIcon(Icons.sync), findsOneWidget);
   });
 
-  testWidgets('shows already up to date when nothing new was imported', (tester) async {
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        sync: _FakeSync(const BleLaunchSyncResult(
-          status: BleLaunchSyncStatus.upToDate,
-        )),
-        child: const Text('home'),
+  testWidgets('shows already up to date when nothing new was imported', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          sync: _FakeSync(
+            const BleLaunchSyncResult(status: BleLaunchSyncStatus.upToDate),
+          ),
+          child: const Text('home'),
+        ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
 
@@ -345,23 +372,24 @@ void main() {
 
   testWidgets('pause in the popout stops sync until resume', (tester) async {
     final syncs = <_HangingSync>[];
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        createSync: () {
-          final sync = _HangingSync();
-          syncs.add(sync);
-          return sync;
-        },
-        child: Scaffold(
-          appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
-          body: const BleLaunchSyncPopout(
-            child: Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          createSync: () {
+            final sync = _HangingSync();
+            syncs.add(sync);
+            return sync;
+          },
+          child: Scaffold(
+            appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
+            body: const BleLaunchSyncPopout(child: Text('home')),
           ),
         ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
     expect(syncs, hasLength(1));
@@ -387,32 +415,35 @@ void main() {
     expect(syncs.last.cancelled, isFalse);
   });
 
-  testWidgets('resume after meter not found starts scanning again', (tester) async {
+  testWidgets('resume after meter not found starts scanning again', (
+    tester,
+  ) async {
     final syncs = <BleLaunchSync>[];
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        createSync: () {
-          if (syncs.isEmpty) {
-            final sync = _FakeSync(const BleLaunchSyncResult(
-              status: BleLaunchSyncStatus.notFound,
-            ));
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          createSync: () {
+            if (syncs.isEmpty) {
+              final sync = _FakeSync(
+                const BleLaunchSyncResult(status: BleLaunchSyncStatus.notFound),
+              );
+              syncs.add(sync);
+              return sync;
+            }
+            final sync = _HangingSync();
             syncs.add(sync);
             return sync;
-          }
-          final sync = _HangingSync();
-          syncs.add(sync);
-          return sync;
-        },
-        child: Scaffold(
-          appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
-          body: const BleLaunchSyncPopout(
-            child: Text('home'),
+          },
+          child: Scaffold(
+            appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
+            body: const BleLaunchSyncPopout(child: Text('home')),
           ),
         ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
     expect(syncs, hasLength(1));
@@ -429,39 +460,40 @@ void main() {
     expect(find.byIcon(Icons.sync), findsOneWidget);
   });
 
-  testWidgets('unnamed overlays on a main route keep scanning active', (tester) async {
+  testWidgets('unnamed overlays on a main route keep scanning active', (
+    tester,
+  ) async {
     final syncs = <_HangingSync>[];
     final observer = HomePresenceObserver();
     final home = MaterialPageRoute<void>(
       settings: const RouteSettings(name: '/'),
       builder: (_) => const SizedBox.shrink(),
     );
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        homePresence: observer,
-        createSync: () {
-          final sync = _HangingSync();
-          syncs.add(sync);
-          return sync;
-        },
-        child: Scaffold(
-          appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
-          body: const BleLaunchSyncPopout(
-            child: Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          homePresence: observer,
+          createSync: () {
+            final sync = _HangingSync();
+            syncs.add(sync);
+            return sync;
+          },
+          child: Scaffold(
+            appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
+            body: const BleLaunchSyncPopout(child: Text('home')),
           ),
         ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
     expect(syncs, hasLength(1));
 
     observer.didPush(
-      MaterialPageRoute<void>(
-        builder: (_) => const SizedBox.shrink(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const SizedBox.shrink()),
       home,
     );
     await tester.pump();
@@ -471,25 +503,28 @@ void main() {
     expect(find.byIcon(Icons.sync), findsOneWidget);
   });
 
-  testWidgets('disabling launch sync mid-scan cancels and does not restart', (tester) async {
+  testWidgets('disabling launch sync mid-scan cancels and does not restart', (
+    tester,
+  ) async {
     final syncs = <_HangingSync>[];
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        createSync: () {
-          final sync = _HangingSync();
-          syncs.add(sync);
-          return sync;
-        },
-        child: Scaffold(
-          appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
-          body: const BleLaunchSyncPopout(
-            child: Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          createSync: () {
+            final sync = _HangingSync();
+            syncs.add(sync);
+            return sync;
+          },
+          child: Scaffold(
+            appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
+            body: const BleLaunchSyncPopout(child: Text('home')),
           ),
         ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
     expect(syncs, hasLength(1));
@@ -506,25 +541,28 @@ void main() {
     expect(syncs, hasLength(1));
   });
 
-  testWidgets('enabling launch sync on home starts scanning again', (tester) async {
+  testWidgets('enabling launch sync on home starts scanning again', (
+    tester,
+  ) async {
     final syncs = <_HangingSync>[];
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        createSync: () {
-          final sync = _HangingSync();
-          syncs.add(sync);
-          return sync;
-        },
-        child: Scaffold(
-          appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
-          body: const BleLaunchSyncPopout(
-            child: Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          createSync: () {
+            final sync = _HangingSync();
+            syncs.add(sync);
+            return sync;
+          },
+          child: Scaffold(
+            appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
+            body: const BleLaunchSyncPopout(child: Text('home')),
           ),
         ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
     expect(syncs, hasLength(1));
@@ -541,31 +579,34 @@ void main() {
     expect(find.byIcon(Icons.sync), findsOneWidget);
   });
 
-  testWidgets('paused sync does not restart when returning home', (tester) async {
+  testWidgets('paused sync does not restart when returning home', (
+    tester,
+  ) async {
     final syncs = <_HangingSync>[];
     final observer = HomePresenceObserver();
     final home = MaterialPageRoute<void>(
       settings: const RouteSettings(name: '/'),
       builder: (_) => const SizedBox.shrink(),
     );
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        homePresence: observer,
-        createSync: () {
-          final sync = _HangingSync();
-          syncs.add(sync);
-          return sync;
-        },
-        child: Scaffold(
-          appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
-          body: const BleLaunchSyncPopout(
-            child: Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          homePresence: observer,
+          createSync: () {
+            final sync = _HangingSync();
+            syncs.add(sync);
+            return sync;
+          },
+          child: Scaffold(
+            appBar: AppBar(actions: const [BleHomeSyncIndicator()]),
+            body: const BleLaunchSyncPopout(child: Text('home')),
           ),
         ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
 
@@ -596,8 +637,6 @@ void main() {
     expect(find.byIcon(Icons.bluetooth), findsOneWidget);
     expect(find.text('0'), findsOneWidget);
 
-    await tester.tap(find.byType(BleHomeSyncIndicator));
-    await tester.pump();
     expect(find.text('Meter sync paused'), findsOneWidget);
   });
 
@@ -606,7 +645,8 @@ void main() {
   ) async {
     final finishes = <String?>[];
     var stops = 0;
-    BluetoothForegroundService.startOverrideForTesting = ({required text}) async {};
+    BluetoothForegroundService.startOverrideForTesting =
+        ({required text}) async {};
     BluetoothForegroundService.stopOverrideForTesting = () async {
       stops++;
     };
@@ -616,21 +656,26 @@ void main() {
     addTearDown(BluetoothForegroundService.resetOverridesForTesting);
 
     final sync = _ControllableSync();
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        sync: sync,
-        child: const Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          sync: sync,
+          child: const Text('home'),
+        ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
-    sync.complete(const BleLaunchSyncResult(
-      status: BleLaunchSyncStatus.imported,
-      count: 3,
-      deviceName: 'BM59',
-    ));
+    sync.complete(
+      const BleLaunchSyncResult(
+        status: BleLaunchSyncStatus.imported,
+        count: 3,
+        deviceName: 'BM59',
+      ),
+    );
     await tester.pump();
     await tester.pump();
 
@@ -638,10 +683,13 @@ void main() {
     expect(stops, 0);
   });
 
-  testWidgets('stops the notification when nothing was imported', (tester) async {
+  testWidgets('stops the notification when nothing was imported', (
+    tester,
+  ) async {
     final finishes = <String?>[];
     var stops = 0;
-    BluetoothForegroundService.startOverrideForTesting = ({required text}) async {};
+    BluetoothForegroundService.startOverrideForTesting =
+        ({required text}) async {};
     BluetoothForegroundService.stopOverrideForTesting = () async {
       stops++;
     };
@@ -651,19 +699,22 @@ void main() {
     addTearDown(BluetoothForegroundService.resetOverridesForTesting);
 
     final sync = _ControllableSync();
-    await pumpApp(tester, await appBase(
-      BleLaunchSyncHost(
-        resultBannerDuration: Duration.zero,
-        sync: sync,
-        child: const Text('home'),
+    await pumpApp(
+      tester,
+      await appBase(
+        BleLaunchSyncHost(
+          resultBannerDuration: Duration.zero,
+          sync: sync,
+          child: const Text('home'),
+        ),
+        settings: _enabledSettings(),
       ),
-      settings: _enabledSettings(),
-    ));
+    );
     await tester.pump();
     await tester.pump();
-    sync.complete(const BleLaunchSyncResult(
-      status: BleLaunchSyncStatus.upToDate,
-    ));
+    sync.complete(
+      const BleLaunchSyncResult(status: BleLaunchSyncStatus.upToDate),
+    );
     await tester.pump();
     await tester.pump();
 

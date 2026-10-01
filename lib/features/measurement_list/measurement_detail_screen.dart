@@ -34,10 +34,12 @@ class MeasurementDetailScreen extends ConsumerStatefulWidget {
   final CombinedEntry? previous;
 
   @override
-  ConsumerState<MeasurementDetailScreen> createState() => _MeasurementDetailScreenState();
+  ConsumerState<MeasurementDetailScreen> createState() =>
+      _MeasurementDetailScreenState();
 }
 
-class _MeasurementDetailScreenState extends ConsumerState<MeasurementDetailScreen> {
+class _MeasurementDetailScreenState
+    extends ConsumerState<MeasurementDetailScreen> {
   late CombinedEntry _entry;
   BloodPressureRecord? _previousRecord;
   var _editing = false;
@@ -51,15 +53,17 @@ class _MeasurementDetailScreenState extends ConsumerState<MeasurementDetailScree
     // Route rebuilds still pass the original [widget.entry]; keep [_entry].
     _entry = widget.entry;
     _previousRecord = widget.previous?.record;
-    if (_previousRecord == null
-        || (_previousRecord!.sys == null
-            && _previousRecord!.dia == null
-            && _previousRecord!.pul == null)) {
+    if (ref.read(appSettingsProvider).bloodPressureEnabled &&
+        (_previousRecord == null ||
+            (_previousRecord!.sys == null &&
+                _previousRecord!.dia == null &&
+                _previousRecord!.pul == null))) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadOlder());
     }
   }
 
   Future<void> _loadOlder() async {
+    if (!ref.read(appSettingsProvider).bloodPressureEnabled) return;
     final load = ++_olderLoad;
     final time = _entry.time;
     BloodPressureRepository repo;
@@ -124,15 +128,35 @@ class _MeasurementDetailScreenState extends ConsumerState<MeasurementDetailScree
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(appSettingsProvider);
+    final entry = _entry;
+    final intakes = settings.medicineFeatureEnabled
+        ? entry.allIntakes
+        : const <MedicineIntake>[];
+    if (!settings.bloodPressureEnabled && intakes.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text('measurements'.tr())),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'bloodPressureDisabledHint'.tr(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
     final locale = context.locale.toString();
     final unit = settings.preferredPressureUnit;
-    final entry = _entry;
-    final intakes = entry.allIntakes;
     final date = formatAppDate(entry.time, 'yyyy-MM-dd', locale);
     final timeOfDay = formatAppDate(entry.time, 'HH:mm', locale);
     return Scaffold(
       appBar: AppBar(
-        title: Text('bloodPressure'.tr()),
+        title: Text(
+          settings.bloodPressureEnabled
+              ? 'bloodPressure'.tr()
+              : 'medications'.tr(),
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.delete, semanticLabel: 'delete'.tr()),
@@ -162,55 +186,51 @@ class _MeasurementDetailScreenState extends ConsumerState<MeasurementDetailScree
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    DetailFormValue(
-                      value: date,
-                      hopToken: _token('date'),
-                    ),
+                    DetailFormValue(value: date, hopToken: _token('date')),
                     const SizedBox(width: 12),
-                    DetailFormValue(
-                      value: timeOfDay,
-                      hopToken: _token('time'),
-                    ),
+                    DetailFormValue(value: timeOfDay, hopToken: _token('time')),
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          EntryFormSection(
-            title: 'bloodPressure'.tr(),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _PressureValue(
-                  title: 'sysLong'.tr(),
-                  kind: MetricKind.sys,
-                  accent: settings.sysColor,
-                  pressure: entry.sys,
-                  previous: _previousRecord?.sys,
-                  unit: unit,
-                  hopToken: _token('sys'),
-                ),
-                const SizedBox(width: 12),
-                _PressureValue(
-                  title: 'diaLong'.tr(),
-                  kind: MetricKind.dia,
-                  accent: settings.diaColor,
-                  pressure: entry.dia,
-                  previous: _previousRecord?.dia,
-                  unit: unit,
-                  hopToken: _token('dia'),
-                ),
-                const SizedBox(width: 12),
-                _PulseValue(
-                  pulse: entry.pul,
-                  previous: _previousRecord?.pul,
-                  accent: settings.pulColor,
-                  hopToken: _token('pul'),
-                ),
-              ],
+          if (settings.bloodPressureEnabled) ...[
+            const SizedBox(height: 12),
+            EntryFormSection(
+              title: 'bloodPressure'.tr(),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _PressureValue(
+                    title: 'sysLong'.tr(),
+                    kind: MetricKind.sys,
+                    accent: settings.sysColor,
+                    pressure: entry.sys,
+                    previous: _previousRecord?.sys,
+                    unit: unit,
+                    hopToken: _token('sys'),
+                  ),
+                  const SizedBox(width: 12),
+                  _PressureValue(
+                    title: 'diaLong'.tr(),
+                    kind: MetricKind.dia,
+                    accent: settings.diaColor,
+                    pressure: entry.dia,
+                    previous: _previousRecord?.dia,
+                    unit: unit,
+                    hopToken: _token('dia'),
+                  ),
+                  const SizedBox(width: 12),
+                  _PulseValue(
+                    pulse: entry.pul,
+                    previous: _previousRecord?.pul,
+                    accent: settings.pulColor,
+                    hopToken: _token('pul'),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
           if (intakes.isNotEmpty) ...[
             const SizedBox(height: 12),
             EntryFormSection(
@@ -221,7 +241,11 @@ class _MeasurementDetailScreenState extends ConsumerState<MeasurementDetailScree
                     if (i > 0) const SizedBox(height: 12),
                     _IntakeCard(
                       intake: intakes[i],
-                      timeLabel: formatAppDate(intakes[i].time, 'HH:mm', locale),
+                      timeLabel: formatAppDate(
+                        intakes[i].time,
+                        'HH:mm',
+                        locale,
+                      ),
                       nameHopToken: _token('med:$i:name'),
                       doseHopToken: _token('med:$i:dose'),
                       timeHopToken: _token('med:$i:time'),
@@ -231,7 +255,8 @@ class _MeasurementDetailScreenState extends ConsumerState<MeasurementDetailScree
               ),
             ),
           ],
-          if (entry.note?.note?.isNotEmpty ?? false) ...[
+          if (settings.bloodPressureEnabled &&
+              (entry.note?.note?.isNotEmpty ?? false)) ...[
             const SizedBox(height: 12),
             EntryFormSection(
               title: 'note'.tr(),
@@ -277,8 +302,8 @@ class _PressureValue extends StatelessWidget {
     final formatted = current == null
         ? '—'
         : unit == PressureUnit.kPa
-            ? current.toStringAsFixed(1)
-            : current.round().toString();
+        ? current.toStringAsFixed(1)
+        : current.round().toString();
     return DetailFormValue(
       label: title,
       value: formatted,
@@ -381,10 +406,7 @@ class _IntakeCard extends StatelessWidget {
           children: [
             hopping(
               nameHopToken,
-              Text(
-                intake.medicine.designation,
-                style: AppText.title(context),
-              ),
+              Text(intake.medicine.designation, style: AppText.title(context)),
             ),
             const SizedBox(height: 12),
             Row(
@@ -453,7 +475,8 @@ Set<String> _editHops(CombinedEntry before, CombinedEntry after) {
       hops.add('med:$i:name');
     }
     if (old.dosis != neu.dosis) hops.add('med:$i:dose');
-    if (!_sameCalendarDay(old.time, neu.time) || !_sameClock(old.time, neu.time)) {
+    if (!_sameCalendarDay(old.time, neu.time) ||
+        !_sameClock(old.time, neu.time)) {
       hops.add('med:$i:time');
     }
   }

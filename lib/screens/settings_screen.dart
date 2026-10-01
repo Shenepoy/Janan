@@ -265,10 +265,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Widget _buildSettingsList(BuildContext context, SettingsProviders settings) {
     final bottomInset =
-        SafaehBottomNavScope.maybeOf(
-          context,
-        )?.contentInsetWithSafeArea ??
-        0.0;
+        SafaehBottomNavScope.maybeOf(context)?.contentInsetWithSafeArea ?? 0.0;
     return ListView(
       key: _scrollViewportKey,
       controller: _scrollController,
@@ -379,6 +376,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     SettingDefinition<Object?> setting,
   ) {
     final defaultTile = _buildDefaultTile(context, settings, setting);
+    if (setting.key == bluetoothMeasurementsEnabledSetting.key) {
+      final appSettings = ref.watch(appSettingsProvider);
+      return SwitchSettingsTile.fromSetting(
+        setting: bluetoothMeasurementsEnabledSetting,
+        title: _settingTitle(setting),
+        subtitle: _settingSubtitle(setting),
+        value: appSettings.bluetoothMeasurementsEnabled,
+        enabled: true,
+        onChanged: ref.setBluetoothMeasurementsEnabled,
+      );
+    }
     if (setting.key == bleInputSetting.key) {
       return const BleEngineSettingsTile();
     }
@@ -439,12 +447,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ? '${appSettings.bodyHeightCm!.round()} cm · ${appSettings.birthYear}'
               : 'bodyProfileIncomplete'.tr(),
         ),
-        onTap: () => _handleAction(context, setting.key),
+        enabled: appSettings.weightInput,
+        onTap: appSettings.weightInput
+            ? () => _handleAction(context, setting.key)
+            : null,
       );
     }
     if (setting.key == bluetoothDevicesAction.key) {
       final appSettings = ref.watch(appSettingsProvider);
-      final enabled = appSettings.bleInput != BluetoothInputMode.disabled;
+      final enabled =
+          appSettings.bluetoothMeasurementsEnabled &&
+          appSettings.bleInput != BluetoothInputMode.disabled;
       return ActionSettingsTile(
         leading: const Icon(Icons.bluetooth_searching),
         title: Text('bluetoothDevices'.tr()),
@@ -459,13 +472,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         onTap: enabled ? () => _handleAction(context, setting.key) : null,
       );
     }
+    final appSettings = ref.watch(appSettingsProvider);
+    final enabled = switch (setting.key) {
+      'graph_settings' => appSettings.bloodPressureEnabled,
+      'medications' => appSettings.medicineFeatureEnabled,
+      _ => isSettingEnabled(settings, setting, ref),
+    };
     return ActionSettingsTile(
       leading: setting.icon != null ? Icon(setting.icon) : null,
       title: Text(setting.titleKey.tr()),
       subtitle: setting.subtitleKey != null
           ? Text(setting.subtitleKey!.tr())
           : null,
-      onTap: () => _handleAction(context, setting.key),
+      enabled: enabled,
+      onTap: enabled ? () => _handleAction(context, setting.key) : null,
     );
   }
 

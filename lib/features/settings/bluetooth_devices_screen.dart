@@ -13,6 +13,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Screen to view, add, and forget remembered bluetooth devices.
 class BluetoothDevicesScreen extends ConsumerWidget {
@@ -166,7 +167,7 @@ class _DeviceTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.monitor_heart_outlined),
+              const Icon(Symbols.heart_plus),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

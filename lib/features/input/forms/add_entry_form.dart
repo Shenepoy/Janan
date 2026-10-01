@@ -148,6 +148,14 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
   @override
   bool validate() {
     final settings = context.readAppSettings();
+    if ((_kind == AddEntryKind.bloodPressure &&
+            !settings.bloodPressureEnabled) ||
+        (_kind == AddEntryKind.weight &&
+            !settings.weightInput &&
+            widget.initialValue?.weight == null) ||
+        (_kind == AddEntryKind.medicine && !settings.medicineFeatureEnabled)) {
+      return false;
+    }
 
     final timeFormValidation = settings.allowManualTimeInput
         ? _timeForm.currentState?.validate()
@@ -176,6 +184,15 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
   @override
   CombinedEntry? save() {
     logDebug('Calling save');
+    final settings = context.readAppSettings();
+    if ((_kind == AddEntryKind.bloodPressure &&
+            !settings.bloodPressureEnabled) ||
+        (_kind == AddEntryKind.weight &&
+            !settings.weightInput &&
+            widget.initialValue?.weight == null) ||
+        (_kind == AddEntryKind.medicine && !settings.medicineFeatureEnabled)) {
+      return null;
+    }
     if (!validate()) return null;
     final time = _timeForm.currentState?.save() ?? DateTime.now();
     Note? note;
@@ -296,6 +313,7 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
   void onExternalMeasurement(BloodPressureRecord record) {
     if (_kind != AddEntryKind.bloodPressure) return;
     final settings = context.readAppSettings();
+    if (!settings.bloodPressureEnabled) return;
     if (settings.trustBLETime &&
         settings.showBLETimeTrustDialog &&
         record.time.difference(DateTime.now()).inHours.abs() > 5) {
@@ -331,7 +349,7 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
   void onExternalWeight(BodyweightRecord record) {
     if (_kind != AddEntryKind.weight) return;
     final settings = context.readAppSettings();
-    context.updateSetting(weightInputSetting, true);
+    if (!settings.weightInput) return;
     final time = settings.trustBLETime
         ? record.time
         : _timeForm.currentState?.save() ?? DateTime.now();
@@ -344,6 +362,7 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
       if (!mounted) return;
       fillForm(next);
     });
+    SchedulerBinding.instance.ensureVisualUpdate();
   }
 
   @override
@@ -366,15 +385,18 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
                 const SizedBox(height: 12),
               ],
               if (_kind == AddEntryKind.bloodPressure) ...[
-                BloodPressureForm(
-                  key: _bpForm,
-                  initialValue: (
-                    sys: widget.initialValue?.record?.sys?.mmHg,
-                    dia: widget.initialValue?.record?.dia?.mmHg,
-                    pul: widget.initialValue?.record?.pul,
+                if (settings.bloodPressureEnabled)
+                  BloodPressureForm(
+                    key: _bpForm,
+                    initialValue: (
+                      sys: widget.initialValue?.record?.sys?.mmHg,
+                      dia: widget.initialValue?.record?.dia?.mmHg,
+                      pul: widget.initialValue?.record?.pul,
+                    ),
                   ),
-                ),
-                if (hasMeds) ...[
+                if (settings.bloodPressureEnabled &&
+                    settings.medicineFeatureEnabled &&
+                    hasMeds) ...[
                   const SizedBox(height: 12),
                   MedicineIntakeForm(
                     key: _intakeForm,
@@ -387,12 +409,14 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
                     allowMultiple: true,
                   ),
                 ],
-              ] else if (_kind == AddEntryKind.weight)
+              ] else if (_kind == AddEntryKind.weight &&
+                  (settings.weightInput || widget.initialValue?.weight != null))
                 WeightForm(
                   key: _weightForm,
                   initialValue: widget.initialValue?.weight?.weight,
                 )
-              else
+              else if (_kind == AddEntryKind.medicine &&
+                  settings.medicineFeatureEnabled)
                 MedicineIntakeForm(
                   key: _intakeForm,
                   initialValue: _formIntake == null

@@ -14,6 +14,7 @@ import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 /// Newest in-range reading with classification chips.
 class LatestReadingCard extends ConsumerWidget {
@@ -72,25 +73,27 @@ class LatestReadingCard extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      label: 'dashboardLatestSemantics'.tr(namedArgs: {
-        'sys': isolateLtr(formatDashboardPressure(entry.sys, unit)),
-        'dia': isolateLtr(formatDashboardPressure(entry.dia, unit)),
-        'pul': isolateLtr(entry.pul?.toString() ?? '—'),
-        'time': isolateLtr(stamp),
-      }),
+      label: 'dashboardLatestSemantics'.tr(
+        namedArgs: {
+          'sys': isolateLtr(formatDashboardPressure(entry.sys, unit)),
+          'dia': isolateLtr(formatDashboardPressure(entry.dia, unit)),
+          'pul': isolateLtr(entry.pul?.toString() ?? '—'),
+          'time': isolateLtr(stamp),
+        },
+      ),
       child: DashboardSection(
         key: const Key('latest_reading_card'),
-        icon: Icons.monitor_heart_outlined,
+        icon: Symbols.heart_plus,
         title: 'dashboardLatest'.tr(),
         trailing: Text(stamp, style: AppText.subtitle(context)),
         accentColor: entry.color == null ? null : Color(entry.color!),
         onTap: () {
-          Navigator.of(context).push(MaterialPageRoute<void>(
-            builder: (_) => MeasurementDetailScreen(
-              entry: entry,
-              previous: previous,
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) =>
+                  MeasurementDetailScreen(entry: entry, previous: previous),
             ),
-          ));
+          );
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,13 +130,15 @@ class LatestReadingCard extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               perDay == null
-                  ? 'dashboardActivityCount'.tr(namedArgs: {
-                      'count': count.toString(),
-                    })
-                  : 'dashboardActivityLine'.tr(namedArgs: {
-                      'count': count.toString(),
-                      'perDay': perDay.toString(),
-                    }),
+                  ? 'dashboardActivityCount'.tr(
+                      namedArgs: {'count': count.toString()},
+                    )
+                  : 'dashboardActivityLine'.tr(
+                      namedArgs: {
+                        'count': count.toString(),
+                        'perDay': perDay.toString(),
+                      },
+                    ),
               style: AppText.subtitle(context),
             ),
           ],
@@ -182,10 +187,7 @@ class _HeroMetric extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: AppText.label(context, color: color),
-        ),
+        Text(label, style: AppText.label(context, color: color)),
         const SizedBox(height: 4),
         ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 52),
@@ -221,10 +223,7 @@ class _HeroMetric extends StatelessWidget {
 }
 
 class _BandChip extends StatelessWidget {
-  const _BandChip({
-    required this.info,
-    required this.onTap,
-  });
+  const _BandChip({required this.info, required this.onTap});
 
   final MetricInfo info;
   final VoidCallback onTap;

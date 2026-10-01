@@ -18,11 +18,13 @@ class AppShell extends ConsumerWidget {
     this.homePresence,
     this.initialTab = ShellTab.home,
     this.showWeight,
+    this.showBloodPressure,
+    this.showMedicine,
     this.settingsSearchOpen,
     this.onSettingsSearch,
   });
 
-  /// Blood pressure, weight, statistics, and settings pages, in that order.
+  /// Measurements, weight, statistics, and settings pages, in that order.
   final List<Widget> pages;
 
   /// Presence state used by launch-sync to exclude the settings tab.
@@ -33,6 +35,12 @@ class AppShell extends ConsumerWidget {
 
   /// When null, follows [AppSettings.weightInput]. Tests can pin it.
   final bool? showWeight;
+
+  /// When null, follows [AppSettings.bloodPressureEnabled].
+  final bool? showBloodPressure;
+
+  /// When null, follows [AppSettings.medicineFeatureEnabled].
+  final bool? showMedicine;
 
   /// Whether the settings search overlay is open.
   final ValueNotifier<bool>? settingsSearchOpen;
@@ -47,15 +55,22 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enabled = showWeight ?? ref.watch(appSettingsProvider).weightInput;
-    final tab = initialTab == ShellTab.weight && !enabled
-        ? ShellTab.home
-        : initialTab;
+    final settings = ref.watch(appSettingsProvider);
+    final enabled = showWeight ?? settings.weightInput;
+    final showBloodPressure =
+        this.showBloodPressure ?? settings.bloodPressureEnabled;
+    final showMedicine = this.showMedicine ?? settings.medicineFeatureEnabled;
+    final tabs = visibleShellTabs(
+      showWeight: enabled,
+      showBloodPressure: showBloodPressure,
+    );
     return _AppShellView(
       pages: pages,
       homePresence: homePresence,
-      initialTab: tab,
+      initialTab: tabs.contains(initialTab) ? initialTab : ShellTab.home,
       showWeight: enabled,
+      showBloodPressure: showBloodPressure,
+      showMedicine: showMedicine,
       settingsSearchOpen: settingsSearchOpen,
       onSettingsSearch: onSettingsSearch,
     );
@@ -67,6 +82,8 @@ class _AppShellView extends StatefulWidget {
     required this.pages,
     required this.initialTab,
     required this.showWeight,
+    required this.showBloodPressure,
+    required this.showMedicine,
     this.settingsSearchOpen,
     this.onSettingsSearch,
     this.homePresence,
@@ -76,6 +93,8 @@ class _AppShellView extends StatefulWidget {
   final HomePresenceObserver? homePresence;
   final ShellTab initialTab;
   final bool showWeight;
+  final bool showBloodPressure;
+  final bool showMedicine;
   final ValueNotifier<bool>? settingsSearchOpen;
   final VoidCallback? onSettingsSearch;
 
@@ -90,14 +109,17 @@ class _AppShellViewState extends State<_AppShellView> {
   bool _pageTickScheduled = false;
   int _tabLayoutVersion = 0;
 
-  List<ShellTab> get _tabs => visibleShellTabs(showWeight: widget.showWeight);
+  List<ShellTab> get _tabs => visibleShellTabs(
+    showWeight: widget.showWeight,
+    showBloodPressure: widget.showBloodPressure,
+  );
 
   List<Widget> get _visiblePages {
     assert(widget.pages.length == 4);
     return [
       widget.pages[0],
       if (widget.showWeight) widget.pages[1],
-      widget.pages[2],
+      if (widget.showBloodPressure) widget.pages[2],
       widget.pages[3],
     ];
   }
@@ -115,8 +137,14 @@ class _AppShellViewState extends State<_AppShellView> {
   @override
   void didUpdateWidget(covariant _AppShellView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.showWeight == widget.showWeight) return;
-    final oldTabs = visibleShellTabs(showWeight: oldWidget.showWeight);
+    if (oldWidget.showWeight == widget.showWeight &&
+        oldWidget.showBloodPressure == widget.showBloodPressure) {
+      return;
+    }
+    final oldTabs = visibleShellTabs(
+      showWeight: oldWidget.showWeight,
+      showBloodPressure: oldWidget.showBloodPressure,
+    );
     final current = oldTabs[_index.clamp(0, oldTabs.length - 1)];
     var next = _tabs.indexOf(current);
     if (next < 0) next = 0;
@@ -194,7 +222,7 @@ class _AppShellViewState extends State<_AppShellView> {
     for (final tab in _tabs)
       switch (tab) {
         ShellTab.home => SafaehSidenavDestination(
-          label: 'bloodPressure'.tr(),
+          label: 'measurements'.tr(),
           icon: Icons.monitor_heart_outlined,
           selectedIcon: Icons.monitor_heart,
           tileKey: AppShell.navHomeKey,
@@ -237,9 +265,9 @@ class _AppShellViewState extends State<_AppShellView> {
     assert(pages.length == destinations.length);
     final dataTabCount = _tabs.length - 1;
     final titleKeys = [
-      'title',
+      'measurements',
       if (widget.showWeight) 'weight',
-      'statistics',
+      if (widget.showBloodPressure) 'statistics',
       'settings',
     ];
     return SafaehBottomNavScope(
@@ -302,7 +330,11 @@ class _AppShellViewState extends State<_AppShellView> {
               ],
             ),
             floatingActionButton: _index < dataTabCount
-                ? NavigationActionButtons(kind: _actionKind())
+                ? NavigationActionButtons(
+                    kind: _actionKind(),
+                    showBloodPressure: widget.showBloodPressure,
+                    showMedicine: widget.showMedicine,
+                  )
                 : null,
             floatingActionButtonLocation:
                 SafaehBottomNavAwareFabLocation.resolve(

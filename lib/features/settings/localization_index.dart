@@ -10,15 +10,19 @@ PreIndexedLocalizationProvider? _cachedSettingsLocalization;
 ///
 /// Cached after the first successful load so later calls do not re-read
 /// every locale JSON from the asset bundle.
-Future<PreIndexedLocalizationProvider> loadSettingsLocalizationProvider() async {
+Future<PreIndexedLocalizationProvider>
+loadSettingsLocalizationProvider() async {
   final cached = _cachedSettingsLocalization;
   if (cached != null) return cached;
   final translations = <String, Map<String, String>>{};
   for (final locale in appSupportedLocales) {
     final tag = translationFileTag(locale);
     try {
+      final data = await rootBundle.load('assets/translations/$tag.json');
       final raw = jsonDecode(
-        await rootBundle.loadString('assets/translations/$tag.json'),
+        utf8.decode(
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+        ),
       );
       if (raw is Map) {
         translations[locale.languageCode] = raw.map(
@@ -32,5 +36,7 @@ Future<PreIndexedLocalizationProvider> loadSettingsLocalizationProvider() async 
       // Missing locale files fall back to English at search time.
     }
   }
-  return _cachedSettingsLocalization = PreIndexedLocalizationProvider(translations);
+  return _cachedSettingsLocalization = PreIndexedLocalizationProvider(
+    translations,
+  );
 }

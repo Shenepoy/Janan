@@ -13,27 +13,42 @@ List<Widget> _spacedColumns({
   required List<MeasurementTableColumn> columns,
   required Widget Function(int index, MeasurementTableColumn column) cell,
 }) => [
-    for (var i = 0; i < columns.length; i++) ...[
-      if (i > 0)
-        SizedBox(width: i == 1 ? _afterTimeGap : _metricColumnGap),
-      Expanded(
-        flex: columns[i].flex,
-        child: cell(i, columns[i]),
-      ),
-    ],
-  ];
+  for (var i = 0; i < columns.length; i++) ...[
+    if (i > 0) SizedBox(width: i == 1 ? _afterTimeGap : _metricColumnGap),
+    Expanded(flex: columns[i].flex, child: cell(i, columns[i])),
+  ],
+];
 
 /// Blood-pressure columns shared by the list and a standalone row.
 List<MeasurementTableColumn> bloodPressureColumns({
   required Color sysColor,
   required Color diaColor,
   required Color pulColor,
-}) => [
-  MeasurementTableColumn(label: 'time'.tr(), flex: 16),
-  MeasurementTableColumn(label: 'sysShort'.tr(), flex: 22, color: sysColor),
-  MeasurementTableColumn(label: 'diaShort'.tr(), flex: 22, color: diaColor),
-  MeasurementTableColumn(label: 'pulShort'.tr(), flex: 22, color: pulColor),
-];
+  bool showBloodPressure = true,
+}) => showBloodPressure
+    ? [
+        MeasurementTableColumn(label: 'time'.tr(), flex: 16),
+        MeasurementTableColumn(
+          label: 'sysShort'.tr(),
+          flex: 22,
+          color: sysColor,
+        ),
+        MeasurementTableColumn(
+          label: 'diaShort'.tr(),
+          flex: 22,
+          color: diaColor,
+        ),
+        MeasurementTableColumn(
+          label: 'pulShort'.tr(),
+          flex: 22,
+          color: pulColor,
+        ),
+      ]
+    : [
+        MeasurementTableColumn(label: 'time'.tr(), flex: 20),
+        MeasurementTableColumn(label: 'medications'.tr(), flex: 48),
+        MeasurementTableColumn(label: 'dosis'.tr(), flex: 24),
+      ];
 
 /// Scale columns matching the blood-pressure table rhythm.
 ///
@@ -277,10 +292,8 @@ class MeasurementTableRow extends StatelessWidget {
                     children: [
                       ..._spacedColumns(
                         columns: columns,
-                        cell: (i, _) => _Value(
-                          cell: entry.cells[i],
-                          showChange: !dense,
-                        ),
+                        cell: (i, _) =>
+                            _Value(cell: entry.cells[i], showChange: !dense),
                       ),
                       if (reserveHintSlot)
                         SizedBox(
@@ -294,7 +307,11 @@ class MeasurementTableRow extends StatelessWidget {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        for (var i = 0; i < entry.marks.length; i++) ...[
+                                        for (
+                                          var i = 0;
+                                          i < entry.marks.length;
+                                          i++
+                                        ) ...[
                                           if (i > 0) const SizedBox(width: 4),
                                           entry.marks[i],
                                         ],
@@ -362,9 +379,7 @@ class _Header extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(
-            color: theme.dividerColor.withValues(alpha: 0.55),
-          ),
+          bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.55)),
         ),
       ),
       padding: EdgeInsetsDirectional.fromSTEB(
@@ -438,16 +453,17 @@ class _Value extends StatelessWidget {
       overflow: TextOverflow.visible,
       style: cell.emphasize
           ? (theme.textTheme.titleLarge ?? const TextStyle(fontSize: 22))
-              .copyWith(fontWeight: FontWeight.w700)
+                .copyWith(fontWeight: FontWeight.w700)
           : (theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14))
-              .copyWith(color: theme.colorScheme.onSurface),
+                .copyWith(color: theme.colorScheme.onSurface),
       child: cell.value,
     );
     final change = cell.change;
-    final chip = showChange
-            && change != null
-            && change.hasComparison
-            && !change.isUnchanged
+    final chip =
+        showChange &&
+            change != null &&
+            change.hasComparison &&
+            !change.isUnchanged
         ? MetricChangeChip(
             change: change,
             fractionDigits: cell.fractionDigits,
@@ -464,11 +480,7 @@ class _Value extends StatelessWidget {
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  reading,
-                  const SizedBox(width: 4),
-                  chip,
-                ],
+                children: [reading, const SizedBox(width: 4), chip],
               ),
       ),
     );

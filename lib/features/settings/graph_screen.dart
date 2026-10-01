@@ -16,6 +16,20 @@ class GraphScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
+    if (!settings.bloodPressureEnabled) {
+      return Scaffold(
+        appBar: AppBar(title: Text('graphSettings'.tr())),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'bloodPressureDisabledHint'.tr(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
     final colorOptions = [for (final color in appColorOptions) Color(color)];
     return Scaffold(
       appBar: AppBar(title: Text('graphSettings'.tr())),

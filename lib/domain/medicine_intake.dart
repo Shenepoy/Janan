@@ -8,6 +8,7 @@ class MedicineIntake {
     required this.time,
     required this.medicine,
     required this.dosis,
+    this.occurrenceId,
   });
 
   /// Timestamp when the medicine was taken.
@@ -19,14 +20,18 @@ class MedicineIntake {
   /// Amount of medicine taken.
   final Weight dosis;
 
+  /// Planned dose occurrence this intake records, if it came from a reminder.
+  final String? occurrenceId;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is MedicineIntake &&
           time == other.time &&
           medicine == other.medicine &&
-          dosis == other.dosis;
+          dosis == other.dosis &&
+          occurrenceId == other.occurrenceId;
 
   @override
-  int get hashCode => Object.hash(time, medicine, dosis);
+  int get hashCode => Object.hash(time, medicine, dosis, occurrenceId);
 }
