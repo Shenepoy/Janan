@@ -25,9 +25,26 @@ The name lives in `pubspec.yaml`. Flutter keeps the leading zero on the month. T
 
 How this tree ships APKs: [docs/ci.md](ci.md).
 
-1. `version:` in `pubspec.yaml` matches the tag (`v26.08.0` for `26.08.0+58`).
-2. Tag and push. Actions signs with this fork's keystore secrets and attaches one APK for each
-   ABI (`armeabi-v7a`, `arm64-v8a`, `x86_64`), a `-universal.apk`, and one symbols archive.
-3. Obtainium follows that GitHub Release.
+Treat a direct request to cut, publish, or push a release as authorization to complete this
+checklist through the GitHub Release.
+
+1. Choose the next `YY.0M.MICRO+BUILD` version. Use `tools/release_tool` and the current UTC
+   month; keep `BUILD` increasing. Set `version:` in `pubspec.yaml`. The matching tag omits the
+   build suffix, for example `26.10.0+73` maps to `v26.10.0`.
+2. Run every step in GitHub Actions CI (`.github/workflows/ci.yml`) against the versioned changes.
+   Resolve failures and rerun until code generation, translation validation, analysis, tests,
+   goldens, and the debug APK build pass.
+3. Commit the release changes and push the commit to `main`. Wait for the `CI` run on that exact
+   commit to pass.
+4. Confirm the matching `vYY.0M.MICRO` tag does not already exist. Create an annotated tag at the
+   CI-green commit and push that tag to `origin`.
+5. Wait for the tag-triggered `Release` workflow. Confirm it passes and the GitHub Release contains
+   the ABI APKs (`armeabi-v7a`, `arm64-v8a`, `x86_64`), universal APK, and symbols archive before
+   reporting the release as published.
+
+Never move or overwrite an existing release tag. If a tagged release needs a code fix, use a new
+micro version and build number.
+
+Obtainium follows that GitHub Release.
 
 Do not upload this APK to Play or F-Droid. Those listings are not ours.

@@ -13,3 +13,10 @@ to the inherited `Projects/AGENTS.md` rule:
   `mobile_input_text`, and `mobile_screen_capture`.
 - Use raw `adb` for build/install, diagnostics, or unsupported capabilities. If
   ADB performs UI interaction, record the fallback in validation notes.
+
+## Release requests
+
+When the user asks to cut, publish, or push a release, follow
+[`docs/release-process.md`](docs/release-process.md) through publication. Run the
+checks, bump the version, commit and push to `main`, push the matching release
+tag only after CI passes, then verify the GitHub Release was published.

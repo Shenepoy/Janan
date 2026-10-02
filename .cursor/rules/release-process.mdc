@@ -1,0 +1,8 @@
+---
+description: Follow this rule whenever the user asks to cut, publish, or push a Janan release.
+alwaysApply: false
+---
+
+Complete the release checklist through publication; do not stop after pushing the main branch.
+
+@docs/release-process.md
