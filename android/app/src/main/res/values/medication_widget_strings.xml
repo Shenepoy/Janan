@@ -1,3 +1,15 @@
 <resources>
     <string name="medication_widget_description">Medicine reminders from Janan</string>
+    <string name="medication_widget_status_next_dose">NEXT DOSE</string>
+    <string name="medication_widget_status_all_set">ALL SET</string>
+    <string name="medication_widget_status_overdue">OVERDUE</string>
+    <string name="medication_widget_status_snoozed">SNOOZED</string>
+    <string name="medication_widget_status_soon">SOON</string>
+    <string name="medication_widget_countdown_hour">1h</string>
+    <string name="medication_widget_now">now</string>
+    <string name="medication_widget_hour_unit">h</string>
+    <string name="medication_widget_minute_unit">m</string>
+    <string name="medication_widget_medicine">Medicine</string>
+    <string name="medication_widget_no_dose_due">No dose due</string>
+    <string name="medication_widget_no_medicine_dose_due">No medicine dose due</string>
 </resources>

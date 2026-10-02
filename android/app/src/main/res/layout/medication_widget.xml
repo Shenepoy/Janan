@@ -34,7 +34,7 @@
                 android:ellipsize="end"
                 android:gravity="center"
                 android:maxLines="1"
-                android:text="NEXT DOSE"
+                android:text="@string/medication_widget_status_next_dose"
                 android:textColor="#92DCCF"
                 android:textSize="8sp"
                 android:textStyle="bold" />
@@ -45,7 +45,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:maxLines="1"
-                android:text="1h"
+                android:text="@string/medication_widget_countdown_hour"
                 android:textColor="#F0F7F5"
                 android:textSize="14sp"
                 android:textStyle="bold" />
@@ -57,7 +57,7 @@
                 android:ellipsize="end"
                 android:gravity="center"
                 android:maxLines="1"
-                android:text="Medicine"
+                android:text="@string/medication_widget_medicine"
                 android:textColor="#C8D8D4"
                 android:textSize="8sp" />
         </LinearLayout>

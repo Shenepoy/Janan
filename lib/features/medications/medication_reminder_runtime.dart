@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/medications/medication_timezone_database.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -13,29 +14,67 @@ import 'package:timezone/timezone.dart' as timezone;
 
 final medicationNavigatorKey = GlobalKey<NavigatorState>();
 
-const _medicationNotificationDetails = NotificationDetails(
+String _reminderText(String key, String fallback) {
+  final translated = key.tr();
+  return translated == key ? fallback : translated;
+}
+
+@visibleForTesting
+String medicationReminderNotificationTitle() =>
+    _reminderText('reminderNotificationTitle', 'Medicine reminder');
+
+NotificationDetails _medicationNotificationDetails() => NotificationDetails(
   android: AndroidNotificationDetails(
     'medication_reminders',
-    'Medicine reminders',
-    channelDescription: 'Reminders for saved medicine schedules',
+    _reminderText('reminderNotificationChannelName', 'Medicine reminders'),
+    channelDescription: _reminderText(
+      'reminderNotificationChannelDescription',
+      'Reminders for saved medicine schedules',
+    ),
     importance: Importance.high,
     priority: Priority.high,
   ),
-  iOS: DarwinNotificationDetails(),
+  iOS: const DarwinNotificationDetails(),
 );
 
-String _doseReminderBody(MedicationSchedule schedule, int minute) {
+@visibleForTesting
+String formatMedicationDoseReminderBody(
+  MedicationSchedule schedule,
+  int minute,
+) {
   final timing = switch (schedule.timingForMinute(minute)) {
     MedicationDoseTiming.anytime => '',
-    MedicationDoseTiming.beforeFood => ' · Before food',
-    MedicationDoseTiming.withFood => ' · With food',
-    MedicationDoseTiming.afterFood => ' · After food',
-    MedicationDoseTiming.onWaking => ' · When you wake',
-    MedicationDoseTiming.beforeSleep => ' · Before sleep',
+    MedicationDoseTiming.beforeFood =>
+      ' · ${_reminderText('reminderTimingBeforeFood', 'Before food')}',
+    MedicationDoseTiming.withFood =>
+      ' · ${_reminderText('reminderTimingWithFood', 'With food')}',
+    MedicationDoseTiming.afterFood =>
+      ' · ${_reminderText('reminderTimingAfterFood', 'After food')}',
+    MedicationDoseTiming.onWaking =>
+      ' · ${_reminderText('reminderTimingOnWaking', 'When you wake')}',
+    MedicationDoseTiming.beforeSleep =>
+      ' · ${_reminderText('reminderTimingBeforeSleep', 'Before sleep')}',
   };
   return '${schedule.medicine.designation} · '
       '${formatMedicationDose(schedule.doseAmount, schedule.doseUnit)}$timing';
 }
+
+@visibleForTesting
+Map<String, String> medicationReminderWidgetLabels() => {
+  'statusAllSet': _reminderText('reminderWidgetAllSet', 'ALL SET'),
+  'statusOverdue': _reminderText('reminderWidgetOverdue', 'OVERDUE'),
+  'statusSnoozed': _reminderText('reminderWidgetSnoozed', 'SNOOZED'),
+  'statusSoon': _reminderText('reminderWidgetSoon', 'SOON'),
+  'statusNextDose': _reminderText('reminderWidgetNextDose', 'NEXT DOSE'),
+  'noDoseDue': _reminderText('reminderWidgetNoDoseDue', 'No dose due'),
+  'noMedicineDoseDue': _reminderText(
+    'reminderWidgetNoMedicineDoseDue',
+    'No medicine dose due',
+  ),
+  'now': _reminderText('reminderWidgetNow', 'now'),
+  'hourUnit': _reminderText('reminderWidgetHourUnit', 'h'),
+  'minuteUnit': _reminderText('reminderWidgetMinuteUnit', 'm'),
+};
 
 /// Local notification and Android widget bridge for medication schedules.
 class MedicationReminderRuntime {
@@ -174,10 +213,10 @@ class MedicationReminderRuntime {
             id: _notificationId(
               '${schedule.id}:${day.year}-${day.month}-${day.day}:$minute',
             ),
-            title: 'Medicine reminder',
-            body: _doseReminderBody(schedule, minute),
+            title: medicationReminderNotificationTitle(),
+            body: formatMedicationDoseReminderBody(schedule, minute),
             scheduledDate: scheduled,
-            notificationDetails: _medicationNotificationDetails,
+            notificationDetails: _medicationNotificationDetails(),
             androidScheduleMode: exact
                 ? AndroidScheduleMode.exactAllowWhileIdle
                 : AndroidScheduleMode.inexactAllowWhileIdle,
@@ -195,13 +234,13 @@ class MedicationReminderRuntime {
       }
       await _notifications.zonedSchedule(
         id: _snoozeNotificationId(occurrence.id),
-        title: 'Medicine reminder',
-        body: _doseReminderBody(
+        title: medicationReminderNotificationTitle(),
+        body: formatMedicationDoseReminderBody(
           occurrence.schedule,
           occurrence.scheduledAt.hour * 60 + occurrence.scheduledAt.minute,
         ),
         scheduledDate: timezone.TZDateTime.from(snoozeUntil, timezone.local),
-        notificationDetails: _medicationNotificationDetails,
+        notificationDetails: _medicationNotificationDetails(),
         androidScheduleMode: exact
             ? AndroidScheduleMode.exactAllowWhileIdle
             : AndroidScheduleMode.inexactAllowWhileIdle,
@@ -223,13 +262,13 @@ class MedicationReminderRuntime {
         : true;
     await _notifications.zonedSchedule(
       id: _snoozeNotificationId(occurrence.id),
-      title: 'Medicine reminder',
-      body: _doseReminderBody(
+      title: medicationReminderNotificationTitle(),
+      body: formatMedicationDoseReminderBody(
         occurrence.schedule,
         occurrence.scheduledAt.hour * 60 + occurrence.scheduledAt.minute,
       ),
       scheduledDate: timezone.TZDateTime.from(until, timezone.local),
-      notificationDetails: _medicationNotificationDetails,
+      notificationDetails: _medicationNotificationDetails(),
       androidScheduleMode: exact
           ? AndroidScheduleMode.exactAllowWhileIdle
           : AndroidScheduleMode.inexactAllowWhileIdle,
@@ -275,10 +314,12 @@ class MedicationReminderRuntime {
     final configuredMedicineColor = next.isEmpty
         ? null
         : next.first.occurrence.schedule.medicine.color;
+    final widgetLabels = medicationReminderWidgetLabels();
     final items = next.isEmpty
-        ? <Map<String, Object>>[]
+        ? [widgetLabels]
         : [
             {
+              ...widgetLabels,
               'name': next.first.occurrence.schedule.medicine.designation,
               'color':
                   configuredMedicineColor == null ||

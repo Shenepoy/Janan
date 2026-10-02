@@ -458,6 +458,13 @@ class _Value extends StatelessWidget {
                 .copyWith(color: theme.colorScheme.onSurface),
       child: cell.value,
     );
+    final value = cell.emphasize
+        ? FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: reading,
+          )
+        : reading;
     final change = cell.change;
     final chip =
         showChange &&
@@ -472,17 +479,17 @@ class _Value extends StatelessWidget {
         : null;
     return Align(
       alignment: AlignmentDirectional.centerStart,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: AlignmentDirectional.centerStart,
-        child: chip == null
-            ? reading
-            : Row(
+      child: chip == null
+          ? value
+          : FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [reading, const SizedBox(width: 4), chip],
               ),
-      ),
+            ),
     );
   }
 }

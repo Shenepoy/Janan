@@ -1,0 +1,15 @@
+<resources>
+    <string name="medication_widget_description">تذكيرات الأدوية من جنان</string>
+    <string name="medication_widget_status_next_dose">التالي</string>
+    <string name="medication_widget_status_all_set">تم</string>
+    <string name="medication_widget_status_overdue">متأخرة</string>
+    <string name="medication_widget_status_snoozed">مؤجل</string>
+    <string name="medication_widget_status_soon">قريباً</string>
+    <string name="medication_widget_countdown_hour">١س</string>
+    <string name="medication_widget_now">الآن</string>
+    <string name="medication_widget_hour_unit">س</string>
+    <string name="medication_widget_minute_unit">د</string>
+    <string name="medication_widget_medicine">الدواء</string>
+    <string name="medication_widget_no_dose_due">لا توجد جرعة مستحقة</string>
+    <string name="medication_widget_no_medicine_dose_due">لا توجد جرعة دواء مستحقة</string>
+</resources>

@@ -369,6 +369,7 @@ Future<Widget> materialApp(Widget child, {
   IntervalStoreManager? intervallStoreManager,
   ExportColumnsManager? exportColumnsManager,
   Map<String, Widget Function(BuildContext)> routes = const {},
+  List overrides = const [],
   Locale locale = const Locale('en'),
 }) async {
   final merged = settings ?? hcSettings ?? TestSettingsSeed();
@@ -404,6 +405,7 @@ Future<Widget> materialApp(Widget child, {
       noteRepositoryProvider.overrideWithValue(db.noteRepo),
       bodyweightRepositoryProvider.overrideWithValue(db.weightRepo),
       bleBlacklistRepositoryProvider.overrideWithValue(db.blacklistRepo),
+      ...overrides,
     ],
   );
 }
@@ -508,16 +510,14 @@ Future<Widget> appBaseWithData(Widget child,  {
   List<Note>? notes,
   List<MedicineIntake>? intakes,
   List<BodyweightRecord>? weights,
+  Locale locale = const Locale('en'),
 }) async {
   final db = MockHealthStore();
   final bpRepo = db.bpRepo;
   for (final r in records ?? []) {
     await bpRepo.add(r);
   }
-  final medRepo = db.medRepo;
-  for (final m in meds ?? []) {
-    await medRepo.add(m);
-  }
+  final medRepo = MockMedRepo(meds);
   final intakeRepo = db.intakeRepo;
   for (final i in intakes ?? []) {
     await intakeRepo.add(i);
@@ -544,6 +544,7 @@ Future<Widget> appBaseWithData(Widget child,  {
     intakeRepo: intakeRepo,
     weightRepo: weightRepo,
     blacklistRepo: db.blacklistRepo,
+    locale: locale,
   );
 }
 

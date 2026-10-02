@@ -66,19 +66,62 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
             hasDose && targetAt - now <= SOON_MILLIS -> SOON_COLOR
             else -> medicineColor
         }
+        fun widgetLabel(key: String, fallbackResource: Int): String {
+            val fallback = context.getString(fallbackResource)
+            return next?.optString(key, fallback) ?: fallback
+        }
+        val statusAllSet = widgetLabel(
+            "statusAllSet",
+            R.string.medication_widget_status_all_set,
+        )
+        val statusOverdue = widgetLabel(
+            "statusOverdue",
+            R.string.medication_widget_status_overdue,
+        )
+        val statusSnoozed = widgetLabel(
+            "statusSnoozed",
+            R.string.medication_widget_status_snoozed,
+        )
+        val statusSoon = widgetLabel("statusSoon", R.string.medication_widget_status_soon)
+        val statusNextDose = widgetLabel(
+            "statusNextDose",
+            R.string.medication_widget_status_next_dose,
+        )
+        val noDoseDue = widgetLabel(
+            "noDoseDue",
+            R.string.medication_widget_no_dose_due,
+        )
+        val noMedicineDoseDue = widgetLabel(
+            "noMedicineDoseDue",
+            R.string.medication_widget_no_medicine_dose_due,
+        )
+        val nowLabel = widgetLabel("now", R.string.medication_widget_now)
+        val hourUnit = widgetLabel(
+            "hourUnit",
+            R.string.medication_widget_hour_unit,
+        )
+        val minuteUnit = widgetLabel(
+            "minuteUnit",
+            R.string.medication_widget_minute_unit,
+        )
 
         views.setImageViewBitmap(
             R.id.widget_progress_ring,
             progressRing(context, ringProgress(targetAt, now, hasDose), ringColor),
         )
         if (hasDose) {
-            val name = next.optString("name", "Medicine").trim().ifEmpty { "Medicine" }
+            val fallbackMedicine = context.getString(
+                R.string.medication_widget_medicine,
+            )
+            val name = next.optString("name", fallbackMedicine).trim().ifEmpty {
+                fallbackMedicine
+            }
             val storedStatus = next.optString("status", "pending")
             val label = when {
-                overdue -> "OVERDUE"
-                storedStatus == "snoozed" -> "SNOOZED"
-                targetAt - now <= SOON_MILLIS -> "SOON"
-                else -> "NEXT DOSE"
+                overdue -> statusOverdue
+                storedStatus == "snoozed" -> statusSnoozed
+                targetAt - now <= SOON_MILLIS -> statusSoon
+                else -> statusNextDose
             }
             views.setTextViewText(R.id.widget_status, label)
             views.setTextColor(R.id.widget_status, ringColor)
@@ -90,13 +133,25 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
             if (overdue) {
                 views.setTextViewText(
                     R.id.widget_countdown,
-                    countdownText(now - targetAt, overdue = true),
+                    countdownText(
+                        now - targetAt,
+                        overdue = true,
+                        nowLabel = nowLabel,
+                        hourUnit = hourUnit,
+                        minuteUnit = minuteUnit,
+                    ),
                 )
                 views.setTextColor(R.id.widget_countdown, OVERDUE_COLOR)
             } else {
                 views.setTextViewText(
                     R.id.widget_countdown,
-                    countdownText(delta, overdue = false),
+                    countdownText(
+                        delta,
+                        overdue = false,
+                        nowLabel = nowLabel,
+                        hourUnit = hourUnit,
+                        minuteUnit = minuteUnit,
+                    ),
                 )
                 views.setTextColor(R.id.widget_countdown, TEXT_COLOR)
             }
@@ -105,12 +160,12 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
                 "$name, $label",
             )
         } else {
-            views.setTextViewText(R.id.widget_status, "ALL SET")
+            views.setTextViewText(R.id.widget_status, statusAllSet)
             views.setTextColor(R.id.widget_status, medicineColor)
-            views.setTextViewText(R.id.widget_medicine, "No dose due")
+            views.setTextViewText(R.id.widget_medicine, noDoseDue)
             views.setViewVisibility(R.id.widget_medicine, android.view.View.VISIBLE)
             views.setViewVisibility(R.id.widget_countdown, android.view.View.GONE)
-            views.setContentDescription(R.id.widget_root, "No medicine dose due")
+            views.setContentDescription(R.id.widget_root, noMedicineDoseDue)
         }
 
         scheduleRefresh(context, nextCountdownRefresh(targetAt, now, hasDose))
@@ -172,8 +227,14 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         return elapsedFraction.coerceIn(0.06f, 0.94f)
     }
 
-    private fun countdownText(deltaMillis: Long, overdue: Boolean): String {
-        if (deltaMillis <= 0L) return if (overdue) "+now" else "now"
+    private fun countdownText(
+        deltaMillis: Long,
+        overdue: Boolean,
+        nowLabel: String,
+        hourUnit: String,
+        minuteUnit: String,
+    ): String {
+        if (deltaMillis <= 0L) return if (overdue) "+$nowLabel" else nowLabel
         val minutes = if (overdue) {
             (deltaMillis / MINUTE_MILLIS).coerceAtLeast(1L)
         } else {
@@ -181,9 +242,9 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         }
         val value = if (minutes >= 60L) {
             val hours = if (overdue) minutes / 60L else (minutes + 59L) / 60L
-            "${hours}h"
+            "$hours$hourUnit"
         } else {
-            "${minutes}m"
+            "$minutes$minuteUnit"
         }
         return if (overdue) "+$value" else value
     }

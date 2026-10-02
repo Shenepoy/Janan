@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:blood_pressure_app/core/repository/repository_providers.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
@@ -179,14 +180,21 @@ class _MedicationReminderCardState
           curve: Curves.easeOutBack,
           reverseCurve: Curves.easeInCubic,
         );
-        final targetAnchor = widget.opensAbove
+        final endIsRight = Directionality.of(context) == ui.TextDirection.ltr;
+        final topEndAlignment = endIsRight
             ? Alignment.topRight
+            : Alignment.topLeft;
+        final bottomEndAlignment = endIsRight
+            ? Alignment.bottomRight
+            : Alignment.bottomLeft;
+        final targetAnchor = widget.opensAbove
+            ? topEndAlignment
             : Alignment.bottomCenter;
         final followerAnchor = widget.opensAbove
-            ? Alignment.bottomRight
+            ? bottomEndAlignment
             : Alignment.topCenter;
         final scaleAlignment = widget.opensAbove
-            ? Alignment.bottomRight
+            ? bottomEndAlignment
             : Alignment.topCenter;
         return SizedBox.expand(
           child: Stack(
@@ -195,7 +203,7 @@ class _MedicationReminderCardState
             children: [
               Align(
                 alignment: widget.opensAbove
-                    ? Alignment.topRight
+                    ? topEndAlignment
                     : Alignment.topCenter,
                 child: CompositedTransformFollower(
                   link: _targetLink,
@@ -724,6 +732,7 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
         .toList();
 
     return SizedBox(
+      key: const ValueKey('medicationReminderDosePanel'),
       width: math.min(media.width - 32, 400),
       child: Material(
         color: theme.colorScheme.surfaceContainerHigh,
