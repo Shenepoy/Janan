@@ -5,11 +5,11 @@ import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('catalog shows everyday sections first and hides power-user rows', () {
+  test('catalog orders cards by everyday use with Advanced rows last', () {
     final registry = createAppSettingsRegistry();
     expect(registry.getSortedSections().map((s) => s.key), [
-      'style',
       'general',
+      'style',
       'blood_pressure',
       'weight',
       'medications',
@@ -18,71 +18,86 @@ void main() {
       'about',
       'graph',
     ]);
-    expect(styleSection.initiallyExpanded, isTrue);
-    expect(generalSection.initiallyExpanded, isTrue);
-    expect(bloodPressureSection.initiallyExpanded, isTrue);
-    expect(weightSection.initiallyExpanded, isTrue);
-    expect(medicationsSection.initiallyExpanded, isTrue);
-    expect(bluetoothSection.initiallyExpanded, isTrue);
-    expect(dataSection.initiallyExpanded, isTrue);
-    expect(aboutSection.initiallyExpanded, isTrue);
+    expect(styleSection.titleKey, 'appearance');
+    expect(bluetoothSection.titleKey, 'devices');
+    for (final section in registry.getSortedSections()) {
+      expect(section.initiallyExpanded, isTrue, reason: section.key);
+    }
 
-    expect(registry.getVisibleSettingsInSection('style').map((s) => s.key), [
-      'theme_mode',
-      'accent_color',
-      'compact_list',
-      'rounded_reminder_button',
-    ]);
-    expect(registry.getVisibleSettingsInSection('general').map((s) => s.key), [
+    List<String> main(String section) => registry
+        .getVisibleSettingsInSection(section)
+        .where((s) => s.subSection == null || s.subSection!.isEmpty)
+        .map((s) => s.key)
+        .toList();
+    List<String> advanced(String section) => registry
+        .getVisibleSettingsInSection(section)
+        .where((s) => s.subSection == 'advanced')
+        .map((s) => s.key)
+        .toList();
+
+    expect(main('general'), [
       'language',
       'date_format_string',
-      'start_with_add_measurement_page',
       'allow_manual_time_input',
       'confirm_deletion',
     ]);
-    expect(
-      registry.getVisibleSettingsInSection('blood_pressure').map((s) => s.key),
-      ['blood_pressure_enabled', 'preferred_pressure_unit', 'graph_settings'],
-    );
-    expect(registry.getVisibleSettingsInSection('weight').map((s) => s.key), [
+    expect(advanced('general'), ['bottom_app_bars']);
+    expect(main('style'), ['theme_mode', 'accent_color', 'compact_list']);
+    expect(advanced('style'), ['animation_speed']);
+    expect(main('blood_pressure'), [
+      'blood_pressure_enabled',
+      'preferred_pressure_unit',
+      'start_with_add_measurement_page',
+      'graph_settings',
+    ]);
+    expect(advanced('blood_pressure'), [
+      'validate_inputs',
+      'allow_missing_values',
+    ]);
+    expect(main('weight'), [
       'weight_input',
       'preferred_weight_unit',
       'body_profile',
     ]);
-    expect(
-      registry.getVisibleSettingsInSection('medications').map((s) => s.key),
-      [
-        'medicine_feature_enabled',
-        'medications',
-        'overdue_reminder_count',
-        'overdue_reminder_interval_minutes',
-        'show_all_reminder_rings',
-      ],
-    );
-    expect(
-      registry.getVisibleSettingsInSection('bluetooth').map((s) => s.key),
-      ['bluetooth_measurements_enabled', 'ble_input', 'bluetooth_devices'],
-    );
-    expect(registry.getVisibleSettingsInSection('data').map((s) => s.key), [
+    expect(main('medications'), [
+      'medicine_feature_enabled',
+      'medications',
+      'overdue_reminder_count',
+      'overdue_reminder_interval_minutes',
+      'show_all_reminder_rings',
+      'rounded_reminder_button',
+    ]);
+    expect(main('bluetooth'), [
+      'bluetooth_measurements_enabled',
+      'ble_input',
+      'bluetooth_devices',
+    ]);
+    expect(main('data'), [
       'health_connect_screen',
       'export_import',
       'export_settings',
       'import_settings',
       'delete_data',
     ]);
-    expect(registry.getVisibleSettingsInSection('about').map((s) => s.key), [
-      'replay_onboarding',
+    expect(main('about'), [
       'version',
       'source_code',
       'licenses',
+      'replay_onboarding',
       'logs_viewer',
       'debug_data_server',
     ]);
+    for (final section in [
+      'weight',
+      'medications',
+      'bluetooth',
+      'data',
+      'about',
+    ]) {
+      expect(advanced(section), isEmpty, reason: section);
+    }
     expect(onboardingCompletedSetting.visible, isFalse);
     expect(registry.getVisibleSettingsInSection('graph'), isEmpty);
-    expect(animationSpeedSetting.visible, isFalse);
-    expect(validateInputsSetting.visible, isFalse);
-    expect(allowMissingValuesSetting.visible, isFalse);
     expect(useHealthConnectSetting.visible, isFalse);
     expect(autostartBluetoothInputSetting.visible, isFalse);
   });

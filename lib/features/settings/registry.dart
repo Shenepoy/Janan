@@ -4,18 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-const styleSection = SettingSection(
-  key: 'style',
-  titleKey: 'appStyleSettings',
-  icon: Icons.color_lens_outlined,
-  order: 0,
-  initiallyExpanded: true,
-);
-
 const generalSection = SettingSection(
   key: 'general',
   titleKey: 'generalSettingsSection',
   icon: Icons.tune,
+  order: 0,
+  initiallyExpanded: true,
+);
+
+const styleSection = SettingSection(
+  key: 'style',
+  titleKey: 'appearance',
+  icon: Icons.color_lens_outlined,
   order: 1,
   initiallyExpanded: true,
 );
@@ -46,7 +46,7 @@ const medicationsSection = SettingSection(
 
 const bluetoothSection = SettingSection(
   key: 'bluetooth',
-  titleKey: 'bluetoothSettings',
+  titleKey: 'devices',
   icon: Icons.bluetooth,
   order: 5,
   initiallyExpanded: true,
@@ -148,7 +148,7 @@ const graphSettingsAction = ActionSetting(
   titleKey: 'graphSettings',
   icon: Icons.trending_down_outlined,
   section: 'blood_pressure',
-  order: 2,
+  order: 3,
 );
 
 const dateFormatStringOptions = [
@@ -184,11 +184,11 @@ const animationSpeedSetting = IntSetting(
   titleKey: 'animationSpeed',
   icon: Icons.speed,
   section: 'style',
-  order: 4,
+  subSection: 'advanced',
+  order: 0,
   min: 0,
   max: 1000,
   step: 50,
-  visible: false,
 );
 
 const sysColorSetting = ColorSetting(
@@ -348,7 +348,7 @@ const startWithAddMeasurementPageSetting = BoolSetting(
   titleKey: 'startWithAddMeasurementPage',
   subtitleKey: 'startWithAddMeasurementPageDescription',
   icon: Icons.electric_bolt_outlined,
-  section: 'general',
+  section: 'blood_pressure',
   order: 2,
   dependsOn: 'blood_pressure_enabled',
   enabledWhen: true,
@@ -360,7 +360,7 @@ const allowManualTimeInputSetting = BoolSetting(
   titleKey: 'allowManualTimeInput',
   icon: Icons.schedule,
   section: 'general',
-  order: 3,
+  order: 2,
 );
 
 const validateInputsSetting = BoolSetting(
@@ -368,18 +368,23 @@ const validateInputsSetting = BoolSetting(
   defaultValue: true,
   titleKey: 'validateInputs',
   icon: Icons.task_alt,
-  section: 'general',
-  order: 2,
-  visible: false,
+  section: 'blood_pressure',
+  subSection: 'advanced',
+  order: 0,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
 );
 
 const allowMissingValuesSetting = BoolSetting(
   'allow_missing_values',
   defaultValue: false,
   titleKey: 'allowMissingValues',
-  section: 'general',
-  order: 3,
-  visible: false,
+  icon: Icons.rule,
+  section: 'blood_pressure',
+  subSection: 'advanced',
+  order: 1,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
 );
 
 const confirmDeletionSetting = BoolSetting(
@@ -388,7 +393,7 @@ const confirmDeletionSetting = BoolSetting(
   titleKey: 'confirmDeletion',
   icon: Icons.delete_forever,
   section: 'general',
-  order: 4,
+  order: 3,
 );
 
 const compactListSetting = BoolSetting(
@@ -405,8 +410,8 @@ const roundedReminderButtonSetting = BoolSetting(
   defaultValue: true,
   titleKey: 'useRoundedSquareReminderButton',
   icon: Icons.rounded_corner,
-  section: 'style',
-  order: 3,
+  section: 'medications',
+  order: 5,
 );
 
 const preferredPressureUnitSetting = EnumSetting(
@@ -510,7 +515,10 @@ const bottomAppBarsSetting = BoolSetting(
   'bottom_app_bars',
   defaultValue: false,
   titleKey: 'bottomAppBars',
-  visible: false,
+  icon: Icons.vertical_align_bottom,
+  section: 'general',
+  subSection: 'advanced',
+  order: 0,
 );
 
 const weightInputSetting = BoolSetting(
@@ -770,7 +778,7 @@ const replayOnboardingAction = ActionSetting(
   subtitleKey: 'onboardingReplayHint',
   icon: Icons.help_outline,
   section: 'about',
-  order: 0,
+  order: 3,
 );
 
 const versionAction = ActionSetting(
@@ -778,7 +786,7 @@ const versionAction = ActionSetting(
   titleKey: 'version',
   icon: Icons.info_outline,
   section: 'about',
-  order: 1,
+  order: 0,
 );
 
 const sourceCodeAction = ActionSetting(
@@ -786,7 +794,7 @@ const sourceCodeAction = ActionSetting(
   titleKey: 'sourceCode',
   icon: Icons.merge,
   section: 'about',
-  order: 2,
+  order: 1,
 );
 
 const licensesAction = ActionSetting(
@@ -794,7 +802,7 @@ const licensesAction = ActionSetting(
   titleKey: 'licenses',
   icon: Icons.policy_outlined,
   section: 'about',
-  order: 3,
+  order: 2,
 );
 
 const exportSettingsAction = ActionSetting(

@@ -1,6 +1,7 @@
 import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:safaeh/safaeh.dart';
 
 import '../../util.dart';
 
@@ -37,6 +38,13 @@ void main() {
 
     expect(find.byKey(const ValueKey('safaeh_drag_handle')), findsOneWidget);
     expect(find.text('Choose one'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(SafaehTilePickerBody<String>),
+        matching: find.text('Choose one'),
+      ),
+      findsNothing,
+    );
     expect(find.text('Second'), findsOneWidget);
 
     await tester.tap(find.text('Second'));

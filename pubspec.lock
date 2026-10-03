@@ -1152,10 +1152,10 @@ packages:
     dependency: "direct main"
     description:
       name: safaeh
-      sha256: "5b486be68f3230c171f51965c71ee2fb9318871b3be0329c91037a4f7385cdf9"
+      sha256: "4ff4400bc57f6750f228e9f7b56a3a0947607553f172a3ea23d8659690383ebf"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.0"
+    version: "0.8.2"
   share_plus:
     dependency: "direct main"
     description:

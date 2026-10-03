@@ -36,10 +36,11 @@ Future<DeleteChoice> showConfirmDeletionChoice(
   final title = 'confirmDelete'.tr();
   final result = await showResponsiveSheet<DeleteChoice>(
     context: context,
-    title: isWideModal(context) ? title : null,
+    title: title,
     child: buildSheetShell(
       context,
       title: title,
+      showTitleInBody: false,
       body: Text(customDescription ?? 'confirmDeleteDesc'.tr()),
       actions: [
         TextButton(

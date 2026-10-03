@@ -70,6 +70,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   final _anchors = SettingAnchorRegistry();
   final _sectionKeys = <String, GlobalKey>{};
   final _sectionExpanded = <String, bool>{};
+  final _subSectionExpanded = <String, bool>{};
   String? _activeSectionId;
   bool _searchOpen = false;
   bool _activeUpdateScheduled = false;
@@ -166,6 +167,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     setState(() => _sectionExpanded[sectionId] = expanded);
   }
 
+  String _subSectionId(String sectionKey, String subKey) =>
+      '$sectionKey/$subKey';
+
+  bool _isSubSectionExpanded(String sectionKey, String subKey) =>
+      _subSectionExpanded[_subSectionId(sectionKey, subKey)] ?? false;
+
+  void _setSubSectionExpanded(String sectionKey, String subKey, bool expanded) {
+    final id = _subSectionId(sectionKey, subKey);
+    if (_subSectionExpanded[id] == expanded) return;
+    setState(() => _subSectionExpanded[id] = expanded);
+  }
+
   Future<void> _selectSection(SettingSection section) async {
     final key = _sectionKeys[section.key];
     if (key == null) return;
@@ -191,11 +204,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     if (section == null) return;
     final wasExpanded =
         _sectionExpanded[sectionKey] ?? section.initiallyExpanded;
+    final subKey = setting.subSection;
+    final subWasExpanded =
+        subKey == null ||
+        subKey.isEmpty ||
+        _isSubSectionExpanded(sectionKey, subKey);
     setState(() {
       _sectionExpanded[sectionKey] = true;
+      if (subKey != null && subKey.isNotEmpty) {
+        _subSectionExpanded[_subSectionId(sectionKey, subKey)] = true;
+      }
       _activeSectionId = sectionKey;
     });
-    if (!wasExpanded) {
+    if (!wasExpanded || !subWasExpanded) {
       await Future<void>.delayed(const Duration(milliseconds: 220));
     }
     if (!mounted) return;
@@ -225,19 +246,26 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           .where((setting) => setting.visible)
           .toList();
       if (settingsList.isEmpty) continue;
-      if (subKey != null && subKey.isNotEmpty) {
-        final subTitle = subKey.tr();
-        result.add(
-          SettingsSubsectionHeader(
-            title: subTitle,
-            icon: Icons.subdirectory_arrow_right,
-          ),
-        );
-      }
+      final tiles = <Widget>[];
       for (final setting in settingsList) {
         final tile = _buildTileForSetting(context, settings, setting);
-        if (tile != null) result.add(_anchors.wrap(setting.key, tile));
+        if (tile != null) tiles.add(_anchors.wrap(setting.key, tile));
       }
+      if (tiles.isEmpty) continue;
+      if (subKey != null && subKey.isNotEmpty) {
+        final expanded = _isSubSectionExpanded(sectionKey, subKey);
+        result.add(
+          _CollapsibleSubSection(
+            title: subKey.tr(),
+            expanded: expanded,
+            onToggle: () =>
+                _setSubSectionExpanded(sectionKey, subKey, !expanded),
+            children: expanded ? tiles : const [],
+          ),
+        );
+        continue;
+      }
+      result.addAll(tiles);
     }
     return visibleCatalogChildren(_registry, result);
   }
@@ -416,10 +444,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           final title = 'enterTimeFormatScreen'.tr();
           final result = await showResponsiveSheet<String>(
             context: context,
-            title: isWideModal(context) ? title : null,
+            title: title,
             maxHeight: MediaQuery.sizeOf(context).height * 0.75,
             child: SafaehTilePickerBody<String>(
-              title: title,
+              showTitleInBody: false,
               selected: current,
               options: [
                 for (final pattern in patterns)
@@ -811,5 +839,72 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       messenger.showSnackBar(SnackBar(content: Text('invalidZip'.tr())));
       Log.warning('invalid zip', error: e, stackTrace: stack);
     }
+  }
+}
+
+/// A settings group under a card, such as Advanced, that starts closed.
+class _CollapsibleSubSection extends StatelessWidget {
+  const _CollapsibleSubSection({
+    required this.title,
+    required this.expanded,
+    required this.onToggle,
+    required this.children,
+  });
+
+  final String title;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        InkWell(
+          onTap: onToggle,
+          child: Semantics(
+            button: true,
+            expanded: expanded,
+            label: title,
+            excludeSemantics: true,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 12, 8, expanded ? 4 : 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.expand_more,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: expanded
+              ? Column(children: children)
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
   }
 }

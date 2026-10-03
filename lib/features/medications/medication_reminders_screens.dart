@@ -150,6 +150,70 @@ String _formatCompactCountdown(
   return minutes >= 60 ? '${hours}h' : '${minutes}m';
 }
 
+/// Open doses listed under the featured next dose.
+///
+/// [featured] counts toward [limit]. Each medicine is listed once, at its next
+/// open dose, before any later dose is added. Later doses fill the remaining
+/// slots in time order, so three medicines leave room for two later dates and
+/// a full set of five leaves room for none.
+List<DoseOccurrence> nextUpDoseOccurrences(
+  List<DoseOccurrence> occurrences, {
+  required DateTime now,
+  DoseOccurrence? featured,
+  int limit = 5,
+}) {
+  final slots = limit - (featured == null ? 0 : 1);
+  if (slots <= 0) return const [];
+
+  final featuredId = featured?.id;
+  final featuredMedicineId = featured?.schedule.medicineId;
+  final byMedicine = <String, List<DoseOccurrence>>{};
+  for (final dose in occurrences) {
+    if (dose.id == featuredId) continue;
+    final state = dose.statusAt(now);
+    if (state != 'pending' && state != 'snoozed' && state != 'unrecorded') {
+      continue;
+    }
+    byMedicine.putIfAbsent(dose.schedule.medicineId, () => []).add(dose);
+  }
+  for (final doses in byMedicine.values) {
+    doses.sort((a, b) {
+      final byTime = a.scheduledAt.compareTo(b.scheduledAt);
+      if (byTime != 0) return byTime;
+      return a.id.compareTo(b.id);
+    });
+  }
+
+  final selected = <DoseOccurrence>[];
+  final maxRounds =
+      byMedicine.values.fold<int>(0, (n, doses) => math.max(n, doses.length)) +
+      1;
+  for (var round = 0; round < maxRounds && selected.length < slots; round++) {
+    final wave = <DoseOccurrence>[];
+    for (final entry in byMedicine.entries) {
+      final index = entry.key == featuredMedicineId ? round - 1 : round;
+      if (index < 0 || index >= entry.value.length) continue;
+      wave.add(entry.value[index]);
+    }
+    if (wave.isEmpty) continue;
+    wave.sort((a, b) {
+      final byTime = a.scheduledAt.compareTo(b.scheduledAt);
+      if (byTime != 0) return byTime;
+      return a.id.compareTo(b.id);
+    });
+    for (final dose in wave) {
+      if (selected.length >= slots) break;
+      selected.add(dose);
+    }
+  }
+  selected.sort((a, b) {
+    final byTime = a.scheduledAt.compareTo(b.scheduledAt);
+    if (byTime != 0) return byTime;
+    return a.id.compareTo(b.id);
+  });
+  return selected;
+}
+
 bool _deferUpcomingDoseCard(
   DoseOccurrence occurrence,
   List<DoseOccurrence> occurrences,
@@ -1139,19 +1203,11 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
     final panelTitle = countdown != null || deferredDose != null
         ? _t('reminderNextDose', 'Next dose')
         : _t('reminderTodayTitle', "Today's medicines");
-    final visibleLater = _visibleOccurrences()
-        .where((dose) {
-          if (widget.countdown != null &&
-              dose.id == widget.countdown!.occurrence.id) {
-            return false;
-          }
-          final state = dose.statusAt(widget.now);
-          return state == 'pending' ||
-              state == 'snoozed' ||
-              state == 'unrecorded';
-        })
-        .take(2)
-        .toList();
+    final visibleLater = nextUpDoseOccurrences(
+      _visibleOccurrences(),
+      now: widget.now,
+      featured: widget.countdown?.occurrence,
+    );
 
     return SizedBox(
       key: const ValueKey('medicationReminderDosePanel'),
@@ -1379,13 +1435,6 @@ class _MedicationDoseActionCard extends StatelessWidget {
     final scheduled =
         '$scheduledLabel: $scheduledTime'
         '${DateUtils.isSameDay(occurrence.scheduledAt, now) ? '' : ' · $scheduledDay'}';
-    final compactButtonStyle = OutlinedButton.styleFrom(
-      minimumSize: const Size(0, 40),
-      visualDensity: VisualDensity.compact,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      padding: const EdgeInsets.symmetric(horizontal: 7),
-    );
-
     return DecoratedBox(
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
@@ -1430,63 +1479,134 @@ class _MedicationDoseActionCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 9),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(0, 40),
-                      visualDensity: VisualDensity.compact,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: const EdgeInsets.symmetric(horizontal: 7),
-                    ),
-                    onPressed: saving ? null : onTaken,
-                    icon: saving
-                        ? const SizedBox.square(
-                            dimension: 15,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.check, size: 17),
-                    label: Text(
-                      _t('reminderDoneAction', 'Done'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    style: compactButtonStyle,
-                    onPressed: saving ? null : onSnooze,
-                    icon: const Icon(Icons.alarm_outlined, size: 16),
-                    label: Text(
-                      _t('reminderSnoozeShortAction', '+10m'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 40),
-                      visualDensity: VisualDensity.compact,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: const EdgeInsets.symmetric(horizontal: 7),
-                    ),
-                    onPressed: saving ? null : onSkip,
-                    child: Text(
-                      _t('reminderSkipAction', 'Skip'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ],
+            _ConnectedDoseActions(
+              saving: saving,
+              onTaken: onTaken,
+              onSnooze: onSnooze,
+              onSkip: onSkip,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Done, snooze, and skip as one square bar with shared edges.
+class _ConnectedDoseActions extends StatelessWidget {
+  const _ConnectedDoseActions({
+    required this.saving,
+    required this.onTaken,
+    required this.onSnooze,
+    required this.onSkip,
+  });
+
+  final bool saving;
+  final VoidCallback onTaken;
+  final VoidCallback onSnooze;
+  final VoidCallback onSkip;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final outline = theme.colorScheme.outline.withValues(alpha: 0.55);
+    final enabled = !saving;
+    return DecoratedBox(
+      decoration: BoxDecoration(border: Border.all(color: outline)),
+      child: SizedBox(
+        height: 40,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: _DoseActionSegment(
+                onPressed: enabled ? onTaken : null,
+                background: theme.colorScheme.primary,
+                foreground: theme.colorScheme.onPrimary,
+                icon: saving
+                    ? SizedBox.square(
+                        dimension: 15,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                      )
+                    : const Icon(Icons.check, size: 17),
+                label: _t('reminderDoneAction', 'Done'),
+              ),
+            ),
+            ColoredBox(color: outline, child: const SizedBox(width: 1)),
+            Expanded(
+              child: _DoseActionSegment(
+                onPressed: enabled ? onSnooze : null,
+                foreground: theme.colorScheme.onSurface,
+                icon: const Icon(Icons.alarm_outlined, size: 16),
+                label: _t('reminderSnoozeShortAction', '+10m'),
+              ),
+            ),
+            ColoredBox(color: outline, child: const SizedBox(width: 1)),
+            Expanded(
+              child: _DoseActionSegment(
+                onPressed: enabled ? onSkip : null,
+                foreground: theme.colorScheme.onSurface,
+                label: _t('reminderSkipAction', 'Skip'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DoseActionSegment extends StatelessWidget {
+  const _DoseActionSegment({
+    required this.label,
+    required this.foreground,
+    required this.onPressed,
+    this.background,
+    this.icon,
+  });
+
+  final String label;
+  final Color foreground;
+  final VoidCallback? onPressed;
+  final Color? background;
+  final Widget? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final color = enabled ? foreground : foreground.withValues(alpha: 0.38);
+    return Material(
+      color: background ?? Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                IconTheme(
+                  data: IconThemeData(color: color, size: 16),
+                  child: icon!,
+                ),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

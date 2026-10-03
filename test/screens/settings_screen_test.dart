@@ -86,6 +86,23 @@ void main() {
     expect(find.byKey(const ValueKey('safaeh_drag_handle')), findsNothing);
   });
 
+  testWidgets('advanced groups start collapsed', (tester) async {
+    usePhoneTestSurface(tester);
+
+    await pumpApp(tester, await materialApp(const SettingsPage()));
+
+    expect(find.text('Advanced'), findsWidgets);
+    expect(find.text('Bottom dialog bars'), findsNothing);
+    expect(find.text('Animation duration'), findsNothing);
+    expect(find.text('Validate inputs'), findsNothing);
+
+    await tester.tap(find.text('Advanced').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bottom dialog bars'), findsOneWidget);
+    expect(find.text('Animation duration'), findsNothing);
+  });
+
   testWidgets('theme color uses a flat color list', (tester) async {
     usePhoneTestSurface(tester);
 

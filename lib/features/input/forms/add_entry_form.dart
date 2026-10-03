@@ -318,16 +318,30 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
         settings.showBLETimeTrustDialog &&
         record.time.difference(DateTime.now()).inHours.abs() > 5) {
       unawaited(() async {
+        final warning = 'warnBLETimeSus'.tr(
+          namedArgs: {
+            'hours': '${record.time.difference(DateTime.now()).inHours}',
+          },
+        );
         final confirmed = await showSafaehConfirm(
           context: context,
           title: 'bluetoothInput'.tr(),
-          content: 'warnBLETimeSus'.tr(
-            namedArgs: {
-              'hours': '${record.time.difference(DateTime.now()).inHours}',
-            },
-          ),
+          content: warning,
           confirmLabel: 'btnConfirm'.tr(),
-          cancelLabel: 'dontShowAgain'.tr(),
+          contentBuilder: (context, style) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(warning, style: style),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  onPressed: () => safaehPop(context, false),
+                  child: Text('dontShowAgain'.tr()),
+                ),
+              ),
+            ],
+          ),
         );
         if (confirmed != false || !mounted) return;
         await context.updateSetting(showBleTimeTrustDialogSetting, false);

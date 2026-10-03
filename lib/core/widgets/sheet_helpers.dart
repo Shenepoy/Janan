@@ -28,15 +28,13 @@ Future<T?> showOptionPickerSheet<T>(
   double? maxHeight,
   bool centerInFullViewport = true,
 }) =>
-    // The body owns the phone title, while the host owns the tablet header.
-    // This is the same title placement used by Hisab's option sheets.
     showResponsiveSheet<T>(
       context: context,
-      title: isWideModal(context) ? title : null,
+      title: title,
       maxHeight: maxHeight,
       centerInFullViewport: centerInFullViewport,
       child: SafaehTilePickerBody<T>(
-        title: title,
+        showTitleInBody: false,
         options: [
           for (final option in options)
             SafaehTileOption<T>(

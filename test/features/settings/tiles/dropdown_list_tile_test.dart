@@ -54,7 +54,7 @@ void main() {
       title: const Text('test title'),
       onChanged: (int? newValue) {
         callCount += 1;
-        expect(newValue, 5);
+        expect(newValue, 1);
       },
       items: [
         for (int i = 0; i < 10; i++)
@@ -66,8 +66,8 @@ void main() {
     await tester.tap(find.text('option 3'));
     await tester.pumpAndSettle();
 
-    expect(find.text('option 5'), findsOneWidget);
-    await tester.tap(find.text('option 5'));
+    expect(find.text('option 1'), findsOneWidget);
+    await tester.tap(find.text('option 1'));
     await tester.pumpAndSettle();
 
     expect(callCount, 1);
