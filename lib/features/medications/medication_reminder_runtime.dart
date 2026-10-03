@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:blood_pressure_app/domain/domain.dart';
-import 'package:blood_pressure_app/features/medications/medicine_name.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_plan.dart';
 import 'package:blood_pressure_app/features/medications/medication_timezone_database.dart';
+import 'package:blood_pressure_app/features/medications/medicine_name.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -76,7 +76,105 @@ Map<String, String> medicationReminderWidgetLabels() => {
   'now': _reminderText('reminderWidgetNow', 'now'),
   'hourUnit': _reminderText('reminderWidgetHourUnit', 'h'),
   'minuteUnit': _reminderText('reminderWidgetMinuteUnit', 'm'),
+  'showsAll': _reminderText('homeWidgetShowsAll', 'All medicines'),
 };
+
+/// One widget view for every choice the Android configure screen can pin.
+Map<String, Object> medicationWidgetCatalog(
+  List<PlannedDose> open, {
+  required bool showAll,
+  required List<MedicationSchedule> schedules,
+  Map<String, String>? labels,
+}) {
+  final widgetLabels = labels ?? medicationReminderWidgetLabels();
+  final choices = <Map<String, String>>[
+    {'id': '', 'name': widgetLabels['showsAll'] ?? 'All medicines'},
+  ];
+  final seen = <String>{''};
+  void addChoice(String id, String name) {
+    final scheduleId = id.trim();
+    if (scheduleId.isEmpty || !seen.add(scheduleId)) return;
+    final label = name.trim().isEmpty ? scheduleId : name.trim();
+    choices.add({'id': scheduleId, 'name': label});
+  }
+
+  final colors = <String, int>{};
+  for (final schedule in schedules) {
+    final id = schedule.id;
+    if (id == null) continue;
+    addChoice(id, schedule.medicine.designation);
+    final color = schedule.medicine.color;
+    if (color != null && color != 0) colors[id] = color;
+  }
+  for (final dose in open) {
+    addChoice(dose.scheduleId, dose.name);
+    if (dose.color != 0) colors.putIfAbsent(dose.scheduleId, () => dose.color);
+  }
+  return {
+    'choices': choices,
+    'views': {
+      for (final choice in choices)
+        choice['id']!: _widgetView(
+          selectReminderDoses(
+            open,
+            showAll: showAll,
+            scheduleId: choice['id']!,
+          ),
+          widgetLabels,
+          pinnedName: choice['id']!.isEmpty ? '' : choice['name']!,
+          pinnedColor: colors[choice['id']],
+        ),
+    },
+  };
+}
+
+Map<String, Object> _widgetView(
+  List<PlannedDose> selected,
+  Map<String, String> labels, {
+  String pinnedName = '',
+  int? pinnedColor,
+}) {
+  final rings = stackReminderRings(selected);
+  final primary = rings.isEmpty ? null : rings.first;
+  if (primary == null) {
+    final view = Map<String, Object>.from(labels);
+    final name = pinnedName.trim();
+    if (name.isNotEmpty) {
+      view['name'] = name;
+      view['shortName'] = compactMedicineName(name);
+      if (pinnedColor != null && pinnedColor != 0) view['color'] = pinnedColor;
+    }
+    return view;
+  }
+  return <String, Object>{
+    ...labels,
+    'name': primary.doses.first.name,
+    'shortName': compactMedicineName(primary.doses.first.name),
+    'color': primary.doses.first.color,
+    'scheduledAtMs': primary.targetAt.millisecondsSinceEpoch,
+    'status': primary.doses.first.status,
+    'rings': [
+      for (final ring in rings)
+        {
+          'dotted': ring.sharesTimer,
+          'scheduledAtMs': ring.doses
+              .map((dose) => dose.targetAt)
+              .reduce((a, b) => a.isAfter(b) ? a : b)
+              .millisecondsSinceEpoch,
+          'status': ring.doses.first.status,
+          'doses': [
+            for (final dose in ring.doses)
+              {
+                'name': dose.name,
+                'color': dose.color,
+                'scheduledAtMs': dose.targetAt.millisecondsSinceEpoch,
+                'intervalMs': dose.interval.inMilliseconds,
+              },
+          ],
+        },
+    ],
+  };
+}
 
 /// Local notification and Android widget bridge for medication schedules.
 class MedicationReminderRuntime {
@@ -143,10 +241,14 @@ class MedicationReminderRuntime {
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
-      final granted = await android?.requestNotificationsPermission() ?? false;
+      final permissionResult = await android?.requestNotificationsPermission();
+      final notificationsEnabled =
+          await android?.areNotificationsEnabled() ?? permissionResult ?? false;
       final exact = await android?.canScheduleExactNotifications() ?? false;
-      if (!exact) await android?.requestExactAlarmsPermission();
-      return granted;
+      if (notificationsEnabled && !exact) {
+        await android?.requestExactAlarmsPermission();
+      }
+      return notificationsEnabled;
     }
     if (Platform.isIOS) {
       return await _notifications
@@ -157,6 +259,74 @@ class MedicationReminderRuntime {
           false;
     }
     return false;
+  }
+
+  /// Returns the notification and exact-timing access currently granted.
+  Future<
+    ({bool supported, bool notificationsEnabled, bool? exactTimingEnabled})
+  >
+  permissionState() async {
+    await initialize();
+    if (Platform.isAndroid) {
+      final android = _notifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      return (
+        supported: true,
+        notificationsEnabled: await android?.areNotificationsEnabled() ?? false,
+        exactTimingEnabled:
+            await android?.canScheduleExactNotifications() ?? false,
+      );
+    }
+    if (Platform.isIOS) {
+      final ios = _notifications
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      final permissions = await ios?.checkPermissions();
+      return (
+        supported: true,
+        notificationsEnabled:
+            permissions?.isEnabled == true ||
+            permissions?.isProvisionalEnabled == true,
+        exactTimingEnabled: null,
+      );
+    }
+    return (
+      supported: false,
+      notificationsEnabled: false,
+      exactTimingEnabled: null,
+    );
+  }
+
+  /// Opens the operating system page for Janan's notification permission.
+  Future<void> openNotificationSettings() async {
+    await initialize();
+    if (Platform.isAndroid) {
+      await _notifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.openAppNotificationSettings();
+    } else if (Platform.isIOS) {
+      await _notifications
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >()
+          ?.openAppNotificationSettings();
+    }
+  }
+
+  /// Opens Android's exact-alarm access page when access is unavailable.
+  Future<void> requestExactAlarmPermission() async {
+    await initialize();
+    if (!Platform.isAndroid) return;
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.requestExactAlarmsPermission();
   }
 
   Future<bool> get launchedFromNotification async {
@@ -332,11 +502,11 @@ class MedicationReminderRuntime {
     await cancelSnooze(occurrenceId);
   }
 
-  /// Shares the open doses with the Android countdown widget.
+  /// Shares a view per medicine so each home-screen widget can pin its own.
   Future<void> updateWidget(
     List<DoseOccurrence> occurrences, {
     bool showAll = true,
-    String homeScheduleId = '',
+    List<MedicationSchedule> schedules = const [],
   }) async {
     if (!Platform.isAndroid) return;
     final now = DateTime.now();
@@ -344,48 +514,11 @@ class MedicationReminderRuntime {
       for (final occurrence in occurrences)
         if (_plannedDose(occurrence, now) case final dose?) dose,
     ]..sort((a, b) => a.targetAt.compareTo(b.targetAt));
-    final selected = selectReminderDoses(
-      open,
-      showAll: showAll,
-      scheduleId: homeScheduleId,
-    );
-    final rings = stackReminderRings(selected);
-    final widgetLabels = medicationReminderWidgetLabels();
-    final primary = rings.isEmpty ? null : rings.first;
-    final items = primary == null
-        ? [widgetLabels]
-        : [
-            {
-              ...widgetLabels,
-              'name': primary.doses.first.name,
-              'shortName': compactMedicineName(primary.doses.first.name),
-              'color': primary.doses.first.color,
-              'scheduledAtMs': primary.targetAt.millisecondsSinceEpoch,
-              'status': primary.doses.first.status,
-              'rings': [
-                for (final ring in rings)
-                  {
-                    'dotted': ring.sharesTimer,
-                    'scheduledAtMs': ring.doses
-                        .map((dose) => dose.targetAt)
-                        .reduce((a, b) => a.isAfter(b) ? a : b)
-                        .millisecondsSinceEpoch,
-                    'status': ring.doses.first.status,
-                    'doses': [
-                      for (final dose in ring.doses)
-                        {
-                          'name': dose.name,
-                          'color': dose.color,
-                          'scheduledAtMs': dose.targetAt.millisecondsSinceEpoch,
-                        },
-                    ],
-                  },
-              ],
-            },
-          ];
     try {
       await _widgetChannel.invokeMethod<void>('update', {
-        'summary': jsonEncode(items),
+        'summary': jsonEncode(
+          medicationWidgetCatalog(open, showAll: showAll, schedules: schedules),
+        ),
       });
     } on MissingPluginException {
       // The widget bridge is Android-only.
@@ -462,10 +595,15 @@ class MedicationReminderRuntime {
     final raw = occurrence.schedule.medicine.color;
     return PlannedDose(
       scheduleId: occurrence.schedule.id ?? '',
+      medicineId: occurrence.schedule.medicineId,
       targetAt: target,
       color: raw == null || raw == 0 ? 0xff92dccf : raw,
       name: occurrence.schedule.medicine.designation,
       status: status,
+      interval: scheduledDoseInterval(
+        occurrence.schedule,
+        occurrence.scheduledAt,
+      ),
     );
   }
 
@@ -489,7 +627,13 @@ class MedicationReminderRuntime {
     final scheduleId = parts.sublist(0, parts.length - 2).join('.');
     return (
       scheduleId: scheduleId,
-      scheduledAt: DateTime(day.year, day.month, day.day, minute ~/ 60, minute % 60),
+      scheduledAt: DateTime(
+        day.year,
+        day.month,
+        day.day,
+        minute ~/ 60,
+        minute % 60,
+      ),
     );
   }
 

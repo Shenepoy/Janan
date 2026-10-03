@@ -9,10 +9,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import '../../util.dart';
 import 'record_formatter_test.dart';
 
 void main() {
-  setUpAll(() => initializeDateFormatting('en'));
+  setUpAll(() {
+    loadTestTranslations();
+    return initializeDateFormatting('en');
+  });
 
   final columns = ExportColumnsManager().resolveColumns(
     ExportPreset.appPdf.columns,
@@ -31,7 +35,7 @@ void main() {
     columns: columns,
   );
 
-  test('builds one table row per entry in oldest-first order', () {
+  test('builds table rows newest first without changing input order', () {
     final early = mockEntry(
       time: DateTime(2024, 1, 1, 8),
       sys: 120,
@@ -49,9 +53,16 @@ void main() {
     final content = contentOf([early, late]);
 
     expect(content.rows, hasLength(2));
-    expect(content.rows.first[1], '120');
-    expect(content.rows.last[1], '130');
-    expect(content.rows.first[4], 'morning');
+    expect(content.rows.first[1], '130');
+    expect(content.rows.last[1], '120');
+    expect(content.rows.first[4], 'evening');
+    expect(content.rows.last[4], 'morning');
+    expect(content.chartPoints.map((point) => point.time), [
+      DateTime(2024, 1, 1, 8),
+      DateTime(2024, 1, 3, 20),
+    ]);
+    expect(content.chartPoints.first.systolic, 120);
+    expect(content.chartPoints.last.systolic, 130);
     expect(content.statistics.count, 2);
   });
 
@@ -63,10 +74,45 @@ void main() {
     final content = contentOf([firstMorning, firstEvening, nextDay]);
 
     expect(content.rowDays, [
-      DateTime(2024, 1, 1),
-      DateTime(2024, 1, 1),
       DateTime(2024, 1, 2),
+      DateTime(2024, 1, 1),
+      DateTime(2024, 1, 1),
     ]);
+  });
+
+  test('sorts arbitrary input before selecting the latest reading', () {
+    final newer = mockEntry(
+      time: DateTime(2024, 3, 3, 18),
+      sys: 140,
+      dia: 90,
+      pul: 80,
+    );
+    final older = mockEntry(
+      time: DateTime(2024, 3, 1, 8),
+      sys: 100,
+      dia: 60,
+      pul: 60,
+    );
+    final input = [newer, older];
+    final content = contentOf(input);
+
+    expect(input, [newer, older]);
+    expect(content.rows.first[1], '140');
+    expect(content.rows.last[1], '100');
+    expect(content.statistics.latest!.sys, '140');
+    expect(content.title, contains('2024-03-01'));
+    expect(content.title, contains('2024-03-03'));
+  });
+
+  test('shows fractional daily averages instead of rounding down to zero', () {
+    final entries = [
+      for (var i = 0; i < 8; i++)
+        mockEntry(time: DateTime(2024, 1, 1 + i * 4), sys: 120, dia: 80),
+    ];
+    final content = contentOf(entries);
+
+    expect(content.statistics.measurementsPerDay, closeTo(8 / 28, .0001));
+    expect(content.statistics.activityLine, '8 readings · 0.3 per day');
   });
 
   test('formats pressures in the preferred unit', () {
@@ -105,9 +151,9 @@ void main() {
     );
     final content = contentOf([older, newer]);
 
-    expect(content.statistics.table[1], ['average', '120', '75', '70']);
-    expect(content.statistics.table[2], ['maximum', '140', '90', '80']);
-    expect(content.statistics.table[3], ['minimum', '100', '60', '60']);
+    expect(content.statistics.table[1], ['Average', '120', '75', '70']);
+    expect(content.statistics.table[2], ['Maximum', '140', '90', '80']);
+    expect(content.statistics.table[3], ['Minimum', '100', '60', '60']);
     expect(content.statistics.latest, isNotNull);
     expect(content.statistics.latest!.sys, '140');
     expect(content.statistics.latest!.dia, '90');

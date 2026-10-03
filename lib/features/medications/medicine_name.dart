@@ -5,30 +5,17 @@ const medicineNameLimit = 8;
 
 /// Short label for a countdown.
 ///
-/// The script of [name] chooses the cutoff. Latin, Greek, and Cyrillic names
-/// of several words become initials. Arabic, Hebrew, Tamil, and Chinese names
-/// stay in that script and are cut with an ellipsis. [wide] is the larger
-/// in-app timer.
+/// The script of [name] chooses the cutoff. Anything longer is cut with an
+/// ellipsis. [wide] is the larger in-app timer.
 String compactMedicineName(String name, {int? limit, bool wide = false}) {
   final trimmed = name.trim().replaceAll(RegExp(r'\s+'), ' ');
   if (trimmed.isEmpty) return trimmed;
   final resolved = limit ?? _nameLimit(trimmed) * (wide ? 2 : 1);
   if (trimmed.characters.length <= resolved) return trimmed;
-  final words = trimmed.split(' ');
-  if (words.length > 1 && words.every(_wordUsesInitials)) {
-    final initials = words
-        .take(3)
-        .map((word) => word.characters.first.toUpperCase())
-        .join();
-    if (initials.characters.length <= resolved) return initials;
-  }
   final keep = resolved - 1;
   if (keep <= 0) return '…';
   return '${trimmed.characters.take(keep)}…';
 }
-
-bool _wordUsesInitials(String word) =>
-    word.isNotEmpty && _script(word.characters.first) == _Script.cased;
 
 int _nameLimit(String name) {
   var script = _Script.cased;

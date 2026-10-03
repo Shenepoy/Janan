@@ -612,6 +612,11 @@ class _BleLaunchSyncAttachedPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
+    // AppBar actions sit on the end edge. Anchor the panel there so Arabic
+    // (RTL) grows the card inward instead of off the leading side.
+    final direction = Directionality.of(context);
+    final topEnd = AlignmentDirectional.topEnd.resolve(direction);
+    final bottomEnd = AlignmentDirectional.bottomEnd.resolve(direction);
     return AnimatedBuilder(
       animation: transition,
       builder: (context, _) => Stack(
@@ -627,17 +632,17 @@ class _BleLaunchSyncAttachedPanel extends StatelessWidget {
             ).modalBarrierDismissLabel,
           ),
           Align(
-            alignment: Alignment.topLeft,
+            alignment: topEnd,
             child: CompositedTransformFollower(
               link: view.indicatorLink,
               showWhenUnlinked: false,
-              targetAnchor: Alignment.bottomRight,
-              followerAnchor: Alignment.topRight,
+              targetAnchor: bottomEnd,
+              followerAnchor: topEnd,
               offset: const Offset(0, 12),
               child: Opacity(
                 opacity: transition.value,
                 child: Transform.scale(
-                  alignment: Alignment.topRight,
+                  alignment: topEnd,
                   scale: 0.9 + transition.value * 0.1,
                   child: SizedBox(
                     width: screenWidth < 444 ? screenWidth - 24 : 420,

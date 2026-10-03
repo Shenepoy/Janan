@@ -67,16 +67,50 @@ void main() {
     );
   });
 
-  test('one medicine fills the remaining slots with later dates', () {
+  test('one medicine keeps only the next later dose', () {
     final featured = dose('lisinopril', DateTime(2026, 10, 3, 7, 49));
     final doses = [
       for (var day = 3; day <= 9; day++)
         dose('lisinopril', DateTime(2026, 10, day, 7, 49)),
     ];
 
-    final nextUp = nextUpDoseOccurrences(doses, now: now, featured: featured);
+    final nextUp = nextUpDoseOccurrences(
+      doses,
+      now: now,
+      featured: featured,
+      limit: 10,
+    );
 
-    expect(nextUp.map((dose) => dose.scheduledAt.day), [4, 5, 6, 7]);
+    expect(nextUp.map((dose) => dose.scheduledAt.day), [4]);
+  });
+
+  test('each medicine appears at most twice', () {
+    final featured = dose('lisinopril', DateTime(2026, 10, 3, 7, 49));
+    final doses = [
+      featured,
+      for (var day = 4; day <= 8; day++)
+        dose('lisinopril', DateTime(2026, 10, day, 7, 49)),
+      for (var day = 3; day <= 8; day++)
+        dose('metformin', DateTime(2026, 10, day, 8, 42)),
+    ];
+
+    final nextUp = nextUpDoseOccurrences(
+      doses,
+      now: now,
+      featured: featured,
+      limit: 10,
+    );
+
+    expect(
+      nextUp.where((dose) => dose.schedule.medicineId == 'lisinopril').length,
+      1,
+    );
+    expect(
+      nextUp.where((dose) => dose.schedule.medicineId == 'metformin').map(
+        (dose) => dose.scheduledAt.day,
+      ),
+      [3, 4],
+    );
   });
 
   test('recorded doses stay out of the list', () {

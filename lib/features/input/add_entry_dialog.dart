@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
 import 'package:blood_pressure_app/components/confirm_deletion_dialog.dart';
 import 'package:blood_pressure_app/components/fullscreen_dialog.dart';
 import 'package:blood_pressure_app/features/input/forms/add_entry_form.dart';
@@ -69,30 +70,41 @@ class _AddEntryDialogState extends ConsumerState<AddEntryDialog> with Loggable {
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: false,
-    // Popping though system buttons
-    onPopInvokedWithResult: (didPop, result) async {
-      if (didPop) return;
-      if (await shouldPop() && context.mounted) Navigator.pop(context, result);
-    },
-    child: FullscreenDialog(
-      actionButtonText: 'btnSave'.tr(),
-      actionAsFab: true,
-      onActionButtonPressed: _onSavePressed,
-      // Popping though in-app buttons
-      canClose: shouldPop,
-      bottomAppBar: ref.watch(appSettingsProvider).bottomAppBars,
-      body: AddMultipleEntriesForm(
-        key: formKey,
-        initialValue: widget.initialRecord == null
-            ? null
-            : [widget.initialRecord!],
-        showBluetooth: widget.initialRecord == null,
-        kind: widget.kind ?? AddEntryKind.fromEntry(widget.initialRecord),
+  Widget build(BuildContext context) {
+    final kind = widget.kind ?? AddEntryKind.fromEntry(widget.initialRecord);
+    final burstKind = switch (kind) {
+      AddEntryKind.bloodPressure => FabBurstKind.hearts,
+      AddEntryKind.medicine => FabBurstKind.bills,
+      AddEntryKind.weight => FabBurstKind.leaves,
+    };
+    return PopScope(
+      canPop: false,
+      // Popping though system buttons
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (await shouldPop() && context.mounted) {
+          Navigator.pop(context, result);
+        }
+      },
+      child: FullscreenDialog(
+        actionButtonText: 'btnSave'.tr(),
+        actionAsFab: true,
+        fabBurstKind: burstKind,
+        onActionButtonPressed: _onSavePressed,
+        // Popping though in-app buttons
+        canClose: shouldPop,
+        bottomAppBar: ref.watch(appSettingsProvider).bottomAppBars,
+        body: AddMultipleEntriesForm(
+          key: formKey,
+          initialValue: widget.initialRecord == null
+              ? null
+              : [widget.initialRecord!],
+          showBluetooth: widget.initialRecord == null,
+          kind: kind,
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// Shows a dialog to input a blood pressure measurement or a medication.

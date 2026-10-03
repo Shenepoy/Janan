@@ -316,7 +316,7 @@ const homeBpChartSetting = EnumSetting(
   'home_bp_chart',
   defaultValue: 'dailyRange',
   titleKey: 'chartDailyRange',
-  options: ['dailyRange', 'classification', 'pulsePressure'],
+  options: ['dailyRange', 'classification', 'pulsePressure', 'medicineTiming'],
   useRawLabels: true,
   visible: false,
   dependsOn: 'blood_pressure_enabled',
@@ -671,13 +671,6 @@ const showAllReminderRingsSetting = BoolSetting(
   enabledWhen: true,
 );
 
-const homeWidgetScheduleIdSetting = StringSetting(
-  'home_widget_schedule_id',
-  defaultValue: '',
-  titleKey: 'homeWidgetShows',
-  visible: false,
-);
-
 const debugDataServerSetting = BoolSetting(
   'debug_data_server',
   defaultValue: false,
@@ -896,7 +889,6 @@ SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
     overdueReminderCountSetting,
     overdueReminderIntervalSetting,
     showAllReminderRingsSetting,
-    homeWidgetScheduleIdSetting,
     debugDataServerSetting,
     bluetoothDevicesAction,
     useHealthConnectSetting,

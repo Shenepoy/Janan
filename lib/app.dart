@@ -20,6 +20,7 @@ import 'package:blood_pressure_app/features/health_connect/health_connect_screen
 import 'package:blood_pressure_app/features/health_connect/sync_model.dart';
 import 'package:blood_pressure_app/features/health_connect/weight_sync_model.dart';
 import 'package:blood_pressure_app/features/input/forms/add_entry_form.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminder_providers.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_runtime.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_screen.dart';
@@ -360,8 +361,9 @@ class _AppState extends ConsumerState<App> with Loggable {
       if (hc.medicineFeatureEnabled) {
         final reminderRepo = ref.read(medicationScheduleRepositoryProvider);
         final occurrences = await upcomingDoseOccurrences(reminderRepo);
+        final schedules = await reminderRepo.getAll();
         await MedicationReminderRuntime.instance.syncSchedules(
-          await reminderRepo.getAll(),
+          schedules,
           snoozedOccurrences: occurrences
               .where((occurrence) => occurrence.status == 'snoozed')
               .toList(),
@@ -374,7 +376,7 @@ class _AppState extends ConsumerState<App> with Loggable {
         await MedicationReminderRuntime.instance.updateWidget(
           occurrences,
           showAll: hc.showAllReminderRings,
-          homeScheduleId: hc.homeWidgetScheduleId,
+          schedules: schedules,
         );
       } else {
         await MedicationReminderRuntime.instance.syncSchedules(const []);
@@ -474,6 +476,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
       );
       ref.invalidate(homeMedicationOccurrencesProvider);
       ref.invalidate(todayMedicationOccurrencesProvider);
+      ref.invalidate(medicationDayProvider);
     });
   }
 
@@ -506,8 +509,9 @@ class _AppRootState extends ConsumerState<_AppRoot> {
       final settings = ref.read(appSettingsProvider);
       final repository = ref.read(medicationScheduleRepositoryProvider);
       final occurrences = await upcomingDoseOccurrences(repository);
+      final schedules = await repository.getAll();
       await runtime.syncSchedules(
-        await repository.getAll(),
+        schedules,
         snoozedOccurrences: occurrences
             .where((occurrence) => occurrence.status == 'snoozed')
             .toList(),
@@ -520,7 +524,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
       await runtime.updateWidget(
         occurrences,
         showAll: settings.showAllReminderRings,
-        homeScheduleId: settings.homeWidgetScheduleId,
+        schedules: schedules,
       );
     } catch (error, stack) {
       debugPrint('Medication reminder refresh failed: $error\n$stack');
@@ -557,8 +561,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
           previous.overdueReminderCount != next.overdueReminderCount ||
           previous.overdueReminderIntervalMinutes !=
               next.overdueReminderIntervalMinutes ||
-          previous.showAllReminderRings != next.showAllReminderRings ||
-          previous.homeWidgetScheduleId != next.homeWidgetScheduleId;
+          previous.showAllReminderRings != next.showAllReminderRings;
       if (remindersChanged) {
         unawaited(_refreshMedicationRuntime(next.medicineFeatureEnabled));
       }
@@ -683,6 +686,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
         ),
       ),
       snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );

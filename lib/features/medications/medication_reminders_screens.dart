@@ -2,30 +2,31 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
+import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart';
 import 'package:blood_pressure_app/core/repository/repository_providers.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
-import 'package:blood_pressure_app/features/medications/medicine_name.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_plan.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminder_providers.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_runtime.dart';
-import 'package:blood_pressure_app/features/settings/registry.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminder_settings_screen.dart';
+import 'package:blood_pressure_app/features/medications/medicine_name.dart';
 import 'package:blood_pressure_app/features/settings/add_medication_dialog.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
+import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_date_range_sheet.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:safaeh/safaeh.dart';
 
-final medicationSchedulesProvider = FutureProvider<List<MedicationSchedule>>(
-  (ref) => ref.watch(medicationScheduleRepositoryProvider).getAll(),
-);
-
-final todayMedicationOccurrencesProvider = FutureProvider<List<DoseOccurrence>>(
-  (ref) => ref
-      .watch(medicationScheduleRepositoryProvider)
-      .getOccurrences(DateTime.now()),
-);
+part 'medication_modal_scrim_painter.dart';
+part 'medication_reminder_dose_action_buttons.dart';
+part 'medication_reminder_glass_bottom_action.dart';
+part 'medication_reminder_day_page_header.dart';
+part 'medication_reminder_day_log_page.dart';
+part 'medication_reminder_collapsed_taken_log.dart';
+part 'medication_reminder_day_log_card.dart';
 
 Future<List<DoseOccurrence>> upcomingDoseOccurrences(
   MedicationScheduleRepository repository, {
@@ -52,7 +53,7 @@ final homeMedicationOccurrencesProvider = FutureProvider<List<DoseOccurrence>>((
   }
   final repository = ref.watch(medicationScheduleRepositoryProvider);
   final occurrences = await upcomingDoseOccurrences(repository);
-  await _pushReminderWidget(occurrences, settings);
+  await _pushReminderWidget(repository, occurrences, settings);
   return occurrences;
 });
 
@@ -72,17 +73,18 @@ Future<void> _syncMedicationReminders(
       minutes: settings.overdueReminderIntervalMinutes,
     ),
   );
-  await _pushReminderWidget(occurrences, settings);
+  await _pushReminderWidget(repository, occurrences, settings);
 }
 
 Future<void> _pushReminderWidget(
+  MedicationScheduleRepository repository,
   List<DoseOccurrence> occurrences,
   AppSettings settings,
-) {
-  return MedicationReminderRuntime.instance.updateWidget(
+) async {
+  await MedicationReminderRuntime.instance.updateWidget(
     occurrences,
     showAll: settings.showAllReminderRings,
-    homeScheduleId: settings.homeWidgetScheduleId,
+    schedules: await repository.getAll(),
   );
 }
 
@@ -90,6 +92,22 @@ String _t(String key, String fallback) {
   final translated = key.tr();
   return translated == key ? fallback : translated;
 }
+
+String _scheduleStateLabel(MedicationScheduleState state) => switch (state) {
+  MedicationScheduleState.active => _t('reminderStateActive', 'Active'),
+  MedicationScheduleState.paused => _t('reminderStatePaused', 'Paused'),
+  MedicationScheduleState.ended => _t('reminderStateEnded', 'Ended'),
+};
+
+List<String> _weekdayLabels() => [
+  _t('weekdayMon', 'Mon'),
+  _t('weekdayTue', 'Tue'),
+  _t('weekdayWed', 'Wed'),
+  _t('weekdayThu', 'Thu'),
+  _t('weekdayFri', 'Fri'),
+  _t('weekdaySat', 'Sat'),
+  _t('weekdaySun', 'Sun'),
+];
 
 String _doseTimingLabel(MedicationDoseTiming timing) => switch (timing) {
   MedicationDoseTiming.anytime => _t(
@@ -131,7 +149,8 @@ const _countdownSiren = Color(0xFFFFF6F4);
 
 Color _countdownStateColor(DateTime target, DateTime now) {
   if (!target.isAfter(now)) return _countdownRed;
-  if (target.difference(now) <= const Duration(hours: 1)) return _countdownYellow;
+  if (target.difference(now) <= const Duration(hours: 1))
+    return _countdownYellow;
   return _countdownGreen;
 }
 
@@ -139,23 +158,13 @@ String _formatCompactCountdown(
   Duration remaining, {
   required bool overdue,
   String dueNow = 'now',
-}) {
-  final seconds = remaining.inSeconds.abs();
-  if (seconds == 0) return dueNow;
-  final elapsedMinutes = seconds ~/ 60;
-  final minutes = overdue
-      ? (elapsedMinutes == 0 ? 1 : elapsedMinutes)
-      : (seconds + 59) ~/ 60;
-  final hours = overdue ? minutes ~/ 60 : (minutes + 59) ~/ 60;
-  return minutes >= 60 ? '${hours}h' : '${minutes}m';
-}
+}) => formatCompactCountdown(remaining, overdue: overdue, dueNow: dueNow);
 
 /// Open doses listed under the featured next dose.
 ///
-/// [featured] counts toward [limit]. Each medicine is listed once, at its next
-/// open dose, before any later dose is added. Later doses fill the remaining
-/// slots in time order, so three medicines leave room for two later dates and
-/// a full set of five leaves room for none.
+/// [featured] counts toward [limit] and toward the two doses allowed for its
+/// medicine. Each medicine is listed at its next open dose first. One later
+/// dose can fill a remaining slot, and a third dose of that medicine never does.
 List<DoseOccurrence> nextUpDoseOccurrences(
   List<DoseOccurrence> occurrences, {
   required DateTime now,
@@ -188,11 +197,15 @@ List<DoseOccurrence> nextUpDoseOccurrences(
   final maxRounds =
       byMedicine.values.fold<int>(0, (n, doses) => math.max(n, doses.length)) +
       1;
+  const maxDosesPerMedicine = 2;
   for (var round = 0; round < maxRounds && selected.length < slots; round++) {
     final wave = <DoseOccurrence>[];
     for (final entry in byMedicine.entries) {
-      final index = entry.key == featuredMedicineId ? round - 1 : round;
+      final featuredMedicine = entry.key == featuredMedicineId;
+      final index = featuredMedicine ? round - 1 : round;
+      final alreadyShown = featuredMedicine ? 1 : 0;
       if (index < 0 || index >= entry.value.length) continue;
+      if (alreadyShown + index >= maxDosesPerMedicine) continue;
       wave.add(entry.value[index]);
     }
     if (wave.isEmpty) continue;
@@ -212,6 +225,22 @@ List<DoseOccurrence> nextUpDoseOccurrences(
     return a.id.compareTo(b.id);
   });
   return selected;
+}
+
+/// The next open dose of each medicine, in time order.
+///
+/// Later doses of a medicine already represented stay off the rings.
+List<_DoseCountdown> _oneCountdownPerMedicine(List<_DoseCountdown> sorted) {
+  final seen = <String>{};
+  final kept = <_DoseCountdown>[];
+  for (final countdown in sorted) {
+    final schedule = countdown.occurrence.schedule;
+    final key = schedule.medicineId.isNotEmpty
+        ? schedule.medicineId
+        : (schedule.id ?? schedule.medicine.designation);
+    if (seen.add(key)) kept.add(countdown);
+  }
+  return kept;
 }
 
 bool _deferUpcomingDoseCard(
@@ -234,7 +263,6 @@ bool _deferUpcomingDoseCard(
   });
 }
 
-/// Compact medicine countdown control that opens dose details and actions.
 class MedicationReminderCard extends ConsumerStatefulWidget {
   const MedicationReminderCard({
     super.key,
@@ -255,6 +283,7 @@ class _MedicationReminderCardState
   static const _refreshRate = Duration(seconds: 30);
 
   final _targetLink = LayerLink();
+  final _targetKey = GlobalKey();
   Timer? _ticker;
   DateTime _now = DateTime.now();
 
@@ -276,20 +305,34 @@ class _MedicationReminderCardState
     List<DoseOccurrence> occurrences,
     _DoseCountdown? countdown,
     bool hasSchedules,
+    ShapeBorder buttonShape,
   ) async {
+    final targetRect = _globalRect(_targetKey);
+    final screenSize = MediaQuery.sizeOf(context);
+    final safeInsets = MediaQuery.viewPaddingOf(context);
+    final textDirection = Directionality.of(context);
+    final availableHeight = targetRect == null
+        ? null
+        : widget.opensAbove
+        ? targetRect.top - safeInsets.top - 16
+        : screenSize.height - safeInsets.bottom - targetRect.bottom - 16;
     await showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 360),
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 460),
       pageBuilder: (context, animation, secondaryAnimation) {
         final curve = CurvedAnimation(
           parent: animation,
-          curve: Curves.easeOutBack,
+          curve: Curves.easeOutCubic,
           reverseCurve: Curves.easeInCubic,
         );
         final endIsRight = Directionality.of(context) == ui.TextDirection.ltr;
+        final theme = Theme.of(context);
+        final sourceRadius = buttonShape is RoundedRectangleBorder
+            ? buttonShape.borderRadius.resolve(textDirection).topLeft.x
+            : (targetRect?.shortestSide ?? 56) / 2;
         final topEndAlignment = endIsRight
             ? Alignment.topRight
             : Alignment.topLeft;
@@ -302,48 +345,87 @@ class _MedicationReminderCardState
         final followerAnchor = widget.opensAbove
             ? bottomEndAlignment
             : Alignment.topCenter;
-        final scaleAlignment = widget.opensAbove
-            ? bottomEndAlignment
-            : Alignment.topCenter;
-        return SizedBox.expand(
-          child: Stack(
-            fit: StackFit.expand,
-            clipBehavior: Clip.none,
-            children: [
-              Align(
-                alignment: widget.opensAbove
-                    ? topEndAlignment
-                    : Alignment.topCenter,
-                child: CompositedTransformFollower(
-                  link: _targetLink,
-                  showWhenUnlinked: false,
-                  targetAnchor: targetAnchor,
-                  followerAnchor: followerAnchor,
-                  offset: widget.opensAbove
-                      ? const Offset(0, 8)
-                      : const Offset(0, -16),
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: ScaleTransition(
-                      alignment: scaleAlignment,
-                      scale: Tween<double>(begin: 0.84, end: 1).animate(curve),
-                      child: _MedicationDosePanel(
-                        occurrences: occurrences,
-                        countdown: countdown,
-                        now: _now,
-                        hasSchedules: hasSchedules,
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, _) {
+            final morphProgress = curve.value;
+            final panelRadius = Tween<double>(
+              begin: sourceRadius,
+              end: 26,
+            ).transform(morphProgress);
+            final panelShape = RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(panelRadius),
+              side: BorderSide(color: theme.colorScheme.outlineVariant),
+            );
+            final contentOpacity = Curves.easeOutCubic.transform(
+              ((animation.value - 0.12) / 0.38).clamp(0.0, 1.0),
+            );
+            return SizedBox.expand(
+              child: Stack(
+                fit: StackFit.expand,
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _MedicationModalScrimPainter(
+                          fabRect: targetRect,
+                          fabShape: buttonShape,
+                          textDirection: textDirection,
+                          animation: animation,
+                        ),
+                        child: const SizedBox.expand(),
                       ),
                     ),
                   ),
-                ),
+                  Align(
+                    alignment: widget.opensAbove
+                        ? topEndAlignment
+                        : Alignment.topCenter,
+                    child: CompositedTransformFollower(
+                      link: _targetLink,
+                      showWhenUnlinked: false,
+                      targetAnchor: targetAnchor,
+                      followerAnchor: followerAnchor,
+                      offset: widget.opensAbove
+                          ? Offset.zero
+                          : const Offset(0, 8),
+                      child: ClipPath(
+                        clipper: _MedicationGenieClipper(
+                          progress: morphProgress,
+                          sourceSize: targetRect?.shortestSide ?? 56,
+                          panelRadius: panelRadius,
+                          sourceShape: buttonShape,
+                          textDirection: textDirection,
+                          opensAbove: widget.opensAbove,
+                        ),
+                        child: _MedicationDosePanel(
+                          occurrences: occurrences,
+                          countdown: countdown,
+                          now: _now,
+                          hasSchedules: hasSchedules,
+                          maxHeight: availableHeight,
+                          shape: panelShape,
+                          contentOpacity: contentOpacity,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) =>
           child,
     );
+  }
+
+  Rect? _globalRect(GlobalKey? key) {
+    final renderObject = key?.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) return null;
+    return renderObject.localToGlobal(Offset.zero) & renderObject.size;
   }
 
   @override
@@ -360,7 +442,9 @@ class _MedicationReminderCardState
     final occurrenceList =
         occurrences.asData?.value ?? const <DoseOccurrence>[];
     final active = scheduleList.any((schedule) => schedule.active);
-    final openCountdowns = _DoseCountdown.openFrom(occurrenceList, _now);
+    final openCountdowns = _oneCountdownPerMedicine(
+      _DoseCountdown.openFrom(occurrenceList, _now),
+    );
     final countdown = openCountdowns.firstOrNull;
     final rings = settings.showAllReminderRings
         ? openCountdowns
@@ -373,6 +457,11 @@ class _MedicationReminderCardState
         .where((dose) => dose.status == 'taken' || dose.status == 'skipped')
         .length;
     final color = countdown?.medicineColor(theme) ?? theme.colorScheme.primary;
+    final buttonShape = _medicationFabShape(
+      theme,
+      compact: widget.compact,
+      roundedSquare: settings.roundedReminderButton,
+    );
     final description =
         countdown?.accessibilityText(context) ??
         (active
@@ -389,6 +478,7 @@ class _MedicationReminderCardState
           child: Tooltip(
             message: description,
             child: CompositedTransformTarget(
+              key: _targetKey,
               link: _targetLink,
               child: _MedicationCountdownCircle(
                 countdown: countdown,
@@ -398,7 +488,12 @@ class _MedicationReminderCardState
                 hasSchedules: active,
                 compact: widget.compact,
                 roundedSquare: settings.roundedReminderButton,
-                onTap: () => _openDetails(occurrenceList, countdown, active),
+                onTap: () => _openDetails(
+                  occurrenceList,
+                  countdown,
+                  active,
+                  buttonShape,
+                ),
               ),
             ),
           ),
@@ -533,14 +628,13 @@ class _MedicationCountdownCircle extends StatelessWidget {
     final circleSize = compact ? 56.0 : 136.0;
     final ringPadding = compact ? 2.0 : 7.0;
     final contentPadding = compact ? 2.0 : 13.0;
-    final buttonShape = compact && roundedSquare
-        ? theme.floatingActionButtonTheme.shape ??
-              const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(16)),
-              )
-        : const CircleBorder();
+    final buttonShape = _medicationFabShape(
+      theme,
+      compact: compact,
+      roundedSquare: roundedSquare,
+    );
 
-    return _OverdueSiren(
+    final visual = _OverdueSiren(
       active: overdue,
       builder: (flash) {
         final blink = flash >= 0.5 ? 1.0 : 0.0;
@@ -560,14 +654,7 @@ class _MedicationCountdownCircle extends StatelessWidget {
               markProgress: layers[index].markProgress,
             ),
         ];
-        return Material(
-      color: theme.colorScheme.surfaceContainerHigh,
-      shape: buttonShape,
-      elevation: theme.floatingActionButtonTheme.elevation ?? 6,
-      child: InkWell(
-        customBorder: buttonShape,
-        onTap: onTap,
-        child: SizedBox.square(
+        return SizedBox.square(
           dimension: circleSize,
           child: Padding(
             padding: EdgeInsets.all(ringPadding),
@@ -669,10 +756,34 @@ class _MedicationCountdownCircle extends StatelessWidget {
               ),
             ),
           ),
+        );
+      },
+    );
+
+    if (!compact) {
+      return Material(
+        color: theme.colorScheme.surfaceContainerHigh,
+        shape: buttonShape,
+        elevation: theme.floatingActionButtonTheme.elevation ?? 6,
+        child: InkWell(customBorder: buttonShape, onTap: onTap, child: visual),
+      );
+    }
+
+    return AnimatedFloatingActionButton(
+      onPressed: onTap,
+      wiggleChild: false,
+      burstOnPress: false,
+      child: visual,
+      customBuilder: (context, animatedChild, onPressed) => Material(
+        color: theme.colorScheme.surfaceContainerHigh,
+        shape: buttonShape,
+        elevation: theme.floatingActionButtonTheme.elevation ?? 6,
+        child: InkWell(
+          customBorder: buttonShape,
+          onTap: onPressed,
+          child: animatedChild,
         ),
       ),
-    );
-      },
     );
   }
 }
@@ -755,21 +866,21 @@ List<_RingLayer> _reminderRingLayers({
   required bool hasSchedules,
 }) {
   if (rings.isEmpty) {
-    return [
-      _RingLayer(
-        progress: hasSchedules ? 0.12 : 0,
-        color: fallbackColor,
-      ),
-    ];
+    return [_RingLayer(progress: hasSchedules ? 1 : 0, color: fallbackColor)];
   }
   final planned = [
     for (final ring in rings)
       PlannedDose(
         scheduleId: ring.occurrence.schedule.id ?? ring.occurrence.id,
+        medicineId: ring.occurrence.schedule.medicineId,
         targetAt: ring.targetAt,
         color: ring.medicineColor(theme).toARGB32(),
         name: ring.occurrence.schedule.medicine.designation,
         status: ring.occurrence.statusAt(now),
+        interval: scheduledDoseInterval(
+          ring.occurrence.schedule,
+          ring.occurrence.scheduledAt,
+        ),
       ),
   ];
   final groups = stackReminderRings(planned);
@@ -802,9 +913,9 @@ _RingLayer _ringLayer(
         ? [
             for (final dose in group.doses)
               outer
-                  ? _doseRingFraction(dose.targetAt, now)
+                  ? doseRingFraction(dose.targetAt, now, dose.interval)
                   : math.min(
-                      _doseRingFraction(dose.targetAt, now),
+                      doseRingFraction(dose.targetAt, now, dose.interval),
                       _innerOpenCap,
                     ),
           ]
@@ -812,23 +923,10 @@ _RingLayer _ringLayer(
   );
 }
 
-double _doseRingFraction(DateTime target, DateTime now) {
-  if (!target.isAfter(now)) return 1;
-  final remaining = target.difference(now);
-  if (remaining <= const Duration(hours: 1)) {
-    final fraction =
-        1 - remaining.inSeconds / const Duration(hours: 1).inSeconds;
-    return 0.50 + 0.32 * fraction;
-  }
-  const horizon = Duration(hours: 12);
-  final elapsed = 1 - (remaining.inSeconds / horizon.inSeconds).clamp(0.0, 1.0);
-  return (0.08 + 0.40 * elapsed).clamp(0.08, 0.48);
-}
-
 double _groupRingFraction(List<PlannedDose> doses, DateTime now) {
   var least = 1.0;
   for (final dose in doses) {
-    final fraction = _doseRingFraction(dose.targetAt, now);
+    final fraction = doseRingFraction(dose.targetAt, now, dose.interval);
     if (fraction < least) least = fraction;
   }
   return least;
@@ -983,11 +1081,10 @@ class _CountdownRingPainter extends CustomPainter {
       for (final mark in marks)
         if (mark.progress >= _innerOpenCap - 0.01) mark,
     ];
-    final shorter =
-        [
-          for (final mark in marks)
-            if (mark.progress < _innerOpenCap - 0.01) mark,
-        ]..sort((a, b) => b.progress.compareTo(a.progress));
+    final shorter = [
+      for (final mark in marks)
+        if (mark.progress < _innerOpenCap - 0.01) mark,
+    ]..sort((a, b) => b.progress.compareTo(a.progress));
     if (capped.isNotEmpty) {
       final cover = shorter.isEmpty
           ? 0.0
@@ -1120,12 +1217,18 @@ class _MedicationDosePanel extends ConsumerStatefulWidget {
     required this.countdown,
     required this.now,
     required this.hasSchedules,
+    required this.maxHeight,
+    required this.shape,
+    required this.contentOpacity,
   });
 
   final List<DoseOccurrence> occurrences;
   final _DoseCountdown? countdown;
   final DateTime now;
   final bool hasSchedules;
+  final double? maxHeight;
+  final ShapeBorder shape;
+  final double contentOpacity;
 
   @override
   ConsumerState<_MedicationDosePanel> createState() =>
@@ -1175,9 +1278,14 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
         await runtime.scheduleSnooze(occurrence, snoozeUntil);
       }
       final occurrences = await upcomingDoseOccurrences(repository);
-      await _pushReminderWidget(occurrences, ref.read(appSettingsProvider));
+      await _pushReminderWidget(
+        repository,
+        occurrences,
+        ref.read(appSettingsProvider),
+      );
       ref.invalidate(homeMedicationOccurrencesProvider);
       ref.invalidate(todayMedicationOccurrencesProvider);
+      ref.invalidate(medicationDayProvider);
       ref.invalidate(medicationSchedulesProvider);
       if (mounted) Navigator.of(context).pop();
     } finally {
@@ -1189,6 +1297,10 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final media = MediaQuery.sizeOf(context);
+    final maxPanelHeight = math.min(
+      media.height * 0.72,
+      widget.maxHeight ?? double.infinity,
+    );
     final countdown = _countdownForPanel();
     final deferredDose = countdown == null && widget.countdown != null
         ? widget.countdown!.occurrence
@@ -1211,128 +1323,132 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
 
     return SizedBox(
       key: const ValueKey('medicationReminderDosePanel'),
-      width: math.min(media.width - 32, 400),
+      width: math.max(0.0, math.min(media.width - 32, 400.0)),
       child: Material(
         color: theme.colorScheme.surfaceContainerHigh,
         elevation: 12,
         shadowColor: Colors.black.withValues(alpha: 0.35),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(26),
-          side: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
+        shape: widget.shape,
         clipBehavior: Clip.antiAlias,
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: media.height * 0.72),
+          constraints: BoxConstraints(maxHeight: maxPanelHeight),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(14),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
+            child: IgnorePointer(
+              ignoring: widget.contentOpacity < 1,
+              child: Opacity(
+                opacity: widget.contentOpacity,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: Text(
-                        panelTitle,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            panelTitle,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 15,
+                          color: todayRecordedCount > 0
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$todayRecordedCount ${_t('reminderRecordedToday', 'recorded today')}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 9),
+                    if (countdown == null && deferredDose != null)
+                      _DeferredDoseSummary(
+                        occurrence: deferredDose,
+                        now: widget.now,
+                      )
+                    else if (countdown == null)
+                      _MedicationPanelEmpty(hasSchedules: widget.hasSchedules)
+                    else ...[
+                      _MedicationDoseActionCard(
+                        countdown: countdown,
+                        now: widget.now,
+                        saving: _saving,
+                        onTaken: () => _setStatus('taken'),
+                        onSnooze: () => _setStatus('snoozed'),
+                        onSkip: () => _setStatus('skipped'),
+                      ),
+                    ],
+                    if (visibleLater.isNotEmpty) ...[
+                      const SizedBox(height: 13),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                          _t('reminderNextUp', 'Next up').toUpperCase(),
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.4,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.check_circle_outline_rounded,
-                      size: 15,
-                      color: todayRecordedCount > 0
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$todayRecordedCount ${_t('reminderRecordedToday', 'recorded today')}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      const SizedBox(height: 5),
+                      for (final dose in visibleLater)
+                        _LaterDoseLine(dose: dose, now: widget.now),
+                    ],
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 44),
+                              visualDensity: VisualDensity.compact,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: () => Navigator.of(
+                              context,
+                            ).pushNamed('/add-medicine'),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: Text(
+                              _t('reminderLogManualDose', 'Log Manual Dose'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(0, 44),
+                              visualDensity: VisualDensity.compact,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: () => Navigator.of(
+                              context,
+                            ).pushNamed('/medications/today'),
+                            icon: const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 16,
+                            ),
+                            label: Text(_t('reminderCalendar', 'Calendar')),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 9),
-                if (countdown == null && deferredDose != null)
-                  _DeferredDoseSummary(
-                    occurrence: deferredDose,
-                    now: widget.now,
-                  )
-                else if (countdown == null)
-                  _MedicationPanelEmpty(hasSchedules: widget.hasSchedules)
-                else ...[
-                  _MedicationDoseActionCard(
-                    countdown: countdown,
-                    now: widget.now,
-                    saving: _saving,
-                    onTaken: () => _setStatus('taken'),
-                    onSnooze: () => _setStatus('snoozed'),
-                    onSkip: () => _setStatus('skipped'),
-                  ),
-                ],
-                if (visibleLater.isNotEmpty) ...[
-                  const SizedBox(height: 13),
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      _t('reminderNextUp', 'Next up').toUpperCase(),
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  for (final dose in visibleLater)
-                    _LaterDoseLine(dose: dose, now: widget.now),
-                ],
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 44),
-                          visualDensity: VisualDensity.compact,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        onPressed: () =>
-                            Navigator.of(context).pushNamed('/add-medicine'),
-                        icon: const Icon(Icons.add, size: 18),
-                        label: Text(
-                          _t('reminderLogManualDose', 'Log Manual Dose'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 44),
-                          visualDensity: VisualDensity.compact,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        onPressed: () => Navigator.of(
-                          context,
-                        ).pushNamed('/medications/today'),
-                        icon: const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 16,
-                        ),
-                        label: Text(_t('reminderCalendar', 'Calendar')),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -1366,42 +1482,56 @@ class _DeferredDoseSummary extends StatelessWidget {
       overdue: false,
     );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
-      child: Row(
-        children: [
-          Icon(Icons.check_circle_outline_rounded, color: color, size: 21),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${occurrence.schedule.medicine.designation} · '
-                  '${_t('reminderStatusTaken', 'Taken')} · '
-                  '${_t('reminderTodayShort', 'Today')}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _openMedicineReminder(context, occurrence.schedule),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle_outline_rounded, color: color, size: 21),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${occurrence.schedule.medicine.designation} · '
+                    '${_t('reminderStatusTaken', 'Taken')} · '
+                    '${_t('reminderTodayShort', 'Today')}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                Text(
-                  '${_t('reminderNextDose', 'Next dose')} · '
-                  '${_doseDayLabel(context, scheduledAt, now)} · $time · $remaining',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  Text(
+                    '${_t('reminderNextDose', 'Next dose')} · '
+                    '${_doseDayLabel(context, scheduledAt, now)} · $time · $remaining',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
+
+void _openMedicineReminder(BuildContext context, MedicationSchedule schedule) {
+  Navigator.pop(context);
+  Navigator.push<void>(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) => MedicationScheduleEditorScreen(initial: schedule),
+    ),
+  );
 }
 
 class _MedicationDoseActionCard extends StatelessWidget {
@@ -1446,13 +1576,28 @@ class _MedicationDoseActionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              '${medicine.designation} · ${formatMedicationDose(occurrence.schedule.doseAmount, occurrence.schedule.doseUnit)}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.onSurface,
-                fontWeight: FontWeight.w800,
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _openMedicineReminder(context, occurrence.schedule),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${medicine.designation} · ${formatMedicationDose(occurrence.schedule.doseAmount, occurrence.schedule.doseUnit)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 5),
@@ -1479,78 +1624,11 @@ class _MedicationDoseActionCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 9),
-            _ConnectedDoseActions(
+            _DoseActionButtons(
               saving: saving,
               onTaken: onTaken,
               onSnooze: onSnooze,
               onSkip: onSkip,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Done, snooze, and skip as one square bar with shared edges.
-class _ConnectedDoseActions extends StatelessWidget {
-  const _ConnectedDoseActions({
-    required this.saving,
-    required this.onTaken,
-    required this.onSnooze,
-    required this.onSkip,
-  });
-
-  final bool saving;
-  final VoidCallback onTaken;
-  final VoidCallback onSnooze;
-  final VoidCallback onSkip;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final outline = theme.colorScheme.outline.withValues(alpha: 0.55);
-    final enabled = !saving;
-    return DecoratedBox(
-      decoration: BoxDecoration(border: Border.all(color: outline)),
-      child: SizedBox(
-        height: 40,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: _DoseActionSegment(
-                onPressed: enabled ? onTaken : null,
-                background: theme.colorScheme.primary,
-                foreground: theme.colorScheme.onPrimary,
-                icon: saving
-                    ? SizedBox.square(
-                        dimension: 15,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: theme.colorScheme.onPrimary,
-                        ),
-                      )
-                    : const Icon(Icons.check, size: 17),
-                label: _t('reminderDoneAction', 'Done'),
-              ),
-            ),
-            ColoredBox(color: outline, child: const SizedBox(width: 1)),
-            Expanded(
-              child: _DoseActionSegment(
-                onPressed: enabled ? onSnooze : null,
-                foreground: theme.colorScheme.onSurface,
-                icon: const Icon(Icons.alarm_outlined, size: 16),
-                label: _t('reminderSnoozeShortAction', '+10m'),
-              ),
-            ),
-            ColoredBox(color: outline, child: const SizedBox(width: 1)),
-            Expanded(
-              child: _DoseActionSegment(
-                onPressed: enabled ? onSkip : null,
-                foreground: theme.colorScheme.onSurface,
-                label: _t('reminderSkipAction', 'Skip'),
-              ),
             ),
           ],
         ),
@@ -1698,7 +1776,7 @@ class _LaterDoseLine extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => Navigator.of(context).pushNamed('/medications/today'),
+          onTap: () => _openMedicineReminder(context, dose.schedule),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
             child: Row(
@@ -1783,64 +1861,6 @@ class _MedicationPanelEmpty extends ConsumerWidget {
   );
 }
 
-/// List of medication schedules and their current state.
-class _HomeWidgetSchedulePicker extends ConsumerWidget {
-  const _HomeWidgetSchedulePicker({required this.schedules});
-
-  final List<MedicationSchedule> schedules;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selected = ref.watch(appSettingsProvider).homeWidgetScheduleId;
-    final theme = Theme.of(context);
-    final active = schedules.where((schedule) => schedule.id != null).toList();
-    return Material(
-      color: theme.colorScheme.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _t('homeWidgetShows', 'Home screen widget'),
-              style: theme.textTheme.titleSmall,
-            ),
-            RadioGroup<String>(
-              groupValue:
-                  active.any((schedule) => schedule.id == selected)
-                      ? selected
-                      : '',
-              onChanged: (value) => ref.updateSetting(
-                homeWidgetScheduleIdSetting,
-                value ?? '',
-              ),
-              child: Column(
-                children: [
-                  RadioListTile<String>(
-                    contentPadding: EdgeInsets.zero,
-                    value: '',
-                    title: Text(_t('homeWidgetShowsAll', 'All medicines')),
-                  ),
-                  for (final schedule in active)
-                    RadioListTile<String>(
-                      contentPadding: EdgeInsets.zero,
-                      value: schedule.id!,
-                      title: Text(schedule.medicine.designation),
-                      subtitle: Text(
-                        _t('homeWidgetShowsThis', 'Only this medicine'),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class MedicationSchedulesScreen extends ConsumerWidget {
   const MedicationSchedulesScreen({super.key});
 
@@ -1853,6 +1873,53 @@ class MedicationSchedulesScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _saveScheduleState(
+    WidgetRef ref,
+    MedicationSchedule schedule,
+    MedicationScheduleState state,
+  ) async {
+    await ref
+        .read(medicationScheduleRepositoryProvider)
+        .save(schedule.copyWith(state: state));
+    final repository = ref.read(medicationScheduleRepositoryProvider);
+    await _syncMedicationReminders(repository, ref.read(appSettingsProvider));
+    ref.invalidate(medicationSchedulesProvider);
+    ref.invalidate(todayMedicationOccurrencesProvider);
+    ref.invalidate(medicationDayProvider);
+    ref.invalidate(homeMedicationOccurrencesProvider);
+  }
+
+  Future<void> _endSchedule(
+    BuildContext context,
+    WidgetRef ref,
+    MedicationSchedule schedule,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_t('reminderEndScheduleTitle', 'End this reminder?')),
+        content: Text(
+          _t(
+            'reminderEndScheduleBody',
+            'It will stop creating reminders. Its dose history will stay saved.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('btnCancel'.tr()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(_t('reminderEndAction', 'End reminder')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _saveScheduleState(ref, schedule, MedicationScheduleState.ended);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final schedules = ref.watch(medicationSchedulesProvider);
@@ -1861,16 +1928,31 @@ class MedicationSchedulesScreen extends ConsumerWidget {
         title: Text(_t('reminderSchedulesTitle', 'Medicine reminders')),
         actions: [
           IconButton(
+            tooltip: _t('reminderSettingsTitle', 'Reminder settings'),
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => Navigator.push<void>(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const MedicationReminderSettingsScreen(),
+              ),
+            ),
+          ),
+          IconButton(
             tooltip: _t('reminderTodayTitle', "Today's medicines"),
             icon: const Icon(Icons.today_outlined),
             onPressed: () => Navigator.pushNamed(context, '/medications/today'),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: AnimatedFloatingActionButton(
         onPressed: () => _add(context),
-        icon: const Icon(Icons.add),
-        label: Text(_t('reminderAddSchedule', 'Add reminder')),
+        burstKind: FabBurstKind.bills,
+        extendedLabel: Text(_t('reminderAddSchedule', 'Add reminder')),
+        child: const Icon(Icons.add),
+      ),
+      floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation,
+      floatingActionButtonLocation: const SnackBarStableFabLocation(
+        base: FloatingActionButtonLocation.endFloat,
       ),
       body: schedules.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -1900,48 +1982,41 @@ class MedicationSchedulesScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                _HomeWidgetSchedulePicker(schedules: items),
-                const SizedBox(height: 12),
-                for (final schedule in items)
-                  _ScheduleCard(
-                    schedule: schedule,
-                    onEdit: () => Navigator.push<void>(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) =>
-                            MedicationScheduleEditorScreen(initial: schedule),
+                for (final state in MedicationScheduleState.values)
+                  if (items.any((schedule) => schedule.state == state)) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
+                      child: Text(
+                        _scheduleStateLabel(state),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                    onToggle: (active) async {
-                      await ref
-                          .read(medicationScheduleRepositoryProvider)
-                          .save(
-                            MedicationSchedule(
-                              id: schedule.id,
-                              medicineId: schedule.medicineId,
-                              medicine: schedule.medicine,
-                              doseAmount: schedule.doseAmount,
-                              doseUnit: schedule.doseUnit,
-                              timeMinutes: schedule.timeMinutes,
-                              doseTimings: schedule.doseTimings,
-                              weekdays: schedule.weekdays,
-                              startDate: schedule.startDate,
-                              endDate: schedule.endDate,
-                              active: active,
+                    for (final schedule in items.where(
+                      (schedule) => schedule.state == state,
+                    ))
+                      _ScheduleCard(
+                        schedule: schedule,
+                        onEdit: () => Navigator.push<void>(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => MedicationScheduleEditorScreen(
+                              initial: schedule,
                             ),
-                          );
-                      final repository = ref.read(
-                        medicationScheduleRepositoryProvider,
-                      );
-                      await _syncMedicationReminders(
-                        repository,
-                        ref.read(appSettingsProvider),
-                      );
-                      ref.invalidate(medicationSchedulesProvider);
-                      ref.invalidate(todayMedicationOccurrencesProvider);
-                      ref.invalidate(homeMedicationOccurrencesProvider);
-                    },
-                  ),
+                          ),
+                        ),
+                        onToggle: (active) => _saveScheduleState(
+                          ref,
+                          schedule,
+                          active
+                              ? MedicationScheduleState.active
+                              : MedicationScheduleState.paused,
+                        ),
+                        onEnd: () => _endSchedule(context, ref, schedule),
+                      ),
+                  ],
               ],
             ),
           );
@@ -1951,12 +2026,78 @@ class MedicationSchedulesScreen extends ConsumerWidget {
   }
 }
 
-/// Today's planned doses with actions to record what happened.
-class TodayMedicinesScreen extends ConsumerWidget {
+class TodayMedicinesScreen extends ConsumerStatefulWidget {
   const TodayMedicinesScreen({super.key});
 
+  @override
+  ConsumerState<TodayMedicinesScreen> createState() =>
+      _TodayMedicinesScreenState();
+}
+
+class _TodayMedicinesScreenState extends ConsumerState<TodayMedicinesScreen> {
+  static const _pageCount = 400;
+
+  late final DateTime _today;
+  late final PageController _pages;
+  late int _page;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _today = DateTime(now.year, now.month, now.day);
+    _page = _pageCount - 1;
+    _pages = PageController(initialPage: _page);
+  }
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  DateTime get _day =>
+      _today.subtract(Duration(days: (_pageCount - 1) - _page));
+
+  void _step(int delta) {
+    final next = (_page + delta).clamp(0, _pageCount - 1);
+    if (next == _page) return;
+    _pages.animateToPage(
+      next,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  int _pageFor(DateTime date) {
+    final from = DateTime.utc(date.year, date.month, date.day);
+    final to = DateTime.utc(_today.year, _today.month, _today.day);
+    final delta = to.difference(from).inDays;
+    return (_pageCount - 1 - delta).clamp(0, _pageCount - 1);
+  }
+
+  Future<void> _pickDay(BuildContext anchor) async {
+    final selected = await showDashboardDay(
+      context: anchor,
+      initialDate: _day,
+      firstDate: _today.subtract(const Duration(days: _pageCount - 1)),
+      lastDate: _today,
+    );
+    if (!mounted || selected == null) return;
+    final page = _pageFor(selected);
+    if (page == _page) return;
+    if ((page - _page).abs() <= 1) {
+      await _pages.animateToPage(
+        page,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+      return;
+    }
+    _pages.jumpToPage(page);
+  }
+
   Future<void> _setStatus(
-    WidgetRef ref,
     DoseOccurrence occurrence,
     String status, {
     DateTime? snoozeUntil,
@@ -1971,92 +2112,75 @@ class TodayMedicinesScreen extends ConsumerWidget {
     }
     final repository = ref.read(medicationScheduleRepositoryProvider);
     await _pushReminderWidget(
+      repository,
       await upcomingDoseOccurrences(repository),
       ref.read(appSettingsProvider),
     );
     ref.invalidate(todayMedicationOccurrencesProvider);
+    ref.invalidate(medicationDayProvider);
     ref.invalidate(homeMedicationOccurrencesProvider);
     ref.invalidate(medicationSchedulesProvider);
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final doses = ref.watch(todayMedicationOccurrencesProvider);
-    final theme = Theme.of(context);
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).toString();
+    final dayDoses = ref.watch(medicationDayProvider(_day));
+    final summary = dayDoses.maybeWhen(
+      data: (items) {
+        if (items.isEmpty) return null;
+        final recorded = items.where(_doseIsRecorded).length;
+        return '$recorded/${items.length} ${_t('reminderRecordedCount', 'recorded')}';
+      },
+      orElse: () => null,
+    );
+    final bottomClearance =
+        _GlassBottomAction.clearance + MediaQuery.paddingOf(context).bottom;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_t('reminderTodayTitle', "Today's medicines")),
+        toolbarHeight: 72,
+        titleSpacing: 0,
+        centerTitle: false,
+        title: _DayPageHeader(
+          label: DateFormat.yMMMMEEEEd(locale).format(_day),
+          summary: summary,
+          canGoBack: _page > 0,
+          canGoForward: _page < _pageCount - 1,
+          onBack: () => _step(-1),
+          onForward: () => _step(1),
+          onPickDay: _pickDay,
+        ),
       ),
-      body: doses.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('$error')),
-        data: (items) {
-          if (items.isEmpty) {
-            return _ReminderEmptyState(
-              icon: Icons.event_available_outlined,
-              title: _t('reminderNoDosesToday', 'No doses scheduled today'),
-              body: _t(
-                'reminderTodayEmptyBody',
-                'Your active medicine reminders will appear here.',
-              ),
-              action: _t('reminderManageSchedules', 'Manage reminders'),
-              onAction: () => Navigator.pushNamed(context, '/medications'),
-            );
-          }
-          final complete = items
-              .where(
-                (dose) => dose.status == 'taken' || dose.status == 'skipped',
-              )
-              .length;
-          return RefreshIndicator(
-            onRefresh: () async =>
-                ref.invalidate(todayMedicationOccurrencesProvider),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-              children: [
-                Text(
-                  DateFormat.yMMMMEEEEd(
-                    context.locale.toString(),
-                  ).format(DateTime.now()),
-                  style: theme.textTheme.titleMedium,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '$complete/${items.length} ${_t('reminderRecordedCount', 'recorded')}',
-                ),
-                const SizedBox(height: 18),
-                for (final occurrence in items)
-                  _DoseCard(
-                    occurrence: occurrence,
-                    onTaken: () => _setStatus(ref, occurrence, 'taken'),
-                    onSkip: () => _setStatus(ref, occurrence, 'skipped'),
-                    onSnooze: () => _setStatus(
-                      ref,
-                      occurrence,
-                      'snoozed',
-                      snoozeUntil: DateTime.now().add(
-                        const Duration(minutes: 10),
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.pushNamed(context, '/medications'),
-                  icon: const Icon(Icons.edit_calendar_outlined),
-                  label: Text(
-                    _t('reminderManageSchedules', 'Manage reminders'),
-                  ),
-                ),
-              ],
+      body: _GlassBottomAction.overlay(
+        onPressed: () => Navigator.pushNamed(context, '/medications'),
+        icon: const Icon(Icons.edit_calendar_outlined),
+        label: _t('reminderManageSchedules', 'Manage reminders'),
+        body: PageView.builder(
+          controller: _pages,
+          itemCount: _pageCount,
+          onPageChanged: (page) => setState(() => _page = page),
+          itemBuilder: (context, index) => _DayLogPage(
+            day: _today.subtract(Duration(days: (_pageCount - 1) - index)),
+            bottomClearance: bottomClearance,
+            onTaken: (dose) => _setStatus(dose, 'taken'),
+            onSkip: (dose) => _setStatus(dose, 'skipped'),
+            onSnooze: (dose) => _setStatus(
+              dose,
+              'snoozed',
+              snoozeUntil: DateTime.now().add(const Duration(minutes: 10)),
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
 }
 
-/// Editor for one recurring medication schedule.
+bool _doseIsRecorded(DoseOccurrence dose) {
+  final status = dose.statusAt(DateTime.now());
+  return status == 'taken' || status == 'skipped';
+}
+
 enum _MedicationRepeatPreset { everyDay, weekdays, weekends, custom }
 
 class MedicationScheduleEditorScreen extends ConsumerStatefulWidget {
@@ -2336,6 +2460,9 @@ class _MedicationScheduleEditorScreenState
       );
       return;
     }
+    final isFirstSchedule =
+        widget.initial == null &&
+        (await ref.read(medicationScheduleRepositoryProvider).getAll()).isEmpty;
     setState(() => _saving = true);
     await ref
         .read(medicationScheduleRepositoryProvider)
@@ -2351,14 +2478,30 @@ class _MedicationScheduleEditorScreenState
             weekdays: _weekdays,
             startDate: _startDate,
             endDate: _endDate,
+            state: widget.initial?.state ?? MedicationScheduleState.active,
           ),
         );
-    await MedicationReminderRuntime.instance.requestPermissions();
+    final notificationPermissionGranted =
+        !isFirstSchedule ||
+        await MedicationReminderRuntime.instance.requestPermissions();
     final repository = ref.read(medicationScheduleRepositoryProvider);
     await _syncMedicationReminders(repository, ref.read(appSettingsProvider));
     ref.invalidate(medicationSchedulesProvider);
     ref.invalidate(todayMedicationOccurrencesProvider);
+    ref.invalidate(medicationDayProvider);
     ref.invalidate(homeMedicationOccurrencesProvider);
+    if (!notificationPermissionGranted && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _t(
+              'reminderNotificationsDisabled',
+              'Notifications are off. You can enable them in reminder settings.',
+            ),
+          ),
+        ),
+      );
+    }
     if (mounted) Navigator.pop(context);
   }
 
@@ -2371,17 +2514,11 @@ class _MedicationScheduleEditorScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final labels = [
-      _t('weekdayMon', 'Mon'),
-      _t('weekdayTue', 'Tue'),
-      _t('weekdayWed', 'Wed'),
-      _t('weekdayThu', 'Thu'),
-      _t('weekdayFri', 'Fri'),
-      _t('weekdaySat', 'Sat'),
-      _t('weekdaySun', 'Sun'),
-    ];
+    final labels = _weekdayLabels();
     final formatTime = MaterialLocalizations.of(context).formatTimeOfDay;
     final locale = context.locale.toString();
+    final bottomClearance =
+        _GlassBottomAction.clearance + MediaQuery.paddingOf(context).bottom;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -2390,446 +2527,456 @@ class _MedicationScheduleEditorScreenState
               : _t('reminderEditSchedule', 'Edit reminder'),
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: FilledButton.icon(
-            onPressed: _saving ? null : _save,
-            icon: _saving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.notifications_active_outlined),
-            label: Text(_t('reminderSaveSchedule', 'Save reminder')),
-          ),
-        ),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
-                children: [
-                  _ReminderInfoBanner(
-                    text: _t(
-                      'reminderLocalNote',
-                      'Your reminder plan stays on this device.',
+      body: _GlassBottomAction.overlay(
+        onPressed: _saving ? null : _save,
+        icon: _saving
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.notifications_active_outlined),
+        label: _t('reminderSaveSchedule', 'Save reminder'),
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : Form(
+                key: _formKey,
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(16, 10, 16, bottomClearance),
+                  children: [
+                    _ReminderInfoBanner(
+                      text: _t(
+                        'reminderLocalNote',
+                        'Your reminder plan stays on this device.',
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    _t('reminderMedicineSection', 'Medicine'),
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  if (_medicines.isEmpty)
-                    OutlinedButton.icon(
-                      onPressed: _addMedicine,
-                      icon: const Icon(Icons.add),
-                      label: Text(_t('addMedication', 'Add medication')),
-                    )
-                  else
-                    SafaehAnchoredDropdownChip<Medicine>(
-                      icon: Icons.medication_outlined,
-                      label:
-                          _medicine?.designation ??
-                          _t('selectMedication', 'Medication'),
-                      expand: true,
-                      selected: _medicine ?? const Medicine(designation: ''),
-                      options: [
-                        for (final med in _medicines)
-                          SafaehDropdownOption(
-                            value: med,
-                            label: med.designation,
-                          ),
-                      ],
-                      onSelected: (medicine) {
-                        setState(() {
-                          _medicine = medicine;
-                          if (medicine.dosis != null) {
-                            _doseController.text = medicine.dosis!.mg
-                                .toString();
-                          }
-                        });
-                      },
+                    const SizedBox(height: 18),
+                    Text(
+                      _t('reminderMedicineSection', 'Medicine'),
+                      style: theme.textTheme.titleMedium,
                     ),
-                  if (_medicines.isNotEmpty)
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TextButton.icon(
+                    const SizedBox(height: 8),
+                    if (_medicines.isEmpty)
+                      OutlinedButton.icon(
                         onPressed: _addMedicine,
-                        icon: const Icon(Icons.add, size: 18),
-                        label: Text(
-                          _t(
-                            'reminderAddAnotherMedicine',
-                            'Add another medicine',
+                        icon: const Icon(Icons.add),
+                        label: Text(_t('addMedication', 'Add medication')),
+                      )
+                    else
+                      SafaehAnchoredDropdownChip<Medicine>(
+                        icon: Icons.medication_outlined,
+                        label:
+                            _medicine?.designation ??
+                            _t('selectMedication', 'Medication'),
+                        expand: true,
+                        selected: _medicine ?? const Medicine(designation: ''),
+                        options: [
+                          for (final med in _medicines)
+                            SafaehDropdownOption(
+                              value: med,
+                              label: med.designation,
+                            ),
+                        ],
+                        onSelected: (medicine) {
+                          setState(() {
+                            _medicine = medicine;
+                            if (medicine.dosis != null) {
+                              _doseController.text = medicine.dosis!.mg
+                                  .toString();
+                            }
+                          });
+                        },
+                      ),
+                    if (_medicines.isNotEmpty)
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: TextButton.icon(
+                          onPressed: _addMedicine,
+                          icon: const Icon(Icons.add, size: 18),
+                          label: Text(
+                            _t(
+                              'reminderAddAnotherMedicine',
+                              'Add another medicine',
+                            ),
                           ),
                         ),
                       ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _doseController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      ],
+                      decoration: InputDecoration(
+                        labelText: _t('reminderDose', 'Dose amount'),
+                        suffixText: _medicine?.unit.symbol,
+                      ),
+                      validator: (value) {
+                        final amount = double.tryParse(value ?? '');
+                        return amount == null || amount <= 0
+                            ? _t(
+                                'reminderDoseRequired',
+                                'Enter a dose greater than zero.',
+                              )
+                            : null;
+                      },
                     ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: _doseController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                    ],
-                    decoration: InputDecoration(
-                      labelText: _t('reminderDose', 'Dose amount'),
-                      suffixText: _medicine?.unit.symbol,
-                    ),
-                    validator: (value) {
-                      final amount = double.tryParse(value ?? '');
-                      return amount == null || amount <= 0
-                          ? _t(
-                              'reminderDoseRequired',
-                              'Enter a dose greater than zero.',
-                            )
-                          : null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  Card(
-                    elevation: 0,
-                    color: theme.colorScheme.surfaceContainerLow,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      side: BorderSide(color: theme.colorScheme.outlineVariant),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.event_repeat_rounded,
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _t(
-                                        'reminderScheduleCardTitle',
-                                        'Schedule',
-                                      ),
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _t(
-                                        'reminderScheduleInstructions',
-                                        'Set clock-time alerts and any food or daypart notes from the prescription.',
-                                      ),
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ],
+                    const SizedBox(height: 20),
+                    Card(
+                      elevation: 0,
+                      color: theme.colorScheme.surfaceContainerLow,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        side: BorderSide(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.event_repeat_rounded,
+                                  color: theme.colorScheme.primary,
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-                          Text(
-                            _t('reminderDosesPerDay', 'Times per day'),
-                            style: theme.textTheme.labelLarge,
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              for (var count = 1; count <= 6; count++)
-                                ChoiceChip(
-                                  label: Text('${count}×'),
-                                  selected: _times.length == count,
-                                  onSelected: (_) => _setDoseCount(count),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _t(
-                              'reminderFrequencyHint',
-                              'Choosing a count suggests times; adjust them below to match the prescription.',
-                            ),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          for (var index = 0; index < _times.length; index++)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(
-                                    color: theme.colorScheme.outlineVariant,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    12,
-                                    4,
-                                    8,
-                                    12,
-                                  ),
+                                const SizedBox(width: 12),
+                                Expanded(
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            '${_t('reminderDoseLabel', 'Dose')} ${index + 1}',
-                                            style: theme.textTheme.labelLarge
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                          ),
-                                          const Spacer(),
-                                          if (_times.length > 1)
-                                            IconButton(
-                                              tooltip: _t(
-                                                'reminderRemoveDose',
-                                                'Remove dose time',
-                                              ),
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                              onPressed: () =>
-                                                  _removeDose(index),
-                                              icon: const Icon(
-                                                Icons.close_rounded,
-                                                size: 20,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.schedule_rounded,
-                                            size: 18,
-                                            color: theme.colorScheme.primary,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          OutlinedButton(
-                                            onPressed: () =>
-                                                _pickDoseTime(index),
-                                            child: Text(
-                                              formatTime(
-                                                TimeOfDay(
-                                                  hour: _times[index] ~/ 60,
-                                                  minute: _times[index] % 60,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      SafaehAnchoredDropdownChip<
-                                        MedicationDoseTiming
-                                      >(
-                                        key: ValueKey(
-                                          'dose-timing-${_times[index]}',
+                                      Text(
+                                        _t(
+                                          'reminderScheduleCardTitle',
+                                          'Schedule',
                                         ),
-                                        icon: Icons.schedule_rounded,
-                                        label: _doseTimingLabel(
-                                          _doseTimings[index],
-                                        ),
-                                        expand: true,
-                                        selected: _doseTimings[index],
-                                        options: [
-                                          for (final timing
-                                              in MedicationDoseTiming.values)
-                                            SafaehDropdownOption(
-                                              value: timing,
-                                              label: _doseTimingLabel(timing),
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
                                             ),
-                                        ],
-                                        onSelected: (timing) =>
-                                            _setDoseTiming(index, timing),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _t(
+                                          'reminderScheduleInstructions',
+                                          'Set clock-time alerts and any food or daypart notes from the prescription.',
+                                        ),
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                            ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                          Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: OutlinedButton.icon(
-                              onPressed: _times.length >= 6 ? null : _addTime,
-                              icon: const Icon(Icons.add_rounded),
-                              label: Text(
-                                _t('reminderAddDoseTime', 'Add dose time'),
-                              ),
+                            const SizedBox(height: 18),
+                            Text(
+                              _t('reminderDosesPerDay', 'Times per day'),
+                              style: theme.textTheme.labelLarge,
                             ),
-                          ),
-                          const Divider(height: 28),
-                          Text(
-                            _t('reminderDaysSection', 'Repeat on'),
-                            style: theme.textTheme.labelLarge,
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              ChoiceChip(
-                                label: Text(
-                                  _t('reminderEveryDay', 'Every day'),
-                                ),
-                                selected:
-                                    _repeatPreset ==
-                                    _MedicationRepeatPreset.everyDay,
-                                onSelected: (_) => _selectRepeatPreset(
-                                  _MedicationRepeatPreset.everyDay,
-                                ),
-                              ),
-                              ChoiceChip(
-                                label: Text(_t('reminderWeekdays', 'Weekdays')),
-                                selected:
-                                    _repeatPreset ==
-                                    _MedicationRepeatPreset.weekdays,
-                                onSelected: (_) => _selectRepeatPreset(
-                                  _MedicationRepeatPreset.weekdays,
-                                ),
-                              ),
-                              ChoiceChip(
-                                label: Text(_t('reminderWeekends', 'Weekends')),
-                                selected:
-                                    _repeatPreset ==
-                                    _MedicationRepeatPreset.weekends,
-                                onSelected: (_) => _selectRepeatPreset(
-                                  _MedicationRepeatPreset.weekends,
-                                ),
-                              ),
-                              ChoiceChip(
-                                label: Text(_t('reminderCustomDays', 'Custom')),
-                                selected:
-                                    _repeatPreset ==
-                                    _MedicationRepeatPreset.custom,
-                                onSelected: (_) => _selectRepeatPreset(
-                                  _MedicationRepeatPreset.custom,
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (_showCustomWeekdays) ...[
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 8),
                             Wrap(
-                              spacing: 4,
+                              spacing: 6,
                               runSpacing: 4,
                               children: [
-                                for (var day = 1; day <= 7; day++)
-                                  FilterChip(
-                                    label: Text(labels[day - 1]),
-                                    selected: _weekdays.contains(day),
-                                    onSelected: (selected) =>
-                                        _setWeekday(day, selected),
+                                for (var count = 1; count <= 6; count++)
+                                  ChoiceChip(
+                                    label: Text('${count}×'),
+                                    selected: _times.length == count,
+                                    onSelected: (_) => _setDoseCount(count),
                                   ),
                               ],
                             ),
-                          ],
-                          const Divider(height: 28),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _t('reminderScheduleDates', 'Schedule dates'),
-                                  style: theme.textTheme.labelLarge,
+                            const SizedBox(height: 2),
+                            Text(
+                              _t(
+                                'reminderFrequencyHint',
+                                'Choosing a count suggests times; adjust them below to match the prescription.',
+                              ),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            for (var index = 0; index < _times.length; index++)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                      color: theme.colorScheme.outlineVariant,
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      12,
+                                      4,
+                                      8,
+                                      12,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              '${_t('reminderDoseLabel', 'Dose')} ${index + 1}',
+                                              style: theme.textTheme.labelLarge
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                            const Spacer(),
+                                            if (_times.length > 1)
+                                              IconButton(
+                                                tooltip: _t(
+                                                  'reminderRemoveDose',
+                                                  'Remove dose time',
+                                                ),
+                                                visualDensity:
+                                                    VisualDensity.compact,
+                                                onPressed: () =>
+                                                    _removeDose(index),
+                                                icon: const Icon(
+                                                  Icons.close_rounded,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.schedule_rounded,
+                                              size: 18,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            OutlinedButton(
+                                              onPressed: () =>
+                                                  _pickDoseTime(index),
+                                              child: Text(
+                                                formatTime(
+                                                  TimeOfDay(
+                                                    hour: _times[index] ~/ 60,
+                                                    minute: _times[index] % 60,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        SafaehAnchoredDropdownChip<
+                                          MedicationDoseTiming
+                                        >(
+                                          key: ValueKey(
+                                            'dose-timing-${_times[index]}',
+                                          ),
+                                          icon: Icons.schedule_rounded,
+                                          label: _doseTimingLabel(
+                                            _doseTimings[index],
+                                          ),
+                                          expand: true,
+                                          selected: _doseTimings[index],
+                                          options: [
+                                            for (final timing
+                                                in MedicationDoseTiming.values)
+                                              SafaehDropdownOption(
+                                                value: timing,
+                                                label: _doseTimingLabel(timing),
+                                              ),
+                                          ],
+                                          onSelected: (timing) =>
+                                              _setDoseTiming(index, timing),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
-                              Text(
-                                _t('reminderOptional', 'Optional'),
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () => _pickDate(isStart: true),
-                                  icon: const Icon(
-                                    Icons.event_available_outlined,
-                                    size: 18,
-                                  ),
-                                  label: Text(
-                                    _startDate == null
-                                        ? _t('reminderStartDate', 'Start date')
-                                        : DateFormat.yMMMd(
-                                            locale,
-                                          ).format(_startDate!),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () => _pickDate(isStart: false),
-                                  icon: const Icon(
-                                    Icons.event_busy_outlined,
-                                    size: 18,
-                                  ),
-                                  label: Text(
-                                    _endDate == null
-                                        ? _t('reminderEndDate', 'End date')
-                                        : DateFormat.yMMMd(
-                                            locale,
-                                          ).format(_endDate!),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (_startDate != null || _endDate != null)
                             Align(
                               alignment: AlignmentDirectional.centerStart,
-                              child: TextButton.icon(
-                                onPressed: () => setState(() {
-                                  _startDate = null;
-                                  _endDate = null;
-                                }),
-                                icon: const Icon(Icons.clear, size: 18),
+                              child: OutlinedButton.icon(
+                                onPressed: _times.length >= 6 ? null : _addTime,
+                                icon: const Icon(Icons.add_rounded),
                                 label: Text(
-                                  _t('reminderClearDates', 'Clear dates'),
+                                  _t('reminderAddDoseTime', 'Add dose time'),
                                 ),
                               ),
                             ),
-                        ],
+                            const Divider(height: 28),
+                            Text(
+                              _t('reminderDaysSection', 'Repeat on'),
+                              style: theme.textTheme.labelLarge,
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                ChoiceChip(
+                                  label: Text(
+                                    _t('reminderEveryDay', 'Every day'),
+                                  ),
+                                  selected:
+                                      _repeatPreset ==
+                                      _MedicationRepeatPreset.everyDay,
+                                  onSelected: (_) => _selectRepeatPreset(
+                                    _MedicationRepeatPreset.everyDay,
+                                  ),
+                                ),
+                                ChoiceChip(
+                                  label: Text(
+                                    _t('reminderWeekdays', 'Weekdays'),
+                                  ),
+                                  selected:
+                                      _repeatPreset ==
+                                      _MedicationRepeatPreset.weekdays,
+                                  onSelected: (_) => _selectRepeatPreset(
+                                    _MedicationRepeatPreset.weekdays,
+                                  ),
+                                ),
+                                ChoiceChip(
+                                  label: Text(
+                                    _t('reminderWeekends', 'Weekends'),
+                                  ),
+                                  selected:
+                                      _repeatPreset ==
+                                      _MedicationRepeatPreset.weekends,
+                                  onSelected: (_) => _selectRepeatPreset(
+                                    _MedicationRepeatPreset.weekends,
+                                  ),
+                                ),
+                                ChoiceChip(
+                                  label: Text(
+                                    _t('reminderCustomDays', 'Custom'),
+                                  ),
+                                  selected:
+                                      _repeatPreset ==
+                                      _MedicationRepeatPreset.custom,
+                                  onSelected: (_) => _selectRepeatPreset(
+                                    _MedicationRepeatPreset.custom,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (_showCustomWeekdays) ...[
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 4,
+                                runSpacing: 4,
+                                children: [
+                                  for (var day = 1; day <= 7; day++)
+                                    FilterChip(
+                                      label: Text(labels[day - 1]),
+                                      selected: _weekdays.contains(day),
+                                      onSelected: (selected) =>
+                                          _setWeekday(day, selected),
+                                    ),
+                                ],
+                              ),
+                            ],
+                            const Divider(height: 28),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _t(
+                                      'reminderScheduleDates',
+                                      'Schedule dates',
+                                    ),
+                                    style: theme.textTheme.labelLarge,
+                                  ),
+                                ),
+                                Text(
+                                  _t('reminderOptional', 'Optional'),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _pickDate(isStart: true),
+                                    icon: const Icon(
+                                      Icons.event_available_outlined,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      _startDate == null
+                                          ? _t(
+                                              'reminderStartDate',
+                                              'Start date',
+                                            )
+                                          : DateFormat.yMMMd(
+                                              locale,
+                                            ).format(_startDate!),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _pickDate(isStart: false),
+                                    icon: const Icon(
+                                      Icons.event_busy_outlined,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      _endDate == null
+                                          ? _t('reminderEndDate', 'End date')
+                                          : DateFormat.yMMMd(
+                                              locale,
+                                            ).format(_endDate!),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (_startDate != null || _endDate != null)
+                              Align(
+                                alignment: AlignmentDirectional.centerStart,
+                                child: TextButton.icon(
+                                  onPressed: () => setState(() {
+                                    _startDate = null;
+                                    _endDate = null;
+                                  }),
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  label: Text(
+                                    _t('reminderClearDates', 'Clear dates'),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 }
@@ -2839,11 +2986,13 @@ class _ScheduleCard extends StatelessWidget {
     required this.schedule,
     required this.onEdit,
     required this.onToggle,
+    required this.onEnd,
   });
 
   final MedicationSchedule schedule;
   final VoidCallback onEdit;
   final ValueChanged<bool> onToggle;
+  final VoidCallback onEnd;
 
   @override
   Widget build(BuildContext context) {
@@ -2860,14 +3009,10 @@ class _ScheduleCard extends StatelessWidget {
         .toSet()
         .map(_doseTimingLabel)
         .join(' · ');
+    final weekdayLabels = _weekdayLabels();
     final days = schedule.weekdays.length == 7
         ? _t('reminderEveryDay', 'Every day')
-        : schedule.weekdays
-              .map(
-                (day) =>
-                    ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day - 1],
-              )
-              .join(' · ');
+        : schedule.weekdays.map((day) => weekdayLabels[day - 1]).join(' · ');
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
@@ -2911,160 +3056,12 @@ class _ScheduleCard extends StatelessWidget {
               ),
             ),
             Switch(value: schedule.active, onChanged: onToggle),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DoseCard extends StatelessWidget {
-  const _DoseCard({
-    required this.occurrence,
-    required this.onTaken,
-    required this.onSnooze,
-    required this.onSkip,
-  });
-
-  final DoseOccurrence occurrence;
-  final VoidCallback onTaken;
-  final VoidCallback onSnooze;
-  final VoidCallback onSkip;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final localizations = MaterialLocalizations.of(context);
-    final now = DateTime.now();
-    final status = occurrence.statusAt(now);
-    final doseTiming = occurrence.schedule.timingForMinute(
-      occurrence.scheduledAt.hour * 60 + occurrence.scheduledAt.minute,
-    );
-    final isComplete = status == 'taken' || status == 'skipped';
-    final color = status == 'taken'
-        ? theme.colorScheme.primary
-        : status == 'unrecorded'
-        ? theme.colorScheme.error
-        : theme.colorScheme.tertiary;
-    final statusText = switch (status) {
-      'taken' => _t('reminderStatusTaken', 'Taken'),
-      'skipped' => _t('reminderStatusSkipped', 'Skipped'),
-      'snoozed' =>
-        '${_t('reminderStatusSnoozed', 'Snoozed')} · ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(occurrence.snoozeUntil ?? now))}',
-      'unrecorded' => _t('reminderStatusUnrecorded', 'Not recorded'),
-      _ when now.isAfter(occurrence.scheduledAt) => _t(
-        'reminderStatusDue',
-        'Due now',
-      ),
-      _ => _t('reminderStatusUpcoming', 'Upcoming'),
-    };
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  localizations.formatTimeOfDay(
-                    TimeOfDay.fromDateTime(occurrence.scheduledAt),
-                  ),
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const Spacer(),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    child: Text(
-                      statusText,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              occurrence.schedule.medicine.designation,
-              style: theme.textTheme.titleMedium,
-            ),
-            Text(
-              formatMedicationDose(
-                occurrence.schedule.doseAmount,
-                occurrence.schedule.doseUnit,
+            if (schedule.state != MedicationScheduleState.ended)
+              IconButton(
+                tooltip: _t('reminderEndAction', 'End reminder'),
+                onPressed: onEnd,
+                icon: const Icon(Icons.stop_circle_outlined),
               ),
-            ),
-            if (doseTiming != MedicationDoseTiming.anytime) ...[
-              const SizedBox(height: 8),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.secondaryContainer,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 16,
-                        color: theme.colorScheme.onSecondaryContainer,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _doseTimingLabel(doseTiming),
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSecondaryContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-            if (!isComplete) ...[
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  FilledButton.icon(
-                    onPressed: onTaken,
-                    icon: const Icon(Icons.check),
-                    label: Text(_t('reminderTakenAction', 'Taken')),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: onSnooze,
-                    icon: const Icon(Icons.snooze),
-                    label: Text(_t('reminderSnoozeAction', '10 min')),
-                  ),
-                  TextButton(
-                    onPressed: onSkip,
-                    child: Text(_t('reminderSkipAction', 'Skip')),
-                  ),
-                ],
-              ),
-            ],
           ],
         ),
       ),
@@ -3077,15 +3074,15 @@ class _ReminderEmptyState extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.body,
-    required this.action,
-    required this.onAction,
+    this.action,
+    this.onAction,
   });
 
   final IconData icon;
   final String title;
   final String body;
-  final String action;
-  final VoidCallback onAction;
+  final String? action;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) => Center(
@@ -3103,8 +3100,10 @@ class _ReminderEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(body, textAlign: TextAlign.center),
-          const SizedBox(height: 20),
-          FilledButton(onPressed: onAction, child: Text(action)),
+          if (action != null && onAction != null) ...[
+            const SizedBox(height: 20),
+            FilledButton(onPressed: onAction, child: Text(action!)),
+          ],
         ],
       ),
     ),

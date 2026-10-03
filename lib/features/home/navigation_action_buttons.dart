@@ -1,4 +1,5 @@
 import 'package:blood_pressure_app/app.dart';
+import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
 import 'package:blood_pressure_app/features/export_import/ui/export_popout.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -40,8 +41,7 @@ class NavigationActionButtons extends StatelessWidget {
     if (kind == NavigationActionKind.export) {
       return SizedBox.square(
         dimension: 56,
-        child: FloatingActionButton(
-          heroTag: 'floatingActionExport',
+        child: AnimatedFloatingActionButton(
           tooltip: 'exportImport'.tr(),
           onPressed: () => showExportPopout(context),
           child: Icon(
@@ -67,10 +67,10 @@ class NavigationActionButtons extends StatelessWidget {
         if (isWeight || showBloodPressure)
           SizedBox.square(
             dimension: 56,
-            child: FloatingActionButton(
-              heroTag: 'floatingActionAdd',
+            child: AnimatedFloatingActionButton(
               tooltip: isWeight ? 'weight'.tr() : 'addMeasurement'.tr(),
               autofocus: true,
+              burstKind: isWeight ? FabBurstKind.leaves : FabBurstKind.hearts,
               onPressed: () => Navigator.of(context).pushNamed(
                 isWeight ? AppRoute.addWeight.path : AppRoute.add.path,
               ),

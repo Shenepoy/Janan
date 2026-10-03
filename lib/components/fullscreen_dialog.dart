@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
+import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart';
 import 'package:flutter/material.dart';
 
 /// Base for fullscreen dialogs that allow value input.
@@ -10,6 +12,7 @@ class FullscreenDialog extends StatelessWidget {
     required this.actionButtonText,
     this.onActionButtonPressed,
     this.actionAsFab = false,
+    this.fabBurstKind = FabBurstKind.leaves,
     required this.bottomAppBar,
     this.closeIcon = Icons.close,
     this.actions = const <Widget>[],
@@ -41,6 +44,9 @@ class FullscreenDialog extends StatelessWidget {
 
   /// Show the primary action as a check-mark FAB instead of an app-bar button.
   final bool actionAsFab;
+
+  /// Burst shape for the primary action when it is shown as a FAB.
+  final FabBurstKind fabBurstKind;
 
   /// Whether to move the app bar to the bottom of the screen.
   ///
@@ -83,6 +89,10 @@ class FullscreenDialog extends StatelessWidget {
               : null,
           floatingActionButton:
               keyboardInset > 0 ? null : _buildActionFab(),
+          floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation,
+          floatingActionButtonLocation: const SnackBarStableFabLocation(
+            base: FloatingActionButtonLocation.endFloat,
+          ),
         ),
       ),
     );
@@ -90,10 +100,10 @@ class FullscreenDialog extends StatelessWidget {
 
   Widget? _buildActionFab() {
     if (!actionAsFab || actionButtonText == null) return null;
-    return FloatingActionButton(
-      heroTag: 'floatingActionSave',
+    return AnimatedFloatingActionButton(
       tooltip: actionButtonText,
       onPressed: onActionButtonPressed,
+      burstKind: fabBurstKind,
       child: Icon(Icons.check, semanticLabel: actionButtonText),
     );
   }

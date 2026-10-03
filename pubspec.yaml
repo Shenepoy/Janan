@@ -5,13 +5,14 @@ repository: https://github.com/Zyzto/blood-pressure-monitor-fl
 issue_tracker: https://github.com/Zyzto/blood-pressure-monitor-fl/issues
 
 # CalVer YY.0M.MICRO+BUILD (docs/release-process.md)
-version: 26.10.2+75
+version: 26.10.3+76
 
 environment:
   sdk: ^3.12.0
   flutter: 3.47.1
 
 dependencies:
+  characters: ^1.4.1
   collection: ^1.19.1
   csv: ^8.0.0
   intl: ^0.20.2

@@ -78,6 +78,8 @@ class TestSettingsSeed {
     this.syncBluetoothOnLaunch,
     this.bluetoothImportMode,
     this.compactList,
+    this.bloodPressureEnabled,
+    this.medicineFeatureEnabled,
     this.needlePinBarWidth,
     this.bottomAppBars,
     this.preferredPressureUnit,
@@ -122,6 +124,8 @@ class TestSettingsSeed {
   bool? syncBluetoothOnLaunch;
   BluetoothMeasurementImportMode? bluetoothImportMode;
   bool? compactList;
+  bool? bloodPressureEnabled;
+  bool? medicineFeatureEnabled;
   double? needlePinBarWidth;
   bool? bottomAppBars;
   PressureUnit? preferredPressureUnit;
@@ -175,7 +179,8 @@ class TestSettingsSeed {
     }
     if (sysWarn != null) await controller.set(sysWarnSetting, sysWarn!);
     if (diaWarn != null) await controller.set(diaWarnSetting, diaWarn!);
-    if (lastVersion != null) await controller.set(lastVersionSetting, lastVersion!);
+    if (lastVersion != null)
+      await controller.set(lastVersionSetting, lastVersion!);
     if (allowManualTimeInput != null) {
       await controller.set(allowManualTimeInputSetting, allowManualTimeInput!);
     }
@@ -199,18 +204,40 @@ class TestSettingsSeed {
       await controller.set(drawRegressionLinesSetting, drawRegressionLines!);
     }
     if (startWithAddMeasurementPage != null) {
-      await controller.set(startWithAddMeasurementPageSetting, startWithAddMeasurementPage!);
+      await controller.set(
+        startWithAddMeasurementPageSetting,
+        startWithAddMeasurementPage!,
+      );
     }
     if (autostartBluetoothInput != null) {
-      await controller.set(autostartBluetoothInputSetting, autostartBluetoothInput!);
+      await controller.set(
+        autostartBluetoothInputSetting,
+        autostartBluetoothInput!,
+      );
     }
     if (syncBluetoothOnLaunch != null) {
-      await controller.set(syncBluetoothOnLaunchSetting, syncBluetoothOnLaunch!);
+      await controller.set(
+        syncBluetoothOnLaunchSetting,
+        syncBluetoothOnLaunch!,
+      );
     }
     if (bluetoothImportMode != null) {
-      await controller.set(bluetoothImportModeSetting, bluetoothImportMode!.name);
+      await controller.set(
+        bluetoothImportModeSetting,
+        bluetoothImportMode!.name,
+      );
     }
-    if (compactList != null) await controller.set(compactListSetting, compactList!);
+    if (compactList != null)
+      await controller.set(compactListSetting, compactList!);
+    if (bloodPressureEnabled != null) {
+      await controller.set(bloodPressureEnabledSetting, bloodPressureEnabled!);
+    }
+    if (medicineFeatureEnabled != null) {
+      await controller.set(
+        medicineFeatureEnabledSetting,
+        medicineFeatureEnabled!,
+      );
+    }
     if (needlePinBarWidth != null) {
       await controller.set(needlePinBarWidthSetting, needlePinBarWidth!);
     }
@@ -218,10 +245,14 @@ class TestSettingsSeed {
       await controller.set(bottomAppBarsSetting, bottomAppBars!);
     }
     if (preferredPressureUnit != null) {
-      await controller.set(preferredPressureUnitSetting, preferredPressureUnit!.name);
+      await controller.set(
+        preferredPressureUnitSetting,
+        preferredPressureUnit!.name,
+      );
     }
     if (bleInput != null) await controller.set(bleInputSetting, bleInput!.name);
-    if (weightInput != null) await controller.set(weightInputSetting, weightInput!);
+    if (weightInput != null)
+      await controller.set(weightInputSetting, weightInput!);
     if (knownBleDev != null) {
       await persistKnownBleDevices(controller, knownBleDev!);
     }
@@ -233,22 +264,36 @@ class TestSettingsSeed {
     }
     if (birthYear != null) await controller.set(birthYearSetting, birthYear!);
     if (bodySex != null) await controller.set(bodySexSetting, bodySex!.name);
-    if (athleteMode != null) await controller.set(athleteModeSetting, athleteMode!);
-    if (trustBLETime != null) await controller.set(trustBleTimeSetting, trustBLETime!);
+    if (athleteMode != null)
+      await controller.set(athleteModeSetting, athleteMode!);
+    if (trustBLETime != null)
+      await controller.set(trustBleTimeSetting, trustBLETime!);
     if (showBLETimeTrustDialog != null) {
-      await controller.set(showBleTimeTrustDialogSetting, showBLETimeTrustDialog!);
+      await controller.set(
+        showBleTimeTrustDialogSetting,
+        showBLETimeTrustDialog!,
+      );
     }
     if (interruptGraphAfterNDays != null) {
-      await controller.set(interruptGraphAfterNDaysSetting, interruptGraphAfterNDays!);
+      await controller.set(
+        interruptGraphAfterNDaysSetting,
+        interruptGraphAfterNDays!,
+      );
     }
     if (useHealthConnect != null) {
       await controller.set(useHealthConnectSetting, useHealthConnect!);
     }
     if (syncWeightMeasurements != null) {
-      await controller.set(syncWeightMeasurementsSetting, syncWeightMeasurements!);
+      await controller.set(
+        syncWeightMeasurementsSetting,
+        syncWeightMeasurements!,
+      );
     }
     if (syncPressureMeasurements != null) {
-      await controller.set(syncPressureMeasurementsSetting, syncPressureMeasurements!);
+      await controller.set(
+        syncPressureMeasurementsSetting,
+        syncPressureMeasurements!,
+      );
     }
     if (syncOnAppStart != null) {
       await controller.set(syncOnAppStartSetting, syncOnAppStart!);
@@ -341,7 +386,9 @@ Widget _easyApp({
           ],
           child: MaterialApp(
             locale: resolved,
-            localizationsDelegates: withWesternDigits(context.localizationDelegates),
+            localizationsDelegates: withWesternDigits(
+              context.localizationDelegates,
+            ),
             supportedLocales: context.supportedLocales,
             builder: (context, appChild) => Directionality(
               textDirection: resolved.languageCode == 'ar'
@@ -359,7 +406,8 @@ Widget _easyApp({
 }
 
 /// Create a root material widget with localizations.
-Future<Widget> materialApp(Widget child, {
+Future<Widget> materialApp(
+  Widget child, {
   TestSettingsSeed? settings,
   ExportSettings? exportSettings,
   CsvExportSettings? csvExportSettings,
@@ -435,13 +483,17 @@ Future<void> pumpApp(
 }
 
 /// Advance a short stretch of UI without waiting for every timer to go idle.
-Future<void> pumpQuiet(WidgetTester tester, [Duration duration = const Duration(milliseconds: 50)]) async {
+Future<void> pumpQuiet(
+  WidgetTester tester, [
+  Duration duration = const Duration(milliseconds: 50),
+]) async {
   await tester.pump();
   await tester.pump(duration);
 }
 
 /// Creates a the same App as the main method.
-Future<Widget> appBase(Widget child,  {
+Future<Widget> appBase(
+  Widget child, {
   TestSettingsSeed? settings,
   ExportSettings? exportSettings,
   CsvExportSettings? csvExportSettings,
@@ -487,9 +539,13 @@ Future<Widget> appBase(Widget child,  {
       exportColumnsManagerProvider.overrideWithValue(exportColumnsManager),
       bloodPressureRepositoryProvider.overrideWithValue(bpRepo ?? db.bpRepo),
       medicineRepositoryProvider.overrideWithValue(medRepo),
-      medicineIntakeRepositoryProvider.overrideWithValue(intakeRepo ?? db.intakeRepo),
+      medicineIntakeRepositoryProvider.overrideWithValue(
+        intakeRepo ?? db.intakeRepo,
+      ),
       noteRepositoryProvider.overrideWithValue(noteRepo ?? db.noteRepo),
-      bodyweightRepositoryProvider.overrideWithValue(weightRepo ?? db.weightRepo),
+      bodyweightRepositoryProvider.overrideWithValue(
+        weightRepo ?? db.weightRepo,
+      ),
       bleBlacklistRepositoryProvider.overrideWithValue(
         blacklistRepo ?? db.blacklistRepo,
       ),
@@ -499,7 +555,8 @@ Future<Widget> appBase(Widget child,  {
 }
 
 /// Creates a the same App as the main method.
-Future<Widget> appBaseWithData(Widget child,  {
+Future<Widget> appBaseWithData(
+  Widget child, {
   TestSettingsSeed? settings,
   ExportSettings? exportSettings,
   CsvExportSettings? csvExportSettings,
@@ -549,7 +606,8 @@ Future<Widget> appBaseWithData(Widget child,  {
 }
 
 /// [materialApp] variant that doesn't assume scaffold.
-Future<Widget> materialForScreens(Widget child, {
+Future<Widget> materialForScreens(
+  Widget child, {
   TestSettingsSeed? settings,
   ExportSettings? exportSettings,
   CsvExportSettings? csvExportSettings,
@@ -574,7 +632,8 @@ Future<Widget> materialForScreens(Widget child, {
   );
 }
 
-Future<Widget> appBaseForScreen(Widget child,  {
+Future<Widget> appBaseForScreen(
+  Widget child, {
   TestSettingsSeed? settings,
   ExportSettings? exportSettings,
   CsvExportSettings? csvExportSettings,
@@ -593,15 +652,27 @@ Future<Widget> appBaseForScreen(Widget child,  {
     settings: await createTestSettings(settings),
     wrapScaffold: false,
     overrides: [
-      exportSettingsProvider.overrideWithValue(exportSettings ?? ExportSettings()),
-      csvExportSettingsProvider.overrideWithValue(csvExportSettings ?? CsvExportSettings()),
-      pdfExportSettingsProvider.overrideWithValue(pdfExportSettings ?? PdfExportSettings()),
-      intervalStoreManagerProvider.overrideWithValue(intervallStoreManager ?? IntervalStoreManager()),
+      exportSettingsProvider.overrideWithValue(
+        exportSettings ?? ExportSettings(),
+      ),
+      csvExportSettingsProvider.overrideWithValue(
+        csvExportSettings ?? CsvExportSettings(),
+      ),
+      pdfExportSettingsProvider.overrideWithValue(
+        pdfExportSettings ?? PdfExportSettings(),
+      ),
+      intervalStoreManagerProvider.overrideWithValue(
+        intervallStoreManager ?? IntervalStoreManager(),
+      ),
       bloodPressureRepositoryProvider.overrideWithValue(bpRepo ?? db.bpRepo),
       medicineRepositoryProvider.overrideWithValue(medRepo ?? db.medRepo),
-      medicineIntakeRepositoryProvider.overrideWithValue(intakeRepo ?? db.intakeRepo),
+      medicineIntakeRepositoryProvider.overrideWithValue(
+        intakeRepo ?? db.intakeRepo,
+      ),
       noteRepositoryProvider.overrideWithValue(noteRepo ?? db.noteRepo),
-      bodyweightRepositoryProvider.overrideWithValue(weightRepo ?? db.weightRepo),
+      bodyweightRepositoryProvider.overrideWithValue(
+        weightRepo ?? db.weightRepo,
+      ),
       bleBlacklistRepositoryProvider.overrideWithValue(
         blacklistRepo ?? db.blacklistRepo,
       ),
@@ -642,14 +713,24 @@ Future<void> dismissSafaeh(WidgetTester tester) async {
 }
 
 /// Open a dialog through a button press.
-Future<void> loadDialog(WidgetTester tester, void Function(BuildContext context) dialogStarter, {
+Future<void> loadDialog(
+  WidgetTester tester,
+  void Function(BuildContext context) dialogStarter, {
   String dialogStarterText = 'X',
   TestSettingsSeed? settings,
 }) async {
-  await pumpApp(tester, await appBase(
-    Builder(builder: (context) => TextButton(onPressed: () => dialogStarter(context), child: Text(dialogStarterText)),),
-    settings: settings,
-  ),);
+  await pumpApp(
+    tester,
+    await appBase(
+      Builder(
+        builder: (context) => TextButton(
+          onPressed: () => dialogStarter(context),
+          child: Text(dialogStarterText),
+        ),
+      ),
+      settings: settings,
+    ),
+  );
   await tester.tap(find.text(dialogStarterText));
   await tester.pumpAndSettle();
 }
@@ -673,7 +754,7 @@ class MockMedRepo implements MedicineRepository {
   }
 
   @override
-  Future<List<Medicine>> getAll() async=> _meds;
+  Future<List<Medicine>> getAll() async => _meds;
 
   @override
   Future<List<Medicine>> getAllInCreationOrder() => getAll();
@@ -699,9 +780,11 @@ Medicine mockMedicine({
   String designation = '',
   double? defaultDosis,
 }) {
-  final matchingMeds = _meds.where((med) => med.dosis?.mg == defaultDosis
-    && med.color == color.toARGB32()
-    && med.designation == designation,
+  final matchingMeds = _meds.where(
+    (med) =>
+        med.dosis?.mg == defaultDosis &&
+        med.color == color.toARGB32() &&
+        med.designation == designation,
   );
   if (matchingMeds.isNotEmpty) return matchingMeds.first;
   final med = Medicine(
@@ -713,16 +796,14 @@ Medicine mockMedicine({
   return med;
 }
 
-MedicineIntake mockIntake(Medicine medicine, {
-  int? time,
-  double? dosis,
-}) => MedicineIntake(
-  time: time != null
-      ? DateTime.fromMillisecondsSinceEpoch(time)
-      : DateTime.now(),
-  medicine: medicine,
-  dosis: Weight.mg(dosis ?? medicine.dosis?.mg ?? 42.0),
-);
+MedicineIntake mockIntake(Medicine medicine, {int? time, double? dosis}) =>
+    MedicineIntake(
+      time: time != null
+          ? DateTime.fromMillisecondsSinceEpoch(time)
+          : DateTime.now(),
+      medicine: medicine,
+      dosis: Weight.mg(dosis ?? medicine.dosis?.mg ?? 42.0),
+    );
 
 class MockHealthStore {
   BloodPressureRepository bpRepo = MockBloodPressureRepository();
@@ -779,16 +860,26 @@ class _MockRepo<T> extends Repository<T> {
   Stream<T?> subscribe() => contr.stream;
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => throw Exception('unexpected call: $invocation');
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw Exception('unexpected call: $invocation');
 }
 
-class MockBloodPressureRepository extends _MockRepo<BloodPressureRecord> implements BloodPressureRepository {}
-class MockMedicineIntakeRepository extends _MockRepo<MedicineIntake> implements MedicineIntakeRepository {}
-class MockMedicineRepository extends _MockRepo<Medicine> implements MedicineRepository {
+class MockBloodPressureRepository extends _MockRepo<BloodPressureRecord>
+    implements BloodPressureRepository {}
+
+class MockMedicineIntakeRepository extends _MockRepo<MedicineIntake>
+    implements MedicineIntakeRepository {}
+
+class MockMedicineRepository extends _MockRepo<Medicine>
+    implements MedicineRepository {
   @override
   Future<List<Medicine>> getAll() async => data;
 }
-class MockNoteRepository extends _MockRepo<Note> implements NoteRepository {}
-class MockBodyweightRepository extends _MockRepo<BodyweightRecord> implements BodyweightRepository {}
 
-dynamic myMatchesGoldenFile(String key) => matchesGoldenFile(join('golden', key));
+class MockNoteRepository extends _MockRepo<Note> implements NoteRepository {}
+
+class MockBodyweightRepository extends _MockRepo<BodyweightRecord>
+    implements BodyweightRepository {}
+
+dynamic myMatchesGoldenFile(String key) =>
+    matchesGoldenFile(join('golden', key));

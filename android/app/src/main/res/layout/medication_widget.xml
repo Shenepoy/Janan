@@ -73,7 +73,7 @@
                 android:maxLines="1"
                 android:text="@string/medication_widget_medicine"
                 android:textColor="#C8D8D4"
-                android:textSize="8sp" />
+                android:textSize="10sp" />
         </LinearLayout>
     </FrameLayout>
 </FrameLayout>

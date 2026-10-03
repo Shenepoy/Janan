@@ -13,7 +13,11 @@ TestSettingsSeed _enabledSettings() => TestSettingsSeed(
   bleInput: BluetoothInputMode.newBluetoothInputCrossPlatform,
 );
 
-Future<Widget> _indicator(BleLaunchSyncView view, {TestSettingsSeed? settings}) => materialApp(
+Future<Widget> _indicator(
+  BleLaunchSyncView view, {
+  TestSettingsSeed? settings,
+  Locale locale = const Locale('en'),
+}) => materialApp(
   BleLaunchSyncScope(
     notifier: view,
     child: Scaffold(
@@ -22,7 +26,17 @@ Future<Widget> _indicator(BleLaunchSyncView view, {TestSettingsSeed? settings}) 
     ),
   ),
   settings: settings ?? _enabledSettings(),
+  locale: locale,
 );
+
+void _expectPanelOnScreen(WidgetTester tester) {
+  final card = tester.getRect(find.byType(BleLaunchSyncCard));
+  final screen = Offset.zero & tester.view.physicalSize / tester.view.devicePixelRatio;
+  expect(card.left, greaterThanOrEqualTo(0));
+  expect(card.right, lessThanOrEqualTo(screen.width));
+  expect(card.top, greaterThanOrEqualTo(0));
+  expect(card.bottom, lessThanOrEqualTo(screen.height));
+}
 
 void main() {
   testWidgets('hides when launch sync is turned off', (tester) async {
@@ -184,6 +198,25 @@ void main() {
     await tester.pump();
     expect(view.detailsOpen, isTrue);
     expect(find.byType(BleLaunchSyncCard), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 320));
+    _expectPanelOnScreen(tester);
+  });
+
+  testWidgets('keeps the sync panel on screen in Arabic', (tester) async {
+    final view = BleLaunchSyncView()
+      ..setProgress(const BleLaunchSyncProgress(
+        phase: BleLaunchSyncPhase.scanning,
+      ));
+    await pumpApp(
+      tester,
+      await _indicator(view, locale: const Locale('ar')),
+    );
+
+    await tester.tap(find.byType(BleHomeSyncIndicator));
+    await tester.pump(const Duration(milliseconds: 320));
+
+    expect(find.byType(BleLaunchSyncCard), findsOneWidget);
+    _expectPanelOnScreen(tester);
   });
 
   testWidgets('keeps a grey-white bluetooth icon when nothing new was imported', (tester) async {

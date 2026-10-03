@@ -41,6 +41,7 @@ const schema = Schema([
     Column.text('start_date'),
     Column.text('end_date'),
     Column.integer('active'),
+    Column.integer('ended'),
   ]),
   Table.localOnly('dose_occurrences', [
     Column.text('schedule_id'),

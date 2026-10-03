@@ -12,4 +12,8 @@
     <string name="medication_widget_medicine">Medicine</string>
     <string name="medication_widget_no_dose_due">No dose due</string>
     <string name="medication_widget_no_medicine_dose_due">No medicine dose due</string>
+    <string name="medication_widget_shows_all">All medicines</string>
+    <string name="medication_widget_configure_title">Home screen widget</string>
+    <string name="medication_widget_configure_prompt">Which medicine should this widget show?</string>
+    <string name="medication_widget_configure_done">Add widget</string>
 </resources>

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:blood_pressure_app/features/export_import/model/pdf_converter.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/model/storage/storage.dart';
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../util.dart';
@@ -16,7 +17,8 @@ void main() {
     await createTestSettings();
   });
 
-  test('should not return empty data', () async {
+  test('creates an Arabic PDF with a chart and translated summary', () async {
+    loadTestTranslations(const Locale('ar'));
     final converter = PdfConverter(
       PdfExportSettings(),
       AppSettings.fromController(testSettingsController!),
@@ -24,8 +26,24 @@ void main() {
       ExportSettings(),
       locale: 'ar',
     );
-    final pdf = await converter.create(createRecords());
-    expect(pdf.length, isNonZero);
+    final pdf = await converter.create([
+      mockEntry(
+        time: DateTime(2024, 1, 1, 8),
+        sys: 120,
+        dia: 80,
+        pul: 70,
+        note: 'قراءة الصباح',
+      ),
+      mockEntry(
+        time: DateTime(2024, 1, 3, 20),
+        sys: 135,
+        dia: 85,
+        pul: 74,
+        note: 'قراءة المساء',
+      ),
+    ]);
+    expect(pdf.take(5), orderedEquals('%PDF-'.codeUnits));
+    expect(pdf.length, greaterThan(1000));
   });
   test('generated data length should be consistent', () async {
     final converter = PdfConverter(

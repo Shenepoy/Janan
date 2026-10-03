@@ -29,6 +29,12 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        for (widgetId in appWidgetIds) {
+            MedicationWidgetStore.clearScheduleId(context, widgetId)
+        }
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         // Cold boot drops AlarmManager timers. Redraw from the saved dose
@@ -52,14 +58,7 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         widgetId: Int,
     ) {
         val views = RemoteViews(context.packageName, R.layout.medication_widget)
-        val raw = context.getSharedPreferences("medication_widget", Context.MODE_PRIVATE)
-            .getString("summary", "[]") ?: "[]"
-        val doses = try {
-            JSONArray(raw)
-        } catch (_: Exception) {
-            JSONArray()
-        }
-        val next = doses.optJSONObject(0)
+        val next = MedicationWidgetStore.viewFor(context, widgetId)
         val now = System.currentTimeMillis()
         val targetAt = next?.optLong("scheduledAtMs", 0L) ?: 0L
         val hasDose = next != null && targetAt > 0L
@@ -162,13 +161,24 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
                 if (overdue) name else "$name, $label",
             )
         } else {
+            val pinned = next?.optString("name")?.trim().orEmpty()
+            val medicineLabel = if (pinned.isEmpty()) {
+                noDoseDue
+            } else {
+                next?.optString("shortName", "")?.trim()?.ifEmpty {
+                    compactMedicineName(pinned)
+                } ?: compactMedicineName(pinned)
+            }
             views.setViewVisibility(R.id.widget_status, android.view.View.VISIBLE)
             views.setTextViewText(R.id.widget_status, statusAllSet)
             views.setTextColor(R.id.widget_status, medicineColor)
-            views.setTextViewText(R.id.widget_medicine, noDoseDue)
+            views.setTextViewText(R.id.widget_medicine, medicineLabel)
             views.setViewVisibility(R.id.widget_medicine, android.view.View.VISIBLE)
             views.setViewVisibility(R.id.widget_countdown, android.view.View.GONE)
-            views.setContentDescription(R.id.widget_root, noMedicineDoseDue)
+            views.setContentDescription(
+                R.id.widget_root,
+                if (pinned.isEmpty()) noMedicineDoseDue else "$pinned, $statusAllSet",
+            )
         }
 
         scheduleRefresh(context, nextCountdownRefresh(targetAt, now, hasDose))
@@ -223,17 +233,19 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    private fun ringProgress(targetAt: Long, now: Long, hasDose: Boolean): Float {
+    private fun ringProgress(
+        targetAt: Long,
+        now: Long,
+        hasDose: Boolean,
+        intervalMs: Long = DAY_MILLIS,
+    ): Float {
         if (!hasDose) return 0.12f
         if (targetAt <= now) return 1f
         val remaining = targetAt - now
-        if (remaining <= SOON_MILLIS) {
-            val fraction = 1f - remaining.toFloat() / SOON_MILLIS
-            return 0.50f + 0.32f * fraction
-        }
-        val horizon = 12f * SOON_MILLIS
-        val elapsed = 1f - (remaining.toFloat() / horizon).coerceIn(0f, 1f)
-        return (0.08f + 0.40f * elapsed).coerceIn(0.08f, 0.48f)
+        val span = if (intervalMs > 0L) intervalMs else DAY_MILLIS
+        if (remaining >= span) return 0.08f
+        val elapsed = 1f - remaining.toFloat() / span.toFloat()
+        return elapsed.coerceIn(0.08f, 1f)
     }
 
     private fun countdownText(
@@ -293,6 +305,7 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         val dotted: Boolean,
         val colors: IntArray,
         val times: LongArray,
+        val intervals: LongArray,
         val status: String,
     )
 
@@ -320,11 +333,20 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
                         if (at > 0L) at else ringAt
                     }
                 }
+                val intervals = if (doses == null || doses.length() == 0) {
+                    longArrayOf(DAY_MILLIS)
+                } else {
+                    LongArray(doses.length()) { doseIndex ->
+                        val interval = doses.getJSONObject(doseIndex).optLong("intervalMs", 0L)
+                        if (interval > 0L) interval else DAY_MILLIS
+                    }
+                }
                 WidgetRing(
                     at = ringAt,
                     dotted = ring.optBoolean("dotted", colors.size > 1),
                     colors = colors,
                     times = times,
+                    intervals = intervals,
                     status = ring.optString("status", "pending"),
                 )
             }
@@ -338,6 +360,11 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
                 dotted = false,
                 colors = intArrayOf(color),
                 times = longArrayOf(at),
+                intervals = longArrayOf(
+                    summary.optLong("intervalMs", 0L).let { interval ->
+                        if (interval > 0L) interval else DAY_MILLIS
+                    },
+                ),
                 status = summary.optString("status", "pending"),
             ),
         )
@@ -355,7 +382,16 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         val canvas = Canvas(bitmap)
         val stroke = pixels * RING_STROKE_FRACTION
         val layers = if (rings.isEmpty()) {
-            listOf(WidgetRing(0L, false, intArrayOf(DEFAULT_MEDICINE_COLOR), longArrayOf(0L), "pending"))
+            listOf(
+                WidgetRing(
+                    0L,
+                    false,
+                    intArrayOf(DEFAULT_MEDICINE_COLOR),
+                    longArrayOf(0L),
+                    longArrayOf(DAY_MILLIS),
+                    "pending",
+                ),
+            )
         } else {
             rings.take(2)
         }
@@ -370,7 +406,7 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
                 corner,
             )
             val marks = if (rings.isEmpty()) {
-                listOf(RingMark(0.12f, DEFAULT_MEDICINE_COLOR))
+                listOf(RingMark(1f, DEFAULT_MEDICINE_COLOR))
             } else {
                 ringMarks(ring, now, flash && index == 0, inner = index > 0)
             }
@@ -393,12 +429,14 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         if (ring.dotted && ring.colors.size > 1) {
             return ring.colors.take(3).mapIndexed { index, color ->
                 val at = ring.times.getOrElse(index) { ring.at }
-                var progress = if (at > 0L) ringProgress(at, now, true) else 0.12f
+                val interval = ring.intervals.getOrElse(index) { DAY_MILLIS }
+                var progress = if (at > 0L) ringProgress(at, now, true, interval) else 0.12f
                 if (inner) progress = progress.coerceAtMost(INNER_OPEN_CAP)
                 RingMark(progress, color)
             }
         }
-        var progress = if (ring.at > 0L) ringProgress(ring.at, now, true) else 0.12f
+        val interval = ring.intervals.firstOrNull() ?: DAY_MILLIS
+        var progress = if (ring.at > 0L) ringProgress(ring.at, now, true, interval) else 0.12f
         if (inner) progress = progress.coerceAtMost(INNER_OPEN_CAP)
         val color = if (inner) {
             ring.colors.firstOrNull() ?: DEFAULT_MEDICINE_COLOR
@@ -552,26 +590,8 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
             else -> 8
         }
         if (trimmed.length <= limit) return trimmed
-        val words = trimmed.split(" ")
-        val initialsFit = words.size > 1 && words.all { word ->
-            word.isNotEmpty() && casedNameLetter(word.first())
-        }
-        if (initialsFit) {
-            val initials = words.take(3).joinToString("") { word ->
-                word.first().uppercaseChar().toString()
-            }
-            if (initials.length <= limit) return initials
-        }
         if (limit <= 1) return "…"
         return trimmed.take(limit - 1) + "…"
-    }
-
-    private fun casedNameLetter(letter: Char): Boolean {
-        val rune = letter.code
-        return rune <= 0x024F ||
-            rune in 0x0370..0x03FF ||
-            rune in 0x0400..0x052F ||
-            rune in 0x1E00..0x1EFF
     }
 
     private fun arabicNameLetter(letter: Char): Boolean {
@@ -681,6 +701,7 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         private const val SOON_MILLIS = 60 * 60 * 1000L
         private const val MINUTE_MILLIS = 60 * 1000L
         private const val HOUR_MILLIS = 60 * MINUTE_MILLIS
+        private const val DAY_MILLIS = 24 * HOUR_MILLIS
         private const val RING_BITMAP_DP = 144
         /** About 7dp once the bitmap is fitted into the widget. The in-app ring stays thicker. */
         private const val RING_STROKE_FRACTION = 7f / 74f

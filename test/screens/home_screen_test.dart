@@ -10,16 +10,28 @@ import '../model/blood_pressure_analyzer_test.dart';
 import '../util.dart';
 
 void main() {
-  final TestWidgetsFlutterBinding binding = TestWidgetsFlutterBinding.ensureInitialized();
+  final TestWidgetsFlutterBinding binding =
+      TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
     await testSettingsController?.set(homeBpChartSetting, 'dailyRange');
   });
 
-  testWidgets('shows empty card when the range has no readings', (tester) async {
+  testWidgets('shows empty card when the range has no readings', (
+    tester,
+  ) async {
     await binding.setSurfaceSize(const Size(400, 800));
 
-    await pumpApp(tester, await appBaseWithData(const AppHome()));
+    await pumpApp(
+      tester,
+      await appBaseWithData(
+        const AppHome(),
+        settings: TestSettingsSeed(
+          bloodPressureEnabled: false,
+          medicineFeatureEnabled: false,
+        ),
+      ),
+    );
     await _pumpHome(tester);
 
     expect(find.byType(DashboardEmptyCard), findsOneWidget);
@@ -29,18 +41,21 @@ void main() {
   testWidgets('shows graph above list in phone mode', (tester) async {
     await binding.setSurfaceSize(const Size(400, 800));
 
-    await pumpApp(tester, await appBaseWithData(
-      const AppHome(),
-      records: [
-        mockRecord(sys: 120, dia: 80, pul: 70),
-        mockRecord(
-          time: DateTime.now().subtract(const Duration(days: 1)),
-          sys: 118,
-          dia: 78,
-          pul: 68,
-        ),
-      ],
-    ));
+    await pumpApp(
+      tester,
+      await appBaseWithData(
+        const AppHome(),
+        records: [
+          mockRecord(sys: 120, dia: 80, pul: 70),
+          mockRecord(
+            time: DateTime.now().subtract(const Duration(days: 1)),
+            sys: 118,
+            dia: 78,
+            pul: 68,
+          ),
+        ],
+      ),
+    );
     await _pumpHome(tester);
 
     expect(find.byType(HomeBpChart), findsOneWidget);
@@ -55,9 +70,10 @@ void main() {
   testWidgets('only shows graph in landscape more', (tester) async {
     await binding.setSurfaceSize(const Size(800, 400));
 
-    await pumpApp(tester, await appBaseWithData(const AppHome(),
-      records: [mockRecord(sys: 123)],
-    ));
+    await pumpApp(
+      tester,
+      await appBaseWithData(const AppHome(), records: [mockRecord(sys: 123)]),
+    );
     await _pumpHome(tester);
 
     expect(find.byType(HomeBpChart), findsOneWidget);
@@ -69,11 +85,14 @@ void main() {
   testWidgets('always uses the unified measurement list', (tester) async {
     await binding.setSurfaceSize(const Size(400, 800));
 
-    await pumpApp(tester, await appBaseWithData(
-      const AppHome(),
-      settings: TestSettingsSeed(compactList: false),
-      records: [mockRecord(sys: 120, dia: 80, pul: 70)],
-    ));
+    await pumpApp(
+      tester,
+      await appBaseWithData(
+        const AppHome(),
+        settings: TestSettingsSeed(compactList: false),
+        records: [mockRecord(sys: 120, dia: 80, pul: 70)],
+      ),
+    );
     await _pumpHome(tester);
 
     expect(find.byType(MeasurementList), findsOneWidget);
@@ -91,8 +110,20 @@ void main() {
     await _pumpHome(tester);
 
     expect(find.byType(HomeBpChart), findsOneWidget);
-    expect(find.ancestor(of: find.byType(HomeBpChart), matching: find.byType(Scaffold)), findsOneWidget);
-    expect(find.ancestor(of: find.byType(HomeBpChart), matching: find.byType(MaterialApp)), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.byType(HomeBpChart),
+        matching: find.byType(Scaffold),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(
+        of: find.byType(HomeBpChart),
+        matching: find.byType(MaterialApp),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('includes safe area in phone mode', (tester) async {
@@ -107,18 +138,21 @@ void main() {
   testWidgets('swap button cycles home charts', (tester) async {
     await binding.setSurfaceSize(const Size(400, 800));
 
-    await pumpApp(tester, await appBaseWithData(
-      const AppHome(),
-      records: [
-        mockRecord(sys: 120, dia: 80, pul: 70),
-        mockRecord(
-          time: DateTime.now().subtract(const Duration(days: 1)),
-          sys: 118,
-          dia: 78,
-          pul: 68,
-        ),
-      ],
-    ));
+    await pumpApp(
+      tester,
+      await appBaseWithData(
+        const AppHome(),
+        records: [
+          mockRecord(sys: 120, dia: 80, pul: 70),
+          mockRecord(
+            time: DateTime.now().subtract(const Duration(days: 1)),
+            sys: 118,
+            dia: 78,
+            pul: 68,
+          ),
+        ],
+      ),
+    );
     await _pumpHome(tester);
 
     expect(find.text('Daily range'), findsOneWidget);

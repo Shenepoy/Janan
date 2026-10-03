@@ -2,8 +2,8 @@ import 'package:blood_pressure_app/components/confirm_deletion_dialog.dart';
 import 'package:blood_pressure_app/core/database/database_providers.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminder_providers.dart';
 import 'package:blood_pressure_app/features/settings/edadat_prefs.dart';
-import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
 import 'package:blood_pressure_app/model/storage/file_settings_loader.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -195,6 +195,7 @@ class _DeleteDataScreenState extends State<DeleteDataScreen> {
             await database.execute('DELETE FROM medication_schedules');
             container.invalidate(medicationSchedulesProvider);
             container.invalidate(todayMedicationOccurrencesProvider);
+            container.invalidate(medicationDayProvider);
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text('deletionConfirmed'.tr())));

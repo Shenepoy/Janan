@@ -7,10 +7,10 @@ void main() {
     expect(compactMedicineName('  Zinc '), 'Zinc');
   });
 
-  test('several words become initials', () {
-    expect(compactMedicineName('Test Lisinopril'), 'TL');
-    expect(compactMedicineName('Vitamin D'), 'VD');
-    expect(compactMedicineName('Blood pressure pill extra'), 'BPP');
+  test('several words are cut with an ellipsis', () {
+    expect(compactMedicineName('Test Lisinopril'), 'Test Li…');
+    expect(compactMedicineName('Vitamin D'), 'Vitamin…');
+    expect(compactMedicineName('Blood pressure pill extra'), 'Blood p…');
   });
 
   test('one long word is cut with an ellipsis', () {
@@ -21,6 +21,6 @@ void main() {
   test('Arabic and Chinese names stay in their script', () {
     expect(compactMedicineName('فيتامين د'), 'فيتام…');
     expect(compactMedicineName('对乙酰氨基酚'), '对乙酰…');
-    expect(compactMedicineName('Витамин Д'), 'ВД');
+    expect(compactMedicineName('Витамин Д'), 'Витамин…');
   });
 }

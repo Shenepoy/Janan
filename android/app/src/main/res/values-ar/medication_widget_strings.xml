@@ -12,4 +12,8 @@
     <string name="medication_widget_medicine">الدواء</string>
     <string name="medication_widget_no_dose_due">لا توجد جرعة مستحقة</string>
     <string name="medication_widget_no_medicine_dose_due">لا توجد جرعة دواء مستحقة</string>
+    <string name="medication_widget_shows_all">كل الأدوية</string>
+    <string name="medication_widget_configure_title">أداة الشاشة الرئيسية</string>
+    <string name="medication_widget_configure_prompt">أي دواء تعرض هذه الأداة؟</string>
+    <string name="medication_widget_configure_done">إضافة الأداة</string>
 </resources>

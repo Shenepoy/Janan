@@ -1,8 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:blood_pressure_app/features/export_import/model/export_preset.dart';
 import 'package:blood_pressure_app/features/export_import/model/import_field_type.dart';
 import 'package:blood_pressure_app/features/export_import/model/pdf_export_content.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
+import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:blood_pressure_app/logging.dart';
+import 'package:blood_pressure_app/model/blood_pressure/pressure_unit.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:blood_pressure_app/model/storage/export_columns_store.dart';
 import 'package:blood_pressure_app/model/storage/export_pdf_settings.dart';
@@ -58,12 +62,15 @@ class PdfConverter with Loggable {
         build: (pw.Context context) => [
           if (pdfSettings.exportTitle)
             _buildPdfTitle(content.title, pageDirection),
-          if (pdfSettings.exportStatistics)
+          if (pdfSettings.exportStatistics) ...[
+            if (content.chartPoints.length > 1)
+              _buildPdfTrendChart(content, pageDirection, fonts),
             _buildPdfStatistics(
               content.statistics,
               cellAlignment,
               pageDirection,
             ),
+          ],
           if (pdfSettings.exportData)
             _buildPdfTable(content, cellAlignment, pageDirection, fonts),
         ],
@@ -95,7 +102,7 @@ class PdfConverter with Loggable {
         padding: const pw.EdgeInsets.only(bottom: 8),
         child: pw.Text(
           title,
-          style: const pw.TextStyle(fontSize: 16),
+          style: const pw.TextStyle(fontSize: 14),
           textDirection: _textDirectionFor(title, pageDirection),
         ),
       );
@@ -166,6 +173,111 @@ class PdfConverter with Loggable {
             data: _orderedTableData(statistics.table, pageDirection),
           ),
         ],
+      ),
+    );
+  }
+
+  pw.Widget _buildPdfTrendChart(
+    PdfExportContent content,
+    pw.TextDirection pageDirection,
+    _PdfFonts fonts,
+  ) {
+    final points = content.chartPoints;
+    final xTicks = _chartAxisIndexes(points.length);
+    final dateFormat = WesternDateFormat(
+      points.first.time.year == points.last.time.year ? 'd/M' : 'd/M/yy',
+      locale,
+    );
+    final systolicColor = settings.sysColor.toPdfColor();
+    final diastolicColor = settings.diaColor.toPdfColor();
+    final datasets = <pw.Dataset>[];
+    final systolic = <pw.PointChartValue>[
+      for (var i = 0; i < points.length; i++)
+        if (points[i].systolic case final value?)
+          pw.PointChartValue(i.toDouble(), value),
+    ];
+    final diastolic = <pw.PointChartValue>[
+      for (var i = 0; i < points.length; i++)
+        if (points[i].diastolic case final value?)
+          pw.PointChartValue(i.toDouble(), value),
+    ];
+    if (systolic.isNotEmpty) {
+      datasets.add(
+        pw.LineDataSet(
+          data: systolic,
+          legend: 'sysLong'.tr(),
+          color: systolicColor,
+          lineColor: systolicColor,
+          lineWidth: 1.8,
+          pointSize: 2.2,
+          isCurved: true,
+        ),
+      );
+    }
+    if (diastolic.isNotEmpty) {
+      datasets.add(
+        pw.LineDataSet(
+          data: diastolic,
+          legend: 'diaLong'.tr(),
+          color: diastolicColor,
+          lineColor: diastolicColor,
+          lineWidth: 1.8,
+          pointSize: 2.2,
+          isCurved: true,
+        ),
+      );
+    }
+
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(top: 4, bottom: 12),
+      child: pw.SizedBox(
+        height: 150,
+        child: pw.Chart(
+          grid: pw.CartesianGrid(
+            xAxis: pw.FixedAxis<int>(
+              xTicks,
+              color: PdfColors.blueGrey,
+              width: .6,
+              buildLabel: (value) => pw.Text(
+                dateFormat.format(
+                  points[value.round().clamp(0, points.length - 1)].time,
+                ),
+                style: pw.TextStyle(font: fonts.latin, fontSize: 7),
+                textDirection: pw.TextDirection.ltr,
+              ),
+            ),
+            yAxis: pw.FixedAxis<double>(
+              _chartPressureAxis(points),
+              color: PdfColors.blueGrey,
+              width: .6,
+              divisions: true,
+              divisionsColor: PdfColors.blueGrey100,
+              divisionsWidth: .5,
+              buildLabel: (value) => pw.Text(
+                _chartPressureLabel(
+                  value.toDouble(),
+                  settings.preferredPressureUnit,
+                ),
+                style: pw.TextStyle(font: fonts.latin, fontSize: 7),
+                textDirection: pw.TextDirection.ltr,
+              ),
+            ),
+          ),
+          datasets: datasets,
+          bottom: pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 5),
+            child: pw.ChartLegend(
+              direction: pw.Axis.horizontal,
+              textStyle: pw.TextStyle(
+                font: pageDirection == pw.TextDirection.rtl
+                    ? fonts.arabic
+                    : fonts.latin,
+                fontSize: 8,
+              ),
+              padding: pw.EdgeInsets.zero,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -276,6 +388,47 @@ class PdfConverter with Loggable {
     );
   }
 }
+
+List<int> _chartAxisIndexes(int pointCount) {
+  final last = pointCount - 1;
+  final tickCount = math.min(pointCount, 5);
+  return {
+    for (var i = 0; i < tickCount; i++) (i * last / (tickCount - 1)).round(),
+  }.toList()..sort();
+}
+
+List<double> _chartPressureAxis(List<PdfExportChartPoint> points) {
+  final values = [
+    for (final point in points) ...[?point.systolic, ?point.diastolic],
+  ];
+  final minimum = values.reduce((a, b) => a < b ? a : b);
+  final maximum = values.reduce((a, b) => a > b ? a : b);
+  final span = maximum - minimum;
+  final usefulSpan = span == 0 ? math.max(5, maximum.abs() * .08) : span;
+  final rawStep = usefulSpan / 4;
+  final magnitude = math
+      .pow(10, (math.log(rawStep) / math.ln10).floor())
+      .toDouble();
+  final normalizedStep = rawStep / magnitude;
+  final niceStep =
+      switch (normalizedStep) {
+        <= 1 => 1.0,
+        <= 2 => 2.0,
+        <= 5 => 5.0,
+        _ => 10.0,
+      } *
+      magnitude;
+  final lower = ((minimum - niceStep * .4) / niceStep).floor() * niceStep;
+  var upper = ((maximum + niceStep * .4) / niceStep).ceil() * niceStep;
+  if (upper <= lower) upper = lower + niceStep;
+  final count = ((upper - lower) / niceStep).round();
+  return [for (var i = 0; i <= count; i++) lower + niceStep * i];
+}
+
+String _chartPressureLabel(double value, PressureUnit unit) =>
+    unit == PressureUnit.kPa
+    ? value.toStringAsFixed(1)
+    : value.round().toString();
 
 /// Split a formatted medicine intake into an Arabic medicine name and an
 /// LTR parenthesized dose so bidi mirroring cannot reverse the punctuation.

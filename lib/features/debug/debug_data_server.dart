@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:blood_pressure_app/core/repository/repository_providers.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminder_providers.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_runtime.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
@@ -208,7 +209,6 @@ Future<List<Map<String, Object?>>> seedReminderRings(WidgetRef ref) async {
   final controller = ref.read(settingsProvidersProvider).controller;
   await controller.set(medicineFeatureEnabledSetting, true);
   await controller.set(showAllReminderRingsSetting, true);
-  await controller.set(homeWidgetScheduleIdSetting, '');
   await _refreshReminders(ref);
   return [
     for (final dose in planned)
@@ -351,8 +351,9 @@ Future<void> _refreshReminders(WidgetRef ref) async {
     await runtime.syncSchedules(const []);
     await runtime.updateWidget(const []);
   } else {
+    final schedules = await repository.getAll();
     await runtime.syncSchedules(
-      await repository.getAll(),
+      schedules,
       snoozedOccurrences: occurrences
           .where((occurrence) => occurrence.status == 'snoozed')
           .toList(),
@@ -365,10 +366,11 @@ Future<void> _refreshReminders(WidgetRef ref) async {
     await runtime.updateWidget(
       occurrences,
       showAll: settings.showAllReminderRings,
-      homeScheduleId: settings.homeWidgetScheduleId,
+      schedules: schedules,
     );
   }
   ref.invalidate(medicationSchedulesProvider);
   ref.invalidate(homeMedicationOccurrencesProvider);
   ref.invalidate(todayMedicationOccurrencesProvider);
+  ref.invalidate(medicationDayProvider);
 }

@@ -1,6 +1,7 @@
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/export_import/model/column.dart';
 import 'package:blood_pressure_app/features/export_import/model/import_field_type.dart';
+import 'package:blood_pressure_app/features/export_import/model/pdf_export_chart_point.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_snapshot.dart';
 import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:blood_pressure_app/model/blood_pressure/pressure_unit.dart';
@@ -8,6 +9,8 @@ import 'package:blood_pressure_app/model/blood_pressure_analyzer.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:blood_pressure_app/model/weight_unit.dart';
 import 'package:easy_localization/easy_localization.dart';
+
+export 'package:blood_pressure_app/features/export_import/model/pdf_export_chart_point.dart';
 
 /// Placeholder used in PDF cells when a value is missing.
 ///
@@ -37,7 +40,7 @@ class PdfExportLatestReading {
   final String pul;
 }
 
-/// Dashboard-matching statistics for the exported range.
+/// Summary statistics for the exported range.
 class PdfExportStatistics {
   /// Create the stats block model.
   const PdfExportStatistics({
@@ -53,7 +56,7 @@ class PdfExportStatistics {
   final int count;
 
   /// Average measurements per day, when the analyzer can compute it.
-  final int? measurementsPerDay;
+  final double? measurementsPerDay;
 
   /// Localized preferred pressure unit.
   final String unitLabel;
@@ -76,11 +79,12 @@ class PdfExportContent {
     required this.statistics,
     required this.headers,
     required this.rows,
+    this.chartPoints = const [],
     this.columnTypes = const [],
     this.rowDays = const [],
   });
 
-  /// Build PDF strings from already-filtered, oldest-first [entries].
+  /// Build PDF strings from already-filtered [entries].
   factory PdfExportContent.from({
     required List<CombinedEntry> entries,
     required String dateFormatString,
@@ -89,7 +93,8 @@ class PdfExportContent {
     required WeightUnit weightUnit,
     required List<ExportColumn> columns,
   }) {
-    final newestFirst = entries.reversed.toList();
+    final newestFirst = List<CombinedEntry>.of(entries)
+      ..sort((a, b) => b.time.compareTo(a.time));
     final snapshot = DashboardSnapshot.from(entriesNewestFirst: newestFirst);
     final analyzer = snapshot.period;
     final dateFormatter = WesternDateFormat(
@@ -98,16 +103,25 @@ class PdfExportContent {
     );
 
     return PdfExportContent(
-      title: _title(entries, analyzer, dateFormatter),
+      title: _title(newestFirst, analyzer, dateFormatter),
       statistics: _statistics(snapshot, pressureUnit, dateFormatter),
       headers: columns.map((column) => column.userTitle()).toList(),
       columnTypes: columns.map((column) => column.restoreAbleType).toList(),
+      chartPoints: [
+        for (final entry in newestFirst.reversed)
+          if (entry.sys != null || entry.dia != null)
+            PdfExportChartPoint(
+              time: entry.time,
+              systolic: pressureInUnit(entry.sys, pressureUnit),
+              diastolic: pressureInUnit(entry.dia, pressureUnit),
+            ),
+      ],
       rowDays: [
-        for (final entry in entries)
+        for (final entry in newestFirst)
           DateTime(entry.time.year, entry.time.month, entry.time.day),
       ],
       rows: [
-        for (final entry in entries)
+        for (final entry in newestFirst)
           [
             for (final column in columns)
               _cell(entry, column, pressureUnit, weightUnit),
@@ -125,13 +139,16 @@ class PdfExportContent {
   /// Localized column titles.
   final List<String> headers;
 
-  /// One row per exported entry, oldest first.
+  /// One row per exported entry, newest first.
   final List<List<String>> rows;
+
+  /// Pressure trend points, oldest first for natural time-axis progression.
+  final List<PdfExportChartPoint> chartPoints;
 
   /// Data type for each logical export column, used for script-aware layout.
   final List<RowDataFieldType?> columnTypes;
 
-  /// Calendar day for each row, oldest first, used for day-based striping.
+  /// Calendar day for each row, newest first, used for day-based striping.
   final List<DateTime> rowDays;
 }
 
@@ -158,20 +175,21 @@ PdfExportStatistics _statistics(
   DateFormat dateFormatter,
 ) {
   final period = snapshot.period;
-  final activityLine = snapshot.measurementsPerDay == null
+  final measurementsPerDay = _averageMeasurementsPerDay(period);
+  final activityLine = measurementsPerDay == null
       ? 'dashboardActivityCount'.tr(
           namedArgs: {'count': snapshot.count.toString()},
         )
       : 'dashboardActivityLine'.tr(
           namedArgs: {
             'count': snapshot.count.toString(),
-            'perDay': snapshot.measurementsPerDay.toString(),
+            'perDay': formatDashboardNumber(measurementsPerDay, digits: 1),
           },
         );
   final latestEntry = snapshot.latest;
   return PdfExportStatistics(
     count: snapshot.count,
-    measurementsPerDay: snapshot.measurementsPerDay,
+    measurementsPerDay: measurementsPerDay,
     unitLabel: _pressureUnitLabel(pressureUnit),
     activityLine: activityLine,
     latest: latestEntry == null
@@ -204,6 +222,16 @@ PdfExportStatistics _statistics(
       ],
     ],
   );
+}
+
+double? _averageMeasurementsPerDay(BloodPressureAnalyzer analyzer) {
+  if (analyzer.count <= 1) return null;
+  final firstDay = analyzer.firstDay;
+  final lastDay = analyzer.lastDay;
+  if (firstDay == null || lastDay == null) return null;
+  final elapsedDays = lastDay.difference(firstDay).inDays;
+  if (elapsedDays <= 0) return analyzer.count.toDouble();
+  return analyzer.count / elapsedDays;
 }
 
 String _cell(

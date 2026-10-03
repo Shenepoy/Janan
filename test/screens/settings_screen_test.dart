@@ -103,6 +103,29 @@ void main() {
     expect(find.text('Animation duration'), findsNothing);
   });
 
+  testWidgets('opening advanced keeps the rows above it still', (tester) async {
+    usePhoneTestSurface(tester);
+
+    await pumpApp(tester, await materialApp(const SettingsPage()));
+
+    final advanced = find.text('Advanced').first;
+    await Scrollable.ensureVisible(tester.element(advanced), alignment: 0.8);
+    await tester.pump();
+
+    final above = find.text('Confirm deletion');
+    final before = tester.getTopLeft(above).dy;
+    await tester.tapAt(tester.getCenter(advanced));
+    for (final elapsed in [16, 50, 100, 200]) {
+      await tester.pump(Duration(milliseconds: elapsed));
+      expect(
+        tester.getTopLeft(above).dy,
+        closeTo(before, 4),
+        reason: 'Opening Advanced should not visibly move rows above it.',
+      );
+    }
+    expect(tester.getTopLeft(above).dy, closeTo(before, 1));
+  });
+
   testWidgets('theme color uses a flat color list', (tester) async {
     usePhoneTestSurface(tester);
 

@@ -1,5 +1,5 @@
-import 'package:blood_pressure_app/domain/medicine.dart';
 import 'package:blood_pressure_app/domain/medication_unit.dart';
+import 'package:blood_pressure_app/domain/medicine.dart';
 
 /// Extra instruction shown with a dose reminder.
 enum MedicationDoseTiming {
@@ -22,6 +22,9 @@ enum MedicationDoseTiming {
   beforeSleep,
 }
 
+/// Lifecycle state for a recurring medication schedule.
+enum MedicationScheduleState { active, paused, ended }
+
 /// A recurring instruction for taking a medicine.
 class MedicationSchedule {
   const MedicationSchedule({
@@ -35,7 +38,7 @@ class MedicationSchedule {
     required this.weekdays,
     this.startDate,
     this.endDate,
-    this.active = true,
+    this.state = MedicationScheduleState.active,
   });
 
   final String? id;
@@ -64,7 +67,26 @@ class MedicationSchedule {
   final Set<int> weekdays;
   final DateTime? startDate;
   final DateTime? endDate;
-  final bool active;
+  final MedicationScheduleState state;
+
+  /// Whether this schedule currently creates upcoming doses.
+  bool get active => state == MedicationScheduleState.active;
+
+  /// Returns this schedule with [state] changed.
+  MedicationSchedule copyWith({MedicationScheduleState? state}) =>
+      MedicationSchedule(
+        id: id,
+        medicineId: medicineId,
+        medicine: medicine,
+        doseAmount: doseAmount,
+        doseUnit: doseUnit,
+        timeMinutes: timeMinutes,
+        doseTimings: doseTimings,
+        weekdays: weekdays,
+        startDate: startDate,
+        endDate: endDate,
+        state: state ?? this.state,
+      );
 }
 
 /// One scheduled dose on a particular local date and time.

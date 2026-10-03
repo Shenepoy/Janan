@@ -49,7 +49,14 @@ class _AppHomeState extends ConsumerState<AppHome> {
     super.dispose();
   }
 
-  Widget _graphCard() => const HomeBpChart();
+  Widget _graphCard({
+    required bool showBloodPressure,
+    required bool showMedicine,
+  }) => HomeBpChart(
+    key: ValueKey((showBloodPressure, showMedicine)),
+    showBloodPressure: showBloodPressure,
+    showMedicine: showMedicine,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +68,16 @@ class _AppHomeState extends ConsumerState<AppHome> {
       }
     });
     final settings = ref.watch(appSettingsProvider);
+    final filter =
+        settings.bloodPressureEnabled && settings.medicineFeatureEnabled
+        ? (_filter?.value ?? MeasurementListFilter.all)
+        : MeasurementListFilter.all;
+    final showBloodPressureChart =
+        settings.bloodPressureEnabled &&
+        filter != MeasurementListFilter.medicine;
+    final showMedicineChart =
+        settings.medicineFeatureEnabled &&
+        filter != MeasurementListFilter.bloodPressure;
     if (!settings.bloodPressureEnabled) {
       return Scaffold(
         primary: false,
@@ -78,6 +95,10 @@ class _AppHomeState extends ConsumerState<AppHome> {
               medicineEntries.sort((a, b) => b.time.compareTo(a.time));
               return DashboardPageBody(
                 children: [
+                  if (medicineEntries.isEmpty && !showMedicineChart)
+                    const DashboardEmptyCard(),
+                  if (showMedicineChart)
+                    _graphCard(showBloodPressure: false, showMedicine: true),
                   if (medicineEntries.isNotEmpty)
                     DashboardSection(
                       padding: EdgeInsets.zero,
@@ -111,7 +132,15 @@ class _AppHomeState extends ConsumerState<AppHome> {
                   body: SafeArea(
                     top: false,
                     child: BleLaunchSyncPopout(
-                      child: DashboardPageBody(children: [_graphCard()]),
+                      child: DashboardPageBody(
+                        children: [
+                          if (showBloodPressureChart || showMedicineChart)
+                            _graphCard(
+                              showBloodPressure: showBloodPressureChart,
+                              showMedicine: showMedicineChart,
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -133,17 +162,24 @@ class _AppHomeState extends ConsumerState<AppHome> {
                             )..sort((a, b) => b.time.compareTo(a.time));
                             return DashboardPageBody(
                               children: [
-                                if (entries.isEmpty)
-                                  const DashboardEmptyCard()
-                                else ...[
-                                  _graphCard(),
+                                if (entries.isEmpty &&
+                                    filter != MeasurementListFilter.medicine &&
+                                    !showMedicineChart)
+                                  const DashboardEmptyCard(),
+                                if ((entries.isNotEmpty || showMedicineChart) &&
+                                    (showBloodPressureChart ||
+                                        showMedicineChart))
+                                  _graphCard(
+                                    showBloodPressure: showBloodPressureChart,
+                                    showMedicine: showMedicineChart,
+                                  ),
+                                if (entries.isNotEmpty) ...[
                                   DashboardSection(
                                     padding: EdgeInsets.zero,
                                     child: MeasurementList(
                                       entries: entries,
                                       filter: settings.medicineFeatureEnabled
-                                          ? (_filter?.value ??
-                                                MeasurementListFilter.all)
+                                          ? filter
                                           : MeasurementListFilter.all,
                                       shrinkWrap: true,
                                     ),

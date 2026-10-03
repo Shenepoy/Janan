@@ -1,4 +1,6 @@
+import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
 import 'package:blood_pressure_app/components/confirm_deletion_dialog.dart';
+import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/settings/add_medication_dialog.dart';
@@ -134,12 +136,17 @@ class MedicineManagerScreen extends StatelessWidget {
           ),
           floatingActionButton: meds.isEmpty
               ? null
-              : FloatingActionButton.small(
-                  heroTag: 'addMedication',
+              : AnimatedFloatingActionButton(
+                  small: true,
                   tooltip: 'addMedication'.tr(),
+                  burstKind: FabBurstKind.bills,
                   onPressed: () => _addMedicine(context),
                   child: const Icon(Icons.add),
                 ),
+          floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation,
+          floatingActionButtonLocation: const SnackBarStableFabLocation(
+            base: FloatingActionButtonLocation.endFloat,
+          ),
           body: meds.isEmpty
               ? SafaehEmptyState(
                   icon: Icons.medication_outlined,

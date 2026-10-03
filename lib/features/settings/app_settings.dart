@@ -46,7 +46,6 @@ class AppSettings {
     required this.overdueReminderCount,
     required this.overdueReminderIntervalMinutes,
     required this.showAllReminderRings,
-    required this.homeWidgetScheduleId,
     required this.needlePinBarWidth,
     required this.bottomAppBars,
     required this.preferredPressureUnit,
@@ -116,7 +115,6 @@ class AppSettings {
         overdueReminderIntervalSetting,
       ),
       showAllReminderRings: controller.get(showAllReminderRingsSetting),
-      homeWidgetScheduleId: controller.get(homeWidgetScheduleIdSetting),
       needlePinBarWidth: controller.get(needlePinBarWidthSetting),
       bottomAppBars: controller.get(bottomAppBarsSetting),
       preferredPressureUnit: PressureUnit.values.firstWhere(
@@ -182,7 +180,6 @@ class AppSettings {
   final int overdueReminderCount;
   final int overdueReminderIntervalMinutes;
   final bool showAllReminderRings;
-  final String homeWidgetScheduleId;
   final double needlePinBarWidth;
   final bool bottomAppBars;
   final PressureUnit preferredPressureUnit;
@@ -288,7 +285,6 @@ AppSettings appSettings(Ref ref) {
   ref.watch(settings.provider(overdueReminderCountSetting));
   ref.watch(settings.provider(overdueReminderIntervalSetting));
   ref.watch(settings.provider(showAllReminderRingsSetting));
-  ref.watch(settings.provider(homeWidgetScheduleIdSetting));
   ref.watch(settings.provider(needlePinBarWidthSetting));
   ref.watch(settings.provider(bottomAppBarsSetting));
   ref.watch(settings.provider(preferredPressureUnitSetting));

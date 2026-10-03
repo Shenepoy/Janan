@@ -34,6 +34,7 @@ The first release supports recurring schedules on selected weekdays, one or more
 6. Reconcile a dose logged through the existing medicine-entry form with the nearest uncompleted occurrence for the same medicine when the match is clear. Keep unrelated and historical intakes as standalone records.
 7. Show whether notifications are enabled and provide a route to the required Android settings when they are not.
 8. Keep schedules and dose history on-device. Include them in local database backups and delete them through the existing delete-data flow.
+9. Show a home summary of recorded doses taken early, on time, or late for the selected date range. Treat a dose within 30 minutes before or after its scheduled time as on time; keep the chart segments and legend in the same semantic order in RTL.
 
 ## Pages and entry points
 
@@ -92,6 +93,7 @@ Update `lib/core/database/powersync_schema.dart` by adding local-only tables and
 - Editing, pausing, or ending a schedule removes obsolete pending notifications and refreshes the widget.
 - A reboot and a time-zone change rebuild upcoming reminders from local schedules without duplicates.
 - Denying notification permission leaves the in-app agenda usable and clearly shows that OS reminders are off.
+- The home medicine-timing chart counts each taken occurrence once, uses the 30-minute on-time window, and mirrors its early/on-time/late order in RTL.
 - Taking a dose from the agenda records an actual intake once; skipping or snoozing does not create a taken intake.
 - The in-app circle and circular widget show time remaining, the amber near-dose state, red overdue time, and the medicine's name and color.
 - The home circle opens a dimmed dose panel attached to the circle; the Bluetooth sync indicator opens a matching dimmed panel attached to that indicator.

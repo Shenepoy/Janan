@@ -22,9 +22,10 @@ class PowerSyncMedicationScheduleRepository
       'SELECT s.id, s.med_id, s.dose_amount, s.dose_unit, '
       's.time_minutes_json, s.dose_timings_json, s.weekdays_mask, '
       's.start_date, s.end_date, '
-      's.active, m.designation, m.color, m.default_dose_mg, m.dose_unit AS medicine_unit '
+      's.active, s.ended, m.designation, m.color, m.default_dose_mg, '
+      'm.dose_unit AS medicine_unit '
       'FROM medication_schedules s JOIN medicines m ON m.id = s.med_id '
-      'ORDER BY s.active DESC, m.designation COLLATE NOCASE',
+      'ORDER BY s.active DESC, s.ended ASC, m.designation COLLATE NOCASE',
     );
     return [for (final row in rows) _scheduleFromRow(row)];
   }
@@ -57,6 +58,7 @@ class PowerSyncMedicationScheduleRepository
       _dateKey(schedule.startDate),
       _dateKey(schedule.endDate),
       schedule.active ? 1 : 0,
+      schedule.state == MedicationScheduleState.ended ? 1 : 0,
     ];
     final existing = await _db.getAll(
       'SELECT id FROM medication_schedules WHERE id = ?',
@@ -67,8 +69,8 @@ class PowerSyncMedicationScheduleRepository
         'INSERT INTO medication_schedules '
         '(id, med_id, dose_amount, dose_unit, time_minutes_json, '
         'dose_timings_json, weekdays_mask, '
-        'start_date, end_date, active) '
-        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'start_date, end_date, active, ended) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [id, ...values],
       );
     } else {
@@ -76,7 +78,7 @@ class PowerSyncMedicationScheduleRepository
         'UPDATE medication_schedules SET med_id = ?, dose_amount = ?, dose_unit = ?, '
         'time_minutes_json = ?, dose_timings_json = ?, weekdays_mask = ?, '
         'start_date = ?, end_date = ?, '
-        'active = ? WHERE id = ?',
+        'active = ?, ended = ? WHERE id = ?',
         [...values, id],
       );
       await _db.execute(
@@ -95,7 +97,7 @@ class PowerSyncMedicationScheduleRepository
       weekdays: schedule.weekdays,
       startDate: schedule.startDate,
       endDate: schedule.endDate,
-      active: schedule.active,
+      state: schedule.state,
     );
   }
 
@@ -142,7 +144,7 @@ class PowerSyncMedicationScheduleRepository
       'o.snooze_until_unix_s, o.taken_at_unix_s, '
       's.id AS schedule_id, s.med_id, s.dose_amount, s.dose_unit, '
       's.time_minutes_json, s.dose_timings_json, s.weekdays_mask, '
-      's.start_date, s.end_date, s.active, '
+      's.start_date, s.end_date, s.active, s.ended, '
       'm.designation, m.color, m.default_dose_mg, m.dose_unit AS medicine_unit '
       'FROM dose_occurrences o '
       'JOIN medication_schedules s ON s.id = o.schedule_id '
@@ -167,21 +169,46 @@ class PowerSyncMedicationScheduleRepository
   }
 
   @override
-  Future<void> delete(String id) async {
+  Future<List<DoseOccurrence>> getTakenOccurrences(DateRange range) async {
     final rows = await _db.getAll(
-      'SELECT med_id FROM medication_schedules WHERE id = ?',
-      [id],
+      'SELECT o.id AS occurrence_id, o.scheduled_unix_s, o.status, '
+      'o.snooze_until_unix_s, o.taken_at_unix_s, '
+      's.id AS schedule_id, s.med_id, s.dose_amount, s.dose_unit, '
+      's.time_minutes_json, s.dose_timings_json, s.weekdays_mask, '
+      's.start_date, s.end_date, s.active, s.ended, '
+      'm.designation, m.color, m.default_dose_mg, m.dose_unit AS medicine_unit '
+      'FROM dose_occurrences o '
+      'JOIN medication_schedules s ON s.id = o.schedule_id '
+      'JOIN medicines m ON m.id = s.med_id '
+      "WHERE o.scheduled_unix_s BETWEEN ? AND ? AND o.status = 'taken' "
+      'AND o.taken_at_unix_s IS NOT NULL '
+      'ORDER BY o.scheduled_unix_s',
+      [range.startStamp, range.endStamp],
     );
-    final medId = rows.isEmpty ? null : rows.first['med_id'] as String?;
+    return [
+      for (final row in rows)
+        DoseOccurrence(
+          id: row['occurrence_id'] as String,
+          schedule: _scheduleFromRow(row),
+          scheduledAt: DateTime.fromMillisecondsSinceEpoch(
+            (row['scheduled_unix_s'] as int) * 1000,
+          ),
+          status: row['status'] as String,
+          snoozeUntil: _dateTime(row['snooze_until_unix_s']),
+          takenAt: _dateTime(row['taken_at_unix_s']),
+        ),
+    ];
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    await _db.execute(
+      'UPDATE intakes SET occurrence_id = NULL WHERE occurrence_id LIKE ?',
+      ['$id.%'],
+    );
     await _db.execute('DELETE FROM dose_occurrences WHERE schedule_id = ?', [
       id,
     ]);
-    await _db.execute('DELETE FROM intakes WHERE occurrence_id LIKE ?', [
-      '$id.%',
-    ]);
-    if (medId != null) {
-      await _db.execute('DELETE FROM intakes WHERE med_id = ?', [medId]);
-    }
     await _db.execute('DELETE FROM medication_schedules WHERE id = ?', [id]);
   }
 
@@ -263,7 +290,11 @@ class PowerSyncMedicationScheduleRepository
       },
       startDate: _parseDate(row['start_date'] as String?),
       endDate: _parseDate(row['end_date'] as String?),
-      active: (row['active'] as num).toInt() == 1,
+      state: (row['ended'] as num?)?.toInt() == 1
+          ? MedicationScheduleState.ended
+          : (row['active'] as num).toInt() == 1
+          ? MedicationScheduleState.active
+          : MedicationScheduleState.paused,
     );
   }
 

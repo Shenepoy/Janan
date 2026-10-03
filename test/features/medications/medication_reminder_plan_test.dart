@@ -1,5 +1,6 @@
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_plan.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminder_runtime.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -102,11 +103,146 @@ void main() {
     expect(
       selectReminderDoses(doses, showAll: true, scheduleId: 'a')
           .map((item) => item.targetAt.hour),
-      [8, 20],
+      [8],
     );
     expect(
       selectReminderDoses(doses, showAll: false).single.scheduleId,
       'a',
     );
+  });
+
+  test('later doses of the same medicine stay off the rings', () {
+    final selected = selectReminderDoses(
+      [
+        dose('amlodipine', DateTime(2026, 10, 3, 22)),
+        dose('amlodipine', DateTime(2026, 10, 4, 22)),
+        dose('amlodipine', DateTime(2026, 10, 5, 22)),
+        dose('metformin', DateTime(2026, 10, 3, 23)),
+      ],
+      showAll: true,
+    );
+
+    expect(
+      selected.map((item) => '${item.scheduleId}-${item.targetAt.day}'),
+      ['amlodipine-3', 'metformin-3'],
+    );
+    final rings = stackReminderRings(selected);
+    expect(rings, hasLength(2));
+    expect(rings.first.doses.single.name, 'amlodipine');
+    expect(rings.last.doses.single.name, 'metformin');
+  });
+
+  test('countdown rounds an hour or more to a whole hour', () {
+    expect(
+      formatCompactCountdown(
+        const Duration(hours: 1, minutes: 48),
+        overdue: false,
+      ),
+      '2h',
+    );
+    expect(
+      formatCompactCountdown(const Duration(hours: 2), overdue: false),
+      '2h',
+    );
+    expect(
+      formatCompactCountdown(const Duration(minutes: 45), overdue: false),
+      '45m',
+    );
+    expect(
+      formatCompactCountdown(
+        const Duration(hours: 1, minutes: 30),
+        overdue: true,
+      ),
+      '1h',
+    );
+    expect(
+      formatCompactCountdown(
+        const Duration(hours: 13, minutes: 29),
+        overdue: true,
+      ),
+      '13h',
+    );
+    expect(formatCompactCountdown(Duration.zero, overdue: false), 'now');
+
+    final daily = MedicationSchedule(
+      medicineId: 'amlodipine',
+      medicine: Medicine(designation: 'Amlodipine'),
+      doseAmount: 5,
+      doseUnit: MedicationUnit.mg,
+      timeMinutes: const [22 * 60],
+      weekdays: const {1, 2, 3, 4, 5, 6, 7},
+    );
+    final target = DateTime(2026, 10, 3, 22);
+    final now = DateTime(2026, 10, 3, 20, 12);
+    final interval = scheduledDoseInterval(daily, target);
+    expect(interval, const Duration(hours: 24));
+    expect(
+      doseRingFraction(target, now, interval),
+      closeTo(1 - (108 * 60) / (24 * 3600), 0.0001),
+    );
+
+    final twice = MedicationSchedule(
+      medicineId: 'metformin',
+      medicine: Medicine(designation: 'Metformin'),
+      doseAmount: 500,
+      doseUnit: MedicationUnit.mg,
+      timeMinutes: const [10 * 60, 22 * 60],
+      weekdays: const {1, 2, 3, 4, 5, 6, 7},
+    );
+    expect(
+      scheduledDoseInterval(twice, DateTime(2026, 10, 3, 22)),
+      const Duration(hours: 12),
+    );
+    expect(
+      scheduledDoseInterval(twice, DateTime(2026, 10, 3, 10)),
+      const Duration(hours: 12),
+    );
+  });
+
+  test('widget catalog keeps a view for every medicine', () {
+    final catalog = medicationWidgetCatalog(
+      [
+        PlannedDose(
+          scheduleId: 'a',
+          targetAt: DateTime(2026, 10, 3, 23, 30),
+          color: 1,
+          name: 'Aspirin',
+          status: 'pending',
+        ),
+      ],
+      showAll: true,
+      schedules: [
+        MedicationSchedule(
+          id: 'a',
+          medicineId: 'a',
+          medicine: const Medicine(designation: 'Aspirin'),
+          doseAmount: 81,
+          doseUnit: MedicationUnit.mg,
+          timeMinutes: const [23 * 60 + 30],
+          weekdays: const {1, 2, 3, 4, 5, 6, 7},
+        ),
+        MedicationSchedule(
+          id: 'b',
+          medicineId: 'b',
+          medicine: const Medicine(designation: 'Metformin'),
+          doseAmount: 500,
+          doseUnit: MedicationUnit.mg,
+          timeMinutes: const [8 * 60],
+          weekdays: const {1, 2, 3, 4, 5, 6, 7},
+        ),
+      ],
+      labels: const {'showsAll': 'All medicines'},
+    );
+    final choices = catalog['choices']! as List<Map<String, String>>;
+    expect(choices.map((choice) => choice['name']), [
+      'All medicines',
+      'Aspirin',
+      'Metformin',
+    ]);
+    final views = catalog['views']! as Map;
+    expect(views['']['name'], 'Aspirin');
+    expect(views['a']['name'], 'Aspirin');
+    expect(views['b']['name'], 'Metformin');
+    expect(views['b'].containsKey('scheduledAtMs'), isFalse);
   });
 }

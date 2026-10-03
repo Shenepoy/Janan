@@ -1,4 +1,5 @@
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.shenepoy.janan.MedicationWidgetConfigureActivity"
     android:description="@string/medication_widget_description"
     android:initialLayout="@layout/medication_widget"
     android:minHeight="56dp"

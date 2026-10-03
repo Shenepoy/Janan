@@ -10,10 +10,43 @@ Future<DateTimeRange?> showDashboardDateRange({
   required DateTimeRange initialRange,
   required DateTime firstDate,
   required DateTime lastDate,
+}) => _showAnchored<DateTimeRange>(
+  context: context,
+  child: _DashboardDateRangeSheet(
+    initialRange: initialRange,
+    firstDate: firstDate,
+    lastDate: lastDate,
+  ),
+);
+
+/// Open the home calendar to pick one day, dropping from the tapped control.
+Future<DateTime?> showDashboardDay({
+  required BuildContext context,
+  required DateTime initialDate,
+  required DateTime firstDate,
+  required DateTime lastDate,
+}) async {
+  final day = _dateOnly(initialDate);
+  final range = await _showAnchored<DateTimeRange>(
+    context: context,
+    child: _DashboardDateRangeSheet(
+      initialRange: DateTimeRange(start: day, end: day),
+      firstDate: firstDate,
+      lastDate: lastDate,
+      singleDay: true,
+    ),
+  );
+  if (range == null) return null;
+  return _dateOnly(range.start);
+}
+
+Future<T?> _showAnchored<T>({
+  required BuildContext context,
+  required Widget child,
 }) {
   final anchor = _anchorRectOf(context);
   final theme = Theme.of(context);
-  return showGeneralDialog<DateTimeRange>(
+  return showGeneralDialog<T>(
     context: context,
     barrierDismissible: true,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -28,11 +61,7 @@ Future<DateTimeRange?> showDashboardDateRange({
       return _AnchoredDateRangePopout(
         animation: curved,
         anchor: anchor,
-        child: _DashboardDateRangeSheet(
-          initialRange: initialRange,
-          firstDate: firstDate,
-          lastDate: lastDate,
-        ),
+        child: child,
       );
     },
     transitionBuilder: (context, animation, secondaryAnimation, child) => child,
@@ -155,11 +184,13 @@ class _DashboardDateRangeSheet extends StatefulWidget {
     required this.initialRange,
     required this.firstDate,
     required this.lastDate,
+    this.singleDay = false,
   });
 
   final DateTimeRange initialRange;
   final DateTime firstDate;
   final DateTime lastDate;
+  final bool singleDay;
 
   @override
   State<_DashboardDateRangeSheet> createState() =>
@@ -183,6 +214,13 @@ class _DashboardDateRangeSheetState extends State<_DashboardDateRangeSheet> {
 
   void _onDayTap(DateTime day) {
     final date = _dateOnly(day);
+    if (widget.singleDay) {
+      setState(() {
+        _start = date;
+        _end = date;
+      });
+      return;
+    }
     setState(() {
       if (_start == null || _end != null) {
         _start = date;
@@ -230,10 +268,12 @@ class _DashboardDateRangeSheetState extends State<_DashboardDateRangeSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'custom'.tr(),
+                        widget.singleDay
+                            ? (rangeText ?? '')
+                            : 'custom'.tr(),
                         style: AppText.title(context),
                       ),
-                      if (rangeText != null) ...[
+                      if (!widget.singleDay && rangeText != null) ...[
                         const SizedBox(height: 2),
                         Text(
                           rangeText,
@@ -297,8 +337,11 @@ class _DashboardDateRangeSheetState extends State<_DashboardDateRangeSheet> {
 
   String? _rangeText(String locale) {
     if (_start == null) return null;
-    final start = WesternDateFormat.MMMd(locale).format(_start!);
-    if (_end == null) return start;
+    final format = widget.singleDay
+        ? WesternDateFormat.yMMMd(locale)
+        : WesternDateFormat.MMMd(locale);
+    final start = format.format(_start!);
+    if (widget.singleDay || _end == null) return start;
     return '$start – ${WesternDateFormat.MMMd(locale).format(_end!)}';
   }
 }

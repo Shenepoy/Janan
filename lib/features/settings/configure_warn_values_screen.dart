@@ -1,5 +1,6 @@
 import 'package:blood_pressure_app/components/custom_banner.dart';
 import 'package:blood_pressure_app/components/input_dialog.dart';
+import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/settings/tiles/number_input_list_tile.dart';
@@ -21,6 +22,7 @@ class ConfigureWarnValuesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(forceMaterialTransparency: true),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         label: Text('determineWarnValues'.tr()),
         onPressed:() async {
           final age = (await showNumberInputDialog(context,
@@ -37,6 +39,10 @@ class ConfigureWarnValuesScreen extends ConsumerWidget {
             );
           }
         },
+      ),
+      floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation,
+      floatingActionButtonLocation: const SnackBarStableFabLocation(
+        base: FloatingActionButtonLocation.endFloat,
       ),
       body: ListView(
         children: [

@@ -31,6 +31,7 @@ void main() {
       'statusNextDose': 'التالي',
       'noDoseDue': 'لا توجد جرعة مستحقة',
       'noMedicineDoseDue': 'لا توجد جرعة دواء مستحقة',
+      'showsAll': 'كل الأدوية',
       'now': 'الآن',
       'hourUnit': 'س',
       'minuteUnit': 'د',

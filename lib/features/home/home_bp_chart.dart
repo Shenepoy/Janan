@@ -5,6 +5,7 @@ import 'package:blood_pressure_app/core/settings/storage_providers.dart';
 import 'package:blood_pressure_app/data_util/combined_entry_builder.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/home/chart_bucket_calendar.dart';
+import 'package:blood_pressure_app/features/home/home_medication_timing_chart.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_info.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/statistics/chart/chart_tooltip.dart';
@@ -19,7 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 
-/// Home blood-pressure charts the user can cycle.
+/// Charts the user can cycle on the home dashboard.
 enum HomeBpChartKind {
   /// Min–max systolic per day (or week / month when the range is long).
   dailyRange,
@@ -28,7 +29,10 @@ enum HomeBpChartKind {
   classification,
 
   /// Systolic minus diastolic over time.
-  pulsePressure;
+  pulsePressure,
+
+  /// Share of recorded medicine doses taken early, on time, or late.
+  medicineTiming;
 
   /// Decode a stored preference, falling back to [dailyRange].
   static HomeBpChartKind parse(String? raw) =>
@@ -39,23 +43,42 @@ const _inRangeColor = Color(0xFF7FC8BA);
 const _elevatedColor = Color(0xFFF9B132);
 const _highColor = Color(0xFFF87261);
 
-/// Dashboard card with the three home BP charts and a swap control.
+/// Dashboard card with home blood-pressure and medicine charts.
 class HomeBpChart extends StatelessWidget {
-  /// Create the swappable home blood-pressure chart.
-  const HomeBpChart({super.key});
+  /// Create the home chart card with whichever chart categories are enabled.
+  const HomeBpChart({
+    super.key,
+    this.showBloodPressure = true,
+    this.showMedicine = false,
+  });
+
+  /// Whether the three blood-pressure charts can be selected.
+  final bool showBloodPressure;
+
+  /// Whether the medicine timing chart can be selected.
+  final bool showMedicine;
 
   @override
   Widget build(BuildContext context) => CombinedEntryBuilder(
     rangeType: IntervalStoreManagerLocation.mainPage,
-    onData: (context, records, intakes, notes) =>
-        _HomeBpChartView(records: records),
+    onData: (context, records, intakes, notes) => _HomeBpChartView(
+      records: records,
+      showBloodPressure: showBloodPressure,
+      showMedicine: showMedicine,
+    ),
   );
 }
 
 class _HomeBpChartView extends ConsumerStatefulWidget {
-  const _HomeBpChartView({required this.records});
+  const _HomeBpChartView({
+    required this.records,
+    required this.showBloodPressure,
+    required this.showMedicine,
+  });
 
   final List<BloodPressureRecord> records;
+  final bool showBloodPressure;
+  final bool showMedicine;
 
   @override
   ConsumerState<_HomeBpChartView> createState() => _HomeBpChartViewState();
@@ -72,8 +95,18 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
   late Animation<double> _height;
   late HomeBpChartKind _kind;
 
+  List<HomeBpChartKind> get _availableKinds => [
+    if (widget.showBloodPressure) ...[
+      HomeBpChartKind.dailyRange,
+      HomeBpChartKind.classification,
+      HomeBpChartKind.pulsePressure,
+    ],
+    if (widget.showMedicine) HomeBpChartKind.medicineTiming,
+  ];
+
   double _heightFor(HomeBpChartKind kind) => switch (kind) {
-    HomeBpChartKind.classification => _shortHeight,
+    HomeBpChartKind.classification ||
+    HomeBpChartKind.medicineTiming => _shortHeight,
     _ => _tallHeight,
   };
 
@@ -81,27 +114,48 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
     HomeBpChartKind.dailyRange => 'chartDailyRange'.tr(),
     HomeBpChartKind.classification => 'chartClassification'.tr(),
     HomeBpChartKind.pulsePressure => 'pulsePressure'.tr(),
+    HomeBpChartKind.medicineTiming => 'homeMedicineTiming'.tr(),
   };
 
   String _subtitleOf(HomeBpChartKind kind) => switch (kind) {
     HomeBpChartKind.dailyRange => 'chartDailyRangeSubtitle'.tr(),
     HomeBpChartKind.classification => 'chartClassificationSubtitle'.tr(),
     HomeBpChartKind.pulsePressure => 'chartPulsePressureSubtitle'.tr(),
+    HomeBpChartKind.medicineTiming => 'homeMedicineTimingSubtitle'.tr(),
   };
 
   IconData _iconOf(HomeBpChartKind kind) => switch (kind) {
     HomeBpChartKind.dailyRange => Icons.waterfall_chart,
     HomeBpChartKind.classification => Icons.donut_large,
     HomeBpChartKind.pulsePressure => Icons.show_chart,
+    HomeBpChartKind.medicineTiming => Icons.medication_outlined,
   };
+
+  HomeBpChartKind _availableKind(String? raw) {
+    final selected = HomeBpChartKind.parse(raw);
+    final kinds = _availableKinds;
+    if (kinds.contains(selected) || kinds.isEmpty) return selected;
+    return kinds.first;
+  }
 
   @override
   void initState() {
     super.initState();
-    _kind = HomeBpChartKind.parse(ref.readSetting<String>(homeBpChartSetting));
+    _kind = _availableKind(ref.readSetting<String>(homeBpChartSetting));
     _spin = AnimationController(vsync: this, duration: _swap);
     _size = AnimationController(vsync: this, duration: _swap);
     _height = AlwaysStoppedAnimation(_heightFor(_kind));
+  }
+
+  @override
+  void didUpdateWidget(covariant _HomeBpChartView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_availableKinds.isNotEmpty && !_availableKinds.contains(_kind)) {
+      _spin.stop();
+      _size.stop();
+      _kind = _availableKinds.first;
+      _height = AlwaysStoppedAnimation(_heightFor(_kind));
+    }
   }
 
   @override
@@ -112,9 +166,10 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
   }
 
   void _cycle() {
+    final kinds = _availableKinds;
+    if (kinds.length < 2) return;
     _spin.forward(from: 0);
-    final next = HomeBpChartKind
-        .values[(_kind.index + 1) % HomeBpChartKind.values.length];
+    final next = kinds[(kinds.indexOf(_kind) + 1) % kinds.length];
     _height = Tween<double>(
       begin: _height.value,
       end: _heightFor(next),
@@ -207,21 +262,22 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
                   ],
                 ),
               ),
-              IconButton(
-                tooltip: 'chartNext'.tr(),
-                style: IconButton.styleFrom(
-                  foregroundColor: theme.colorScheme.primary,
-                  minimumSize: const Size(48, 48),
-                ),
-                icon: RotationTransition(
-                  turns: CurvedAnimation(
-                    parent: _spin,
-                    curve: Curves.easeOutCubic,
+              if (_availableKinds.length > 1)
+                IconButton(
+                  tooltip: 'chartNext'.tr(),
+                  style: IconButton.styleFrom(
+                    foregroundColor: theme.colorScheme.primary,
+                    minimumSize: const Size(48, 48),
                   ),
-                  child: const Icon(Icons.change_circle, size: 28),
+                  icon: RotationTransition(
+                    turns: CurvedAnimation(
+                      parent: _spin,
+                      curve: Curves.easeOutCubic,
+                    ),
+                    child: const Icon(Icons.change_circle, size: 28),
+                  ),
+                  onPressed: _cycle,
                 ),
-                onPressed: _cycle,
-              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -264,6 +320,8 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
                       range: selectedRange,
                       period: period,
                     ),
+                    HomeBpChartKind.medicineTiming =>
+                      const HomeMedicationTimingChartContent(),
                   },
                 ),
               ),

@@ -1,9 +1,9 @@
 import 'package:blood_pressure_app/domain/blood_pressure_record.dart';
 import 'package:blood_pressure_app/domain/bodyweight_record.dart';
 import 'package:blood_pressure_app/domain/date_range.dart';
+import 'package:blood_pressure_app/domain/medication_schedule.dart';
 import 'package:blood_pressure_app/domain/medicine.dart';
 import 'package:blood_pressure_app/domain/medicine_intake.dart';
-import 'package:blood_pressure_app/domain/medication_schedule.dart';
 import 'package:blood_pressure_app/domain/note.dart';
 
 /// High-level access to stored health records.
@@ -63,6 +63,9 @@ abstract class MedicationScheduleRepository {
   /// Get today's scheduled occurrences, materializing them if needed.
   Future<List<DoseOccurrence>> getOccurrences(DateTime date);
 
+  /// Get doses recorded as taken whose scheduled time falls in [range].
+  Future<List<DoseOccurrence>> getTakenOccurrences(DateRange range);
+
   /// Change an occurrence state and, when taken, add a linked medicine intake.
   Future<void> setOccurrenceStatus(
     DoseOccurrence occurrence,
@@ -70,7 +73,7 @@ abstract class MedicationScheduleRepository {
     DateTime? snoozeUntil,
   });
 
-  /// Removes a schedule, its occurrences, and intakes for its medicine.
+  /// Removes a schedule and its occurrences while preserving recorded intakes.
   Future<void> delete(String id);
 }
 

@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
 import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_filter_scope.dart';
@@ -342,10 +343,13 @@ class _AppShellViewState extends State<_AppShellView> {
                     showMedicine: widget.showMedicine,
                   )
                 : null,
+            floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation,
             floatingActionButtonLocation:
-                SafaehBottomNavAwareFabLocation.resolve(
-                  context,
-                  base: FloatingActionButtonLocation.endFloat,
+                SnackBarStableFabLocation(
+                  base: SafaehBottomNavAwareFabLocation.resolve(
+                    context,
+                    base: FloatingActionButtonLocation.endFloat,
+                  ),
                 ),
           ),
         ),

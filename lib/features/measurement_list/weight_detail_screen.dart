@@ -1,4 +1,6 @@
+import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
 import 'package:blood_pressure_app/components/confirm_deletion_dialog.dart';
+import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/data_util/entry_context.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
@@ -175,11 +177,14 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'floatingActionEdit',
+      floatingActionButton: AnimatedFloatingActionButton(
         tooltip: 'edit'.tr(),
         onPressed: _editing ? null : _edit,
         child: Icon(Icons.edit, semanticLabel: 'edit'.tr()),
+      ),
+      floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation,
+      floatingActionButtonLocation: const SnackBarStableFabLocation(
+        base: FloatingActionButtonLocation.endFloat,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),

@@ -869,7 +869,7 @@ class _CollapsibleSubSection extends StatelessWidget {
             label: title,
             excludeSemantics: true,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 12, 8, expanded ? 4 : 20),
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
               child: Row(
                 children: [
                   Expanded(
@@ -902,7 +902,7 @@ class _CollapsibleSubSection extends StatelessWidget {
           alignment: Alignment.topCenter,
           child: expanded
               ? Column(children: children)
-              : const SizedBox(width: double.infinity),
+              : const SizedBox(width: double.infinity, height: 16),
         ),
       ],
     );
