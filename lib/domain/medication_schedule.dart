@@ -99,3 +99,24 @@ class DoseOccurrence {
     return status == 'snoozed' ? 'pending' : status;
   }
 }
+
+/// The open scheduled dose a manual log should satisfy, if one is close enough.
+///
+/// [open] rows are still pending, snoozed, or unrecorded. The match is the
+/// scheduled time nearest [intakeUnix], and only when it falls inside
+/// [windowSeconds].
+String? closestOpenDoseId(
+  Iterable<({String id, int scheduledUnix})> open,
+  int intakeUnix, {
+  int windowSeconds = 12 * 60 * 60,
+}) {
+  String? bestId;
+  var bestDistance = windowSeconds + 1;
+  for (final row in open) {
+    final distance = (row.scheduledUnix - intakeUnix).abs();
+    if (distance > windowSeconds || distance >= bestDistance) continue;
+    bestDistance = distance;
+    bestId = row.id;
+  }
+  return bestId;
+}

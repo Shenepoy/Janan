@@ -12,20 +12,34 @@
         android:background="@drawable/medication_widget_background"
         android:padding="3dp">
 
-        <ImageView
-            android:id="@+id/widget_progress_ring"
+        <ViewFlipper
+            android:id="@+id/widget_ring_flipper"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:contentDescription=""
-            android:padding="3dp"
-            android:scaleType="fitCenter" />
+            android:autoStart="true"
+            android:flipInterval="420">
+
+            <ImageView
+                android:id="@+id/widget_progress_ring"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription=""
+                android:scaleType="fitCenter" />
+
+            <ImageView
+                android:id="@+id/widget_progress_ring_siren"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription=""
+                android:scaleType="fitCenter" />
+        </ViewFlipper>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="5dp">
+            android:padding="8dp">
 
             <TextView
                 android:id="@+id/widget_status"

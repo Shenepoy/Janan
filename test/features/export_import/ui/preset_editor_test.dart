@@ -53,15 +53,15 @@ void main() {
     final editor = CustomPreset([]);
     await pumpApp(tester, await materialApp(PresetEditor(editor: editor)));
     expect(editor.columns, isEmpty);
-    expect(find.byType(Dialog), findsNothing);
+    expect(find.text('Add field'), findsOneWidget);
     expect(find.text('Pulse'), findsNothing);
     await tester.tap(find.byIcon(Icons.add).first);
     await tester.pumpAndSettle();
-    expect(find.byType(Dialog), findsOneWidget);
+    expect(find.text('Add field'), findsNWidgets(2));
 
     await tester.tap(find.text('Pulse'));
     await tester.pumpAndSettle();
-    expect(find.byType(Dialog), findsNothing);
+    expect(find.text('Add field'), findsOneWidget);
     expect(editor.columns, hasLength(1));
   });
 

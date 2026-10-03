@@ -145,15 +145,18 @@ void main() {
     ));
     expect(find.text('preset1'), findsNothing);
     expect(find.text('preset2'), findsNothing);
-    expect(find.byType(DropdownButton<String>), findsOneWidget);
+    expect(find.byType(SafaehAnchoredDropdownChip<String?>), findsOneWidget);
 
-    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.tap(find.byType(SafaehAnchoredDropdownChip<String?>));
     await tester.pumpAndSettle();
 
     expect(find.text('preset1'), findsOneWidget);
     expect(find.text('preset2'), findsOneWidget);
 
-    await tester.tap(find.text('preset2'));
+    final preset2 = find.widgetWithText(MenuItemButton, 'preset2');
+    await tester.ensureVisible(preset2);
+    await tester.pumpAndSettle();
+    await tester.tap(preset2);
     await tester.pumpAndSettle();
 
     expect(find.text('Custom'), findsNothing);
@@ -167,7 +170,7 @@ void main() {
     expect(find.text('Custom'), findsOneWidget);
     expect(find.text('preset2'), findsNothing);
 
-    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.tap(find.byType(SafaehAnchoredDropdownChip<String?>));
     await tester.pumpAndSettle();
 
     expect(find.text('preset1'), findsOneWidget);
@@ -185,9 +188,9 @@ void main() {
     await pumpApp(tester, await materialApp(ActiveColumnCustomizer(),
       exportSettings: exportSettings,
     ));
-    expect(find.byType(DropdownButton<String>), findsOneWidget);
+    expect(find.byType(SafaehAnchoredDropdownChip<String?>), findsOneWidget);
 
-    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.tap(find.byType(SafaehAnchoredDropdownChip<String?>));
     await tester.pumpAndSettle();
 
     expect(find.text('Custom'), findsOneWidget);
@@ -209,7 +212,7 @@ void main() {
     expect(find.byType(SafaehTextInputSheet), findsNothing);
     expect(find.text('This title already exists'), findsNothing);
 
-    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.tap(find.byType(SafaehAnchoredDropdownChip<String?>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Custom'));
     await tester.pumpAndSettle();

@@ -1,5 +1,7 @@
 import 'package:blood_pressure_app/features/data_picker/interval_picker.dart';
 import 'package:blood_pressure_app/features/home/ble_home_sync_indicator.dart';
+import 'package:blood_pressure_app/features/measurement_list/measurement_filter_scope.dart';
+import 'package:blood_pressure_app/features/measurement_list/measurement_list.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_range_bar.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
@@ -12,7 +14,7 @@ import 'package:flutter_settings_framework/safaeh.dart';
 ///
 /// [page] is the live [PageController.page], so titles, actions, and the
 /// dashboard range control morph as the user swipes between tabs.
-class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
+class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
   /// Create the pinned shell header for [page] (0 through the last tab).
   const DashboardAppBar({
     super.key,
@@ -50,26 +52,35 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Widget build(BuildContext context) => SafaehMorphingAppBar(
-    page: page,
-    titles: [for (final key in titleKeys) Text(key.tr())],
-    // Reserve the same leading width as the trailing action slot. This
-    // keeps the title on the physical center line even when actions morph.
-    leading: const SizedBox(width: kToolbarHeight),
-    actionsBuilder: (context, currentPage) => _ShellAppBarAction(
-      page: currentPage,
-      settingsPage: titleKeys.length - 1,
-      settingsSearchOpen: settingsSearchOpen,
-      onSettingsSearch: onSettingsSearch,
-    ),
-    bottom: SafaehMorphingAppBarBottom(
-      factor: _rangeFactor,
-      height: IntervalPicker.barSize.height,
-      child: const DashboardRangeBar(
-        type: IntervalStoreManagerLocation.mainPage,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsProvider);
+    final showFilter =
+        settings.medicineFeatureEnabled && settings.bloodPressureEnabled;
+    final slot = showFilter ? kToolbarHeight + 48 : kToolbarHeight;
+    return SafaehMorphingAppBar(
+      page: page,
+      titles: [for (final key in titleKeys) Text(key.tr())],
+      // Reserve the same leading width as the trailing action slot. This
+      // keeps the title on the physical center line even when actions morph.
+      leading: SizedBox(width: slot),
+      leadingWidth: slot,
+      actionSlotWidth: slot,
+      actionsBuilder: (context, currentPage) => _ShellAppBarAction(
+        page: currentPage,
+        settingsPage: titleKeys.length - 1,
+        settingsSearchOpen: settingsSearchOpen,
+        onSettingsSearch: onSettingsSearch,
+        showFilter: showFilter,
       ),
-    ),
-  );
+      bottom: SafaehMorphingAppBarBottom(
+        factor: _rangeFactor,
+        height: IntervalPicker.barSize.height,
+        child: const DashboardRangeBar(
+          type: IntervalStoreManagerLocation.mainPage,
+        ),
+      ),
+    );
+  }
 }
 
 class _ShellAppBarAction extends StatelessWidget {
@@ -78,21 +89,29 @@ class _ShellAppBarAction extends StatelessWidget {
     required this.settingsPage,
     required this.settingsSearchOpen,
     required this.onSettingsSearch,
+    required this.showFilter,
   });
 
   final double page;
   final double settingsPage;
   final ValueNotifier<bool>? settingsSearchOpen;
   final VoidCallback? onSettingsSearch;
+  final bool showFilter;
 
   @override
   Widget build(BuildContext context) => Stack(
-    alignment: AlignmentDirectional.center,
+    alignment: AlignmentDirectional.centerEnd,
     children: [
       SafaehMorphingAppBarAction(
         page: page,
         targetPage: 0,
-        child: const _BleHomeAction(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const _BleHomeAction(),
+            if (showFilter) const _MeasurementFilterAction(),
+          ],
+        ),
       ),
       if (settingsSearchOpen != null && onSettingsSearch != null)
         ValueListenableBuilder<bool>(
@@ -125,5 +144,42 @@ class _BleHomeAction extends StatelessWidget {
       return const SizedBox.shrink();
     }
     return const BleHomeSyncIndicator();
+  }
+}
+
+class _MeasurementFilterAction extends StatelessWidget {
+  const _MeasurementFilterAction();
+
+  @override
+  Widget build(BuildContext context) {
+    final filter = MeasurementFilterScope.maybeOf(context);
+    if (filter == null) return const SizedBox.shrink();
+    final selected = filter.value;
+    String label(MeasurementListFilter value) => switch (value) {
+      MeasurementListFilter.all => 'filterAll'.tr(),
+      MeasurementListFilter.bloodPressure => 'bloodPressure'.tr(),
+      MeasurementListFilter.medicine => 'medications'.tr(),
+    };
+    IconData icon(MeasurementListFilter value) => switch (value) {
+      MeasurementListFilter.all => Icons.filter_list,
+      MeasurementListFilter.bloodPressure => Icons.monitor_heart_outlined,
+      MeasurementListFilter.medicine => Icons.medication_outlined,
+    };
+    return SafaehAnchoredDropdownChip<MeasurementListFilter>(
+      icon: icon(selected),
+      label: label(selected),
+      iconOnly: true,
+      active: selected != MeasurementListFilter.all,
+      selected: selected,
+      options: [
+        for (final value in MeasurementListFilter.values)
+          SafaehDropdownOption(
+            value: value,
+            label: label(value),
+            icon: icon(value),
+          ),
+      ],
+      onSelected: filter.select,
+    );
   }
 }

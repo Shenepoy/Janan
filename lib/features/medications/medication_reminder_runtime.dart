@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:blood_pressure_app/features/medications/medicine_name.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminder_plan.dart';
 import 'package:blood_pressure_app/features/medications/medication_timezone_database.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -164,9 +166,17 @@ class MedicationReminderRuntime {
   }
 
   /// Rebuilds the next two weeks of reminders from saved local schedules.
+  ///
+  /// Overdue follow-ups are scheduled ahead of time so Android can restore
+  /// them after a cold boot. Alarms whose time already passed while the
+  /// device was off are not repeated; only instants still in the future
+  /// are scheduled again the next time the app opens.
   Future<void> syncSchedules(
     List<MedicationSchedule> schedules, {
     List<DoseOccurrence> snoozedOccurrences = const [],
+    List<DoseOccurrence> openOccurrences = const [],
+    int overdueReminderCount = 3,
+    Duration overdueReminderInterval = const Duration(minutes: 10),
   }) async {
     await initialize();
     if (!_initialized) return;
@@ -193,6 +203,7 @@ class MedicationReminderRuntime {
           continue;
         }
         for (final minute in schedule.timeMinutes) {
+          if (schedule.id == null) continue;
           final localTime = DateTime(
             day.year,
             day.month,
@@ -209,21 +220,38 @@ class MedicationReminderRuntime {
             localTime.hour,
             localTime.minute,
           );
-          await _notifications.zonedSchedule(
-            id: _notificationId(
-              '${schedule.id}:${day.year}-${day.month}-${day.day}:$minute',
-            ),
-            title: medicationReminderNotificationTitle(),
-            body: formatMedicationDoseReminderBody(schedule, minute),
-            scheduledDate: scheduled,
-            notificationDetails: _medicationNotificationDetails(),
-            androidScheduleMode: exact
-                ? AndroidScheduleMode.exactAllowWhileIdle
-                : AndroidScheduleMode.inexactAllowWhileIdle,
+          await _scheduleReminder(
+            id: _notificationId(_doseNotificationKey(schedule.id!, localTime)),
+            schedule: schedule,
+            minute: minute,
+            when: scheduled,
+            exact: exact,
             payload: schedule.id,
+          );
+          await _scheduleOverdueFollowUps(
+            schedule: schedule,
+            scheduledAt: localTime,
+            now: now,
+            count: overdueReminderCount,
+            interval: overdueReminderInterval,
+            exact: exact,
           );
         }
       }
+    }
+    for (final occurrence in openOccurrences) {
+      final status = occurrence.statusAt(now);
+      final scheduleId = occurrence.schedule.id;
+      if (scheduleId == null || occurrence.scheduledAt.isAfter(now)) continue;
+      if (status != 'pending' && status != 'unrecorded') continue;
+      await _scheduleOverdueFollowUps(
+        schedule: occurrence.schedule,
+        scheduledAt: occurrence.scheduledAt,
+        now: now,
+        count: overdueReminderCount,
+        interval: overdueReminderInterval,
+        exact: exact,
+      );
     }
     for (final occurrence in snoozedOccurrences) {
       final snoozeUntil = occurrence.snoozeUntil;
@@ -283,51 +311,76 @@ class MedicationReminderRuntime {
     await _notifications.cancel(id: _snoozeNotificationId(occurrenceId));
   }
 
-  /// Shares the next incomplete dose with the Android countdown widget.
-  Future<void> updateWidget(List<DoseOccurrence> occurrences) async {
+  /// Drops the on-time alert and overdue follow-ups for a recorded dose.
+  Future<void> cancelClaimedDose(String occurrenceId) async {
+    await initialize();
+    if (!_initialized) return;
+    final parsed = _parsedOccurrenceId(occurrenceId);
+    if (parsed == null) return;
+    await _notifications.cancel(
+      id: _notificationId(
+        _doseNotificationKey(parsed.scheduleId, parsed.scheduledAt),
+      ),
+    );
+    for (var index = 1; index <= 6; index++) {
+      await _notifications.cancel(
+        id: _notificationId(
+          _overdueNotificationKey(parsed.scheduleId, parsed.scheduledAt, index),
+        ),
+      );
+    }
+    await cancelSnooze(occurrenceId);
+  }
+
+  /// Shares the open doses with the Android countdown widget.
+  Future<void> updateWidget(
+    List<DoseOccurrence> occurrences, {
+    bool showAll = true,
+    String homeScheduleId = '',
+  }) async {
     if (!Platform.isAndroid) return;
     final now = DateTime.now();
-    final next =
-        occurrences
-            .where((occurrence) {
-              final status = occurrence.statusAt(now);
-              return status == 'pending' ||
-                  status == 'snoozed' ||
-                  status == 'unrecorded';
-            })
-            .map((occurrence) {
-              final status = occurrence.statusAt(now);
-              final targetAt =
-                  status == 'snoozed' &&
-                      occurrence.snoozeUntil != null &&
-                      occurrence.snoozeUntil!.isAfter(now)
-                  ? occurrence.snoozeUntil!
-                  : occurrence.scheduledAt;
-              return (
-                occurrence: occurrence,
-                status: status,
-                targetAt: targetAt,
-              );
-            })
-            .toList()
-          ..sort((a, b) => a.targetAt.compareTo(b.targetAt));
-    final configuredMedicineColor = next.isEmpty
-        ? null
-        : next.first.occurrence.schedule.medicine.color;
+    final open = [
+      for (final occurrence in occurrences)
+        if (_plannedDose(occurrence, now) case final dose?) dose,
+    ]..sort((a, b) => a.targetAt.compareTo(b.targetAt));
+    final selected = selectReminderDoses(
+      open,
+      showAll: showAll,
+      scheduleId: homeScheduleId,
+    );
+    final rings = stackReminderRings(selected);
     final widgetLabels = medicationReminderWidgetLabels();
-    final items = next.isEmpty
+    final primary = rings.isEmpty ? null : rings.first;
+    final items = primary == null
         ? [widgetLabels]
         : [
             {
               ...widgetLabels,
-              'name': next.first.occurrence.schedule.medicine.designation,
-              'color':
-                  configuredMedicineColor == null ||
-                      configuredMedicineColor == 0
-                  ? 0xff92dccf
-                  : configuredMedicineColor,
-              'scheduledAtMs': next.first.targetAt.millisecondsSinceEpoch,
-              'status': next.first.status,
+              'name': primary.doses.first.name,
+              'shortName': compactMedicineName(primary.doses.first.name),
+              'color': primary.doses.first.color,
+              'scheduledAtMs': primary.targetAt.millisecondsSinceEpoch,
+              'status': primary.doses.first.status,
+              'rings': [
+                for (final ring in rings)
+                  {
+                    'dotted': ring.sharesTimer,
+                    'scheduledAtMs': ring.doses
+                        .map((dose) => dose.targetAt)
+                        .reduce((a, b) => a.isAfter(b) ? a : b)
+                        .millisecondsSinceEpoch,
+                    'status': ring.doses.first.status,
+                    'doses': [
+                      for (final dose in ring.doses)
+                        {
+                          'name': dose.name,
+                          'color': dose.color,
+                          'scheduledAtMs': dose.targetAt.millisecondsSinceEpoch,
+                        },
+                    ],
+                  },
+              ],
             },
           ];
     try {
@@ -339,6 +392,105 @@ class MedicationReminderRuntime {
     } on PlatformException {
       // The in-app reminder flow remains available if widget refresh fails.
     }
+  }
+
+  Future<void> _scheduleReminder({
+    required int id,
+    required MedicationSchedule schedule,
+    required int minute,
+    required timezone.TZDateTime when,
+    required bool exact,
+    String? payload,
+  }) {
+    return _notifications.zonedSchedule(
+      id: id,
+      title: medicationReminderNotificationTitle(),
+      body: formatMedicationDoseReminderBody(schedule, minute),
+      scheduledDate: when,
+      notificationDetails: _medicationNotificationDetails(),
+      androidScheduleMode: exact
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: payload ?? schedule.id,
+    );
+  }
+
+  Future<void> _scheduleOverdueFollowUps({
+    required MedicationSchedule schedule,
+    required DateTime scheduledAt,
+    required DateTime now,
+    required int count,
+    required Duration interval,
+    required bool exact,
+  }) async {
+    final scheduleId = schedule.id;
+    if (scheduleId == null) return;
+    final minute = scheduledAt.hour * 60 + scheduledAt.minute;
+    for (final when in overdueReminderInstants(
+      scheduledAt: scheduledAt,
+      now: now,
+      count: count,
+      interval: interval,
+    )) {
+      final index =
+          when.difference(scheduledAt).inMinutes ~/
+          (interval.inMinutes == 0 ? 1 : interval.inMinutes);
+      await _scheduleReminder(
+        id: _notificationId(
+          _overdueNotificationKey(scheduleId, scheduledAt, index),
+        ),
+        schedule: schedule,
+        minute: minute,
+        when: timezone.TZDateTime.from(when, timezone.local),
+        exact: exact,
+        payload: scheduleId,
+      );
+    }
+  }
+
+  PlannedDose? _plannedDose(DoseOccurrence occurrence, DateTime now) {
+    final status = occurrence.statusAt(now);
+    if (status != 'pending' && status != 'snoozed' && status != 'unrecorded') {
+      return null;
+    }
+    final target =
+        status == 'snoozed' &&
+            occurrence.snoozeUntil != null &&
+            occurrence.snoozeUntil!.isAfter(now)
+        ? occurrence.snoozeUntil!
+        : occurrence.scheduledAt;
+    final raw = occurrence.schedule.medicine.color;
+    return PlannedDose(
+      scheduleId: occurrence.schedule.id ?? '',
+      targetAt: target,
+      color: raw == null || raw == 0 ? 0xff92dccf : raw,
+      name: occurrence.schedule.medicine.designation,
+      status: status,
+    );
+  }
+
+  static String _doseNotificationKey(String scheduleId, DateTime scheduledAt) =>
+      '$scheduleId:${scheduledAt.year}-${scheduledAt.month}-${scheduledAt.day}:${scheduledAt.hour * 60 + scheduledAt.minute}';
+
+  static String _overdueNotificationKey(
+    String scheduleId,
+    DateTime scheduledAt,
+    int index,
+  ) => '${_doseNotificationKey(scheduleId, scheduledAt)}:overdue:$index';
+
+  static ({String scheduleId, DateTime scheduledAt})? _parsedOccurrenceId(
+    String occurrenceId,
+  ) {
+    final parts = occurrenceId.split('.');
+    if (parts.length < 3) return null;
+    final minute = int.tryParse(parts.last);
+    final day = DateTime.tryParse(parts[parts.length - 2]);
+    if (minute == null || day == null) return null;
+    final scheduleId = parts.sublist(0, parts.length - 2).join('.');
+    return (
+      scheduleId: scheduleId,
+      scheduledAt: DateTime(day.year, day.month, day.day, minute ~/ 60, minute % 60),
+    );
   }
 
   static int _notificationId(String key) {

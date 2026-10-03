@@ -4,13 +4,18 @@ import 'dart:ui' as ui;
 
 import 'package:blood_pressure_app/core/repository/repository_providers.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:blood_pressure_app/features/medications/medicine_name.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminder_plan.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_runtime.dart';
+import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/settings/add_medication_dialog.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:safaeh/safaeh.dart';
 
 final medicationSchedulesProvider = FutureProvider<List<MedicationSchedule>>(
   (ref) => ref.watch(medicationScheduleRepositoryProvider).getAll(),
@@ -22,7 +27,7 @@ final todayMedicationOccurrencesProvider = FutureProvider<List<DoseOccurrence>>(
       .getOccurrences(DateTime.now()),
 );
 
-Future<List<DoseOccurrence>> _upcomingDoseOccurrences(
+Future<List<DoseOccurrence>> upcomingDoseOccurrences(
   MedicationScheduleRepository repository, {
   DateTime? from,
 }) async {
@@ -40,16 +45,46 @@ Future<List<DoseOccurrence>> _upcomingDoseOccurrences(
 final homeMedicationOccurrencesProvider = FutureProvider<List<DoseOccurrence>>((
   ref,
 ) async {
-  if (!ref.watch(appSettingsProvider).medicineFeatureEnabled) {
+  final settings = ref.watch(appSettingsProvider);
+  if (!settings.medicineFeatureEnabled) {
     await MedicationReminderRuntime.instance.updateWidget(const []);
     return const <DoseOccurrence>[];
   }
-  final occurrences = await _upcomingDoseOccurrences(
-    ref.watch(medicationScheduleRepositoryProvider),
-  );
-  await MedicationReminderRuntime.instance.updateWidget(occurrences);
+  final repository = ref.watch(medicationScheduleRepositoryProvider);
+  final occurrences = await upcomingDoseOccurrences(repository);
+  await _pushReminderWidget(occurrences, settings);
   return occurrences;
 });
+
+Future<void> _syncMedicationReminders(
+  MedicationScheduleRepository repository,
+  AppSettings settings,
+) async {
+  final occurrences = await upcomingDoseOccurrences(repository);
+  await MedicationReminderRuntime.instance.syncSchedules(
+    await repository.getAll(),
+    snoozedOccurrences: occurrences
+        .where((occurrence) => occurrence.status == 'snoozed')
+        .toList(),
+    openOccurrences: occurrences,
+    overdueReminderCount: settings.overdueReminderCount,
+    overdueReminderInterval: Duration(
+      minutes: settings.overdueReminderIntervalMinutes,
+    ),
+  );
+  await _pushReminderWidget(occurrences, settings);
+}
+
+Future<void> _pushReminderWidget(
+  List<DoseOccurrence> occurrences,
+  AppSettings settings,
+) {
+  return MedicationReminderRuntime.instance.updateWidget(
+    occurrences,
+    showAll: settings.showAllReminderRings,
+    homeScheduleId: settings.homeWidgetScheduleId,
+  );
+}
 
 String _t(String key, String fallback) {
   final translated = key.tr();
@@ -89,20 +124,30 @@ String _doseDayLabel(BuildContext context, DateTime date, DateTime now) {
   return DateFormat.E(context.locale.toString()).format(target);
 }
 
+const _countdownGreen = Color(0xFF2EAF62);
+const _countdownYellow = Color(0xFFF5C518);
+const _countdownRed = Color(0xFFE53935);
+const _countdownSiren = Color(0xFFFFF6F4);
+
+Color _countdownStateColor(DateTime target, DateTime now) {
+  if (!target.isAfter(now)) return _countdownRed;
+  if (target.difference(now) <= const Duration(hours: 1)) return _countdownYellow;
+  return _countdownGreen;
+}
+
 String _formatCompactCountdown(
   Duration remaining, {
   required bool overdue,
   String dueNow = 'now',
 }) {
   final seconds = remaining.inSeconds.abs();
-  if (seconds == 0) return overdue ? '+now' : dueNow;
+  if (seconds == 0) return dueNow;
   final elapsedMinutes = seconds ~/ 60;
   final minutes = overdue
       ? (elapsedMinutes == 0 ? 1 : elapsedMinutes)
       : (seconds + 59) ~/ 60;
   final hours = overdue ? minutes ~/ 60 : (minutes + 59) ~/ 60;
-  final value = minutes >= 60 ? '${hours}h' : '${minutes}m';
-  return overdue ? '+$value' : value;
+  return minutes >= 60 ? '${hours}h' : '${minutes}m';
 }
 
 bool _deferUpcomingDoseCard(
@@ -251,7 +296,11 @@ class _MedicationReminderCardState
     final occurrenceList =
         occurrences.asData?.value ?? const <DoseOccurrence>[];
     final active = scheduleList.any((schedule) => schedule.active);
-    final countdown = _DoseCountdown.fromOccurrences(occurrenceList, _now);
+    final openCountdowns = _DoseCountdown.openFrom(occurrenceList, _now);
+    final countdown = openCountdowns.firstOrNull;
+    final rings = settings.showAllReminderRings
+        ? openCountdowns
+        : openCountdowns.take(1).toList();
     final today = DateTime(_now.year, _now.month, _now.day);
     final todayOccurrences = occurrenceList
         .where((dose) => DateUtils.isSameDay(dose.scheduledAt, today))
@@ -279,6 +328,7 @@ class _MedicationReminderCardState
               link: _targetLink,
               child: _MedicationCountdownCircle(
                 countdown: countdown,
+                rings: rings,
                 now: _now,
                 color: color,
                 hasSchedules: active,
@@ -331,7 +381,7 @@ class _DoseCountdown {
     return '$medicine · $formatted';
   }
 
-  static _DoseCountdown? fromOccurrences(
+  static List<_DoseCountdown> openFrom(
     List<DoseOccurrence> occurrences,
     DateTime now,
   ) {
@@ -352,13 +402,14 @@ class _DoseCountdown {
       candidates.add(_DoseCountdown(occurrence: occurrence, targetAt: target));
     }
     candidates.sort((a, b) => a.targetAt.compareTo(b.targetAt));
-    return candidates.firstOrNull;
+    return candidates;
   }
 }
 
 class _MedicationCountdownCircle extends StatelessWidget {
   const _MedicationCountdownCircle({
     required this.countdown,
+    required this.rings,
     required this.now,
     required this.color,
     required this.hasSchedules,
@@ -368,6 +419,7 @@ class _MedicationCountdownCircle extends StatelessWidget {
   });
 
   final _DoseCountdown? countdown;
+  final List<_DoseCountdown> rings;
   final DateTime now;
   final Color color;
   final bool hasSchedules;
@@ -382,11 +434,9 @@ class _MedicationCountdownCircle extends StatelessWidget {
     final overdue = countdown?.overdue ?? false;
     final urgent =
         countdown != null && !overdue && remaining <= const Duration(hours: 1);
-    final ringColor = overdue
-        ? theme.colorScheme.error
-        : urgent
-        ? const Color(0xFFE7A83E)
-        : color;
+    final ringColor = countdown == null
+        ? color
+        : _countdownStateColor(countdown!.targetAt, now);
     final label = countdown == null
         ? (hasSchedules ? _t('reminderAllSet', 'ALL SET') : null)
         : overdue
@@ -409,14 +459,13 @@ class _MedicationCountdownCircle extends StatelessWidget {
     final showStatusLabel =
         !compact || countdown == null || countdown?.snoozed == true || urgent;
     final showMedicineIcon = !compact || countdown == null;
-    final fraction = countdown == null
-        ? (hasSchedules ? 0.12 : 0.0)
-        : overdue
-        ? 0.98
-        : (1 - remaining.inSeconds / const Duration(hours: 24).inSeconds).clamp(
-            0.06,
-            0.94,
-          );
+    final layers = _reminderRingLayers(
+      rings: rings,
+      now: now,
+      theme: theme,
+      fallbackColor: color,
+      hasSchedules: hasSchedules,
+    );
     final circleSize = compact ? 56.0 : 136.0;
     final ringPadding = compact ? 2.0 : 7.0;
     final contentPadding = compact ? 2.0 : 13.0;
@@ -427,7 +476,27 @@ class _MedicationCountdownCircle extends StatelessWidget {
               )
         : const CircleBorder();
 
-    return Material(
+    return _OverdueSiren(
+      active: overdue,
+      builder: (flash) {
+        final blink = flash >= 0.5 ? 1.0 : 0.0;
+        final painted = [
+          for (var index = 0; index < layers.length; index++)
+            _RingLayer(
+              progress: layers[index].progress,
+              color: overdue && index == 0
+                  ? Color.lerp(layers[index].color, _countdownSiren, blink)!
+                  : layers[index].color,
+              dottedColors: overdue && index == 0
+                  ? [
+                      for (final item in layers[index].dottedColors)
+                        Color.lerp(item, _countdownSiren, blink)!,
+                    ]
+                  : layers[index].dottedColors,
+              markProgress: layers[index].markProgress,
+            ),
+        ];
+        return Material(
       color: theme.colorScheme.surfaceContainerHigh,
       shape: buttonShape,
       elevation: theme.floatingActionButtonTheme.elevation ?? 6,
@@ -439,14 +508,23 @@ class _MedicationCountdownCircle extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.all(ringPadding),
             child: TweenAnimationBuilder<double>(
-              tween: Tween<double>(end: fraction),
+              tween: Tween<double>(end: 1),
               duration: const Duration(milliseconds: 650),
               curve: Curves.easeOutCubic,
               builder: (context, value, child) => CustomPaint(
                 painter: _CountdownRingPainter(
-                  progress: value,
+                  layers: [
+                    for (final layer in painted)
+                      _RingLayer(
+                        progress: layer.progress * value,
+                        color: layer.color,
+                        dottedColors: layer.dottedColors,
+                        markProgress: [
+                          for (final mark in layer.markProgress) mark * value,
+                        ],
+                      ),
+                  ],
                   trackColor: color.withValues(alpha: 0.18),
-                  progressColor: ringColor,
                   roundedSquare: compact && roundedSquare,
                 ),
                 child: child,
@@ -497,7 +575,7 @@ class _MedicationCountdownCircle extends StatelessWidget {
                                       ? theme.textTheme.titleSmall
                                       : theme.textTheme.titleMedium)
                                   ?.copyWith(
-                                    color: theme.colorScheme.onSurface,
+                                    color: ringColor,
                                     fontWeight: FontWeight.w800,
                                     height: 1.12,
                                     fontSize: compact ? 15 : null,
@@ -509,18 +587,16 @@ class _MedicationCountdownCircle extends StatelessWidget {
                       ),
                     if (medicine != null)
                       SizedBox(
-                        width: compact ? 40 : null,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            medicine,
-                            maxLines: 1,
-                            softWrap: false,
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontSize: compact ? 8 : null,
-                            ),
+                        width: compact ? 40 : 96,
+                        child: Text(
+                          compactMedicineName(medicine, wide: !compact),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontSize: compact ? 8 : null,
                           ),
                         ),
                       ),
@@ -532,99 +608,446 @@ class _MedicationCountdownCircle extends StatelessWidget {
         ),
       ),
     );
+      },
+    );
   }
 }
 
-class _CountdownRingPainter extends CustomPainter {
-  const _CountdownRingPainter({
-    required this.progress,
-    required this.trackColor,
-    required this.progressColor,
-    required this.roundedSquare,
-  });
+class _OverdueSiren extends StatefulWidget {
+  const _OverdueSiren({required this.active, required this.builder});
 
-  final double progress;
-  final Color trackColor;
-  final Color progressColor;
-  final bool roundedSquare;
+  final bool active;
+  final Widget Function(double flash) builder;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final strokeWidth = math.max(4.0, size.shortestSide * 0.045);
-    final radius = (size.shortestSide - strokeWidth) / 2;
-    final center = Offset(size.width / 2, size.height / 2);
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    final track = Paint()
-      ..color = trackColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
-    final arc = Paint()
-      ..color = progressColor
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = strokeWidth;
-    if (roundedSquare) {
-      final inset = strokeWidth / 2;
-      final ringRect = Rect.fromLTRB(
-        inset,
-        inset,
-        size.width - inset,
-        size.height - inset,
-      );
-      final cornerRadius = math.min(
-        ringRect.shortestSide * 0.28,
-        ringRect.shortestSide / 2,
-      );
-      final path = Path()
-        ..moveTo(ringRect.center.dx, ringRect.top)
-        ..lineTo(ringRect.right - cornerRadius, ringRect.top)
-        ..quadraticBezierTo(
-          ringRect.right,
-          ringRect.top,
-          ringRect.right,
-          ringRect.top + cornerRadius,
-        )
-        ..lineTo(ringRect.right, ringRect.bottom - cornerRadius)
-        ..quadraticBezierTo(
-          ringRect.right,
-          ringRect.bottom,
-          ringRect.right - cornerRadius,
-          ringRect.bottom,
-        )
-        ..lineTo(ringRect.left + cornerRadius, ringRect.bottom)
-        ..quadraticBezierTo(
-          ringRect.left,
-          ringRect.bottom,
-          ringRect.left,
-          ringRect.bottom - cornerRadius,
-        )
-        ..lineTo(ringRect.left, ringRect.top + cornerRadius)
-        ..quadraticBezierTo(
-          ringRect.left,
-          ringRect.top,
-          ringRect.left + cornerRadius,
-          ringRect.top,
-        )
-        ..close();
-      canvas.drawPath(path, track);
-      if (progress > 0) {
-        final metrics = path.computeMetrics().first;
-        canvas.drawPath(metrics.extractPath(0, metrics.length * progress), arc);
-      }
-    } else {
-      canvas.drawCircle(center, radius, track);
-      if (progress > 0) {
-        canvas.drawArc(rect, -math.pi / 2, math.pi * 2 * progress, false, arc);
-      }
+  State<_OverdueSiren> createState() => _OverdueSirenState();
+}
+
+class _OverdueSirenState extends State<_OverdueSiren>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 360),
+    );
+    if (widget.active) _controller.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(_OverdueSiren oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active && !_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    } else if (!widget.active && _controller.isAnimating) {
+      _controller
+        ..stop()
+        ..value = 0;
     }
   }
 
   @override
-  bool shouldRepaint(_CountdownRingPainter oldDelegate) =>
-      oldDelegate.progress != progress ||
-      oldDelegate.trackColor != trackColor ||
-      oldDelegate.progressColor != progressColor ||
-      oldDelegate.roundedSquare != roundedSquare;
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.active) return widget.builder(0);
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) => widget.builder(_controller.value),
+    );
+  }
+}
+
+class _RingLayer {
+  const _RingLayer({
+    required this.progress,
+    required this.color,
+    this.dottedColors = const [],
+    this.markProgress = const [],
+  });
+
+  final double progress;
+  final Color color;
+  final List<Color> dottedColors;
+
+  /// One progress per [dottedColors] entry. Empty when the ring is one stroke.
+  final List<double> markProgress;
+
+  bool get dotted => dottedColors.length > 1;
+}
+
+List<_RingLayer> _reminderRingLayers({
+  required List<_DoseCountdown> rings,
+  required DateTime now,
+  required ThemeData theme,
+  required Color fallbackColor,
+  required bool hasSchedules,
+}) {
+  if (rings.isEmpty) {
+    return [
+      _RingLayer(
+        progress: hasSchedules ? 0.12 : 0,
+        color: fallbackColor,
+      ),
+    ];
+  }
+  final planned = [
+    for (final ring in rings)
+      PlannedDose(
+        scheduleId: ring.occurrence.schedule.id ?? ring.occurrence.id,
+        targetAt: ring.targetAt,
+        color: ring.medicineColor(theme).toARGB32(),
+        name: ring.occurrence.schedule.medicine.designation,
+        status: ring.occurrence.statusAt(now),
+      ),
+  ];
+  final groups = stackReminderRings(planned);
+  return [
+    for (var index = 0; index < groups.length; index++)
+      _ringLayer(groups[index], outer: index == 0, now: now),
+  ];
+}
+
+/// Inner arcs stop here: the stroke length one moment before a dose is due.
+const _innerOpenCap = 0.82;
+
+_RingLayer _ringLayer(
+  ReminderRingGroup group, {
+  required bool outer,
+  required DateTime now,
+}) {
+  final overdue = !group.targetAt.isAfter(now);
+  final shared = group.sharesTimer && !(outer && overdue);
+  final progress = _groupRingFraction(group.doses, now);
+  return _RingLayer(
+    progress: outer ? progress : math.min(progress, _innerOpenCap),
+    color: outer
+        ? _statusRingColor(group.targetAt, now)
+        : Color(group.doses.first.color),
+    dottedColors: shared
+        ? [for (final dose in group.doses) Color(dose.color)]
+        : const [],
+    markProgress: shared
+        ? [
+            for (final dose in group.doses)
+              outer
+                  ? _doseRingFraction(dose.targetAt, now)
+                  : math.min(
+                      _doseRingFraction(dose.targetAt, now),
+                      _innerOpenCap,
+                    ),
+          ]
+        : const [],
+  );
+}
+
+double _doseRingFraction(DateTime target, DateTime now) {
+  if (!target.isAfter(now)) return 1;
+  final remaining = target.difference(now);
+  if (remaining <= const Duration(hours: 1)) {
+    final fraction =
+        1 - remaining.inSeconds / const Duration(hours: 1).inSeconds;
+    return 0.50 + 0.32 * fraction;
+  }
+  const horizon = Duration(hours: 12);
+  final elapsed = 1 - (remaining.inSeconds / horizon.inSeconds).clamp(0.0, 1.0);
+  return (0.08 + 0.40 * elapsed).clamp(0.08, 0.48);
+}
+
+double _groupRingFraction(List<PlannedDose> doses, DateTime now) {
+  var least = 1.0;
+  for (final dose in doses) {
+    final fraction = _doseRingFraction(dose.targetAt, now);
+    if (fraction < least) least = fraction;
+  }
+  return least;
+}
+
+Color _statusRingColor(DateTime target, DateTime now) =>
+    _countdownStateColor(target, now);
+
+class _CountdownRingPainter extends CustomPainter {
+  const _CountdownRingPainter({
+    required this.layers,
+    required this.trackColor,
+    required this.roundedSquare,
+  });
+
+  final List<_RingLayer> layers;
+  final Color trackColor;
+  final bool roundedSquare;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final drawn = layers.take(2).toList();
+    final strokeWidth = math.max(5.0, size.shortestSide * 0.08);
+    final outerSide = size.shortestSide - strokeWidth;
+    final outerRadius = math.min(outerSide * 0.28, outerSide / 2);
+    for (var index = 0; index < drawn.length; index++) {
+      final inset = strokeWidth / 2 + index * strokeWidth;
+      if (size.shortestSide <= inset * 2 + strokeWidth) break;
+      final corner = math.max(0.0, outerRadius - index * strokeWidth);
+      final path = roundedSquare
+          ? _roundedSquareRingPath(size, inset, corner)
+          : _circleRingPath(size, inset);
+      _paintRing(canvas, path, drawn[index], strokeWidth);
+    }
+  }
+
+  Path _circleRingPath(Size size, double inset) {
+    final radius = (size.shortestSide - inset * 2) / 2;
+    return Path()..addOval(
+      Rect.fromCircle(
+        center: Offset(size.width / 2, size.height / 2),
+        radius: radius,
+      ),
+    );
+  }
+
+  Path _roundedSquareRingPath(Size size, double inset, double cornerRadius) {
+    final ringRect = Rect.fromLTRB(
+      inset,
+      inset,
+      size.width - inset,
+      size.height - inset,
+    );
+    final radius = math.min(cornerRadius, ringRect.shortestSide / 2);
+    final path = Path()..moveTo(ringRect.center.dx, ringRect.top);
+    if (radius <= 0) {
+      return path
+        ..lineTo(ringRect.right, ringRect.top)
+        ..lineTo(ringRect.right, ringRect.bottom)
+        ..lineTo(ringRect.left, ringRect.bottom)
+        ..lineTo(ringRect.left, ringRect.top)
+        ..close();
+    }
+    path.lineTo(ringRect.right - radius, ringRect.top);
+    path.arcTo(
+      Rect.fromCircle(
+        center: Offset(ringRect.right - radius, ringRect.top + radius),
+        radius: radius,
+      ),
+      -math.pi / 2,
+      math.pi / 2,
+      false,
+    );
+    path.lineTo(ringRect.right, ringRect.bottom - radius);
+    path.arcTo(
+      Rect.fromCircle(
+        center: Offset(ringRect.right - radius, ringRect.bottom - radius),
+        radius: radius,
+      ),
+      0,
+      math.pi / 2,
+      false,
+    );
+    path.lineTo(ringRect.left + radius, ringRect.bottom);
+    path.arcTo(
+      Rect.fromCircle(
+        center: Offset(ringRect.left + radius, ringRect.bottom - radius),
+        radius: radius,
+      ),
+      math.pi / 2,
+      math.pi / 2,
+      false,
+    );
+    path.lineTo(ringRect.left, ringRect.top + radius);
+    path.arcTo(
+      Rect.fromCircle(
+        center: Offset(ringRect.left + radius, ringRect.top + radius),
+        radius: radius,
+      ),
+      math.pi,
+      math.pi / 2,
+      false,
+    );
+    path.close();
+    return path;
+  }
+
+  void _paintRing(
+    Canvas canvas,
+    Path path,
+    _RingLayer layer,
+    double strokeWidth,
+  ) {
+    if (layer.progress <= 0 && layer.markProgress.every((mark) => mark <= 0)) {
+      return;
+    }
+    final metrics = path.computeMetrics().first;
+    final colors = layer.dotted ? layer.dottedColors : [layer.color];
+    if (colors.length == 1) {
+      final stroke = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = strokeWidth
+        ..color = colors.first;
+      if (layer.progress >= 1) {
+        canvas.drawPath(path, stroke);
+        return;
+      }
+      if (layer.progress <= 0) return;
+      canvas.drawPath(
+        metrics.extractPath(0, metrics.length * layer.progress),
+        stroke,
+      );
+      return;
+    }
+    final marks = [
+      for (var index = 0; index < colors.length; index++)
+        (
+          progress: index < layer.markProgress.length
+              ? layer.markProgress[index]
+              : layer.progress,
+          color: colors[index],
+        ),
+    ];
+    final longest = marks.map((mark) => mark.progress).reduce(math.max);
+    final shortest = marks.map((mark) => mark.progress).reduce(math.min);
+    if (longest - shortest < 0.01) {
+      _paintBands(canvas, path, metrics, marks, longest, strokeWidth);
+      return;
+    }
+    final capped = [
+      for (final mark in marks)
+        if (mark.progress >= _innerOpenCap - 0.01) mark,
+    ];
+    final shorter =
+        [
+          for (final mark in marks)
+            if (mark.progress < _innerOpenCap - 0.01) mark,
+        ]..sort((a, b) => b.progress.compareTo(a.progress));
+    if (capped.isNotEmpty) {
+      final cover = shorter.isEmpty
+          ? 0.0
+          : shorter.map((mark) => mark.progress).reduce(math.max);
+      _paintOpenBands(canvas, path, metrics, capped, cover, strokeWidth);
+    }
+    for (final mark in shorter) {
+      _paintSpan(
+        canvas,
+        path,
+        metrics,
+        0,
+        mark.progress,
+        mark.color,
+        strokeWidth,
+        StrokeCap.round,
+      );
+    }
+  }
+
+  void _paintOpenBands(
+    Canvas canvas,
+    Path path,
+    ui.PathMetric metrics,
+    List<({double progress, Color color})> marks,
+    double cover,
+    double strokeWidth,
+  ) {
+    final tail = _innerOpenCap - cover;
+    if (tail <= 0 || marks.isEmpty) {
+      _paintBands(canvas, path, metrics, marks, _innerOpenCap, strokeWidth);
+      return;
+    }
+    final slice = tail / marks.length;
+    for (var index = 0; index < marks.length; index++) {
+      final from = index == 0 ? 0.0 : cover + index * slice;
+      _paintSpan(
+        canvas,
+        path,
+        metrics,
+        from,
+        cover + (index + 1) * slice,
+        marks[index].color,
+        strokeWidth,
+        StrokeCap.butt,
+      );
+    }
+  }
+
+  void _paintBands(
+    Canvas canvas,
+    Path path,
+    ui.PathMetric metrics,
+    List<({double progress, Color color})> marks,
+    double span,
+    double strokeWidth,
+  ) {
+    final length = span.clamp(0.0, 1.0);
+    if (length <= 0 || marks.isEmpty) return;
+    final band = length / marks.length;
+    for (var index = 0; index < marks.length; index++) {
+      _paintSpan(
+        canvas,
+        path,
+        metrics,
+        index * band,
+        (index + 1) * band,
+        marks[index].color,
+        strokeWidth,
+        StrokeCap.butt,
+      );
+    }
+  }
+
+  void _paintSpan(
+    Canvas canvas,
+    Path path,
+    ui.PathMetric metrics,
+    double from,
+    double to,
+    Color color,
+    double strokeWidth,
+    StrokeCap cap,
+  ) {
+    if (to <= from) return;
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = cap
+      ..strokeWidth = strokeWidth
+      ..color = color;
+    if (from <= 0 && to >= 1) {
+      canvas.drawPath(path, stroke);
+      return;
+    }
+    canvas.drawPath(
+      metrics.extractPath(metrics.length * from, metrics.length * to),
+      stroke,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CountdownRingPainter oldDelegate) {
+    if (oldDelegate.trackColor != trackColor ||
+        oldDelegate.roundedSquare != roundedSquare ||
+        oldDelegate.layers.length != layers.length) {
+      return true;
+    }
+    for (var index = 0; index < layers.length; index++) {
+      final current = layers[index];
+      final previous = oldDelegate.layers[index];
+      if (current.progress != previous.progress ||
+          current.color != previous.color ||
+          current.dottedColors.length != previous.dottedColors.length ||
+          current.markProgress.length != previous.markProgress.length) {
+        return true;
+      }
+      for (var mark = 0; mark < current.markProgress.length; mark++) {
+        if (current.markProgress[mark] != previous.markProgress[mark]) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 }
 
 class _MedicationDosePanel extends ConsumerStatefulWidget {
@@ -683,13 +1106,12 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
         snoozeUntil: snoozeUntil,
       );
       final runtime = MedicationReminderRuntime.instance;
+      await runtime.cancelClaimedDose(occurrence.id);
       if (snoozeUntil != null) {
         await runtime.scheduleSnooze(occurrence, snoozeUntil);
-      } else {
-        await runtime.cancelSnooze(occurrence.id);
       }
-      final occurrences = await _upcomingDoseOccurrences(repository);
-      await runtime.updateWidget(occurrences);
+      final occurrences = await upcomingDoseOccurrences(repository);
+      await _pushReminderWidget(occurrences, ref.read(appSettingsProvider));
       ref.invalidate(homeMedicationOccurrencesProvider);
       ref.invalidate(todayMedicationOccurrencesProvider);
       ref.invalidate(medicationSchedulesProvider);
@@ -1087,11 +1509,7 @@ class _DoseStatusLine extends StatelessWidget {
     final theme = Theme.of(context);
     final status = countdown.occurrence.statusAt(now);
     final overdue = countdown.targetAt.isBefore(now);
-    final color = overdue
-        ? theme.colorScheme.error
-        : countdown.remainingAt(now) <= const Duration(hours: 1)
-        ? const Color(0xFFE7A83E)
-        : countdown.medicineColor(theme);
+    final color = _countdownStateColor(countdown.targetAt, now);
     final label = overdue
         ? _t('reminderStatusOverdue', 'Overdue')
         : status == 'snoozed'
@@ -1246,6 +1664,63 @@ class _MedicationPanelEmpty extends ConsumerWidget {
 }
 
 /// List of medication schedules and their current state.
+class _HomeWidgetSchedulePicker extends ConsumerWidget {
+  const _HomeWidgetSchedulePicker({required this.schedules});
+
+  final List<MedicationSchedule> schedules;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(appSettingsProvider).homeWidgetScheduleId;
+    final theme = Theme.of(context);
+    final active = schedules.where((schedule) => schedule.id != null).toList();
+    return Material(
+      color: theme.colorScheme.surfaceContainerHigh,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _t('homeWidgetShows', 'Home screen widget'),
+              style: theme.textTheme.titleSmall,
+            ),
+            RadioGroup<String>(
+              groupValue:
+                  active.any((schedule) => schedule.id == selected)
+                      ? selected
+                      : '',
+              onChanged: (value) => ref.updateSetting(
+                homeWidgetScheduleIdSetting,
+                value ?? '',
+              ),
+              child: Column(
+                children: [
+                  RadioListTile<String>(
+                    contentPadding: EdgeInsets.zero,
+                    value: '',
+                    title: Text(_t('homeWidgetShowsAll', 'All medicines')),
+                  ),
+                  for (final schedule in active)
+                    RadioListTile<String>(
+                      contentPadding: EdgeInsets.zero,
+                      value: schedule.id!,
+                      title: Text(schedule.medicine.designation),
+                      subtitle: Text(
+                        _t('homeWidgetShowsThis', 'Only this medicine'),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class MedicationSchedulesScreen extends ConsumerWidget {
   const MedicationSchedulesScreen({super.key});
 
@@ -1305,6 +1780,8 @@ class MedicationSchedulesScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+                _HomeWidgetSchedulePicker(schedules: items),
+                const SizedBox(height: 12),
                 for (final schedule in items)
                   _ScheduleCard(
                     schedule: schedule,
@@ -1336,19 +1813,9 @@ class MedicationSchedulesScreen extends ConsumerWidget {
                       final repository = ref.read(
                         medicationScheduleRepositoryProvider,
                       );
-                      final occurrences = await _upcomingDoseOccurrences(
+                      await _syncMedicationReminders(
                         repository,
-                      );
-                      await MedicationReminderRuntime.instance.syncSchedules(
-                        await repository.getAll(),
-                        snoozedOccurrences: occurrences
-                            .where(
-                              (occurrence) => occurrence.status == 'snoozed',
-                            )
-                            .toList(),
-                      );
-                      await MedicationReminderRuntime.instance.updateWidget(
-                        occurrences,
+                        ref.read(appSettingsProvider),
                       );
                       ref.invalidate(medicationSchedulesProvider);
                       ref.invalidate(todayMedicationOccurrencesProvider);
@@ -1378,14 +1845,14 @@ class TodayMedicinesScreen extends ConsumerWidget {
         .read(medicationScheduleRepositoryProvider)
         .setOccurrenceStatus(occurrence, status, snoozeUntil: snoozeUntil);
     final runtime = MedicationReminderRuntime.instance;
+    await runtime.cancelClaimedDose(occurrence.id);
     if (status == 'snoozed' && snoozeUntil != null) {
       await runtime.scheduleSnooze(occurrence, snoozeUntil);
-    } else {
-      await runtime.cancelSnooze(occurrence.id);
     }
     final repository = ref.read(medicationScheduleRepositoryProvider);
-    await MedicationReminderRuntime.instance.updateWidget(
-      await _upcomingDoseOccurrences(repository),
+    await _pushReminderWidget(
+      await upcomingDoseOccurrences(repository),
+      ref.read(appSettingsProvider),
     );
     ref.invalidate(todayMedicationOccurrencesProvider);
     ref.invalidate(homeMedicationOccurrencesProvider);
@@ -1768,14 +2235,7 @@ class _MedicationScheduleEditorScreenState
         );
     await MedicationReminderRuntime.instance.requestPermissions();
     final repository = ref.read(medicationScheduleRepositoryProvider);
-    final occurrences = await _upcomingDoseOccurrences(repository);
-    await MedicationReminderRuntime.instance.syncSchedules(
-      await repository.getAll(),
-      snoozedOccurrences: occurrences
-          .where((occurrence) => occurrence.status == 'snoozed')
-          .toList(),
-    );
-    await MedicationReminderRuntime.instance.updateWidget(occurrences);
+    await _syncMedicationReminders(repository, ref.read(appSettingsProvider));
     ref.invalidate(medicationSchedulesProvider);
     ref.invalidate(todayMedicationOccurrencesProvider);
     ref.invalidate(homeMedicationOccurrencesProvider);
@@ -1852,20 +2312,21 @@ class _MedicationScheduleEditorScreenState
                       label: Text(_t('addMedication', 'Add medication')),
                     )
                   else
-                    DropdownButtonFormField<Medicine>(
-                      initialValue: _medicine,
-                      decoration: InputDecoration(
-                        labelText: _t('selectMedication', 'Medication'),
-                      ),
-                      items: [
+                    SafaehAnchoredDropdownChip<Medicine>(
+                      icon: Icons.medication_outlined,
+                      label:
+                          _medicine?.designation ??
+                          _t('selectMedication', 'Medication'),
+                      expand: true,
+                      selected: _medicine ?? const Medicine(designation: ''),
+                      options: [
                         for (final med in _medicines)
-                          DropdownMenuItem(
+                          SafaehDropdownOption(
                             value: med,
-                            child: Text(med.designation),
+                            label: med.designation,
                           ),
                       ],
-                      onChanged: (medicine) {
-                        if (medicine == null) return;
+                      onSelected: (medicine) {
                         setState(() {
                           _medicine = medicine;
                           if (medicine.dosis != null) {
@@ -2065,43 +2526,28 @@ class _MedicationScheduleEditorScreenState
                                         ],
                                       ),
                                       const SizedBox(height: 6),
-                                      DropdownButtonFormField<
+                                      SafaehAnchoredDropdownChip<
                                         MedicationDoseTiming
                                       >(
                                         key: ValueKey(
                                           'dose-timing-${_times[index]}',
                                         ),
-                                        initialValue: _doseTimings[index],
-                                        isExpanded: true,
-                                        decoration: InputDecoration(
-                                          labelText: _t(
-                                            'reminderDoseTiming',
-                                            'Timing instruction',
-                                          ),
-                                          contentPadding:
-                                              const EdgeInsetsDirectional.only(
-                                                start: 12,
-                                                end: 8,
-                                                top: 10,
-                                                bottom: 10,
-                                              ),
+                                        icon: Icons.schedule_rounded,
+                                        label: _doseTimingLabel(
+                                          _doseTimings[index],
                                         ),
-                                        items: [
+                                        expand: true,
+                                        selected: _doseTimings[index],
+                                        options: [
                                           for (final timing
                                               in MedicationDoseTiming.values)
-                                            DropdownMenuItem(
+                                            SafaehDropdownOption(
                                               value: timing,
-                                              child: Text(
-                                                _doseTimingLabel(timing),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
+                                              label: _doseTimingLabel(timing),
                                             ),
                                         ],
-                                        onChanged: (timing) {
-                                          if (timing != null) {
-                                            _setDoseTiming(index, timing);
-                                          }
-                                        },
+                                        onSelected: (timing) =>
+                                            _setDoseTiming(index, timing),
                                       ),
                                     ],
                                   ),

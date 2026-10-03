@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "janan-debug": {
+      "command": "python3",
+      "args": ["${workspaceFolder}/tool/janan_debug_mcp.py"]
+    }
+  }
+}

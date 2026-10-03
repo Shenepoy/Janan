@@ -167,6 +167,25 @@ class PowerSyncMedicationScheduleRepository
   }
 
   @override
+  Future<void> delete(String id) async {
+    final rows = await _db.getAll(
+      'SELECT med_id FROM medication_schedules WHERE id = ?',
+      [id],
+    );
+    final medId = rows.isEmpty ? null : rows.first['med_id'] as String?;
+    await _db.execute('DELETE FROM dose_occurrences WHERE schedule_id = ?', [
+      id,
+    ]);
+    await _db.execute('DELETE FROM intakes WHERE occurrence_id LIKE ?', [
+      '$id.%',
+    ]);
+    if (medId != null) {
+      await _db.execute('DELETE FROM intakes WHERE med_id = ?', [medId]);
+    }
+    await _db.execute('DELETE FROM medication_schedules WHERE id = ?', [id]);
+  }
+
+  @override
   Future<void> setOccurrenceStatus(
     DoseOccurrence occurrence,
     String status, {

@@ -1,4 +1,6 @@
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <solid android:color="#17312E" />
     <stroke android:width="1dp" android:color="#31524E" />
+    <!-- 80dp plate × 16/56, matching the in-app rounded reminder button. -->
+    <corners android:radius="23dp" />
 </shape>

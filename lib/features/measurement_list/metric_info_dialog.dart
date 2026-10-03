@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_info.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -29,9 +30,11 @@ Future<void> showMetricInfo(
 
 /// Open the visual description and ranges card for [info].
 Future<void> showMetricInfoDialog(BuildContext context, MetricInfo info) =>
-    showDialog<void>(
+    showResponsiveSheet<void>(
       context: context,
-      builder: (context) => MetricInfoDialog(info: info),
+      title: info.title,
+      maxWidth: 400,
+      child: MetricInfoDialog(info: info),
     );
 
 /// Compact card explaining a metric and its typical ranges.
@@ -46,94 +49,76 @@ class MetricInfoDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final currentBand = info.currentBand;
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Icon(info.icon, color: theme.colorScheme.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(info.title, style: theme.textTheme.titleLarge),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                info.formattedValue,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (currentBand != null) ...[
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: _BandPill(band: currentBand),
-                ),
-              ] else if (info.note != null) ...[
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Chip(label: Text(info.note!)),
-                ),
-              ],
-              const SizedBox(height: 12),
-              Text(
-                info.description,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              if (info.showBar) ...[
-                const SizedBox(height: 16),
-                _RangeBar(info: info),
-              ],
-              if (info.bands.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                for (final band in info.bands)
-                  _RangeRow(
-                    band: band,
-                    selected:
-                        identical(band, currentBand) ||
-                        band.id == currentBand?.id,
-                  ),
-              ],
-              if (info.warnLabel != null) ...[
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Chip(
-                    label: Text(info.warnLabel!),
-                    side: BorderSide(color: theme.colorScheme.outline),
-                    backgroundColor: Colors.transparent,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'warnAboutTxt1'.tr(),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text('btnConfirm'.tr()),
-                ),
-              ),
-            ],
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            info.formattedValue,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
+          if (currentBand != null) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _BandPill(band: currentBand),
+            ),
+          ] else if (info.note != null) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Chip(label: Text(info.note!)),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Text(
+            info.description,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (info.showBar) ...[
+            const SizedBox(height: 16),
+            _RangeBar(info: info),
+          ],
+          if (info.bands.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            for (final band in info.bands)
+              _RangeRow(
+                band: band,
+                selected:
+                    identical(band, currentBand) || band.id == currentBand?.id,
+              ),
+          ],
+          if (info.warnLabel != null) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Chip(
+                label: Text(info.warnLabel!),
+                side: BorderSide(color: theme.colorScheme.outline),
+                backgroundColor: Colors.transparent,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'warnAboutTxt1'.tr(),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('btnConfirm'.tr()),
+            ),
+          ),
+        ],
       ),
     );
   }

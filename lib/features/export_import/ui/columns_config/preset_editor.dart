@@ -1,4 +1,5 @@
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
+import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:blood_pressure_app/features/export_import/model/column.dart';
 import 'package:blood_pressure_app/features/export_import/model/export_preset.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -67,19 +68,13 @@ class PresetEditor extends  StatelessWidget {
   }
 
   void addField(BuildContext context) async {
-    final column = await showDialog<ExportColumn?>(context: context, builder: (context) =>
-        SimpleDialog(
-          title: Text('addEntry'.tr()),
-          insetPadding: const EdgeInsets.symmetric(
-            vertical: 64,
-          ),
-          children: context.exportColumnsManager.getAllColumns().map((column) =>
-              ListTile(
-                title: Text(column.userTitle()),
-                onTap: () => Navigator.pop(context, column),
-              ),
-          ).toList(),
-        ),
+    final column = await showOptionPickerSheet<ExportColumn>(
+      context,
+      title: 'addEntry'.tr(),
+      options: [
+        for (final column in context.exportColumnsManager.getAllColumns())
+          SheetPickerOption(value: column, label: column.userTitle()),
+      ],
     );
     if (column != null) editor.addUserColumn(column);
   }

@@ -1,4 +1,5 @@
 import 'package:blood_pressure_app/l10n/app_locales.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -16,13 +17,30 @@ const generalSection = SettingSection(
   titleKey: 'generalSettingsSection',
   icon: Icons.tune,
   order: 1,
+  initiallyExpanded: true,
 );
 
-const featuresSection = SettingSection(
-  key: 'features',
-  titleKey: 'featuresSetting',
-  icon: Icons.toggle_off_outlined,
+const bloodPressureSection = SettingSection(
+  key: 'blood_pressure',
+  titleKey: 'bloodPressure',
+  icon: Symbols.heart_plus,
   order: 2,
+  initiallyExpanded: true,
+);
+
+const weightSection = SettingSection(
+  key: 'weight',
+  titleKey: 'weight',
+  icon: Icons.scale,
+  order: 3,
+  initiallyExpanded: true,
+);
+
+const medicationsSection = SettingSection(
+  key: 'medications',
+  titleKey: 'medications',
+  icon: Icons.medication_outlined,
+  order: 4,
   initiallyExpanded: true,
 );
 
@@ -30,7 +48,7 @@ const bluetoothSection = SettingSection(
   key: 'bluetooth',
   titleKey: 'bluetoothSettings',
   icon: Icons.bluetooth,
-  order: 3,
+  order: 5,
   initiallyExpanded: true,
 );
 
@@ -38,7 +56,7 @@ const dataSection = SettingSection(
   key: 'data',
   titleKey: 'data',
   icon: Icons.storage_outlined,
-  order: 4,
+  order: 6,
   initiallyExpanded: true,
 );
 
@@ -46,14 +64,16 @@ const aboutSection = SettingSection(
   key: 'about',
   titleKey: 'aboutWarnValuesScreen',
   icon: Icons.info_outline,
-  order: 5,
+  order: 7,
+  initiallyExpanded: true,
 );
 
 const graphSection = SettingSection(
   key: 'graph',
   titleKey: 'graphSettings',
   icon: Icons.trending_down_outlined,
-  order: 6,
+  order: 8,
+  initiallyExpanded: true,
 );
 
 const languageSetting = EnumSetting(
@@ -62,8 +82,8 @@ const languageSetting = EnumSetting(
   titleKey: 'language',
   options: languageSettingOptions,
   icon: Icons.language,
-  section: 'style',
-  order: 1,
+  section: 'general',
+  order: 0,
   searchTerms: {
     'en': ['locale', 'language', 'arabic'],
     'ar': ['لغة', 'عربي', 'الإنجليزية'],
@@ -118,7 +138,7 @@ const accentColorSetting = ColorSetting(
   titleKey: 'accentColor',
   icon: Icons.palette_outlined,
   section: 'style',
-  order: 3,
+  order: 1,
   colorOptions: appColorOptions,
   allowCustom: false,
 );
@@ -127,8 +147,8 @@ const graphSettingsAction = ActionSetting(
   'graph_settings',
   titleKey: 'graphSettings',
   icon: Icons.trending_down_outlined,
-  section: 'features',
-  order: 6,
+  section: 'blood_pressure',
+  order: 2,
 );
 
 const dateFormatStringOptions = [
@@ -150,8 +170,8 @@ const dateFormatStringSetting = StringSetting(
   defaultValue: 'yyyy-MM-dd HH:mm',
   titleKey: 'enterTimeFormatScreen',
   icon: Icons.schedule,
-  section: 'style',
-  order: 2,
+  section: 'general',
+  order: 1,
   searchTerms: {
     'en': ['date', 'time', 'format', 'clock'],
     'ar': ['تاريخ', 'وقت', 'تنسيق'],
@@ -329,7 +349,7 @@ const startWithAddMeasurementPageSetting = BoolSetting(
   subtitleKey: 'startWithAddMeasurementPageDescription',
   icon: Icons.electric_bolt_outlined,
   section: 'general',
-  order: 0,
+  order: 2,
   dependsOn: 'blood_pressure_enabled',
   enabledWhen: true,
 );
@@ -340,7 +360,7 @@ const allowManualTimeInputSetting = BoolSetting(
   titleKey: 'allowManualTimeInput',
   icon: Icons.schedule,
   section: 'general',
-  order: 1,
+  order: 3,
 );
 
 const validateInputsSetting = BoolSetting(
@@ -368,7 +388,7 @@ const confirmDeletionSetting = BoolSetting(
   titleKey: 'confirmDeletion',
   icon: Icons.delete_forever,
   section: 'general',
-  order: 2,
+  order: 4,
 );
 
 const compactListSetting = BoolSetting(
@@ -377,7 +397,7 @@ const compactListSetting = BoolSetting(
   titleKey: 'compactList',
   icon: Icons.view_agenda_outlined,
   section: 'style',
-  order: 4,
+  order: 2,
 );
 
 const roundedReminderButtonSetting = BoolSetting(
@@ -386,7 +406,7 @@ const roundedReminderButtonSetting = BoolSetting(
   titleKey: 'useRoundedSquareReminderButton',
   icon: Icons.rounded_corner,
   section: 'style',
-  order: 5,
+  order: 3,
 );
 
 const preferredPressureUnitSetting = EnumSetting(
@@ -396,8 +416,8 @@ const preferredPressureUnitSetting = EnumSetting(
   options: ['mmHg', 'kPa'],
   useRawLabels: true,
   icon: Icons.speed,
-  section: 'features',
-  order: 5,
+  section: 'blood_pressure',
+  order: 1,
   dependsOn: 'blood_pressure_enabled',
   enabledWhen: true,
 );
@@ -409,8 +429,8 @@ const preferredWeightUnitSetting = EnumSetting(
   options: ['kg', 'lbs', 'st'],
   useRawLabels: true,
   icon: Icons.scale,
-  section: 'features',
-  order: 4,
+  section: 'weight',
+  order: 1,
   dependsOn: 'weight_input',
   enabledWhen: true,
 );
@@ -498,8 +518,8 @@ const weightInputSetting = BoolSetting(
   defaultValue: false,
   titleKey: 'activateWeightFeatures',
   icon: Icons.scale,
-  section: 'features',
-  order: 2,
+  section: 'weight',
+  order: 0,
 );
 
 const bloodPressureEnabledSetting = BoolSetting(
@@ -507,7 +527,7 @@ const bloodPressureEnabledSetting = BoolSetting(
   defaultValue: true,
   titleKey: 'bloodPressure',
   icon: Symbols.heart_plus,
-  section: 'features',
+  section: 'blood_pressure',
   order: 0,
 );
 
@@ -516,8 +536,8 @@ const medicineFeatureEnabledSetting = BoolSetting(
   defaultValue: true,
   titleKey: 'medications',
   icon: Icons.medication_outlined,
-  section: 'features',
-  order: 1,
+  section: 'medications',
+  order: 0,
 );
 
 const bluetoothMeasurementsEnabledSetting = BoolSetting(
@@ -525,8 +545,8 @@ const bluetoothMeasurementsEnabledSetting = BoolSetting(
   defaultValue: false,
   titleKey: 'bluetoothMeasurements',
   icon: Icons.bluetooth,
-  section: 'features',
-  order: 3,
+  section: 'bluetooth',
+  order: 0,
 );
 
 const bleInputSetting = EnumSetting(
@@ -542,7 +562,7 @@ const bleInputSetting = EnumSetting(
   },
   icon: Icons.bluetooth,
   section: 'bluetooth',
-  order: 0,
+  order: 1,
   dependsOn: 'bluetooth_measurements_enabled',
   enabledWhen: true,
 );
@@ -589,16 +609,76 @@ const bodyProfileAction = ActionSetting(
   titleKey: 'bodyProfile',
   subtitleKey: 'bodyProfileIncomplete',
   icon: Icons.accessibility_new,
-  section: 'features',
-  order: 7,
+  section: 'weight',
+  order: 2,
 );
 
 const medicationsAction = ActionSetting(
   'medications',
   titleKey: 'manageMedications',
   icon: Icons.medication,
-  section: 'features',
-  order: 8,
+  section: 'medications',
+  order: 1,
+);
+
+const overdueReminderCountSetting = IntSetting(
+  'overdue_reminder_count',
+  defaultValue: 3,
+  titleKey: 'overdueReminderCount',
+  subtitleKey: 'overdueReminderCountDesc',
+  icon: Icons.notifications_active_outlined,
+  section: 'medications',
+  order: 2,
+  min: 0,
+  max: 6,
+  step: 1,
+  dependsOn: 'medicine_feature_enabled',
+  enabledWhen: true,
+);
+
+const overdueReminderIntervalSetting = IntSetting(
+  'overdue_reminder_interval_minutes',
+  defaultValue: 10,
+  titleKey: 'overdueReminderInterval',
+  subtitleKey: 'overdueReminderIntervalDesc',
+  icon: Icons.timer_outlined,
+  section: 'medications',
+  order: 3,
+  min: 1,
+  max: 120,
+  step: 1,
+  dependsOn: 'medicine_feature_enabled',
+  enabledWhen: true,
+);
+
+const showAllReminderRingsSetting = BoolSetting(
+  'show_all_reminder_rings',
+  defaultValue: true,
+  titleKey: 'showAllReminderRings',
+  subtitleKey: 'showAllReminderRingsDesc',
+  icon: Icons.donut_large_outlined,
+  section: 'medications',
+  order: 4,
+  dependsOn: 'medicine_feature_enabled',
+  enabledWhen: true,
+);
+
+const homeWidgetScheduleIdSetting = StringSetting(
+  'home_widget_schedule_id',
+  defaultValue: '',
+  titleKey: 'homeWidgetShows',
+  visible: false,
+);
+
+const debugDataServerSetting = BoolSetting(
+  'debug_data_server',
+  defaultValue: false,
+  titleKey: 'debugDataServer',
+  subtitleKey: 'debugDataServerDesc',
+  icon: Icons.science_outlined,
+  section: 'about',
+  order: 5,
+  visible: kDebugMode,
 );
 
 const bluetoothDevicesAction = ActionSetting(
@@ -606,7 +686,7 @@ const bluetoothDevicesAction = ActionSetting(
   titleKey: 'bluetoothDevices',
   icon: Icons.bluetooth_searching,
   section: 'bluetooth',
-  order: 1,
+  order: 2,
 );
 
 const useHealthConnectSetting = BoolSetting(
@@ -750,7 +830,9 @@ SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
   sections: [
     styleSection,
     generalSection,
-    featuresSection,
+    bloodPressureSection,
+    weightSection,
+    medicationsSection,
     bluetoothSection,
     dataSection,
     aboutSection,
@@ -803,6 +885,11 @@ SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
     knownBleDevicesSetting,
     bodyProfileAction,
     medicationsAction,
+    overdueReminderCountSetting,
+    overdueReminderIntervalSetting,
+    showAllReminderRingsSetting,
+    homeWidgetScheduleIdSetting,
+    debugDataServerSetting,
     bluetoothDevicesAction,
     useHealthConnectSetting,
     syncPressureMeasurementsSetting,

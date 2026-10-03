@@ -69,6 +69,9 @@ abstract class MedicationScheduleRepository {
     String status, {
     DateTime? snoozeUntil,
   });
+
+  /// Removes a schedule, its occurrences, and intakes for its medicine.
+  Future<void> delete(String id);
 }
 
 /// Repository for medicines that are taken by the user.

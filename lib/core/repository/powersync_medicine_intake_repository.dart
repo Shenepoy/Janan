@@ -21,20 +21,24 @@ class PowerSyncMedicineIntakeRepository extends MedicineIntakeRepository {
     if (medId == null) return;
 
     final timeSec = intake.time.secondsSinceEpoch;
-    final existing = intake.occurrenceId == null
+    final claimedId = intake.occurrenceId == null
+        ? await _claimOpenDose(medId, timeSec)
+        : null;
+    final occurrenceId = intake.occurrenceId ?? claimedId;
+    final existing = occurrenceId == null
         ? await _db.getAll(
             'SELECT id FROM intakes WHERE timestamp_unix_s = ? AND med_id = ?',
             [timeSec, medId],
           )
         : await _db.getAll('SELECT id FROM intakes WHERE occurrence_id = ?', [
-            intake.occurrenceId,
+            occurrenceId,
           ]);
     if (existing.isEmpty) {
       await _db.execute(
         'INSERT INTO intakes '
         '(id, timestamp_unix_s, med_id, dosis_mg, occurrence_id) '
         'VALUES (?, ?, ?, ?, ?)',
-        [_uuid.v4(), timeSec, medId, intake.dosis.mg, intake.occurrenceId],
+        [_uuid.v4(), timeSec, medId, intake.dosis.mg, occurrenceId],
       );
     } else {
       await _db.execute(
@@ -44,12 +48,51 @@ class PowerSyncMedicineIntakeRepository extends MedicineIntakeRepository {
           timeSec,
           medId,
           intake.dosis.mg,
-          intake.occurrenceId,
+          occurrenceId,
           existing.first['id'],
         ],
       );
     }
-    _controller.add(intake);
+    _controller.add(
+      occurrenceId == intake.occurrenceId
+          ? intake
+          : MedicineIntake(
+              time: intake.time,
+              medicine: intake.medicine,
+              dosis: intake.dosis,
+              occurrenceId: occurrenceId,
+            ),
+    );
+  }
+
+  /// Marks the nearest open scheduled dose taken when a manual log matches it.
+  Future<String?> _claimOpenDose(String medId, int intakeUnix) async {
+    final window = 12 * 60 * 60;
+    final rows = await _db.getAll(
+      'SELECT o.id, o.scheduled_unix_s FROM dose_occurrences o '
+      'JOIN medication_schedules s ON s.id = o.schedule_id '
+      "WHERE s.med_id = ? AND o.status IN ('pending', 'snoozed', 'unrecorded') "
+      'AND o.scheduled_unix_s BETWEEN ? AND ?',
+      [medId, intakeUnix - window, intakeUnix + window],
+    );
+    final match = closestOpenDoseId(
+      [
+        for (final row in rows)
+          (
+            id: row['id'] as String,
+            scheduledUnix: (row['scheduled_unix_s'] as num).toInt(),
+          ),
+      ],
+      intakeUnix,
+      windowSeconds: window,
+    );
+    if (match == null) return null;
+    await _db.execute(
+      'UPDATE dose_occurrences SET status = ?, snooze_until_unix_s = NULL, '
+      'taken_at_unix_s = ? WHERE id = ?',
+      ['taken', intakeUnix, match],
+    );
+    return match;
   }
 
   @override

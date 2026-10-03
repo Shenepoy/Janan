@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:safaeh/safaeh.dart';
 
 const _tutorialPages = 4;
 
@@ -252,23 +253,21 @@ class _LanguageMenuButton extends StatelessWidget {
   final ValueChanged<String> onSelect;
 
   @override
-  Widget build(BuildContext context) => PopupMenuButton<String>(
-    tooltip: 'language'.tr(),
-    icon: const Icon(Icons.language),
-    initialValue: languageKey,
-    onSelected: onSelect,
-    itemBuilder: (context) => [
-      for (final key in languageSettingOptions)
-        PopupMenuItem(
-          value: key,
-          child: Text(
-            key == 'system'
-                ? 'system'.tr()
-                : getDisplayLanguage(localeFromLanguageKey(key)!),
-          ),
-        ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    String label(String key) => key == 'system'
+        ? 'system'.tr()
+        : getDisplayLanguage(localeFromLanguageKey(key)!);
+    return SafaehAnchoredDropdownChip<String>(
+      icon: Icons.language,
+      label: label(languageKey),
+      selected: languageKey,
+      options: [
+        for (final key in languageSettingOptions)
+          SafaehDropdownOption(value: key, label: label(key)),
+      ],
+      onSelected: onSelect,
+    );
+  }
 }
 
 class _ThemeCycleButton extends StatelessWidget {

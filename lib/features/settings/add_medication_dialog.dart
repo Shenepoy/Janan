@@ -7,6 +7,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:safaeh/safaeh.dart';
 
 /// Dialog to enter values for a [Medicine].
 class AddMedicationDialog extends ConsumerStatefulWidget {
@@ -124,26 +125,20 @@ class _AddMedicationDialogState extends ConsumerState<AddMedicationDialog> {
                         label: 'medicationUnit'.tr(),
                         button: true,
                         child: Padding(
-                          padding: const EdgeInsetsDirectional.only(end: 8),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<MedicationUnit>(
-                              key: const ValueKey('medication-unit-dropdown'),
-                              value: _unit,
-                              isDense: true,
-                              alignment: AlignmentDirectional.centerEnd,
-                              borderRadius: BorderRadius.circular(12),
-                              items: [
-                                for (final unit in MedicationUnit.values)
-                                  DropdownMenuItem<MedicationUnit>(
-                                    value: unit,
-                                    child: Text(unit.labelKey.tr()),
-                                  ),
-                              ],
-                              onChanged: (unit) {
-                                if (unit == null) return;
-                                setState(() => _unit = unit);
-                              },
-                            ),
+                          padding: const EdgeInsetsDirectional.only(end: 4),
+                          child: SafaehAnchoredDropdownChip<MedicationUnit>(
+                            key: const ValueKey('medication-unit-dropdown'),
+                            icon: Icons.straighten,
+                            label: _unit.labelKey.tr(),
+                            selected: _unit,
+                            options: [
+                              for (final unit in MedicationUnit.values)
+                                SafaehDropdownOption(
+                                  value: unit,
+                                  label: unit.labelKey.tr(),
+                                ),
+                            ],
+                            onSelected: (unit) => setState(() => _unit = unit),
                           ),
                         ),
                       ),

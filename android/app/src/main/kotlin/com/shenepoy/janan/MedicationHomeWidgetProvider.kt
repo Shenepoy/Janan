@@ -10,7 +10,10 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PathMeasure
 import android.graphics.RectF
+import org.json.JSONObject
 import android.os.Build
 import android.widget.RemoteViews
 import org.json.JSONArray
@@ -28,6 +31,9 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
+        // Cold boot drops AlarmManager timers. Redraw from the saved dose
+        // times and schedule the next refresh. Dose notifications are restored
+        // separately by ScheduledNotificationBootReceiver.
         if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
             intent.action == Intent.ACTION_MY_PACKAGE_REPLACED ||
             intent.action == Intent.ACTION_TIME_CHANGED ||
@@ -58,12 +64,11 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         val targetAt = next?.optLong("scheduledAtMs", 0L) ?: 0L
         val hasDose = next != null && targetAt > 0L
         val overdue = hasDose && targetAt <= now
-        val configuredColor = next?.optInt("color", DEFAULT_MEDICINE_COLOR)
-            ?: DEFAULT_MEDICINE_COLOR
-        val medicineColor = configuredColor.takeIf { it != 0 } ?: DEFAULT_MEDICINE_COLOR
+        val medicineColor = next?.widgetColor("color") ?: DEFAULT_MEDICINE_COLOR
         val ringColor = when {
             overdue -> OVERDUE_COLOR
-            hasDose && targetAt - now <= SOON_MILLIS -> SOON_COLOR
+            hasDose && targetAt - now <= SOON_MILLIS -> YELLOW_COLOR
+            hasDose -> GREEN_COLOR
             else -> medicineColor
         }
         fun widgetLabel(key: String, fallbackResource: Int): String {
@@ -73,10 +78,6 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         val statusAllSet = widgetLabel(
             "statusAllSet",
             R.string.medication_widget_status_all_set,
-        )
-        val statusOverdue = widgetLabel(
-            "statusOverdue",
-            R.string.medication_widget_status_overdue,
         )
         val statusSnoozed = widgetLabel(
             "statusSnoozed",
@@ -107,7 +108,16 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
 
         views.setImageViewBitmap(
             R.id.widget_progress_ring,
-            progressRing(context, ringProgress(targetAt, now, hasDose), ringColor),
+            progressRings(context, reminderRings(next), now, flash = false),
+        )
+        views.setImageViewBitmap(
+            R.id.widget_progress_ring_siren,
+            progressRings(context, reminderRings(next), now, flash = overdue),
+        )
+        views.setInt(
+            R.id.widget_ring_flipper,
+            "setFlipInterval",
+            if (overdue) 420 else 86_400_000,
         )
         if (hasDose) {
             val fallbackMedicine = context.getString(
@@ -116,50 +126,43 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
             val name = next.optString("name", fallbackMedicine).trim().ifEmpty {
                 fallbackMedicine
             }
+            val shortName = next.optString("shortName", "").trim().ifEmpty {
+                compactMedicineName(name)
+            }
             val storedStatus = next.optString("status", "pending")
             val label = when {
-                overdue -> statusOverdue
                 storedStatus == "snoozed" -> statusSnoozed
                 targetAt - now <= SOON_MILLIS -> statusSoon
                 else -> statusNextDose
             }
-            views.setTextViewText(R.id.widget_status, label)
-            views.setTextColor(R.id.widget_status, ringColor)
-            views.setTextViewText(R.id.widget_medicine, name)
+            if (overdue) {
+                views.setViewVisibility(R.id.widget_status, android.view.View.GONE)
+            } else {
+                views.setViewVisibility(R.id.widget_status, android.view.View.VISIBLE)
+                views.setTextViewText(R.id.widget_status, label)
+                views.setTextColor(R.id.widget_status, ringColor)
+            }
+            views.setTextViewText(R.id.widget_medicine, shortName)
             views.setViewVisibility(R.id.widget_medicine, android.view.View.VISIBLE)
             views.setViewVisibility(R.id.widget_countdown, android.view.View.VISIBLE)
 
-            val delta = targetAt - now
-            if (overdue) {
-                views.setTextViewText(
-                    R.id.widget_countdown,
-                    countdownText(
-                        now - targetAt,
-                        overdue = true,
-                        nowLabel = nowLabel,
-                        hourUnit = hourUnit,
-                        minuteUnit = minuteUnit,
-                    ),
-                )
-                views.setTextColor(R.id.widget_countdown, OVERDUE_COLOR)
-            } else {
-                views.setTextViewText(
-                    R.id.widget_countdown,
-                    countdownText(
-                        delta,
-                        overdue = false,
-                        nowLabel = nowLabel,
-                        hourUnit = hourUnit,
-                        minuteUnit = minuteUnit,
-                    ),
-                )
-                views.setTextColor(R.id.widget_countdown, TEXT_COLOR)
-            }
+            views.setTextViewText(
+                R.id.widget_countdown,
+                countdownText(
+                    if (overdue) now - targetAt else targetAt - now,
+                    overdue = overdue,
+                    nowLabel = nowLabel,
+                    hourUnit = hourUnit,
+                    minuteUnit = minuteUnit,
+                ),
+            )
+            views.setTextColor(R.id.widget_countdown, ringColor)
             views.setContentDescription(
                 R.id.widget_root,
-                "$name, $label",
+                if (overdue) name else "$name, $label",
             )
         } else {
+            views.setViewVisibility(R.id.widget_status, android.view.View.VISIBLE)
             views.setTextViewText(R.id.widget_status, statusAllSet)
             views.setTextColor(R.id.widget_status, medicineColor)
             views.setTextViewText(R.id.widget_medicine, noDoseDue)
@@ -221,10 +224,16 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
     }
 
     private fun ringProgress(targetAt: Long, now: Long, hasDose: Boolean): Float {
-        if (!hasDose) return 0.13f
-        if (targetAt <= now) return 0.98f
-        val elapsedFraction = 1f - (targetAt - now).toFloat() / RING_HORIZON_MILLIS
-        return elapsedFraction.coerceIn(0.06f, 0.94f)
+        if (!hasDose) return 0.12f
+        if (targetAt <= now) return 1f
+        val remaining = targetAt - now
+        if (remaining <= SOON_MILLIS) {
+            val fraction = 1f - remaining.toFloat() / SOON_MILLIS
+            return 0.50f + 0.32f * fraction
+        }
+        val horizon = 12f * SOON_MILLIS
+        val elapsed = 1f - (remaining.toFloat() / horizon).coerceIn(0f, 1f)
+        return (0.08f + 0.40f * elapsed).coerceIn(0.08f, 0.48f)
     }
 
     private fun countdownText(
@@ -234,19 +243,18 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         hourUnit: String,
         minuteUnit: String,
     ): String {
-        if (deltaMillis <= 0L) return if (overdue) "+$nowLabel" else nowLabel
+        if (deltaMillis <= 0L) return nowLabel
         val minutes = if (overdue) {
             (deltaMillis / MINUTE_MILLIS).coerceAtLeast(1L)
         } else {
             (deltaMillis + MINUTE_MILLIS - 1L) / MINUTE_MILLIS
         }
-        val value = if (minutes >= 60L) {
+        return if (minutes >= 60L) {
             val hours = if (overdue) minutes / 60L else (minutes + 59L) / 60L
             "$hours$hourUnit"
         } else {
             "$minutes$minuteUnit"
         }
-        return if (overdue) "+$value" else value
     }
 
     private fun nextCountdownRefresh(
@@ -280,44 +288,406 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    private fun progressRing(context: Context, progress: Float, color: Int): Bitmap {
+    private data class WidgetRing(
+        val at: Long,
+        val dotted: Boolean,
+        val colors: IntArray,
+        val times: LongArray,
+        val status: String,
+    )
+
+    private data class RingMark(val progress: Float, val color: Int)
+
+    private fun reminderRings(summary: JSONObject?): List<WidgetRing> {
+        val encoded = summary?.optJSONArray("rings")
+        if (encoded != null && encoded.length() > 0) {
+            return List(encoded.length()) { index ->
+                val ring = encoded.getJSONObject(index)
+                val doses = ring.optJSONArray("doses")
+                val colors = if (doses == null || doses.length() == 0) {
+                    intArrayOf(DEFAULT_MEDICINE_COLOR)
+                } else {
+                    IntArray(doses.length()) { doseIndex ->
+                        doses.getJSONObject(doseIndex).widgetColor("color")
+                    }
+                }
+                val ringAt = ring.optLong("scheduledAtMs", 0L)
+                val times = if (doses == null || doses.length() == 0) {
+                    longArrayOf(ringAt)
+                } else {
+                    LongArray(doses.length()) { doseIndex ->
+                        val at = doses.getJSONObject(doseIndex).optLong("scheduledAtMs", 0L)
+                        if (at > 0L) at else ringAt
+                    }
+                }
+                WidgetRing(
+                    at = ringAt,
+                    dotted = ring.optBoolean("dotted", colors.size > 1),
+                    colors = colors,
+                    times = times,
+                    status = ring.optString("status", "pending"),
+                )
+            }
+        }
+        val at = summary?.optLong("scheduledAtMs", 0L) ?: 0L
+        if (summary == null || at <= 0L) return emptyList()
+        val color = summary.widgetColor("color")
+        return listOf(
+            WidgetRing(
+                at = at,
+                dotted = false,
+                colors = intArrayOf(color),
+                times = longArrayOf(at),
+                status = summary.optString("status", "pending"),
+            ),
+        )
+    }
+
+    private fun progressRings(
+        context: Context,
+        rings: List<WidgetRing>,
+        now: Long,
+        flash: Boolean,
+    ): Bitmap {
         val density = context.resources.displayMetrics.density
         val pixels = (RING_BITMAP_DP * density).toInt().coerceAtLeast(96)
         val bitmap = Bitmap.createBitmap(pixels, pixels, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val stroke = RING_STROKE_DP * density
-        val inset = stroke / 2f + 1f
-        val bounds = RectF(inset, inset, pixels - inset, pixels - inset)
-        val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = stroke
-            this.color = color
-            alpha = 48
+        val stroke = pixels * RING_STROKE_FRACTION
+        val layers = if (rings.isEmpty()) {
+            listOf(WidgetRing(0L, false, intArrayOf(DEFAULT_MEDICINE_COLOR), longArrayOf(0L), "pending"))
+        } else {
+            rings.take(2)
         }
-        val arcPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = stroke
-            strokeCap = Paint.Cap.ROUND
-            this.color = color
+        val outerSide = pixels - stroke
+        val outerRadius = minOf(outerSide * RING_CORNER_FRACTION, outerSide / 2f)
+        layers.forEachIndexed { index, ring ->
+            val inset = stroke / 2f + index * stroke
+            if (pixels <= inset * 2f + stroke) return@forEachIndexed
+            val corner = maxOf(0f, outerRadius - index * stroke)
+            val path = roundedSquareRingPath(
+                RectF(inset, inset, pixels - inset, pixels - inset),
+                corner,
+            )
+            val marks = if (rings.isEmpty()) {
+                listOf(RingMark(0.12f, DEFAULT_MEDICINE_COLOR))
+            } else {
+                ringMarks(ring, now, flash && index == 0, inner = index > 0)
+            }
+            drawSharedRing(canvas, path, stroke, marks)
         }
-        canvas.drawArc(bounds, 0f, 360f, false, trackPaint)
-        canvas.drawArc(bounds, -90f, 360f * progress, false, arcPaint)
         return bitmap
+    }
+
+    /** One arc per medicine. A shared time keeps each medicine color. */
+    private fun ringMarks(
+        ring: WidgetRing,
+        now: Long,
+        flash: Boolean,
+        inner: Boolean,
+    ): List<RingMark> {
+        val overdue = ring.at > 0L && ring.at <= now
+        if (!inner && overdue) {
+            return listOf(RingMark(1f, if (flash) SIREN_COLOR else OVERDUE_COLOR))
+        }
+        if (ring.dotted && ring.colors.size > 1) {
+            return ring.colors.take(3).mapIndexed { index, color ->
+                val at = ring.times.getOrElse(index) { ring.at }
+                var progress = if (at > 0L) ringProgress(at, now, true) else 0.12f
+                if (inner) progress = progress.coerceAtMost(INNER_OPEN_CAP)
+                RingMark(progress, color)
+            }
+        }
+        var progress = if (ring.at > 0L) ringProgress(ring.at, now, true) else 0.12f
+        if (inner) progress = progress.coerceAtMost(INNER_OPEN_CAP)
+        val color = if (inner) {
+            ring.colors.firstOrNull() ?: DEFAULT_MEDICINE_COLOR
+        } else {
+            ringPaintColor(ring, now, flash)
+        }
+        return listOf(RingMark(progress, color))
+    }
+
+    private fun ringPaintColor(ring: WidgetRing, now: Long, flash: Boolean): Int {
+        if (flash) return SIREN_COLOR
+        if (ring.dotted || ring.at <= 0L) return ring.colors.first()
+        if (ring.at <= now) return OVERDUE_COLOR
+        if (ring.at - now <= SOON_MILLIS) return YELLOW_COLOR
+        return GREEN_COLOR
+    }
+
+    private fun drawSharedRing(
+        canvas: Canvas,
+        path: Path,
+        stroke: Float,
+        marks: List<RingMark>,
+    ) {
+        if (marks.isEmpty()) return
+        val measure = PathMeasure(path, false)
+        if (marks.size == 1) {
+            val progress = marks.first().progress
+            if (progress <= 0f) return
+            if (progress >= 1f) {
+                canvas.drawPath(path, strokePaint(marks.first().color, stroke))
+                return
+            }
+            val segment = Path()
+            val end = measure.length * progress.coerceIn(0f, 1f)
+            if (measure.getSegment(0f, end, segment, true)) {
+                segment.rLineTo(0f, 0f)
+                canvas.drawPath(segment, strokePaint(marks.first().color, stroke))
+            }
+            return
+        }
+        val longest = marks.maxOf { it.progress }
+        val shortest = marks.minOf { it.progress }
+        if (longest - shortest < 0.01f) {
+            drawBands(canvas, path, measure, marks, longest, stroke)
+            return
+        }
+        val capped = marks.filter { it.progress >= INNER_OPEN_CAP - 0.01f }
+        val shorter = marks
+            .filter { it.progress < INNER_OPEN_CAP - 0.01f }
+            .sortedByDescending { it.progress }
+        if (capped.isNotEmpty()) {
+            val cover = shorter.maxOfOrNull { it.progress } ?: 0f
+            drawOpenBands(canvas, path, measure, capped, cover, stroke)
+        }
+        for (mark in shorter) {
+            drawSpan(canvas, path, measure, 0f, mark.progress, mark.color, stroke, Paint.Cap.ROUND)
+        }
+    }
+
+    private fun drawOpenBands(
+        canvas: Canvas,
+        path: Path,
+        measure: PathMeasure,
+        marks: List<RingMark>,
+        cover: Float,
+        stroke: Float,
+    ) {
+        val tail = INNER_OPEN_CAP - cover
+        if (tail <= 0f || marks.isEmpty()) {
+            drawBands(canvas, path, measure, marks, INNER_OPEN_CAP, stroke)
+            return
+        }
+        val slice = tail / marks.size
+        marks.forEachIndexed { index, mark ->
+            val from = if (index == 0) 0f else cover + index * slice
+            drawSpan(
+                canvas,
+                path,
+                measure,
+                from,
+                cover + (index + 1) * slice,
+                mark.color,
+                stroke,
+                Paint.Cap.BUTT,
+            )
+        }
+    }
+
+    private fun drawBands(
+        canvas: Canvas,
+        path: Path,
+        measure: PathMeasure,
+        marks: List<RingMark>,
+        span: Float,
+        stroke: Float,
+    ) {
+        val length = span.coerceIn(0f, 1f)
+        if (length <= 0f || marks.isEmpty()) return
+        val band = length / marks.size
+        marks.forEachIndexed { index, mark ->
+            drawSpan(
+                canvas,
+                path,
+                measure,
+                index * band,
+                (index + 1) * band,
+                mark.color,
+                stroke,
+                Paint.Cap.BUTT,
+            )
+        }
+    }
+
+    private fun drawSpan(
+        canvas: Canvas,
+        path: Path,
+        measure: PathMeasure,
+        from: Float,
+        to: Float,
+        color: Int,
+        stroke: Float,
+        cap: Paint.Cap,
+    ) {
+        if (to <= from) return
+        if (from <= 0f && to >= 1f) {
+            canvas.drawPath(path, strokePaint(color, stroke, cap))
+            return
+        }
+        val segment = Path()
+        val start = measure.length * from.coerceIn(0f, 1f)
+        val end = measure.length * to.coerceIn(0f, 1f)
+        if (end <= start) return
+        if (measure.getSegment(start, end, segment, true)) {
+            segment.rLineTo(0f, 0f)
+            canvas.drawPath(segment, strokePaint(color, stroke, cap))
+        }
+    }
+
+    /** ARGB colors from Flutter are larger than a signed 32-bit int in JSON. */
+    private fun JSONObject.widgetColor(key: String): Int {
+        val raw = opt(key) as? Number ?: return DEFAULT_MEDICINE_COLOR
+        return raw.toLong().toInt().takeIf { it != 0 } ?: DEFAULT_MEDICINE_COLOR
+    }
+
+    private fun compactMedicineName(name: String): String {
+        val trimmed = name.trim().replace(Regex("\\s+"), " ")
+        if (trimmed.isEmpty()) return trimmed
+        val limit = when {
+            trimmed.any { wideNameLetter(it) } -> 4
+            trimmed.any { arabicNameLetter(it) } -> 6
+            else -> 8
+        }
+        if (trimmed.length <= limit) return trimmed
+        val words = trimmed.split(" ")
+        val initialsFit = words.size > 1 && words.all { word ->
+            word.isNotEmpty() && casedNameLetter(word.first())
+        }
+        if (initialsFit) {
+            val initials = words.take(3).joinToString("") { word ->
+                word.first().uppercaseChar().toString()
+            }
+            if (initials.length <= limit) return initials
+        }
+        if (limit <= 1) return "…"
+        return trimmed.take(limit - 1) + "…"
+    }
+
+    private fun casedNameLetter(letter: Char): Boolean {
+        val rune = letter.code
+        return rune <= 0x024F ||
+            rune in 0x0370..0x03FF ||
+            rune in 0x0400..0x052F ||
+            rune in 0x1E00..0x1EFF
+    }
+
+    private fun arabicNameLetter(letter: Char): Boolean {
+        val rune = letter.code
+        return rune in 0x0590..0x05FF ||
+            rune in 0x0600..0x06FF ||
+            rune in 0x0750..0x077F ||
+            rune in 0x08A0..0x08FF ||
+            rune in 0xFB50..0xFDFF ||
+            rune in 0xFE70..0xFEFF
+    }
+
+    private fun wideNameLetter(letter: Char): Boolean {
+        val rune = letter.code
+        return rune in 0x0B80..0x0BFF ||
+            rune in 0x3040..0x30FF ||
+            rune in 0x3400..0x4DBF ||
+            rune in 0x4E00..0x9FFF ||
+            rune in 0xAC00..0xD7AF
+    }
+
+    private fun strokePaint(
+        color: Int,
+        stroke: Float,
+        cap: Paint.Cap = Paint.Cap.ROUND,
+    ) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = stroke
+        strokeCap = cap
+        strokeJoin = Paint.Join.ROUND
+        this.color = color
+    }
+
+    /** Same top-center rounded-square track as the in-app countdown ring. */
+    private fun roundedSquareRingPath(bounds: RectF, corner: Float): Path {
+        val radius = minOf(corner, bounds.width() / 2f)
+        return Path().apply {
+            moveTo(bounds.centerX(), bounds.top)
+            if (radius <= 0f) {
+                lineTo(bounds.right, bounds.top)
+                lineTo(bounds.right, bounds.bottom)
+                lineTo(bounds.left, bounds.bottom)
+                lineTo(bounds.left, bounds.top)
+                close()
+                return@apply
+            }
+            lineTo(bounds.right - radius, bounds.top)
+            arcTo(
+                RectF(
+                    bounds.right - radius * 2f,
+                    bounds.top,
+                    bounds.right,
+                    bounds.top + radius * 2f,
+                ),
+                -90f,
+                90f,
+                false,
+            )
+            lineTo(bounds.right, bounds.bottom - radius)
+            arcTo(
+                RectF(
+                    bounds.right - radius * 2f,
+                    bounds.bottom - radius * 2f,
+                    bounds.right,
+                    bounds.bottom,
+                ),
+                0f,
+                90f,
+                false,
+            )
+            lineTo(bounds.left + radius, bounds.bottom)
+            arcTo(
+                RectF(
+                    bounds.left,
+                    bounds.bottom - radius * 2f,
+                    bounds.left + radius * 2f,
+                    bounds.bottom,
+                ),
+                90f,
+                90f,
+                false,
+            )
+            lineTo(bounds.left, bounds.top + radius)
+            arcTo(
+                RectF(
+                    bounds.left,
+                    bounds.top,
+                    bounds.left + radius * 2f,
+                    bounds.top + radius * 2f,
+                ),
+                180f,
+                90f,
+                false,
+            )
+            close()
+        }
     }
 
     companion object {
         const val ACTION_DOSE_REFRESH = "com.shenepoy.janan.action.DOSE_WIDGET_REFRESH"
         private const val WIDGET_REFRESH_REQUEST = 7412
         private const val DEFAULT_MEDICINE_COLOR = 0xff92dccf.toInt()
-        private const val OVERDUE_COLOR = 0xfff27670.toInt()
-        private const val SOON_COLOR = 0xffffc857.toInt()
-        private const val TEXT_COLOR = 0xfff0f7f5.toInt()
+        private const val OVERDUE_COLOR = 0xffe53935.toInt()
+        private const val SIREN_COLOR = 0xfffff6f4.toInt()
+        private const val YELLOW_COLOR = 0xfff5c518.toInt()
+        private const val GREEN_COLOR = 0xff2eaf62.toInt()
         private const val SOON_MILLIS = 60 * 60 * 1000L
         private const val MINUTE_MILLIS = 60 * 1000L
         private const val HOUR_MILLIS = 60 * MINUTE_MILLIS
-        private const val RING_HORIZON_MILLIS = 24 * 60 * 60 * 1000f
         private const val RING_BITMAP_DP = 144
-        private const val RING_STROKE_DP = 7f
+        /** About 7dp once the bitmap is fitted into the widget. The in-app ring stays thicker. */
+        private const val RING_STROKE_FRACTION = 7f / 74f
+        private const val RING_CORNER_FRACTION = 0.28f
+
+        /** Inner arcs stop here: the stroke length one moment before a dose is due. */
+        private const val INNER_OPEN_CAP = 0.82f
     }
 }
 

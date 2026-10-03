@@ -3,6 +3,7 @@ import 'package:blood_pressure_app/data_util/bulk_entry_actions.dart';
 import 'package:blood_pressure_app/data_util/combined_entry_builder.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
 import 'package:blood_pressure_app/features/home/home_bp_chart.dart';
+import 'package:blood_pressure_app/features/measurement_list/measurement_filter_scope.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_list.dart';
 import 'package:blood_pressure_app/features/measurement_list/selection/list_selection.dart';
 import 'package:blood_pressure_app/features/measurement_list/selection/selection_action_bar.dart';
@@ -13,7 +14,6 @@ import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_page_
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_section.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -28,10 +28,23 @@ class AppHome extends ConsumerStatefulWidget {
 
 class _AppHomeState extends ConsumerState<AppHome> {
   final _selection = ListSelectionController<CombinedEntry>();
-  var _measurementFilter = MeasurementListFilter.all;
+  MeasurementFilterController? _filter;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = MeasurementFilterScope.maybeOf(context);
+    if (identical(next, _filter)) return;
+    _filter?.removeListener(_onFilterChanged);
+    _filter = next;
+    _filter?.addListener(_onFilterChanged);
+  }
+
+  void _onFilterChanged() => _selection.clear();
 
   @override
   void dispose() {
+    _filter?.removeListener(_onFilterChanged);
     _selection.dispose();
     super.dispose();
   }
@@ -126,21 +139,13 @@ class _AppHomeState extends ConsumerState<AppHome> {
                                   _graphCard(),
                                   DashboardSection(
                                     padding: EdgeInsets.zero,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        if (settings.medicineFeatureEnabled)
-                                          _measurementFilterControl(),
-                                        MeasurementList(
-                                          entries: entries,
-                                          filter:
-                                              settings.medicineFeatureEnabled
-                                              ? _measurementFilter
-                                              : MeasurementListFilter.all,
-                                          shrinkWrap: true,
-                                        ),
-                                      ],
+                                    child: MeasurementList(
+                                      entries: entries,
+                                      filter: settings.medicineFeatureEnabled
+                                          ? (_filter?.value ??
+                                                MeasurementListFilter.all)
+                                          : MeasurementListFilter.all,
+                                      shrinkWrap: true,
                                     ),
                                   ),
                                 ],
@@ -194,49 +199,4 @@ class _AppHomeState extends ConsumerState<AppHome> {
       ),
     );
   }
-
-  Widget _measurementFilterControl() => Padding(
-    padding: const EdgeInsetsDirectional.only(top: 8, end: 12, bottom: 4),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Icon(
-          Icons.filter_list,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 190,
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<MeasurementListFilter>(
-              value: _measurementFilter,
-              isDense: true,
-              isExpanded: true,
-              items: [
-                for (final filter in MeasurementListFilter.values)
-                  DropdownMenuItem(
-                    value: filter,
-                    child: Text(
-                      switch (filter) {
-                        MeasurementListFilter.all => 'filterAll'.tr(),
-                        MeasurementListFilter.bloodPressure =>
-                          'bloodPressure'.tr(),
-                        MeasurementListFilter.medicine => 'medications'.tr(),
-                      },
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ],
-              onChanged: (filter) {
-                if (filter == null || filter == _measurementFilter) return;
-                _selection.clear();
-                setState(() => _measurementFilter = filter);
-              },
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
 }

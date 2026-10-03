@@ -1,5 +1,6 @@
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
 import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart';
+import 'package:blood_pressure_app/features/measurement_list/measurement_filter_scope.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
 import 'package:blood_pressure_app/features/shell/shell_tab.dart';
@@ -106,6 +107,7 @@ class _AppShellViewState extends State<_AppShellView> {
   late int _index;
   late double _page;
   late final PageController _pageController;
+  late final MeasurementFilterController _measurementFilter;
   bool _pageTickScheduled = false;
   int _tabLayoutVersion = 0;
 
@@ -129,6 +131,7 @@ class _AppShellViewState extends State<_AppShellView> {
     super.initState();
     _index = _tabs.indexOf(widget.initialTab).clamp(0, _tabs.length - 1);
     _page = _index.toDouble();
+    _measurementFilter = MeasurementFilterController();
     _pageController = PageController(initialPage: _index);
     _pageController.addListener(_syncPage);
     _updatePresence();
@@ -167,6 +170,7 @@ class _AppShellViewState extends State<_AppShellView> {
   void dispose() {
     _pageController.removeListener(_syncPage);
     _pageController.dispose();
+    _measurementFilter.dispose();
     super.dispose();
   }
 
@@ -270,7 +274,9 @@ class _AppShellViewState extends State<_AppShellView> {
       if (widget.showBloodPressure) 'statistics',
       'settings',
     ];
-    return SafaehBottomNavScope(
+    return MeasurementFilterScope(
+      controller: _measurementFilter,
+      child: SafaehBottomNavScope(
       // The navigation is painted over the page, so expose its full visual
       // clearance to floating controls and page-index overlays.
       child: Builder(
@@ -344,6 +350,7 @@ class _AppShellViewState extends State<_AppShellView> {
           ),
         ),
       ),
+    ),
     );
   }
 }

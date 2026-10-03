@@ -10,41 +10,58 @@ void main() {
     expect(registry.getSortedSections().map((s) => s.key), [
       'style',
       'general',
-      'features',
+      'blood_pressure',
+      'weight',
+      'medications',
       'bluetooth',
       'data',
       'about',
       'graph',
     ]);
     expect(styleSection.initiallyExpanded, isTrue);
-    expect(featuresSection.initiallyExpanded, isTrue);
+    expect(generalSection.initiallyExpanded, isTrue);
+    expect(bloodPressureSection.initiallyExpanded, isTrue);
+    expect(weightSection.initiallyExpanded, isTrue);
+    expect(medicationsSection.initiallyExpanded, isTrue);
     expect(bluetoothSection.initiallyExpanded, isTrue);
     expect(dataSection.initiallyExpanded, isTrue);
-    expect(generalSection.initiallyExpanded, isFalse);
-    expect(aboutSection.initiallyExpanded, isFalse);
+    expect(aboutSection.initiallyExpanded, isTrue);
 
     expect(registry.getVisibleSettingsInSection('style').map((s) => s.key), [
       'theme_mode',
-      'language',
-      'date_format_string',
       'accent_color',
       'compact_list',
       'rounded_reminder_button',
     ]);
-    expect(registry.getVisibleSettingsInSection('features').map((s) => s.key), [
-      'blood_pressure_enabled',
-      'medicine_feature_enabled',
-      'weight_input',
-      'bluetooth_measurements_enabled',
-      'preferred_weight_unit',
-      'preferred_pressure_unit',
-      'graph_settings',
-      'body_profile',
-      'medications',
+    expect(registry.getVisibleSettingsInSection('general').map((s) => s.key), [
+      'language',
+      'date_format_string',
+      'start_with_add_measurement_page',
+      'allow_manual_time_input',
+      'confirm_deletion',
     ]);
     expect(
+      registry.getVisibleSettingsInSection('blood_pressure').map((s) => s.key),
+      ['blood_pressure_enabled', 'preferred_pressure_unit', 'graph_settings'],
+    );
+    expect(registry.getVisibleSettingsInSection('weight').map((s) => s.key), [
+      'weight_input',
+      'preferred_weight_unit',
+      'body_profile',
+    ]);
+    expect(
+      registry.getVisibleSettingsInSection('medications').map((s) => s.key),
+      [
+        'medicine_feature_enabled',
+        'medications',
+        'overdue_reminder_count',
+        'overdue_reminder_interval_minutes',
+        'show_all_reminder_rings',
+      ],
+    );
+    expect(
       registry.getVisibleSettingsInSection('bluetooth').map((s) => s.key),
-      ['ble_input', 'bluetooth_devices'],
+      ['bluetooth_measurements_enabled', 'ble_input', 'bluetooth_devices'],
     );
     expect(registry.getVisibleSettingsInSection('data').map((s) => s.key), [
       'health_connect_screen',
@@ -53,17 +70,13 @@ void main() {
       'import_settings',
       'delete_data',
     ]);
-    expect(registry.getVisibleSettingsInSection('general').map((s) => s.key), [
-      'start_with_add_measurement_page',
-      'allow_manual_time_input',
-      'confirm_deletion',
-    ]);
     expect(registry.getVisibleSettingsInSection('about').map((s) => s.key), [
       'replay_onboarding',
       'version',
       'source_code',
       'licenses',
       'logs_viewer',
+      'debug_data_server',
     ]);
     expect(onboardingCompletedSetting.visible, isFalse);
     expect(registry.getVisibleSettingsInSection('graph'), isEmpty);

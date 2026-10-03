@@ -15,6 +15,36 @@ import 'package:safaeh/safaeh.dart';
 
 import '../../util.dart';
 
+/// Scrolls the settings list until [target] sits clear of the app bar and nav.
+///
+/// Uses the list controller. A drag can be claimed by the shell page view, and
+/// [WidgetTester.scrollUntilVisible] then tries to reveal the row through that
+/// outer scrollable.
+Future<void> _reveal(WidgetTester tester, Finder list, Finder target) async {
+  final controller = tester.widget<ListView>(list).controller!;
+  for (var attempt = 0; attempt < 60; attempt++) {
+    if (target.evaluate().isNotEmpty) {
+      final rect = tester.getRect(target);
+      if (rect.top >= 140 && rect.bottom <= 680) return;
+      final delta = rect.center.dy - 400;
+      final next = (controller.offset + delta).clamp(
+        0.0,
+        controller.position.maxScrollExtent,
+      );
+      if ((next - controller.offset).abs() < 1) return;
+      controller.jumpTo(next);
+    } else {
+      final next = (controller.offset + 400).clamp(
+        0.0,
+        controller.position.maxScrollExtent,
+      );
+      if (next == controller.offset) return;
+      controller.jumpTo(next);
+    }
+    await tester.pump();
+  }
+}
+
 void main() {
   testWidgets('renders the bottom navigation as a body overlay', (
     tester,
@@ -414,19 +444,16 @@ void main() {
       matching: find.byType(Scrollable),
     );
     expect(settingsScrollable, findsOneWidget);
-    final weightToggle = find.text('Activate weight related features');
-    await tester.scrollUntilVisible(
-      weightToggle,
-      200,
-      scrollable: settingsScrollable,
+    final weightToggle = find.text(
+      'Activate weight related features',
+      skipOffstage: false,
     );
+    await _reveal(tester, settingsList, weightToggle);
     await tester.pump();
     final before = tester.widget<ListView>(settingsList).controller!.offset;
     expect(before, greaterThan(0));
 
-    await tester.tap(
-      find.ancestor(of: weightToggle, matching: find.byType(SwitchListTile)),
-    );
+    await tester.tap(weightToggle);
     await tester.pump();
     expect(
       find.descendant(
@@ -485,23 +512,16 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    final weightToggle = find.text('Activate weight related features');
     final settingsList = find.byType(ListView);
-    final settingsScrollable = find.descendant(
-      of: settingsList,
-      matching: find.byType(Scrollable),
+    final weightToggle = find.text(
+      'Activate weight related features',
+      skipOffstage: false,
     );
-    await tester.scrollUntilVisible(
-      weightToggle,
-      200,
-      scrollable: settingsScrollable,
-    );
+    await _reveal(tester, settingsList, weightToggle);
     await tester.pump();
 
     Future<void> toggleWeight() async {
-      await tester.tap(
-        find.ancestor(of: weightToggle, matching: find.byType(SwitchListTile)),
-      );
+      await tester.tap(weightToggle);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
     }

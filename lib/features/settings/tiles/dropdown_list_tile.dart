@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:safaeh/safaeh.dart';
 
 /// A [ListTile] that allows choosing from a dropdown.
 class DropDownListTile<T> extends StatefulWidget {
@@ -40,27 +41,41 @@ class DropDownListTile<T> extends StatefulWidget {
 }
 
 class _DropDownListTileState<T> extends State<DropDownListTile<T>> {
-  final focusNode = FocusNode();
-
-
   @override
-  void dispose() {
-    focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => ListTile(
+  Widget build(BuildContext context) {
+    final current = widget.items.where((item) => item.value == widget.value);
+    final label = current.isEmpty ? '—' : _dropdownItemLabel(current.first);
+    return ListTile(
       title: widget.title,
       subtitle: widget.subtitle,
       leading: widget.leading,
       enabled: widget.onChanged != null,
-      onTap: widget.onChanged == null ? null : focusNode.requestFocus,
-      trailing: DropdownButton<T>(
-        focusNode: focusNode,
-        value: widget.value,
-        items: widget.items,
-        onChanged: widget.onChanged,
+      trailing: IgnorePointer(
+        ignoring: widget.onChanged == null,
+        child: SafaehAnchoredDropdownChip<T?>(
+          icon: Icons.unfold_more_rounded,
+          label: label,
+          selected: widget.value,
+          options: [
+            for (final item in widget.items)
+              SafaehDropdownOption<T?>(
+                value: item.value,
+                label: _dropdownItemLabel(item),
+              ),
+          ],
+          onSelected: (value) => widget.onChanged?.call(value),
+        ),
       ),
     );
+  }
+}
+
+String _dropdownItemLabel(DropdownMenuItem<dynamic> item) {
+  final child = item.child;
+  if (child is Text) {
+    if (child.data != null) return child.data!;
+    final span = child.textSpan;
+    if (span != null) return span.toPlainText();
+  }
+  return '${item.value}';
 }
