@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/features/bluetooth/background/bluetooth_foreground_service.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_launch_sync.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_card.dart';
@@ -381,6 +382,39 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(BleLaunchSyncCard), findsNothing);
+  });
+
+  testWidgets('meter not found toast closes after it is on screen', (
+    tester,
+  ) async {
+    late BuildContext toastContext;
+    await pumpApp(
+      tester,
+      await appBase(
+        Builder(
+          builder: (context) {
+            toastContext = context;
+            return const Text('home');
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+
+    toastContext.showError(
+      'Meter not found',
+      duration: const Duration(seconds: 4),
+    );
+    // The close timer used to start before the toast was inserted. Elapsing
+    // that whole duration before the next frame (no draw while the scan
+    // finishes) left the message on screen.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Meter not found', skipOffstage: false), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(find.text('Meter not found', skipOffstage: false), findsNothing);
   });
 
   testWidgets('pause in the popout stops sync until resume', (tester) async {

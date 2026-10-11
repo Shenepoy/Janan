@@ -196,7 +196,7 @@ flutter build apk
 | **الاسم** | Blood pressure monitor | الجَنَان · Janan |
 | **معرّف أندرويد** | <span dir="ltr"><code>com.derdilla.bloodPressureApp</code></span> | <span dir="ltr"><code>com.shenepoy.janan</code></span> |
 | **التثبيت** | بلاي، إف-درويد، GitHub | إصدارات GitHub و[Obtainium](https://github.com/ImranR98/Obtainium) |
-| **الإصدار** | Semver <span dir="ltr"><code>1.8.15+57</code></span> | CalVer <span dir="ltr"><code>YY.0M.MICRO</code></span> (الآن <span dir="ltr"><code>26.10.5+78</code></span>) |
+| **الإصدار** | Semver <span dir="ltr"><code>1.8.15+57</code></span> | CalVer <span dir="ltr"><code>YY.0M.MICRO</code></span> (الآن <span dir="ltr"><code>26.10.6+79</code></span>) |
 | **البنية** | مجلد <span dir="ltr"><code>app/</code></span> وحزم مساحة عمل | تطبيق Flutter واحد في جذر المستودع |
 
 **ما أُضيف هنا**
