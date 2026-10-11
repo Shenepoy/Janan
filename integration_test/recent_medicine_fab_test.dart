@@ -1,8 +1,12 @@
 import 'package:blood_pressure_app/core/repository/repository_providers.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminder_providers.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
+import 'package:blood_pressure_app/features/settings/initialize_app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -22,7 +26,7 @@ void main() {
     tester,
   ) async {
     final repository = _FakeIntakeRepository(recentIntakes);
-    await tester.pumpWidget(_testApp(repository));
+    await tester.pumpWidget(await _testApp(repository));
     final touchTarget = find.byKey(
       const ValueKey('recentMedicineFabTouchTarget'),
     );
@@ -51,7 +55,7 @@ void main() {
       Medicine(designation: 'Created second', dosis: Weight.mg(4)),
       Medicine(designation: 'Created third', dosis: Weight.mg(6)),
     ];
-    await tester.pumpWidget(_testApp(repository, medicines: medicines));
+    await tester.pumpWidget(await _testApp(repository, medicines: medicines));
     final touchTarget = find.byKey(
       const ValueKey('recentMedicineFabTouchTarget'),
     );
@@ -80,7 +84,7 @@ void main() {
     tester,
   ) async {
     final repository = _FakeIntakeRepository(recentIntakes);
-    await tester.pumpWidget(_testApp(repository));
+    await tester.pumpWidget(await _testApp(repository));
     final touchTarget = find.byKey(
       const ValueKey('recentMedicineFabTouchTarget'),
     );
@@ -102,30 +106,38 @@ void main() {
   });
 }
 
-Widget _testApp(
+Future<Widget> _testApp(
   _FakeIntakeRepository repository, {
   List<Medicine> medicines = const [],
-}) => ProviderScope(
-  overrides: [
-    medicineIntakeRepositoryProvider.overrideWithValue(repository),
-    medicineRepositoryProvider.overrideWithValue(
-      _FakeMedicineRepository(medicines),
-    ),
-  ],
-  child: const MaterialApp(
-    home: Scaffold(
-      body: Stack(
-        children: [
-          Align(alignment: Alignment.topCenter, child: Text('Home')),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: NavigationActionButtons(),
-          ),
-        ],
+}) async {
+  final settings = await initializeAppSettings(storage: MemoryStorage());
+  return ProviderScope(
+    overrides: [
+      settingsControllerProvider.overrideWithValue(settings.controller),
+      settingsSearchIndexProvider.overrideWithValue(settings.searchIndex),
+      settingsProvidersProvider.overrideWithValue(settings),
+      medicineIntakeRepositoryProvider.overrideWithValue(repository),
+      medicineRepositoryProvider.overrideWithValue(
+        _FakeMedicineRepository(medicines),
+      ),
+      medicationSchedulesProvider.overrideWith((ref) async => const []),
+      homeMedicationOccurrencesProvider.overrideWith((ref) async => const []),
+    ],
+    child: const MaterialApp(
+      home: Scaffold(
+        body: Stack(
+          children: [
+            Align(alignment: Alignment.topCenter, child: Text('Home')),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: NavigationActionButtons(),
+            ),
+          ],
+        ),
       ),
     ),
-  ),
-);
+  );
+}
 
 class _FakeIntakeRepository extends MedicineIntakeRepository {
   _FakeIntakeRepository(this.recent);

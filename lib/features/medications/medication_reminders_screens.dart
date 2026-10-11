@@ -14,6 +14,7 @@ import 'package:blood_pressure_app/features/medications/medication_reminder_prov
 import 'package:blood_pressure_app/features/medications/medication_reminder_runtime.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_settings_screen.dart';
 import 'package:blood_pressure_app/features/medications/medicine_name.dart';
+import 'package:blood_pressure_app/features/medications/recent_medicine_quick_log.dart';
 import 'package:blood_pressure_app/features/settings/add_medication_dialog.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_date_range_sheet.dart';
@@ -79,7 +80,8 @@ Future<List<DoseOccurrence>> upcomingDoseOccurrences(
     now: now,
     shiftMissedDoseTimes: shiftMissedDoseTimes,
     grace: grace,
-    movesTimes: (dose) => dose.schedule.movesAfterMissedDose(shiftMissedDoseTimes),
+    movesTimes: (dose) =>
+        dose.schedule.movesAfterMissedDose(shiftMissedDoseTimes),
   );
 }
 
@@ -143,9 +145,8 @@ Future<void> _enqueueReminderWork(Future<void> Function() action) {
 Future<void> syncMedicationReminders(
   MedicationScheduleRepository repository,
   AppSettings settings,
-) => _enqueueReminderWork(
-  () => _applyMedicationReminders(repository, settings),
-);
+) =>
+    _enqueueReminderWork(() => _applyMedicationReminders(repository, settings));
 
 /// Drops every medicine alarm and clears the home widget.
 Future<void> clearMedicationReminders() => _enqueueReminderWork(() async {
@@ -245,7 +246,9 @@ bool _sameClockMinute(DateTime a, DateTime b) =>
 
 String _movedFromLabel(String time) {
   final translated = 'reminderDoseMovedFrom'.tr(namedArgs: {'time': time});
-  return translated == 'reminderDoseMovedFrom' ? 'Moved from $time' : translated;
+  return translated == 'reminderDoseMovedFrom'
+      ? 'Moved from $time'
+      : translated;
 }
 
 String _t(String key, String fallback) {
@@ -346,12 +349,7 @@ List<DoseOccurrence> nextUpDoseOccurrences(
     if (state != 'pending' && state != 'snoozed' && state != 'unrecorded') {
       continue;
     }
-    if (!reminderDoseIsCurrent(
-      dose,
-      now,
-      {dose.id: at(dose)},
-      grace: grace,
-    )) {
+    if (!reminderDoseIsCurrent(dose, now, {dose.id: at(dose)}, grace: grace)) {
       continue;
     }
     byMedicine.putIfAbsent(dose.schedule.medicineId, () => []).add(dose);
@@ -567,9 +565,7 @@ class _MedicationReminderCardState
         occurrences.asData?.value ?? const <DoseOccurrence>[];
     final active = scheduleList.any((schedule) => schedule.active);
     final shiftTargets = _doseShiftTargets(occurrenceList, _now, settings);
-    final shiftGrace = Duration(
-      minutes: settings.missedDoseShiftLimitMinutes,
-    );
+    final shiftGrace = Duration(minutes: settings.missedDoseShiftLimitMinutes);
     final openCountdowns = _oneCountdownPerMedicine(
       _DoseCountdown.openFrom(
         occurrenceList,
@@ -900,7 +896,7 @@ class _MedicationCountdownCircle extends StatelessWidget {
         color: theme.colorScheme.surfaceContainerHigh,
         shape: buttonShape,
         elevation: theme.floatingActionButtonTheme.elevation ?? 6,
-        child: InkWell(customBorder: buttonShape, onTap: onTap, child: visual),
+        child: RecentMedicineQuickLog(onPressed: onTap, child: visual),
       );
     }
 
@@ -913,9 +909,8 @@ class _MedicationCountdownCircle extends StatelessWidget {
         color: theme.colorScheme.surfaceContainerHigh,
         shape: buttonShape,
         elevation: theme.floatingActionButtonTheme.elevation ?? 6,
-        child: InkWell(
-          customBorder: buttonShape,
-          onTap: onPressed,
+        child: RecentMedicineQuickLog(
+          onPressed: onPressed ?? onTap,
           child: animatedChild,
         ),
       ),
@@ -1629,8 +1624,9 @@ class _DeferredDoseSummary extends StatelessWidget {
             rawColor == Colors.transparent.toARGB32()
         ? theme.colorScheme.primary
         : Color(rawColor);
-    final scheduledAt =
-        takeAt != null && takeAt!.isAfter(now) ? takeAt! : occurrence.scheduledAt;
+    final scheduledAt = takeAt != null && takeAt!.isAfter(now)
+        ? takeAt!
+        : occurrence.scheduledAt;
     final time = MaterialLocalizations.of(
       context,
     ).formatTimeOfDay(TimeOfDay.fromDateTime(scheduledAt));
@@ -1718,7 +1714,8 @@ class _MedicationDoseActionCard extends StatelessWidget {
     final originalTime = localizations.formatTimeOfDay(
       TimeOfDay.fromDateTime(occurrence.scheduledAt),
     );
-    final dueNow = !countdown.targetAt.isAfter(now) &&
+    final dueNow =
+        !countdown.targetAt.isAfter(now) &&
         !_sameClockMinute(countdown.targetAt, occurrence.scheduledAt);
     final movedAhead =
         countdown.targetAt.isAfter(now) &&
@@ -2684,10 +2681,7 @@ class _MedicationScheduleEditorScreenState
     }
     if (_weekdays.isEmpty || _times.isEmpty) {
       context.showError(
-        _t(
-          'reminderChooseDaysAndTimes',
-          'Choose at least one day and time.',
-        ),
+        _t('reminderChooseDaysAndTimes', 'Choose at least one day and time.'),
       );
       return;
     }
@@ -2695,10 +2689,7 @@ class _MedicationScheduleEditorScreenState
         _endDate != null &&
         _endDate!.isBefore(_startDate!)) {
       context.showError(
-        _t(
-          'reminderEndBeforeStart',
-          'End date must be after the start date.',
-        ),
+        _t('reminderEndBeforeStart', 'End date must be after the start date.'),
       );
       return;
     }
@@ -3235,7 +3226,9 @@ class _MedicationScheduleEditorScreenState
                               children: [
                                 ChoiceChip(
                                   label: Text(
-                                    ref.watch(appSettingsProvider).shiftMissedDoseTimes
+                                    ref
+                                            .watch(appSettingsProvider)
+                                            .shiftMissedDoseTimes
                                         ? _t(
                                             'reminderShiftFollowOn',
                                             'App setting: On',
