@@ -24,17 +24,14 @@ class BleMeasurementData {
   });
 
   /// Return BleMeasurementData as a BloodPressureRecord
-  BloodPressureRecord asBloodPressureRecord() =>
-    BloodPressureRecord(
-      time: timestamp ?? DateTime.now(),
-      sys: isMMHG
-        ? Pressure.mmHg(systolic.toInt())
-        : Pressure.kPa(systolic),
-      dia: isMMHG
-        ? Pressure.mmHg(diastolic.toInt())
-        : Pressure.kPa(diastolic),
-      pul: pulse?.toInt(),
-    );
+  BloodPressureRecord asBloodPressureRecord() => BloodPressureRecord(
+    time: timestamp ?? DateTime.now(),
+    sys: isMMHG ? Pressure.mmHg(systolic.toInt()) : Pressure.kPa(systolic),
+    dia: isMMHG ? Pressure.mmHg(diastolic.toInt()) : Pressure.kPa(diastolic),
+    pul: pulse?.toInt(),
+    arm: null,
+    source: BloodPressureRecordSource.bluetooth,
+  );
 
   /// Decode bytes read from the characteristic into a [BleMeasurementData]
   ///
@@ -42,7 +39,8 @@ class BleMeasurementData {
   /// name and opts into the quirks they need: [bigEndian] for multi byte fields
   /// sent in the wrong byte order, [alwaysSendsUserId] for a user id that is
   /// present without its flag being set.
-  static BleMeasurementData? decode(Uint8List data, {
+  static BleMeasurementData? decode(
+    Uint8List data, {
     bool bigEndian = false,
     bool alwaysSendsUserId = false,
   }) {
@@ -51,7 +49,9 @@ class BleMeasurementData {
     // Reading specific bits: `(byte & (1 << bitIdx))`
 
     if (data.length < 7) {
-      Log.warning('BleMeasurementData decodeMeasurement: Not enough data, $data has less than 7 bytes.');
+      Log.warning(
+        'BleMeasurementData decodeMeasurement: Not enough data, $data has less than 7 bytes.',
+      );
       return null;
     }
 
@@ -65,20 +65,24 @@ class BleMeasurementData {
     final bool pulseRatePresent = isBitIntByteSet(flagsByte, 2);
     final bool userIdFromFlags = isBitIntByteSet(flagsByte, 3);
     final bool measurementStatusPresent = isBitIntByteSet(flagsByte, 4);
-    final int expectedFromFlags = 7
-      + (timestampPresent ? 7 : 0)
-      + (pulseRatePresent ? 2 : 0)
-      + (userIdFromFlags ? 1 : 0)
-      + (measurementStatusPresent ? 2 : 0);
+    final int expectedFromFlags =
+        7 +
+        (timestampPresent ? 7 : 0) +
+        (pulseRatePresent ? 2 : 0) +
+        (userIdFromFlags ? 1 : 0) +
+        (measurementStatusPresent ? 2 : 0);
     // BM85 inserts a user id without setting the flag. BM59 sends the same
     // flags without that extra byte, so only consume it when it is present.
-    final bool extraUserId = alwaysSendsUserId
-        && !userIdFromFlags
-        && data.length >= expectedFromFlags + 1;
+    final bool extraUserId =
+        alwaysSendsUserId &&
+        !userIdFromFlags &&
+        data.length >= expectedFromFlags + 1;
     final bool userIdPresent = userIdFromFlags || extraUserId;
 
     if (data.length < expectedFromFlags) {
-      Log.warning("BleMeasurementData decodeMeasurement: Flags don't match, $data has less bytes than expected.");
+      Log.warning(
+        "BleMeasurementData decodeMeasurement: Flags don't match, $data has less bytes than expected.",
+      );
       return null;
     }
 
@@ -90,7 +94,9 @@ class BleMeasurementData {
     offset += 2;
 
     if (systolic == null || diastolic == null || meanArterialPressure == null) {
-      Log.warning('BleMeasurementData decodeMeasurement: Unable to decode required values sys, dia, and meanArterialPressure, $data.');
+      Log.warning(
+        'BleMeasurementData decodeMeasurement: Unable to decode required values sys, dia, and meanArterialPressure, $data.',
+      );
       return null;
     }
 
@@ -117,9 +123,11 @@ class BleMeasurementData {
       // The status field is a uint16. Some Beurer devices send it big endian
       // instead of the little endian the spec requires.
       final int? statusValue = bigEndian
-        ? readUInt16Be(data, offset)
-        : readUInt16Le(data, offset);
-      if (statusValue != null) status = BleMeasurementStatus.decode(statusValue);
+          ? readUInt16Be(data, offset)
+          : readUInt16Le(data, offset);
+      if (statusValue != null) {
+        status = BleMeasurementStatus.decode(statusValue);
+      }
     }
 
     return BleMeasurementData(
@@ -136,21 +144,28 @@ class BleMeasurementData {
 
   /// Systolic pressure
   final double systolic;
+
   /// Diatolic pressure
   final double diastolic;
+
   /// Mean arterial pressure
   final double meanArterialPressure;
+
   /// True if pressure values are in mmHg, False if in kPa
   final bool isMMHG; // mmhg or kpa
   /// Pulse rate (of heart)
   final double? pulse;
+
   /// User id
   final int? userID;
+
   /// [BleMeasurementStatus] status
   final BleMeasurementStatus? status;
+
   /// Timestamp of measurement
   final DateTime? timestamp;
 
   @override
-  String toString() => 'BleMeasurementData{systolic: $systolic, diastolic: $diastolic, meanArterialPressure: $meanArterialPressure, isMMHG: $isMMHG, pulse: $pulse, userID: $userID, status: $status, timestamp: $timestamp}';
+  String toString() =>
+      'BleMeasurementData{systolic: $systolic, diastolic: $diastolic, meanArterialPressure: $meanArterialPressure, isMMHG: $isMMHG, pulse: $pulse, userID: $userID, status: $status, timestamp: $timestamp}';
 }

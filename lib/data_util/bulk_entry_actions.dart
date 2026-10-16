@@ -222,12 +222,7 @@ extension BulkEntryUtils on BuildContext {
   Future<void> _rewriteEntry(CombinedEntry entry, DateTime nextTime) async {
     await _removeEntry(entry, blacklist: false);
     if (entry.record != null) {
-      await bpRepo.add(BloodPressureRecord(
-        time: nextTime,
-        sys: entry.record!.sys,
-        dia: entry.record!.dia,
-        pul: entry.record!.pul,
-      ));
+      await bpRepo.add(entry.record!.copyWith(time: nextTime));
     }
     if (entry.note != null) {
       await noteRepo.add(Note(

@@ -1,3 +1,7 @@
+import '../../util.dart';
+import 'dart:async';
+
+import 'dart:ui' as ui;
 import 'package:blood_pressure_app/core/settings/storage_providers.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
 import 'package:blood_pressure_app/features/data_picker/interval_picker.dart';
@@ -5,15 +9,18 @@ import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart'
 import 'package:blood_pressure_app/features/measurement_list/selection/selection_action_bar.dart';
 import 'package:blood_pressure_app/features/shell/app_shell.dart';
 import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
+import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_range_bar.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:blood_pressure_app/screens/settings_screen.dart';
+import 'package:camera_cutout/camera_cutout.dart';
+import 'package:camera_cutout/camera_cutout_platform_interface.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:safaeh/safaeh.dart';
 
-import '../../util.dart';
+import 'package:safaeh/safaeh.dart';
 
 /// Scrolls the settings list until [target] sits clear of the app bar and nav.
 ///
@@ -77,6 +84,541 @@ void main() {
       find.byKey(const ValueKey('app_shell_floating_nav')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('uses floating landscape chrome with expandable sidenav', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.padding = const FakeViewPadding(
+      left: 30,
+      top: 72,
+      right: 24,
+      bottom: 96,
+    );
+    addTearDown(tester.view.resetPadding);
+
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        pages: [
+          ListView.builder(
+            itemCount: 40,
+            itemBuilder: (context, index) =>
+                ListTile(title: Text('row $index')),
+          ),
+          Text('weight-page'),
+          Text('stats-page'),
+          Text('settings-page'),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    // The landscape content begins just below the floating app bar, with
+    // enough breathing room for the page itself to keep its own gutter.
+    expect(tester.getRect(find.byType(ListView).first).top, closeTo(104, 1));
+
+    final shellScaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+    expect(shellScaffold.appBar, isNull);
+    expect(find.byType(SafaehSidenav), findsOneWidget);
+    expect(find.byType(SafaehFloatingNavBar), findsNothing);
+    expect(find.byType(DashboardRangeBar), findsNothing);
+    expect(find.byType(DashboardAppBar), findsOneWidget);
+
+    final rangeButton = find.byKey(const ValueKey('landscape_range_button'));
+    String rangeSummary() => tester
+        .widget<Text>(
+          find.descendant(of: rangeButton, matching: find.byType(Text)),
+        )
+        .data!;
+
+    final compactRangeSize = tester.getSize(rangeButton);
+    expect(compactRangeSize, const Size(164, 48));
+    final originalRange = rangeSummary();
+    await tester.tap(rangeButton);
+    await tester.pumpAndSettle();
+    expect(find.byType(DashboardRangeBar), findsOneWidget);
+    final modal = find.byKey(const ValueKey('landscape_range_modal'));
+    final buttonRect = tester.getRect(rangeButton);
+    final modalRect = tester.getRect(modal);
+    expect(modalRect.right, closeTo(buttonRect.right, 1));
+    expect(modalRect.top, closeTo(buttonRect.bottom + 8, 1));
+    expect(find.text('30D'), findsOneWidget);
+    await tester.tap(find.text('30D'));
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+    expect(find.byType(DashboardRangeBar), findsNothing);
+    expect(rangeSummary(), isNot(originalRange));
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -240));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.getSize(rangeButton), compactRangeSize);
+
+    final rail = find.byKey(const ValueKey('shell_landscape_sidenav'));
+    expect(tester.widget<SafaehSidenav>(rail).collapsed, isTrue);
+    expect(tester.getTopLeft(rail).dx, closeTo(0, 0.01));
+    expect(tester.getTopLeft(rail).dy, closeTo(0, 0.01));
+    expect(tester.getBottomRight(rail).dy, closeTo(400, 0.01));
+    final safePadding = MediaQuery.paddingOf(tester.element(rail));
+    final safeStartInset =
+        Directionality.of(tester.element(rail)) == ui.TextDirection.ltr
+        ? safePadding.left
+        : safePadding.right;
+    expect(
+      tester.getTopLeft(find.byKey(AppShell.navHomeKey)).dx,
+      greaterThanOrEqualTo(safeStartInset),
+    );
+    expect(
+      tester.getRect(find.byType(DashboardAppBar)).left,
+      greaterThanOrEqualTo(safeStartInset + 64 + 20),
+    );
+    expect(
+      tester
+          .getRect(find.byKey(const ValueKey('landscape_range_button')))
+          .right,
+      lessThanOrEqualTo(800 - safePadding.right),
+    );
+    final pageViewport = find.byType(ListView).first;
+    final pageWidthBeforeExpansion = tester.getRect(pageViewport).width;
+    await tester.tap(
+      find.byKey(const ValueKey('shell_landscape_sidenav_expand')),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.widget<SafaehSidenav>(rail).collapsed, isFalse);
+    expect(tester.getRect(pageViewport).width, pageWidthBeforeExpansion);
+    expect(
+      tester.getRect(find.byType(DashboardAppBar)).left,
+      greaterThanOrEqualTo(
+        safeStartInset +
+            SafaehTheme.of(tester.element(rail)).expandedNavWidth +
+            20,
+      ),
+    );
+    expect(
+      find.byKey(const ValueKey('shell_landscape_sidenav_collapse')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(AppShell.navSettingsKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    final rangeOpacity = tester.widget<Opacity>(
+      find.byKey(const ValueKey('shell_landscape_range_opacity')),
+    );
+    final rangeTransform = tester.widget<Transform>(
+      find.byKey(const ValueKey('shell_landscape_range_transition')),
+    );
+    expect(rangeOpacity.opacity, inInclusiveRange(0, 1));
+    expect(rangeOpacity.opacity, lessThan(1));
+    expect(rangeTransform.transform.entry(0, 0), lessThan(1));
+    expect(rangeTransform.transform.entry(0, 0), greaterThan(0.94));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(
+      tester
+          .widget<Opacity>(
+            find.byKey(const ValueKey('shell_landscape_range_opacity')),
+          )
+          .opacity,
+      0,
+    );
+  });
+
+  testWidgets('keeps landscape chrome in sync while entering Settings', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        pages: const [
+          Text('home-page'),
+          Text('weight-page'),
+          Text('stats-page'),
+          Text('settings-page'),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    final pageView = find.byType(PageView).first;
+    final pageController = tester.widget<PageView>(pageView).controller!;
+    await tester.tap(find.byKey(AppShell.navSettingsKey));
+    await tester.pump();
+
+    var sawIntermediatePage = false;
+    for (var frame = 0; frame < 12; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      final page = pageController.page!;
+      if (page > 0 && page < 3) sawIntermediatePage = true;
+
+      final appBar = tester.widget<DashboardAppBar>(
+        find.byType(DashboardAppBar),
+      );
+      final chromePage = appBar.page;
+      expect(chromePage, closeTo(page, 0.02));
+
+      final settingsPage =
+          tester
+              .widget<SafaehSidenav>(find.byType(SafaehSidenav))
+              .destinations
+              .length -
+          1;
+      final expectedRangeOpacity = (settingsPage - page).clamp(0.0, 1.0);
+      expect(
+        tester
+            .widget<Opacity>(
+              find.byKey(const ValueKey('shell_landscape_range_opacity')),
+            )
+            .opacity,
+        closeTo(expectedRangeOpacity, 0.02),
+      );
+    }
+    expect(sawIntermediatePage, isTrue);
+  });
+
+  testWidgets('wraps the landscape rail around a large edge cutout', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.displayFeatures = const [
+      ui.DisplayFeature(
+        bounds: Rect.fromLTWH(0, 0, 112, 84),
+        type: ui.DisplayFeatureType.cutout,
+        state: ui.DisplayFeatureState.unknown,
+      ),
+    ];
+    addTearDown(tester.view.resetDisplayFeatures);
+
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        pages: const [
+          Text('home-page'),
+          Text('weight-page'),
+          Text('stats-page'),
+          Text('settings-page'),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    final rail = find.byKey(const ValueKey('shell_landscape_sidenav_rail'));
+    final toggle = find.byKey(const ValueKey('shell_landscape_sidenav_expand'));
+    expect(find.byKey(const ValueKey('safaeh_nav_cutout_clip')), findsNothing);
+    expect(tester.getTopLeft(rail).dx, closeTo(0, 0.01));
+    expect(tester.getTopLeft(rail).dy, closeTo(0, 0.01));
+    expect(tester.getBottomRight(rail).dy, closeTo(400, 0.01));
+    expect(tester.getTopLeft(toggle).dy, greaterThan(84));
+  });
+
+  testWidgets('keeps the landscape rail narrow around a small side pinhole', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.view.displayFeatures = const [
+      ui.DisplayFeature(
+        bounds: Rect.fromLTWH(0, 160, 28, 28),
+        type: ui.DisplayFeatureType.cutout,
+        state: ui.DisplayFeatureState.unknown,
+      ),
+    ];
+    addTearDown(tester.view.resetDisplayFeatures);
+
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        pages: const [
+          Text('home-page'),
+          Text('weight-page'),
+          Text('stats-page'),
+          Text('settings-page'),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final rail = find.byKey(const ValueKey('shell_landscape_sidenav_rail'));
+    final home = find.byKey(AppShell.navHomeKey);
+    expect(tester.getSize(rail).width, closeTo(64, 0.01));
+    expect(tester.getCenter(home).dx, closeTo(32, 0.01));
+    final camera = const Rect.fromLTWH(0, 160, 28, 28).inflate(8);
+    for (final key in [
+      AppShell.navHomeKey,
+      AppShell.navWeightKey,
+      AppShell.navStatisticsKey,
+      AppShell.navSettingsKey,
+    ]) {
+      expect(tester.getRect(find.byKey(key)).overlaps(camera), isFalse);
+    }
+  });
+
+  testWidgets(
+    'uses the exact camera path instead of inset strips or stale Flutter bounds',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.physicalSize = const Size(800, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.displayFeatures = const [
+        ui.DisplayFeature(
+          bounds: Rect.fromLTWH(0, 0, 120, 100),
+          type: ui.DisplayFeatureType.cutout,
+          state: ui.DisplayFeatureState.unknown,
+        ),
+      ];
+      addTearDown(tester.view.resetDisplayFeatures);
+
+      final previousPlatform = CameraCutoutPlatform.instance;
+      final nativeCutout = CameraCutoutInfo(
+        platform: CameraCutoutPlatformType.android,
+        deviceIdentifier: 'test-device',
+        deviceModel: 'test-device',
+        screenSize: const Size(800, 400),
+        devicePixelRatio: 1,
+        safeInsets: EdgeInsets.zero,
+        isSupported: true,
+        cutouts: [
+          CameraCutoutGeometry(
+            bounds: const Rect.fromLTWH(0, 150, 112, 62),
+            kind: CameraCutoutKind.holePunch,
+            accuracy: CameraCutoutAccuracy.exact,
+            path: CameraCutoutPath([
+              CameraCutoutPathCommand(
+                operation: CameraCutoutPathOperation.moveTo,
+                points: const [Offset(34, 170)],
+              ),
+              CameraCutoutPathCommand(
+                operation: CameraCutoutPathOperation.lineTo,
+                points: const [Offset(50, 186)],
+              ),
+              CameraCutoutPathCommand(
+                operation: CameraCutoutPathOperation.lineTo,
+                points: const [Offset(34, 202)],
+              ),
+              CameraCutoutPathCommand(
+                operation: CameraCutoutPathOperation.lineTo,
+                points: const [Offset(18, 186)],
+              ),
+              CameraCutoutPathCommand(
+                operation: CameraCutoutPathOperation.close,
+              ),
+            ]),
+          ),
+        ],
+      );
+      final cameraCutoutPlatform = _FakeCameraCutoutPlatform(nativeCutout);
+      CameraCutoutPlatform.instance = cameraCutoutPlatform;
+      addTearDown(() async {
+        CameraCutoutPlatform.instance = previousPlatform;
+        await cameraCutoutPlatform.dispose();
+      });
+
+      await pumpApp(
+        tester,
+        await _minimalShell(
+          pages: const [
+            Text('home-page'),
+            Text('weight-page'),
+            Text('stats-page'),
+            Text('settings-page'),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final rail = find.byKey(const ValueKey('shell_landscape_sidenav_rail'));
+      expect(tester.getSize(rail).width, closeTo(64, 0.01));
+      expect(
+        find.byKey(const ValueKey('safaeh_nav_cutout_clip')),
+        findsNothing,
+      );
+      cameraCutoutPlatform.emit(
+        CameraCutoutInfo(
+          platform: CameraCutoutPlatformType.android,
+          deviceIdentifier: 'test-device',
+          deviceModel: 'test-device',
+          screenSize: const Size(800, 400),
+          devicePixelRatio: 1,
+          safeInsets: EdgeInsets.zero,
+          isSupported: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getSize(rail).width, closeTo(64, 0.01));
+      expect(
+        find.byKey(const ValueKey('safaeh_nav_cutout_clip')),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'right camera adapts content, date and floating actions independently',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.physicalSize = const Size(800, 400);
+      tester.view.devicePixelRatio = 1;
+      tester.view.padding = const FakeViewPadding(right: 52, bottom: 24);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPadding);
+      final previous = CameraCutoutPlatform.instance;
+      CameraCutoutInfo snapshot(Rect camera) => CameraCutoutInfo(
+        platform: CameraCutoutPlatformType.android,
+        deviceIdentifier: 'camera-test',
+        deviceModel: 'camera-test',
+        screenSize: const Size(800, 400),
+        devicePixelRatio: 1,
+        safeInsets: const EdgeInsets.only(right: 52),
+        isSupported: true,
+        cutouts: [
+          CameraCutoutGeometry(
+            bounds: camera,
+            kind: CameraCutoutKind.holePunch,
+            accuracy: CameraCutoutAccuracy.boundsOnly,
+          ),
+        ],
+      );
+      final native = _FakeCameraCutoutPlatform(
+        snapshot(const Rect.fromLTWH(750, 170, 32, 32)),
+      );
+      CameraCutoutPlatform.instance = native;
+      addTearDown(() async {
+        CameraCutoutPlatform.instance = previous;
+        await native.dispose();
+      });
+      const pageKey = ValueKey('right-camera-page');
+      await pumpApp(
+        tester,
+        await _minimalShell(
+          pages: const [
+            SafeArea(child: SizedBox.expand(key: pageKey)),
+            Text('weight-page'),
+            Text('stats-page'),
+            Text('settings-page'),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      final date = find.byKey(const ValueKey('landscape_range_button'));
+      final actions = find.byType(NavigationActionButtons);
+      expect(tester.getRect(date).right, closeTo(788, 0.01));
+      expect(tester.getRect(actions).right, closeTo(784, 0.01));
+      expect(tester.getRect(find.byKey(pageKey)).right, closeTo(742, 0.01));
+      // A lower camera overlaps the action column; only that column moves inward.
+      native.emit(snapshot(const Rect.fromLTWH(750, 270, 32, 32)));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(actions).right, lessThanOrEqualTo(742));
+      expect(tester.getRect(date).right, closeTo(788, 0.01));
+      // A camera at the top affects the date button while leaving bottom actions free.
+      native.emit(snapshot(const Rect.fromLTWH(750, 20, 32, 32)));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(date).right, lessThanOrEqualTo(742));
+      expect(tester.getRect(actions).right, closeTo(784, 0.01));
+      // Flipping to the other landscape side must not apply the inset again
+      // inside a page's own SafeArea.
+      tester.view.padding = const FakeViewPadding(left: 52, bottom: 24);
+      native.emit(snapshot(const Rect.fromLTWH(18, 170, 32, 32)));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(find.byKey(pageKey)).left, closeTo(76, 0.01));
+      expect(tester.getRect(find.byKey(pageKey)).right, closeTo(784, 0.01));
+    },
+  );
+
+  testWidgets('keeps the selected page and scroll position across rotation', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        pages: [
+          const Text('home-page'),
+          const Text('weight-page'),
+          const Text('stats-page'),
+          ListView.builder(
+            key: const ValueKey('rotation_settings_list'),
+            itemCount: 50,
+            itemBuilder: (context, index) =>
+                SizedBox(height: 56, child: Text('settings row $index')),
+          ),
+        ],
+      ),
+    );
+    await tester.tap(find.byKey(AppShell.navSettingsKey));
+    await tester.pumpAndSettle();
+    final list = find.byKey(const ValueKey('rotation_settings_list'));
+    final scroll = find.descendant(of: list, matching: find.byType(Scrollable));
+    final position = tester.state<ScrollableState>(scroll).position;
+    position.jumpTo(280);
+    await tester.pump();
+    for (final size in [const Size(400, 800), const Size(800, 400)]) {
+      await tester.binding.setSurfaceSize(size);
+      await tester.pumpAndSettle();
+      expect(list.hitTestable(), findsOneWidget);
+      expect(find.text('home-page').hitTestable(), findsNothing);
+      expect(
+        tester.state<ScrollableState>(scroll).position.pixels,
+        closeTo(280, 0.01),
+      );
+    }
+  });
+
+  testWidgets('hides status bar only in compact landscape', (tester) async {
+    const systemUiChannel = MethodChannel('com.shenepoy.janan/system_ui');
+    final calls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      systemUiChannel,
+      (call) async {
+        calls.add(call);
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        systemUiChannel,
+        null,
+      ),
+    );
+
+    await tester.binding.setSurfaceSize(const Size(700, 500));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        pages: const [
+          Text('home-page'),
+          Text('weight-page'),
+          Text('stats-page'),
+          Text('settings-page'),
+        ],
+      ),
+    );
+
+    expect(calls, hasLength(1));
+    expect(calls.single.method, 'setStatusBarVisible');
+    expect(calls.single.arguments, {'visible': false});
+
+    await tester.binding.setSurfaceSize(const Size(1200, 800));
+    await tester.pump();
+    expect(calls, hasLength(2));
+    expect(calls.last.arguments, {'visible': true});
+
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    await tester.pump();
+    expect(calls, hasLength(2));
   });
 
   testWidgets('keeps the nav bar while sliding to another tab', (tester) async {
@@ -600,4 +1142,22 @@ Future<Widget> _minimalShell({
       child: MaterialApp(home: shell),
     ),
   );
+}
+
+class _FakeCameraCutoutPlatform extends CameraCutoutPlatform {
+  _FakeCameraCutoutPlatform(this.info);
+
+  final CameraCutoutInfo info;
+  final StreamController<CameraCutoutInfo> _updates =
+      StreamController<CameraCutoutInfo>.broadcast(sync: true);
+
+  @override
+  Future<CameraCutoutInfo> getInfo() async => info;
+
+  @override
+  Stream<CameraCutoutInfo> get changes => _updates.stream;
+
+  void emit(CameraCutoutInfo info) => _updates.add(info);
+
+  Future<void> dispose() => _updates.close();
 }

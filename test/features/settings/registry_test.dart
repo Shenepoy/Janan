@@ -49,6 +49,7 @@ void main() {
       'preferred_pressure_unit',
       'start_with_add_measurement_page',
       'graph_settings',
+      'track_arm_side',
       'bp_range_limits',
     ]);
     expect(advanced('blood_pressure'), [
@@ -69,6 +70,7 @@ void main() {
       'overdue_reminder_interval_minutes',
       'shift_missed_dose_times',
       'missed_dose_shift_limit_minutes',
+      'due_indicator_divisor',
       'show_all_reminder_rings',
       'rounded_reminder_button',
     ]);

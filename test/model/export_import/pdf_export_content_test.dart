@@ -1,4 +1,5 @@
 import 'package:blood_pressure_app/features/export_import/model/export_preset.dart';
+import 'package:blood_pressure_app/features/export_import/model/import_field_type.dart';
 import 'package:blood_pressure_app/features/export_import/model/pdf_export_content.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_snapshot.dart';
 import 'package:blood_pressure_app/model/blood_pressure/pressure_unit.dart';
@@ -55,8 +56,10 @@ void main() {
     expect(content.rows, hasLength(2));
     expect(content.rows.first[1], '130');
     expect(content.rows.last[1], '120');
-    expect(content.rows.first[4], 'evening');
-    expect(content.rows.last[4], 'morning');
+    expect(content.columnTypes[4], RowDataFieldType.arm);
+    expect(content.columnTypes[5], RowDataFieldType.notes);
+    expect(content.rows.first[5], 'evening');
+    expect(content.rows.last[5], 'morning');
     expect(content.chartPoints.map((point) => point.time), [
       DateTime(2024, 1, 1, 8),
       DateTime(2024, 1, 3, 20),
@@ -180,7 +183,7 @@ void main() {
     expect(content.rows.single, isNot(contains('null')));
   });
 
-  test('includes notes weight and intakes in the PDF preset', () {
+  test('places arm before notes and includes weight and intakes', () {
     final time = DateTime(2024, 5, 1, 9);
     final entry = CombinedEntry(
       time: time,
@@ -200,11 +203,13 @@ void main() {
     );
     final content = contentOf([entry]);
 
-    expect(content.headers, hasLength(7));
-    expect(content.rows.single[4], 'after walk');
-    expect(content.rows.single[5], contains('70.5'));
-    expect(content.rows.single[6], contains('Lisinopril'));
-    expect(content.rows.single[6], contains('10'));
+    expect(content.headers, hasLength(8));
+    expect(content.columnTypes[4], RowDataFieldType.arm);
+    expect(content.columnTypes[5], RowDataFieldType.notes);
+    expect(content.rows.single[5], 'after walk');
+    expect(content.rows.single[6], contains('70.5'));
+    expect(content.rows.single[7], contains('Lisinopril'));
+    expect(content.rows.single[7], contains('10'));
     expect(content.weightSeries, isNotNull);
     expect(content.weightSeries!.latest, contains('70.5'));
     expect(content.medicineSeries, hasLength(1));

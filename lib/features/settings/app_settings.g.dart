@@ -48,4 +48,4 @@ final class AppSettingsProvider
   }
 }
 
-String _$appSettingsHash() => r'8bf5d33376920f63cff0a4e3dec2d058c90e16d4';
+String _$appSettingsHash() => r'ad27fcac776a36c627f8a0ee287f198cf6857cb9';

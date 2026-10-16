@@ -37,7 +37,10 @@ final _homeTakenDoseOccurrencesProvider =
 /// Chart content for medicine doses taken early, on time, or late.
 class HomeMedicationTimingChartContent extends ConsumerWidget {
   /// Creates the medicine timing chart content.
-  const HomeMedicationTimingChartContent({super.key});
+  const HomeMedicationTimingChartContent({super.key, this.compact = false});
+
+  /// Uses a smaller bar and legend when sharing the landscape dashboard.
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -83,7 +86,7 @@ class HomeMedicationTimingChartContent extends ConsumerWidget {
             ),
           );
         }
-        return _TimingSummary(counts: counts);
+        return _TimingSummary(counts: counts, compact: compact);
       },
     );
   }

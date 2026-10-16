@@ -14,6 +14,14 @@ void main() {
     expect(name, 'blood_press_2026-08-30_15-39-57-101765');
     expect(name, isNot(contains(RegExp(r'[:/\\]'))));
     expect(exportFileBaseName(addTimestamp: false), 'blood_press');
+    expect(
+      exportPdfFileName(
+        addTimestamp: true,
+        now: DateTime(2026, 8, 30, 15, 39, 57, 101, 765),
+      ),
+      'janan-2026-08-30_15-39-57',
+    );
+    expect(exportPdfFileName(addTimestamp: false), 'janan');
   });
 
   testWidgets('Shows share icon and text when sharing', (tester) async {

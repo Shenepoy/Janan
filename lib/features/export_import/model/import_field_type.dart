@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/domain/blood_pressure_arm.dart';
 import 'package:blood_pressure_app/features/export_import/model/record_formatter.dart';
 import 'package:easy_localization/easy_localization.dart';
 
@@ -25,7 +26,10 @@ enum RowDataFieldType {
   intakes,
 
   /// Guarantees a [double] is parsed.
-  weightKg;
+  weightKg,
+
+  /// Guarantees [BloodPressureArm] is parsed.
+  arm;
 
   /// Select the matching string from `localizations`.
   String localize() => switch (this) {
@@ -37,5 +41,6 @@ enum RowDataFieldType {
     color => 'color'.tr(),
     intakes => 'intakes'.tr(),
     weightKg => 'weight'.tr(),
+    arm => 'measurementArm'.tr(),
   };
 }

@@ -193,6 +193,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.12.7"
+  camera_cutout:
+    dependency: "direct main"
+    description:
+      name: camera_cutout
+      sha256: b2ddce1ccfaa3ffd6aaea45ca8dee175c3474770cbfb1badd5529539eeff41f4
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   carp_serializable:
     dependency: transitive
     description:
@@ -588,10 +596,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_settings_framework
-      sha256: "15d9518b42708cc241c5725946d766bf59510a1e6d9570d1c7397f1fa17d7fcd"
+      sha256: "1c8c747fe56961e8df0054fc23ef8fb292114c8ed08cc93db80a482f26dbf822"
       url: "https://pub.dev"
     source: hosted
-    version: "0.10.0"
+    version: "0.11.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -1152,10 +1160,10 @@ packages:
     dependency: "direct main"
     description:
       name: safaeh
-      sha256: f7f8174ebf7eebd8eac60af04e4a046d4fab8b2ac2b7359a629fec4445343556
+      sha256: a600d9a4120e0de40a99eee047ded9ba34ad408e7e74202c83595621a9e14a8c
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.1"
+    version: "0.12.0"
   share_plus:
     dependency: "direct main"
     description:

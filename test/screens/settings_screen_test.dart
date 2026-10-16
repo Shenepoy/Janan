@@ -47,6 +47,89 @@ void main() {
     expect(find.byType(SafaehSettingsPageIndexOverlay), findsNothing);
   });
 
+  testWidgets(
+    'page index scrolls to a distant section without jumps or reversals',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await pumpApp(
+        tester,
+        await materialApp(const SettingsPage(showAppBar: false)),
+      );
+      await tester.pumpAndSettle();
+      final mainList = tester.widget<ListView>(
+        find
+            .byWidgetPredicate(
+              (widget) => widget is ListView && widget.controller != null,
+            )
+            .first,
+      );
+      final positions = <double>[mainList.controller!.offset];
+      final index = find.byType(SafaehSettingsPageIndex);
+      await tester.tap(
+        find.descendant(of: index, matching: find.text('Medications')),
+      );
+      for (var frame = 0; frame < 80; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        positions.add(mainList.controller!.offset);
+      }
+      expect(positions.last, greaterThan(400));
+      for (var i = 1; i < positions.length; i++) {
+        expect(
+          positions[i],
+          greaterThanOrEqualTo(positions[i - 1] - 0.5),
+          reason: 'scroll reversed at frame $i: $positions',
+        );
+        expect(
+          (positions[i] - positions[i - 1]).abs(),
+          lessThan(positions.last * 0.35),
+          reason: 'instant jump at frame $i: $positions',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'latest index selection wins while another section is expanding',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await pumpApp(
+        tester,
+        await materialApp(const SettingsPage(showAppBar: false)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('General').first);
+      await tester.pumpAndSettle();
+      final index = find.byType(SafaehSettingsPageIndex);
+      await tester.tap(
+        find.descendant(of: index, matching: find.text('General')),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.tap(
+        find.descendant(of: index, matching: find.text('Medications')),
+      );
+      for (var frame = 0; frame < 80; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(
+          tester.widget<SafaehSettingsPageIndex>(index).activeId,
+          'medications',
+          reason: 'selection flickered at frame $frame',
+        );
+      }
+      final target = tester
+          .widget<SafaehSettingsPageIndex>(index)
+          .sectionKeys['medications']!;
+      expect(tester.getTopLeft(find.byKey(target)).dy, closeTo(0, 2));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('theme and language use Safaeh phone picker sheets', (
     tester,
   ) async {

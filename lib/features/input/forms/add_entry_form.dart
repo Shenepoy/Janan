@@ -220,6 +220,8 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
             ? null
             : Pressure.mmHg(recordFormValue.dia!),
         pul: recordFormValue.pul,
+        arm: recordFormValue.arm,
+        source: _lastSavedPressure?.source ?? BloodPressureRecordSource.manual,
       );
     }
     final weightFormValue = _weightForm.currentState?.save();
@@ -300,6 +302,7 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
           sys: value.record?.sys?.mmHg,
           dia: value.record?.dia?.mmHg,
           pul: value.record?.pul,
+          arm: value.record?.arm,
         ));
       }
       if (value.weight != null) {
@@ -406,6 +409,7 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
                       sys: widget.initialValue?.record?.sys?.mmHg,
                       dia: widget.initialValue?.record?.dia?.mmHg,
                       pul: widget.initialValue?.record?.pul,
+                      arm: widget.initialValue?.record?.arm,
                     ),
                   ),
                 if (settings.bloodPressureEnabled &&

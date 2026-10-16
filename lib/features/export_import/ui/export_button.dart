@@ -121,7 +121,7 @@ Future<void> performExport(
         completed = await _exportData(
           context,
           pdf,
-          '$filename.pdf',
+          '${exportPdfFileName(addTimestamp: exportSettings.addTimestamp)}.pdf',
           'application/pdf',
           share,
         );
@@ -168,6 +168,17 @@ String exportFileBaseName({required bool addTimestamp, DateTime? now}) {
       '${digits(time.minute, 2)}-${digits(time.second, 2)}-'
       '${digits(time.millisecond, 3)}${digits(time.microsecond, 3)}';
   return 'blood_press_$timestamp';
+}
+
+/// PDF downloads are `janan-2026-10-11_12-19-05`, without the sub-second suffix.
+String exportPdfFileName({required bool addTimestamp, DateTime? now}) {
+  if (!addTimestamp) return 'janan';
+  final time = now ?? DateTime.now();
+  String digits(int value, int width) => value.toString().padLeft(width, '0');
+  final timestamp =
+      '${digits(time.year, 4)}-${digits(time.month, 2)}-${digits(time.day, 2)}'
+      '_${digits(time.hour, 2)}-${digits(time.minute, 2)}-${digits(time.second, 2)}';
+  return 'janan-$timestamp';
 }
 
 /// Save to default export path or share by providing binary data.

@@ -22,6 +22,7 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
     this.titleKeys = _defaultTitleKeys,
     this.settingsSearchOpen,
     this.onSettingsSearch,
+    this.floating = false,
   });
 
   /// Current shell page position in the visible data tabs.
@@ -36,11 +37,15 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
   /// Opens or closes the settings search overlay.
   final VoidCallback? onSettingsSearch;
 
+  /// Render only the toolbar so it can sit inside a floating landscape card.
+  final bool floating;
+
   static const _defaultTitleKeys = ['title', 'weight', 'statistics'];
 
   @override
   Size get preferredSize => Size.fromHeight(
-    kToolbarHeight + _rangeFactor * IntervalPicker.barSize.height,
+    kToolbarHeight +
+        (floating ? 0 : _rangeFactor * IntervalPicker.barSize.height),
   );
 
   bool get _hasSettings => titleKeys.isNotEmpty && titleKeys.last == 'settings';
@@ -64,8 +69,9 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
       titles: [for (final key in titleKeys) Text(key.tr())],
       // Reserve the same leading width as the trailing action slot. This
       // keeps the title on the physical center line even when actions morph.
-      leading: SizedBox(width: slot),
-      leadingWidth: slot,
+      centerTitle: !floating,
+      leading: floating ? null : SizedBox(width: slot),
+      leadingWidth: floating ? 0 : slot,
       actionSlotWidth: slot,
       actionsBuilder: (context, currentPage) => _ShellAppBarAction(
         page: currentPage,
@@ -74,13 +80,15 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
         onSettingsSearch: onSettingsSearch,
         showFilter: showFilter,
       ),
-      bottom: SafaehMorphingAppBarBottom(
-        factor: _rangeFactor,
-        height: IntervalPicker.barSize.height,
-        child: const DashboardRangeBar(
-          type: IntervalStoreManagerLocation.mainPage,
-        ),
-      ),
+      bottom: floating
+          ? null
+          : SafaehMorphingAppBarBottom(
+              factor: _rangeFactor,
+              height: IntervalPicker.barSize.height,
+              child: const DashboardRangeBar(
+                type: IntervalStoreManagerLocation.mainPage,
+              ),
+            ),
     );
   }
 }

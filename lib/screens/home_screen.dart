@@ -1,4 +1,3 @@
-import 'package:blood_pressure_app/config.dart';
 import 'package:blood_pressure_app/data_util/bulk_entry_actions.dart';
 import 'package:blood_pressure_app/data_util/combined_entry_builder.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
@@ -52,10 +51,12 @@ class _AppHomeState extends ConsumerState<AppHome> {
   Widget _graphCard({
     required bool showBloodPressure,
     required bool showMedicine,
+    bool compact = false,
   }) => HomeBpChart(
     key: ValueKey((showBloodPressure, showMedicine)),
     showBloodPressure: showBloodPressure,
     showMedicine: showMedicine,
+    compact: compact,
   );
 
   @override
@@ -123,36 +124,17 @@ class _AppHomeState extends ConsumerState<AppHome> {
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) _selection.clear();
           },
-          child: OrientationBuilder(
-            builder: (BuildContext context, Orientation orientation) {
-              if (showValueGraphAsHomeScreenInLandscapeMode &&
-                  orientation == Orientation.landscape) {
-                return Scaffold(
-                  primary: false,
-                  body: SafeArea(
-                    top: false,
-                    child: BleLaunchSyncPopout(
-                      child: DashboardPageBody(
-                        children: [
-                          if (showBloodPressureChart || showMedicineChart)
-                            _graphCard(
-                              showBloodPressure: showBloodPressureChart,
-                              showMedicine: showMedicineChart,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }
-              return Scaffold(
-                primary: false,
-                body: SafeArea(
-                  top: false,
-                  child: BleLaunchSyncPopout(
-                    child: Stack(
-                      children: [
-                        CombinedEntryBuilder(
+          child: Scaffold(
+            primary: false,
+            body: SafeArea(
+              top: false,
+              child: BleLaunchSyncPopout(
+                child: OrientationBuilder(
+                  builder: (context, orientation) => Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Positioned.fill(
+                        child: CombinedEntryBuilder(
                           rangeType: IntervalStoreManagerLocation.mainPage,
                           onData: (context, records, intakes, notes) {
                             final entries = CombinedEntryList.merged(
@@ -160,76 +142,123 @@ class _AppHomeState extends ConsumerState<AppHome> {
                               notes,
                               intakes,
                             )..sort((a, b) => b.time.compareTo(a.time));
+                            final showChart =
+                                (entries.isNotEmpty || showMedicineChart) &&
+                                (showBloodPressureChart || showMedicineChart);
+                            final measurementListFilter =
+                                settings.medicineFeatureEnabled
+                                ? filter
+                                : MeasurementListFilter.all;
+
+                            Widget measurementTable({
+                              required bool shrinkWrap,
+                            }) => DashboardSection(
+                              padding: EdgeInsets.zero,
+                              child: MeasurementList(
+                                entries: entries,
+                                filter: measurementListFilter,
+                                shrinkWrap: shrinkWrap,
+                              ),
+                            );
+
+                            if (orientation == Orientation.landscape &&
+                                entries.isNotEmpty) {
+                              return Padding(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
+                                  16,
+                                  16,
+                                  16,
+                                  16,
+                                ),
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    if (showChart)
+                                      Expanded(
+                                        flex: 5,
+                                        child: _graphCard(
+                                          showBloodPressure:
+                                              showBloodPressureChart,
+                                          showMedicine: showMedicineChart,
+                                          compact: true,
+                                        ),
+                                      ),
+                                    if (showChart) const SizedBox(width: 12),
+                                    Expanded(
+                                      flex: 6,
+                                      child: Card(
+                                        clipBehavior: Clip.antiAlias,
+                                        child: MeasurementList(
+                                          entries: entries,
+                                          filter: measurementListFilter,
+                                          shrinkWrap: false,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
                             return DashboardPageBody(
                               children: [
                                 if (entries.isEmpty &&
                                     filter != MeasurementListFilter.medicine &&
                                     !showMedicineChart)
                                   const DashboardEmptyCard(),
-                                if ((entries.isNotEmpty || showMedicineChart) &&
-                                    (showBloodPressureChart ||
-                                        showMedicineChart))
+                                if (showChart)
                                   _graphCard(
                                     showBloodPressure: showBloodPressureChart,
                                     showMedicine: showMedicineChart,
                                   ),
-                                if (entries.isNotEmpty) ...[
-                                  DashboardSection(
-                                    padding: EdgeInsets.zero,
-                                    child: MeasurementList(
-                                      entries: entries,
-                                      filter: settings.medicineFeatureEnabled
-                                          ? filter
-                                          : MeasurementListFilter.all,
-                                      shrinkWrap: true,
-                                    ),
-                                  ),
-                                ],
+                                if (entries.isNotEmpty)
+                                  measurementTable(shrinkWrap: true),
                               ],
                             );
                           },
                         ),
-                        SelectionActionBarOverlay(
-                          visible: _selection.isSelecting,
-                          page: ShellTab.home,
-                          child: SelectionActionBar(
-                            count: _selection.count,
-                            onClose: _selection.clear,
-                            onChangeDate: () async {
-                              if (await context.changeEntriesDate(
-                                _selection.selected,
-                              )) {
-                                _selection.clear();
-                              }
-                            },
-                            onNote: () async {
-                              if (await context.changeEntriesNote(
-                                _selection.selected,
-                              )) {
-                                _selection.clear();
-                              }
-                            },
-                            onColor: () async {
-                              if (await context.changeEntriesColor(
-                                _selection.selected,
-                              )) {
-                                _selection.clear();
-                              }
-                            },
-                            onDelete: () async {
-                              final deleted = await context.deleteEntries(
-                                _selection.selected,
-                              );
-                              if (deleted) _selection.clear();
-                            },
-                          ),
+                      ),
+                      SelectionActionBarOverlay(
+                        visible: _selection.isSelecting,
+                        page: ShellTab.home,
+                        child: SelectionActionBar(
+                          count: _selection.count,
+                          onClose: _selection.clear,
+                          onChangeDate: () async {
+                            if (await context.changeEntriesDate(
+                              _selection.selected,
+                            )) {
+                              _selection.clear();
+                            }
+                          },
+                          onNote: () async {
+                            if (await context.changeEntriesNote(
+                              _selection.selected,
+                            )) {
+                              _selection.clear();
+                            }
+                          },
+                          onColor: () async {
+                            if (await context.changeEntriesColor(
+                              _selection.selected,
+                            )) {
+                              _selection.clear();
+                            }
+                          },
+                          onDelete: () async {
+                            final deleted = await context.deleteEntries(
+                              _selection.selected,
+                            );
+                            if (deleted) _selection.clear();
+                          },
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ),
       ),

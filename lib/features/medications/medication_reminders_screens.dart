@@ -195,6 +195,7 @@ Future<void> _applyMedicationReminders(
     missedDoseShiftLimit: Duration(
       minutes: settings.missedDoseShiftLimitMinutes,
     ),
+    dueIndicatorDivisor: settings.dueIndicatorDivisor,
   );
 }
 
@@ -211,20 +212,23 @@ Future<void> _pushReminderWidget(
     missedDoseShiftLimit: Duration(
       minutes: settings.missedDoseShiftLimitMinutes,
     ),
+    dueIndicatorDivisor: settings.dueIndicatorDivisor,
   );
 }
 
 Map<String, DateTime> _doseShiftTargets(
   List<DoseOccurrence> occurrences,
   DateTime now,
-  AppSettings settings,
-) {
+  AppSettings settings, {
+  Map<String, DateTime>? dueAnchors,
+}) {
   if (!settings.medicineFeatureEnabled) {
     return shiftedDoseTargets(
       occurrences,
       now: now,
       enabled: false,
       grace: Duration.zero,
+      dueAnchors: dueAnchors,
     );
   }
   return shiftedDoseTargets(
@@ -234,6 +238,7 @@ Map<String, DateTime> _doseShiftTargets(
     grace: Duration(minutes: settings.missedDoseShiftLimitMinutes),
     movesTimes: (dose) =>
         dose.schedule.movesAfterMissedDose(settings.shiftMissedDoseTimes),
+    dueAnchors: dueAnchors,
   );
 }
 
@@ -396,20 +401,38 @@ List<DoseOccurrence> nextUpDoseOccurrences(
   return selected;
 }
 
-/// The next open dose of each medicine, in time order.
-///
-/// Later doses of a medicine already represented stay off the rings.
-List<_DoseCountdown> _oneCountdownPerMedicine(List<_DoseCountdown> sorted) {
-  final seen = <String>{};
-  final kept = <_DoseCountdown>[];
-  for (final countdown in sorted) {
-    final schedule = countdown.occurrence.schedule;
-    final key = schedule.medicineId.isNotEmpty
-        ? schedule.medicineId
-        : (schedule.id ?? schedule.medicine.designation);
-    if (seen.add(key)) kept.add(countdown);
+PlannedDose _plannedDoseForCountdown(
+  _DoseCountdown countdown,
+  DateTime now,
+  ThemeData theme,
+  Map<String, DateTime> dueAnchors,
+) {
+  final schedule = countdown.occurrence.schedule;
+  return PlannedDose(
+    scheduleId: schedule.id ?? countdown.occurrence.id,
+    medicineId: schedule.medicineId,
+    targetAt: countdown.targetAt,
+    color: countdown.medicineColor(theme).toARGB32(),
+    name: schedule.medicine.designation,
+    status: countdown.occurrence.statusAt(now),
+    interval: scheduledDoseInterval(schedule, countdown.occurrence.scheduledAt),
+    dueIndicatorDivisor: schedule.dueIndicatorDivisor,
+    dueAt: dueAnchors[countdown.occurrence.id],
+  );
+}
+
+_DoseCountdown? _countdownForPlannedDose(
+  List<_DoseCountdown> open,
+  PlannedDose? dose,
+) {
+  if (dose == null) return null;
+  for (final countdown in open) {
+    final id = countdown.occurrence.schedule.id ?? countdown.occurrence.id;
+    if (id == dose.scheduleId && countdown.targetAt == dose.targetAt) {
+      return countdown;
+    }
   }
-  return kept;
+  return null;
 }
 
 bool _deferUpcomingDoseCard(
@@ -528,6 +551,7 @@ class _MedicationReminderCardState
       motion: SafaehAnchoredMotion.genie,
       link: _targetLink,
       sourceRect: targetRect,
+      sourceRectBuilder: () => _globalRect(_targetKey),
       opensAbove: widget.opensAbove,
       sourceShape: buttonShape,
       childBuilder: (context, progress) => _MedicationDosePanel(
@@ -564,20 +588,33 @@ class _MedicationReminderCardState
     final occurrenceList =
         occurrences.asData?.value ?? const <DoseOccurrence>[];
     final active = scheduleList.any((schedule) => schedule.active);
-    final shiftTargets = _doseShiftTargets(occurrenceList, _now, settings);
-    final shiftGrace = Duration(minutes: settings.missedDoseShiftLimitMinutes);
-    final openCountdowns = _oneCountdownPerMedicine(
-      _DoseCountdown.openFrom(
-        occurrenceList,
-        _now,
-        targets: shiftTargets,
-        grace: shiftGrace,
-      ),
+    final dueAnchors = <String, DateTime>{};
+    final shiftTargets = _doseShiftTargets(
+      occurrenceList,
+      _now,
+      settings,
+      dueAnchors: dueAnchors,
     );
-    final countdown = openCountdowns.firstOrNull;
-    final rings = settings.showAllReminderRings
-        ? openCountdowns
-        : openCountdowns.take(1).toList();
+    final shiftGrace = Duration(minutes: settings.missedDoseShiftLimitMinutes);
+    final openCountdowns = _DoseCountdown.openFrom(
+      occurrenceList,
+      _now,
+      targets: shiftTargets,
+      grace: shiftGrace,
+    );
+    final ringGroups = dueCountdownRings(
+      [
+        for (final countdown in openCountdowns)
+          _plannedDoseForCountdown(countdown, _now, theme, dueAnchors),
+      ],
+      now: _now,
+      appDivisor: settings.dueIndicatorDivisor,
+      showAll: settings.showAllReminderRings,
+    );
+    final countdown = _countdownForPlannedDose(
+      openCountdowns,
+      ringGroups.firstOrNull?.doses.first,
+    );
     final today = DateTime(_now.year, _now.month, _now.day);
     final todayOccurrences = occurrenceList
         .where((dose) => DateUtils.isSameDay(dose.scheduledAt, today))
@@ -611,7 +648,7 @@ class _MedicationReminderCardState
               link: _targetLink,
               child: _MedicationCountdownCircle(
                 countdown: countdown,
-                rings: rings,
+                ringGroups: ringGroups,
                 now: _now,
                 color: color,
                 hasSchedules: active,
@@ -698,7 +735,7 @@ class _DoseCountdown {
 class _MedicationCountdownCircle extends StatelessWidget {
   const _MedicationCountdownCircle({
     required this.countdown,
-    required this.rings,
+    required this.ringGroups,
     required this.now,
     required this.color,
     required this.hasSchedules,
@@ -708,7 +745,7 @@ class _MedicationCountdownCircle extends StatelessWidget {
   });
 
   final _DoseCountdown? countdown;
-  final List<_DoseCountdown> rings;
+  final List<ReminderRingGroup> ringGroups;
   final DateTime now;
   final Color color;
   final bool hasSchedules;
@@ -749,13 +786,12 @@ class _MedicationCountdownCircle extends StatelessWidget {
     final showStatusLabel =
         !compact || countdown == null || countdown?.snoozed == true || urgent;
     final showMedicineIcon = !compact || countdown == null;
-    final layers = _reminderRingLayers(
-      rings: rings,
-      now: now,
-      theme: theme,
-      fallbackColor: color,
-      hasSchedules: hasSchedules,
-    );
+    final layers = ringGroups.isEmpty
+        ? [_RingLayer(progress: hasSchedules ? 1 : 0, color: color)]
+        : [
+            for (var index = 0; index < ringGroups.length; index++)
+              _ringLayer(ringGroups[index], outer: index == 0, now: now),
+          ];
     final circleSize = compact ? 56.0 : 136.0;
     final ringPadding = compact ? 2.0 : 7.0;
     final contentPadding = compact ? 2.0 : 13.0;
@@ -986,38 +1022,6 @@ class _RingLayer {
   final List<double> markProgress;
 
   bool get dotted => dottedColors.length > 1;
-}
-
-List<_RingLayer> _reminderRingLayers({
-  required List<_DoseCountdown> rings,
-  required DateTime now,
-  required ThemeData theme,
-  required Color fallbackColor,
-  required bool hasSchedules,
-}) {
-  if (rings.isEmpty) {
-    return [_RingLayer(progress: hasSchedules ? 1 : 0, color: fallbackColor)];
-  }
-  final planned = [
-    for (final ring in rings)
-      PlannedDose(
-        scheduleId: ring.occurrence.schedule.id ?? ring.occurrence.id,
-        medicineId: ring.occurrence.schedule.medicineId,
-        targetAt: ring.targetAt,
-        color: ring.medicineColor(theme).toARGB32(),
-        name: ring.occurrence.schedule.medicine.designation,
-        status: ring.occurrence.statusAt(now),
-        interval: scheduledDoseInterval(
-          ring.occurrence.schedule,
-          ring.occurrence.scheduledAt,
-        ),
-      ),
-  ];
-  final groups = stackReminderRings(planned);
-  return [
-    for (var index = 0; index < groups.length; index++)
-      _ringLayer(groups[index], outer: index == 0, now: now),
-  ];
 }
 
 /// Inner arcs stop here: the stroke length one moment before a dose is due.
@@ -2452,6 +2456,7 @@ class _MedicationScheduleEditorScreenState
   DateTime? _startDate;
   DateTime? _endDate;
   bool? _shiftMissedDoseTimes;
+  int? _dueIndicatorDivisor;
   bool _loading = true;
   bool _saving = false;
 
@@ -2471,6 +2476,7 @@ class _MedicationScheduleEditorScreenState
     _startDate = initial?.startDate;
     _endDate = initial?.endDate;
     _shiftMissedDoseTimes = initial?.shiftMissedDoseTimes;
+    _dueIndicatorDivisor = initial?.dueIndicatorDivisor;
     if (_times.isEmpty) {
       _times.add(8 * 60);
       _doseTimings.add(MedicationDoseTiming.anytime);
@@ -2713,6 +2719,7 @@ class _MedicationScheduleEditorScreenState
             endDate: _endDate,
             state: widget.initial?.state ?? MedicationScheduleState.active,
             shiftMissedDoseTimes: _shiftMissedDoseTimes,
+            dueIndicatorDivisor: _dueIndicatorDivisor,
           ),
         );
     final settings = ref.read(appSettingsProvider);
@@ -3267,6 +3274,91 @@ class _MedicationScheduleEditorScreenState
                                     () => _shiftMissedDoseTimes = false,
                                   ),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _t('dueIndicatorDivisor', 'Due flashing window'),
+                              style: theme.textTheme.labelLarge,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _t(
+                                'reminderDueWindowHint',
+                                'This reminder can follow the app setting or choose its own share of the gap.',
+                              ),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                ChoiceChip(
+                                  label: Text(() {
+                                    final divisor =
+                                        '${ref.watch(appSettingsProvider).dueIndicatorDivisor}';
+                                    final follow = 'reminderDueWindowFollow'.tr(
+                                      namedArgs: {'divisor': divisor},
+                                    );
+                                    return follow == 'reminderDueWindowFollow'
+                                        ? 'App setting: 1/$divisor'
+                                        : follow;
+                                  }()),
+                                  selected: _dueIndicatorDivisor == null,
+                                  onSelected: (_) => setState(
+                                    () => _dueIndicatorDivisor = null,
+                                  ),
+                                ),
+                                ChoiceChip(
+                                  label: Text(
+                                    _t(
+                                      'reminderDueWindowCustom',
+                                      'Custom for this reminder',
+                                    ),
+                                  ),
+                                  selected: _dueIndicatorDivisor != null,
+                                  onSelected: (_) => setState(() {
+                                    _dueIndicatorDivisor ??= ref
+                                        .read(appSettingsProvider)
+                                        .dueIndicatorDivisor;
+                                  }),
+                                ),
+                                if (_dueIndicatorDivisor != null) ...[
+                                  IconButton(
+                                    tooltip: _t(
+                                      'reminderDueWindowLonger',
+                                      'Longer flash',
+                                    ),
+                                    onPressed: _dueIndicatorDivisor! <= 2
+                                        ? null
+                                        : () => setState(
+                                            () => _dueIndicatorDivisor =
+                                                _dueIndicatorDivisor! - 1,
+                                          ),
+                                    icon: const Icon(Icons.remove),
+                                  ),
+                                  Text(
+                                    '1/$_dueIndicatorDivisor',
+                                    style: theme.textTheme.titleMedium,
+                                  ),
+                                  IconButton(
+                                    tooltip: _t(
+                                      'reminderDueWindowShorter',
+                                      'Shorter flash',
+                                    ),
+                                    onPressed: _dueIndicatorDivisor! >= 8
+                                        ? null
+                                        : () => setState(
+                                            () => _dueIndicatorDivisor =
+                                                _dueIndicatorDivisor! + 1,
+                                          ),
+                                    icon: const Icon(Icons.add),
+                                  ),
+                                ],
                               ],
                             ),
                           ],

@@ -40,6 +40,7 @@ class MedicationSchedule {
     this.endDate,
     this.state = MedicationScheduleState.active,
     this.shiftMissedDoseTimes,
+    this.dueIndicatorDivisor,
   });
 
   final String? id;
@@ -76,6 +77,12 @@ class MedicationSchedule {
   /// saved times.
   final bool? shiftMissedDoseTimes;
 
+  /// Share of this dose gap that keeps the red due flash.
+  ///
+  /// Null follows the app setting. 3 means one third, so a daily dose flashes
+  /// for 8 hours.
+  final int? dueIndicatorDivisor;
+
   /// Whether this schedule currently creates upcoming doses.
   bool get active => state == MedicationScheduleState.active;
 
@@ -83,10 +90,18 @@ class MedicationSchedule {
   bool movesAfterMissedDose(bool appSetting) =>
       shiftMissedDoseTimes ?? appSetting;
 
+  /// Divisor for the due flash. A null override uses [appDivisor].
+  int dueIndicatorDivisorFor(int appDivisor) {
+    final override = dueIndicatorDivisor;
+    if (override != null && override >= 2) return override;
+    return appDivisor >= 2 ? appDivisor : 3;
+  }
+
   /// Returns this schedule with [state] changed.
   MedicationSchedule copyWith({
     MedicationScheduleState? state,
     Object? shiftMissedDoseTimes = _keepShiftOverride,
+    Object? dueIndicatorDivisor = _keepDueDivisor,
   }) => MedicationSchedule(
     id: id,
     medicineId: medicineId,
@@ -102,10 +117,14 @@ class MedicationSchedule {
     shiftMissedDoseTimes: identical(shiftMissedDoseTimes, _keepShiftOverride)
         ? this.shiftMissedDoseTimes
         : shiftMissedDoseTimes as bool?,
+    dueIndicatorDivisor: identical(dueIndicatorDivisor, _keepDueDivisor)
+        ? this.dueIndicatorDivisor
+        : dueIndicatorDivisor as int?,
   );
 }
 
 const _keepShiftOverride = Object();
+const _keepDueDivisor = Object();
 
 /// One scheduled dose on a particular local date and time.
 class DoseOccurrence {

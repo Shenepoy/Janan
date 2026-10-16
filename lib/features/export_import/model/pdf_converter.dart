@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:blood_pressure_app/domain/blood_pressure_arm.dart';
 import 'package:blood_pressure_app/domain/medication_unit.dart';
 import 'package:blood_pressure_app/features/export_import/model/export_preset.dart';
 import 'package:blood_pressure_app/features/export_import/model/import_field_type.dart';
@@ -49,7 +50,7 @@ class PdfConverter with Loggable {
     final pdf = pw.Document(creator: 'Janan');
     final content = _content(entries);
     final fonts = await _loadPdfFonts();
-    final logo = _logoWithoutMargin(await rootBundle.loadString(_appLogoAsset));
+    final logo = _logoWithoutMargin(await rootBundle.loadString(_pdfLogoAsset));
     final theme = fonts.themeFor(locale);
     final isRtl = locale.split(RegExp('[-_]')).first == 'ar';
     final pageDirection = isRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr;
@@ -78,6 +79,20 @@ class PdfConverter with Loggable {
       logSevere('No such preset: ${pdfSettings.activePreset}');
     }
     final columns = availableColumns.resolveColumns(preset?.columns ?? []);
+    final selectedArm = settings.trackArmSide
+        ? switch (pdfSettings.armFilter) {
+            'left' => BloodPressureArm.left,
+            'right' => BloodPressureArm.right,
+            _ => null,
+          }
+        : null;
+    final armFilterLabel = settings.trackArmSide
+        ? switch (pdfSettings.armFilter) {
+            'left' => 'leftArm'.tr(),
+            'right' => 'rightArm'.tr(),
+            _ => 'allArms'.tr(),
+          }
+        : null;
     return PdfExportContent.from(
       entries: entries,
       dateFormatString: settings.dateFormatString,
@@ -86,6 +101,8 @@ class PdfConverter with Loggable {
       weightUnit: settings.weightUnit,
       columns: columns,
       limits: settings.rangeLimits,
+      armFilter: selectedArm,
+      armFilterLabel: armFilterLabel,
     );
   }
 
@@ -157,7 +174,6 @@ class PdfConverter with Loggable {
         content.medicineSeries[i],
         reportDays,
         pageDirection,
-        i,
         squaresPerRow: weight == null ? 36 : 24,
       );
       if (i == 0) {
@@ -218,10 +234,7 @@ class PdfConverter with Loggable {
       padding: const pw.EdgeInsets.only(bottom: 3),
       decoration: pw.BoxDecoration(
         border: pw.Border(
-          bottom: pw.BorderSide(
-            color: settings.accentColor.toPdfColor(),
-            width: 1.4,
-          ),
+          bottom: pw.BorderSide(color: PdfColors.black, width: 1.4),
         ),
       ),
       child: pw.Row(
@@ -302,14 +315,12 @@ class PdfConverter with Loggable {
               if (latest.sysBand != null)
                 _letterBand(
                   '${'sysLong'.tr()} ${latest.sysBand}',
-                  _bandColor(latest.sysBand!),
                   pageDirection,
                 ),
               if (latest.diaBand != null) ...[
                 pw.SizedBox(height: 3),
                 _letterBand(
                   '${'diaLong'.tr()} ${latest.diaBand}',
-                  _bandColor(latest.diaBand!),
                   pageDirection,
                 ),
               ],
@@ -320,22 +331,20 @@ class PdfConverter with Loggable {
     );
   }
 
-  pw.Widget _letterBand(
-    String label,
-    PdfColor color,
-    pw.TextDirection pageDirection,
-  ) => pw.Container(
-    padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-    decoration: pw.BoxDecoration(
-      color: PdfColors.grey100,
-      borderRadius: pw.BorderRadius.circular(8),
-    ),
-    child: pw.Text(
-      label,
-      style: pw.TextStyle(fontSize: 8, color: color),
-      textDirection: _textDirectionFor(label, pageDirection),
-    ),
-  );
+  pw.Widget _letterBand(String label, pw.TextDirection pageDirection) =>
+      pw.Container(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: pw.BoxDecoration(
+          color: PdfColors.grey100,
+          borderRadius: pw.BorderRadius.circular(8),
+          border: pw.Border.all(color: PdfColors.grey700, width: .5),
+        ),
+        child: pw.Text(
+          label,
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.black),
+          textDirection: _textDirectionFor(label, pageDirection),
+        ),
+      );
 
   pw.Widget _letterTrio(
     PdfExportStatistics statistics,
@@ -489,11 +498,11 @@ class PdfConverter with Loggable {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         _letterSectionLabel('weight'.tr(), pageDirection),
+        // The page direction already places the first child on the right in
+        // Arabic, so the latest weight and its date stay at the start.
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: pageDirection == pw.TextDirection.rtl
-              ? columns.reversed.toList()
-              : columns,
+          children: columns,
         ),
         pw.SizedBox(height: 6),
       ],
@@ -563,6 +572,7 @@ class PdfConverter with Loggable {
     }
     final number = formatted.substring(0, splitAt).trimRight();
     return pw.Row(
+      mainAxisSize: pw.MainAxisSize.min,
       crossAxisAlignment: pw.CrossAxisAlignment.end,
       children: [
         pw.Text(number, style: style, textDirection: pw.TextDirection.ltr),
@@ -613,11 +623,8 @@ class PdfConverter with Loggable {
           textDirection: _textDirectionFor(after, pageDirection),
         ),
     ];
-    return pw.Row(
-      children: pageDirection == pw.TextDirection.rtl
-          ? parts.reversed.toList()
-          : parts,
-    );
+    // Keep logical order. An extra reverse puts كغم against من and yields كغمن.
+    return pw.Row(mainAxisSize: pw.MainAxisSize.min, children: parts);
   }
 
   String _signedWeightChange(double delta) {
@@ -629,13 +636,9 @@ class PdfConverter with Loggable {
   List<pw.Widget> _letterMedicineBlocks(
     PdfMedicineSeries series,
     List<DateTime> reportDays,
-    pw.TextDirection pageDirection,
-    int index, {
+    pw.TextDirection pageDirection, {
     required int squaresPerRow,
   }) {
-    final color = series.color == null
-        ? _medicinePalette[index % _medicinePalette.length]
-        : _pdfColorFromArgb(series.color!);
     final amounts = {for (final dose in series.doses) dose.amount};
     final steady = amounts.length <= 1;
     final takenDays = <DateTime>{
@@ -653,7 +656,7 @@ class PdfConverter with Loggable {
       style: pw.TextStyle(
         fontSize: 18,
         fontWeight: pw.FontWeight.bold,
-        color: color,
+        color: PdfColors.black,
       ),
       textDirection: pw.TextDirection.ltr,
     );
@@ -697,12 +700,7 @@ class PdfConverter with Loggable {
         ),
       ],
     );
-    final squareRows = _tallySquareRows(
-      days,
-      takenDays,
-      color,
-      squaresPerRow,
-    );
+    final squareRows = _tallySquareRows(days, takenDays, squaresPerRow);
     const maxRows = 40;
     final blocks = <pw.Widget>[];
     if (squareRows.isEmpty) {
@@ -736,7 +734,6 @@ class PdfConverter with Loggable {
   List<pw.Widget> _tallySquareRows(
     List<DateTime> days,
     Set<DateTime> taken,
-    PdfColor color,
     int perRow,
   ) {
     final rows = <pw.Widget>[];
@@ -753,7 +750,10 @@ class PdfConverter with Loggable {
                   height: 7,
                   margin: const pw.EdgeInsets.only(right: 2),
                   decoration: pw.BoxDecoration(
-                    color: taken.contains(day) ? color : PdfColors.grey300,
+                    color: taken.contains(day)
+                        ? PdfColors.black
+                        : PdfColors.white,
+                    border: pw.Border.all(color: PdfColors.black, width: .5),
                   ),
                 ),
             ],
@@ -775,8 +775,9 @@ class PdfConverter with Loggable {
       points.first.time.year == points.last.time.year ? 'd/M' : 'd/M/yy',
       locale,
     );
-    final systolicColor = settings.sysColor.toPdfColor();
-    final diastolicColor = settings.diaColor.toPdfColor();
+    // These series stay distinct after grayscale printing or photocopying.
+    const systolicColor = PdfColors.black;
+    const diastolicColor = PdfColors.grey700;
     final datasets = <pw.Dataset>[];
     final systolic = <pw.PointChartValue>[
       for (var i = 0; i < points.length; i++)
@@ -796,8 +797,15 @@ class PdfConverter with Loggable {
           color: systolicColor,
           lineColor: systolicColor,
           lineWidth: 1.8,
-          pointSize: 2.2,
-          isCurved: true,
+          pointSize: 2.5,
+          shape: (_) => pw.Container(
+            width: 4.5,
+            height: 4.5,
+            decoration: const pw.BoxDecoration(
+              color: systolicColor,
+              shape: pw.BoxShape.circle,
+            ),
+          ),
         ),
       );
     }
@@ -808,9 +816,16 @@ class PdfConverter with Loggable {
           legend: 'diaLong'.tr(),
           color: diastolicColor,
           lineColor: diastolicColor,
-          lineWidth: 1.8,
-          pointSize: 2.2,
-          isCurved: true,
+          lineWidth: 1.5,
+          pointSize: 2.5,
+          shape: (_) => pw.Container(
+            width: 4.5,
+            height: 4.5,
+            decoration: pw.BoxDecoration(
+              color: PdfColors.white,
+              border: pw.Border.all(color: diastolicColor, width: 1),
+            ),
+          ),
         ),
       );
     }
@@ -818,34 +833,50 @@ class PdfConverter with Loggable {
     return pw.Padding(
       padding: const pw.EdgeInsets.only(top: 4, bottom: 12),
       child: pw.SizedBox(
-        height: 150,
+        height: 170,
         child: pw.Chart(
+          title: pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 4),
+            child: pw.Align(
+              alignment: pageDirection == pw.TextDirection.rtl
+                  ? pw.Alignment.centerRight
+                  : pw.Alignment.centerLeft,
+              child: pw.Text(
+                '${'bloodPressure'.tr()} · ${content.statistics.unitLabel}',
+                style: const pw.TextStyle(
+                  fontSize: 8,
+                  color: PdfColors.grey700,
+                ),
+                textDirection: pageDirection,
+              ),
+            ),
+          ),
           grid: pw.CartesianGrid(
             xAxis: pw.FixedAxis<int>(
               xTicks,
-              color: PdfColors.blueGrey,
-              width: .6,
+              color: PdfColors.grey700,
+              width: .8,
               buildLabel: (value) => pw.Text(
                 dateFormat.format(
                   points[value.round().clamp(0, points.length - 1)].time,
                 ),
-                style: pw.TextStyle(font: fonts.latin, fontSize: 7),
+                style: pw.TextStyle(font: fonts.latin, fontSize: 8),
                 textDirection: pw.TextDirection.ltr,
               ),
             ),
             yAxis: pw.FixedAxis<double>(
               _chartPressureAxis(points),
-              color: PdfColors.blueGrey,
-              width: .6,
+              color: PdfColors.grey700,
+              width: .8,
               divisions: true,
-              divisionsColor: PdfColors.blueGrey100,
-              divisionsWidth: .5,
+              divisionsColor: PdfColors.grey400,
+              divisionsWidth: .6,
               buildLabel: (value) => pw.Text(
                 _chartPressureLabel(
                   value.toDouble(),
                   settings.preferredPressureUnit,
                 ),
-                style: pw.TextStyle(font: fonts.latin, fontSize: 7),
+                style: pw.TextStyle(font: fonts.latin, fontSize: 8),
                 textDirection: pw.TextDirection.ltr,
               ),
             ),
@@ -853,19 +884,82 @@ class PdfConverter with Loggable {
           datasets: datasets,
           bottom: pw.Padding(
             padding: const pw.EdgeInsets.only(top: 5),
-            child: pw.ChartLegend(
-              direction: pw.Axis.horizontal,
-              textStyle: pw.TextStyle(
-                font: pageDirection == pw.TextDirection.rtl
-                    ? fonts.arabic
-                    : fonts.latin,
-                fontSize: 8,
-              ),
-              padding: pw.EdgeInsets.zero,
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.center,
+              children: [
+                _chartLegendItem(
+                  label: 'sysLong'.tr(),
+                  color: systolicColor,
+                  pointShape: _ChartPointShape.circle,
+                  pageDirection: pageDirection,
+                  fonts: fonts,
+                ),
+                pw.SizedBox(width: 18),
+                _chartLegendItem(
+                  label: 'diaLong'.tr(),
+                  color: diastolicColor,
+                  pointShape: _ChartPointShape.square,
+                  pageDirection: pageDirection,
+                  fonts: fonts,
+                ),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  pw.Widget _chartLegendItem({
+    required String label,
+    required PdfColor color,
+    required _ChartPointShape pointShape,
+    required pw.TextDirection pageDirection,
+    required _PdfFonts fonts,
+  }) {
+    final point = switch (pointShape) {
+      _ChartPointShape.circle => pw.Container(
+        width: 5,
+        height: 5,
+        decoration: pw.BoxDecoration(color: color, shape: pw.BoxShape.circle),
+      ),
+      _ChartPointShape.square => pw.Container(
+        width: 5,
+        height: 5,
+        decoration: pw.BoxDecoration(
+          color: PdfColors.white,
+          border: pw.Border.all(color: color, width: 1),
+        ),
+      ),
+    };
+    return pw.Row(
+      children: [
+        pw.SizedBox(
+          width: 22,
+          height: 9,
+          child: pw.Stack(
+            children: [
+              pw.Positioned(
+                left: 0,
+                right: 0,
+                top: 4,
+                child: pw.Container(height: 1.4, color: color),
+              ),
+              pw.Align(alignment: pw.Alignment.center, child: point),
+            ],
+          ),
+        ),
+        pw.SizedBox(width: 4),
+        pw.Text(
+          label,
+          style: pw.TextStyle(
+            font: fonts.fontFor(label),
+            fontSize: 8,
+            color: PdfColors.grey700,
+          ),
+          textDirection: _textDirectionFor(label, pageDirection),
+        ),
+      ],
     );
   }
 
@@ -1044,15 +1138,12 @@ class PdfConverter with Loggable {
       },
       headerCellDecoration: pw.BoxDecoration(
         border: pw.Border(
-          bottom: pw.BorderSide(
-            color: settings.accentColor.toPdfColor(),
-            width: 5,
-          ),
+          bottom: pw.BorderSide(color: PdfColors.black, width: 1.4),
         ),
       ),
       rowDecoration: const pw.BoxDecoration(
         border: pw.Border(
-          bottom: pw.BorderSide(color: PdfColors.blueGrey, width: .5),
+          bottom: pw.BorderSide(color: PdfColors.grey500, width: .5),
         ),
       ),
       headers: [
@@ -1113,34 +1204,13 @@ String _chartPressureLabel(double value, PressureUnit unit) =>
     ? value.toStringAsFixed(1)
     : value.round().toString();
 
-PdfColor _bandColor(String label) {
-  if (label == 'metricRangeHigh'.tr()) return PdfColors.red700;
-  if (label == 'metricRangeElevated'.tr()) return PdfColors.orange800;
-  return PdfColors.teal;
-}
-
-PdfColor _pdfColorFromArgb(int argb) => PdfColor(
-  ((argb >> 16) & 0xFF) / 255,
-  ((argb >> 8) & 0xFF) / 255,
-  (argb & 0xFF) / 255,
-  ((argb >> 24) & 0xFF) / 255,
-);
-
-const _appLogoAsset = 'icon.svg';
+const _pdfLogoAsset = 'janan-logo-monochrome.svg';
 
 /// Drops the adaptive-icon margin so the heart fills the header box.
 String _logoWithoutMargin(String svg) => svg.replaceFirst(
   'viewBox="0 0 1024 1024"',
-  'viewBox="166 280 629 532"',
+  'viewBox="166 286 649 542"',
 );
-
-const _medicinePalette = <PdfColor>[
-  PdfColors.teal,
-  PdfColors.indigo,
-  PdfColors.deepOrange,
-  PdfColors.purple,
-  PdfColors.cyan,
-];
 
 /// Split a formatted medicine intake into an Arabic medicine name and an
 /// LTR parenthesized dose so bidi mirroring cannot reverse the punctuation.
@@ -1294,9 +1364,7 @@ pw.TextDirection _textDirectionFor(
       : pw.TextDirection.ltr;
 }
 
-extension _PdfCompatability on Color {
-  PdfColor toPdfColor() => PdfColor(r, g, b, a);
-}
+enum _ChartPointShape { circle, square }
 
 Future<_PdfFonts>? _pdfFonts;
 

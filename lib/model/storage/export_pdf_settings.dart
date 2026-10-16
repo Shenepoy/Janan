@@ -13,6 +13,7 @@ class PdfExportSettings extends PersistableSettings {
     double? headerFontSize,
     double? cellFontSize,
     String? activePreset,
+    String? armFilter,
   })  : _exportTitle = exportTitle ?? true,
         _exportStatistics = exportStatistics ?? true,
         _exportData = exportData ?? true,
@@ -21,7 +22,8 @@ class PdfExportSettings extends PersistableSettings {
         _cellHeight = cellHeight ?? 15,
         _headerFontSize = headerFontSize ?? 10,
         _cellFontSize = cellFontSize ?? 8,
-        _activePreset = activePreset ?? ExportPreset.appPdf.id;
+        _activePreset = activePreset ?? ExportPreset.appPdf.id,
+        _armFilter = armFilter ?? 'all';
 
   /// Create a instance from a map created by [toMap].
   factory PdfExportSettings.fromMap(Map<String, dynamic> map) {
@@ -46,6 +48,7 @@ class PdfExportSettings extends PersistableSettings {
   double _headerFontSize;
   double _cellFontSize;
   String _activePreset;
+  String _armFilter;
 
   bool get exportTitle => _exportTitle;
   set exportTitle(bool v) {
@@ -102,6 +105,14 @@ class PdfExportSettings extends PersistableSettings {
     notifyListeners();
   }
 
+  /// Arm filter for blood pressure PDF summaries and trend charts.
+  String get armFilter => _armFilter;
+  set armFilter(String value) {
+    if (value != 'all' && value != 'left' && value != 'right') return;
+    _armFilter = value;
+    notifyListeners();
+  }
+
   @override
   Map<String, dynamic> toMap() => <String, dynamic>{
     'exportTitle': _exportTitle,
@@ -113,6 +124,7 @@ class PdfExportSettings extends PersistableSettings {
     'headerFontSize': _headerFontSize,
     'cellFontSize': _cellFontSize,
     'activePreset': _activePreset,
+    'armFilter': _armFilter,
   };
 
   void copyFrom(PdfExportSettings other) {
@@ -125,6 +137,7 @@ class PdfExportSettings extends PersistableSettings {
     _headerFontSize = other._headerFontSize;
     _cellFontSize = other._cellFontSize;
     _activePreset = other._activePreset;
+    _armFilter = other._armFilter;
     notifyListeners();
   }
 
@@ -157,5 +170,10 @@ class PdfExportSettings extends PersistableSettings {
     if (cellF != null) _cellFontSize = cellF;
     final preset = map['activePreset'];
     if (preset is String) _activePreset = preset;
+    final armFilter = map['armFilter'];
+    if (armFilter is String &&
+        (armFilter == 'all' || armFilter == 'left' || armFilter == 'right')) {
+      _armFilter = armFilter;
+    }
   }
 }

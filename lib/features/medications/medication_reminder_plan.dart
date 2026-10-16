@@ -10,6 +10,8 @@ class PlannedDose {
     required this.status,
     this.medicineId = '',
     this.interval = const Duration(hours: 24),
+    this.dueIndicatorDivisor,
+    this.dueAt,
   });
 
   final String scheduleId;
@@ -21,6 +23,15 @@ class PlannedDose {
 
   /// Time from the previous scheduled dose of this medicine to [targetAt].
   final Duration interval;
+
+  /// Share of [interval] that keeps the red due flash. Null uses the app setting.
+  final int? dueIndicatorDivisor;
+
+  /// Saved dose time the flashing window is measured from.
+  ///
+  /// Null uses [targetAt]. A missed dose whose take-time is pinned to the
+  /// current moment still ends its flash from this saved time.
+  final DateTime? dueAt;
 
   String get medicineKey => medicineId.isNotEmpty
       ? medicineId
@@ -77,11 +88,12 @@ List<PlannedDose> selectReminderDoses(
 
 /// Keeps the soonest dose of each medicine. Later doses of that medicine drop.
 List<PlannedDose> earliestDosePerMedicine(List<PlannedDose> doses) {
-  final sorted = [...doses]..sort((a, b) {
-    final byTime = a.targetAt.compareTo(b.targetAt);
-    if (byTime != 0) return byTime;
-    return a.medicineKey.compareTo(b.medicineKey);
-  });
+  final sorted = [...doses]
+    ..sort((a, b) {
+      final byTime = a.targetAt.compareTo(b.targetAt);
+      if (byTime != 0) return byTime;
+      return a.medicineKey.compareTo(b.medicineKey);
+    });
   final seen = <String>{};
   final kept = <PlannedDose>[];
   for (final dose in sorted) {
@@ -165,7 +177,8 @@ Duration scheduledDoseInterval(
 /// An active snooze is left on its snooze time. The slide from earlier doses
 /// still applies after it. When [followUpFrom] is set, a dose that is due
 /// now records the moment its limit ran out there. That instant stays put
-/// while [now] moves.
+/// while [now] moves. [dueAnchors] receives each open dose's stable time,
+/// including a dose whose take-time in the returned map is [now].
 Map<String, DateTime> shiftedDoseTargets(
   Iterable<DoseOccurrence> occurrences, {
   required DateTime now,
@@ -173,6 +186,7 @@ Map<String, DateTime> shiftedDoseTargets(
   required Duration grace,
   bool Function(DoseOccurrence dose)? movesTimes,
   Map<String, DateTime>? followUpFrom,
+  Map<String, DateTime>? dueAnchors,
 }) {
   if (grace <= Duration.zero) return const {};
   if (movesTimes == null && !enabled) return const {};
@@ -216,12 +230,15 @@ Map<String, DateTime> shiftedDoseTargets(
         continue;
       }
       final effective = scheduled.add(carry);
+      dueAnchors?[dose.id] = effective;
       if (!now.isAfter(effective.add(grace))) {
         _rememberSlide(targets, dose.id, scheduled, effective);
         continue;
       }
       final halfway = effective.add(
-        Duration(microseconds: _gapUntilNextDose(doses, index).inMicroseconds ~/ 2),
+        Duration(
+          microseconds: _gapUntilNextDose(doses, index).inMicroseconds ~/ 2,
+        ),
       );
       if (!now.isBefore(halfway)) {
         _rememberSlide(targets, dose.id, scheduled, effective);
@@ -382,11 +399,7 @@ List<DoseOccurrence> earlierOpenDosesStillDue({
   ];
 }
 
-bool _stillTheDoseToTake(
-  DoseOccurrence dose,
-  DateTime? target,
-  DateTime now,
-) {
+bool _stillTheDoseToTake(DoseOccurrence dose, DateTime? target, DateTime now) {
   final snoozeUntil = dose.snoozeUntil;
   if (dose.status == 'snoozed' &&
       snoozeUntil != null &&
@@ -450,6 +463,86 @@ String formatCompactCountdown(
       : (seconds + 59) ~/ 60;
   final hours = overdue ? minutes ~/ 60 : (minutes + 59) ~/ 60;
   return minutes >= 60 ? '${hours}h' : '${minutes}m';
+}
+
+/// How long an overdue dose keeps the red flashing due mark.
+///
+/// The window is [interval] divided by [divisor]. A daily dose with divisor 3
+/// flashes for 8 hours. A divisor below 2, or a non-positive interval, yields
+/// [Duration.zero].
+Duration dueIndicatorWindow(Duration interval, int divisor) {
+  if (interval <= Duration.zero || divisor < 2) return Duration.zero;
+  return Duration(microseconds: interval.inMicroseconds ~/ divisor);
+}
+
+/// Divisor for one dose. A null or invalid override uses [appDivisor].
+int effectiveDueIndicatorDivisor(int? override, int appDivisor) {
+  if (override != null && override >= 2) return override;
+  return appDivisor >= 2 ? appDivisor : 3;
+}
+
+/// Whether [target] is overdue and still inside its flashing window.
+///
+/// The flash is on while [now] is before the dose time plus the window, and
+/// off at that instant. [dueAt] is that dose time when [target] is only the
+/// moment a missed dose is currently pinned to.
+bool dueIndicatorFlashing({
+  required DateTime target,
+  required DateTime now,
+  required Duration interval,
+  required int divisor,
+  DateTime? dueAt,
+}) {
+  if (target.isAfter(now)) return false;
+  final window = dueIndicatorWindow(interval, divisor);
+  return now.isBefore((dueAt ?? target).add(window));
+}
+
+bool _doseIsFlashing(PlannedDose dose, DateTime now, int appDivisor) =>
+    dueIndicatorFlashing(
+      target: dose.targetAt,
+      now: now,
+      interval: dose.interval,
+      divisor: effectiveDueIndicatorDivisor(
+        dose.dueIndicatorDivisor,
+        appDivisor,
+      ),
+      dueAt: dose.dueAt,
+    );
+
+/// Countdown rings after the due-flashing window.
+///
+/// A dose still inside its window stays on the outer ring. The soonest dose
+/// still in the future, including that medicine's next slot, is the inner
+/// ring even when [showAll] is false. Once every overdue dose has left its
+/// window, those doses drop and the remaining future doses use the normal
+/// two-ring stack.
+List<ReminderRingGroup> dueCountdownRings(
+  List<PlannedDose> doses, {
+  required DateTime now,
+  required int appDivisor,
+  bool showAll = true,
+  String scheduleId = '',
+}) {
+  final pinned = scheduleId.trim();
+  final pool = pinned.isEmpty
+      ? doses
+      : doses.where((dose) => dose.scheduleId == pinned).toList();
+  final flashing = [
+    for (final dose in pool)
+      if (_doseIsFlashing(dose, now, appDivisor)) dose,
+  ]..sort((a, b) => a.targetAt.compareTo(b.targetAt));
+  final future = [
+    for (final dose in pool)
+      if (dose.targetAt.isAfter(now)) dose,
+  ]..sort((a, b) => a.targetAt.compareTo(b.targetAt));
+  if (flashing.isNotEmpty) {
+    return [
+      ReminderRingGroup(flashing.take(3).toList()),
+      if (future.isNotEmpty) ReminderRingGroup([future.first]),
+    ];
+  }
+  return stackReminderRings(selectReminderDoses(future, showAll: showAll));
 }
 
 /// Splits doses into two countdown rings. The soonest dose is first.

@@ -60,10 +60,14 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         val views = RemoteViews(context.packageName, R.layout.medication_widget)
         val next = MedicationWidgetStore.viewFor(context, widgetId)
         val now = System.currentTimeMillis()
-        val targetAt = next?.optLong("scheduledAtMs", 0L) ?: 0L
-        val hasDose = next != null && targetAt > 0L
-        val overdue = hasDose && targetAt <= now
-        val medicineColor = next?.widgetColor("color") ?: DEFAULT_MEDICINE_COLOR
+        val presented = presentReminder(next, now)
+        val targetAt = presented?.at ?: 0L
+        val hasDose = presented != null && targetAt > 0L
+        val shown = presented
+        val overdue = shown?.flashing == true
+        val medicineColor = presented?.color
+            ?: next?.widgetColor("color")
+            ?: DEFAULT_MEDICINE_COLOR
         val ringColor = when {
             overdue -> OVERDUE_COLOR
             hasDose && targetAt - now <= SOON_MILLIS -> YELLOW_COLOR
@@ -105,30 +109,29 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
             R.string.medication_widget_minute_unit,
         )
 
+        val drawnRings = presented?.rings ?: emptyList()
         views.setImageViewBitmap(
             R.id.widget_progress_ring,
-            progressRings(context, reminderRings(next), now, flash = false),
+            progressRings(context, drawnRings, now, flash = false),
         )
         views.setImageViewBitmap(
             R.id.widget_progress_ring_siren,
-            progressRings(context, reminderRings(next), now, flash = overdue),
+            progressRings(context, drawnRings, now, flash = overdue),
         )
         views.setInt(
             R.id.widget_ring_flipper,
             "setFlipInterval",
             if (overdue) 420 else 86_400_000,
         )
-        if (hasDose) {
+        if (shown != null && hasDose) {
             val fallbackMedicine = context.getString(
                 R.string.medication_widget_medicine,
             )
-            val name = next.optString("name", fallbackMedicine).trim().ifEmpty {
-                fallbackMedicine
-            }
-            val shortName = next.optString("shortName", "").trim().ifEmpty {
+            val name = shown.name.trim().ifEmpty { fallbackMedicine }
+            val shortName = shown.shortName.trim().ifEmpty {
                 compactMedicineName(name)
             }
-            val storedStatus = next.optString("status", "pending")
+            val storedStatus = shown.status
             val label = when {
                 storedStatus == "snoozed" -> statusSnoozed
                 targetAt - now <= SOON_MILLIS -> statusSoon
@@ -181,7 +184,16 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
             )
         }
 
-        scheduleRefresh(context, nextCountdownRefresh(targetAt, now, hasDose))
+        val labelRefresh = nextCountdownRefresh(targetAt, now, hasDose)
+        val dueRefresh = presented?.nextDueUntil?.takeIf { it > now }
+        scheduleRefresh(
+            context,
+            when {
+                labelRefresh == null -> dueRefresh
+                dueRefresh == null -> labelRefresh
+                else -> minOf(labelRefresh, dueRefresh)
+            },
+        )
 
         val intent = Intent(context, MainActivity::class.java).apply {
             putExtra("route", "/medications/today")
@@ -300,6 +312,17 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    private data class PresentedReminder(
+        val name: String,
+        val shortName: String,
+        val color: Int,
+        val at: Long,
+        val status: String,
+        val rings: List<WidgetRing>,
+        val flashing: Boolean,
+        val nextDueUntil: Long,
+    )
+
     private data class WidgetRing(
         val at: Long,
         val dotted: Boolean,
@@ -307,7 +330,75 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         val times: LongArray,
         val intervals: LongArray,
         val status: String,
+        val dueUntils: LongArray = longArrayOf(),
+        val names: Array<String> = emptyArray(),
     )
+
+    /// Drops doses whose due window has ended and promotes the next ring.
+    private fun presentReminder(summary: JSONObject?, now: Long): PresentedReminder? {
+        if (summary == null) return null
+        val kept = reminderRings(summary).mapNotNull { withoutExpired(it, now) }
+        if (kept.isEmpty()) return null
+        val headline = kept.first()
+        val at = headline.times.firstOrNull() ?: headline.at
+        val due = headline.dueUntils.firstOrNull() ?: 0L
+        val flashing = at > 0L && at <= now && (due <= 0L || now < due)
+        val doseName = headline.names.firstOrNull().orEmpty().trim()
+        val name = doseName.ifEmpty { summary.optString("name", "") }
+        val nextDue = kept
+            .asSequence()
+            .flatMap { it.dueUntils.asSequence() }
+            .filter { it > now && it > 0L }
+            .minOrNull() ?: 0L
+        return PresentedReminder(
+            name = name,
+            shortName = compactMedicineName(name),
+            color = headline.colors.firstOrNull() ?: summary.widgetColor("color"),
+            at = at,
+            status = headline.status.ifBlank { summary.optString("status", "pending") },
+            rings = kept,
+            flashing = flashing,
+            nextDueUntil = nextDue,
+        )
+    }
+
+    private fun withoutExpired(ring: WidgetRing, now: Long): WidgetRing? {
+        if (ring.times.isEmpty()) {
+            val due = ring.dueUntils.firstOrNull() ?: 0L
+            val expired = ring.at > 0L && ring.at <= now && due > 0L && now >= due
+            return if (expired) null else ring
+        }
+        val keep = ring.times.indices.filter { index ->
+            val doseAt = ring.times[index]
+            val due = ring.dueUntils.valueAt(index)
+            !(doseAt > 0L && doseAt <= now && due > 0L && now >= due)
+        }
+        if (keep.isEmpty()) return null
+        if (keep.size == ring.times.size) return ring
+        return WidgetRing(
+            at = ring.times[keep.first()],
+            dotted = keep.size > 1,
+            colors = IntArray(keep.size) {
+                ring.colors.valueAt(keep[it], DEFAULT_MEDICINE_COLOR)
+            },
+            times = LongArray(keep.size) { ring.times[keep[it]] },
+            intervals = LongArray(keep.size) {
+                ring.intervals.valueAt(keep[it], DAY_MILLIS)
+            },
+            status = ring.status,
+            dueUntils = LongArray(keep.size) { ring.dueUntils.valueAt(keep[it]) },
+            names = Array(keep.size) { ring.names.valueAt(keep[it]) },
+        )
+    }
+
+    private fun LongArray.valueAt(index: Int, fallback: Long = 0L): Long =
+        if (index in indices) this[index] else fallback
+
+    private fun IntArray.valueAt(index: Int, fallback: Int): Int =
+        if (index in indices) this[index] else fallback
+
+    private fun Array<String>.valueAt(index: Int): String =
+        if (index in indices) this[index] else ""
 
     private data class RingMark(val progress: Float, val color: Int)
 
@@ -341,6 +432,20 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
                         if (interval > 0L) interval else DAY_MILLIS
                     }
                 }
+                val dueUntils = if (doses == null || doses.length() == 0) {
+                    longArrayOf(ring.optLong("dueUntilMs", 0L))
+                } else {
+                    LongArray(doses.length()) { doseIndex ->
+                        doses.getJSONObject(doseIndex).optLong("dueUntilMs", 0L)
+                    }
+                }
+                val names = if (doses == null || doses.length() == 0) {
+                    arrayOf(summary?.optString("name", "").orEmpty())
+                } else {
+                    Array(doses.length()) { doseIndex ->
+                        doses.getJSONObject(doseIndex).optString("name", "")
+                    }
+                }
                 WidgetRing(
                     at = ringAt,
                     dotted = ring.optBoolean("dotted", colors.size > 1),
@@ -348,6 +453,8 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
                     times = times,
                     intervals = intervals,
                     status = ring.optString("status", "pending"),
+                    dueUntils = dueUntils,
+                    names = names,
                 )
             }
         }
@@ -366,6 +473,8 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
                     },
                 ),
                 status = summary.optString("status", "pending"),
+                dueUntils = longArrayOf(summary.optLong("dueUntilMs", 0L)),
+                names = arrayOf(summary.optString("name", "")),
             ),
         )
     }

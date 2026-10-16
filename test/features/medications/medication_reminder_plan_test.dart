@@ -6,73 +6,80 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final due = DateTime(2026, 10, 3, 8);
 
-  test('overdue reminders repeat after the dose, skipping times already passed', () {
-    expect(
-      overdueReminderInstants(
-        scheduledAt: due,
-        now: DateTime(2026, 10, 3, 7, 50),
-        count: 3,
-        interval: const Duration(minutes: 10),
-      ),
-      [
-        DateTime(2026, 10, 3, 8, 10),
-        DateTime(2026, 10, 3, 8, 20),
-        DateTime(2026, 10, 3, 8, 30),
-      ],
-    );
-    expect(
-      overdueReminderInstants(
-        scheduledAt: due,
-        now: DateTime(2026, 10, 3, 8, 15),
-        count: 3,
-        interval: const Duration(minutes: 10),
-      ),
-      [DateTime(2026, 10, 3, 8, 20), DateTime(2026, 10, 3, 8, 30)],
-    );
-    expect(
-      overdueReminderInstants(
-        scheduledAt: due,
-        now: due,
-        count: 0,
-        interval: const Duration(minutes: 10),
-      ),
-      isEmpty,
-    );
-  });
+  test(
+    'overdue reminders repeat after the dose, skipping times already passed',
+    () {
+      expect(
+        overdueReminderInstants(
+          scheduledAt: due,
+          now: DateTime(2026, 10, 3, 7, 50),
+          count: 3,
+          interval: const Duration(minutes: 10),
+        ),
+        [
+          DateTime(2026, 10, 3, 8, 10),
+          DateTime(2026, 10, 3, 8, 20),
+          DateTime(2026, 10, 3, 8, 30),
+        ],
+      );
+      expect(
+        overdueReminderInstants(
+          scheduledAt: due,
+          now: DateTime(2026, 10, 3, 8, 15),
+          count: 3,
+          interval: const Duration(minutes: 10),
+        ),
+        [DateTime(2026, 10, 3, 8, 20), DateTime(2026, 10, 3, 8, 30)],
+      );
+      expect(
+        overdueReminderInstants(
+          scheduledAt: due,
+          now: due,
+          count: 0,
+          interval: const Duration(minutes: 10),
+        ),
+        isEmpty,
+      );
+    },
+  );
 
   test('manual logs match the closest open dose inside 12 hours', () {
     expect(
-      closestOpenDoseId(
-        [
-          (id: 'later', scheduledUnix: 1_000 + 30 * 60),
-          (id: 'closer', scheduledUnix: 1_000 + 5 * 60),
-          (id: 'far', scheduledUnix: 1_000 + 13 * 60 * 60),
-        ],
-        1_000,
-      ),
+      closestOpenDoseId([
+        (id: 'later', scheduledUnix: 1_000 + 30 * 60),
+        (id: 'closer', scheduledUnix: 1_000 + 5 * 60),
+        (id: 'far', scheduledUnix: 1_000 + 13 * 60 * 60),
+      ], 1_000),
       'closer',
     );
     expect(closestOpenDoseId(const [], 1_000), isNull);
   });
 
-  PlannedDose dose(String id, DateTime at, {int color = 1}) => PlannedDose(
+  PlannedDose dose(
+    String id,
+    DateTime at, {
+    int color = 1,
+    Duration interval = const Duration(hours: 24),
+    int? dueIndicatorDivisor,
+    String? medicineId,
+  }) => PlannedDose(
     scheduleId: id,
+    medicineId: medicineId ?? '',
     targetAt: at,
     color: color,
     name: id,
     status: 'pending',
+    interval: interval,
+    dueIndicatorDivisor: dueIndicatorDivisor,
   );
 
   test('show all keeps the soon dose outside and the rest on one ring', () {
-    final selected = selectReminderDoses(
-      [
-        dose('a', DateTime(2026, 10, 3, 9)),
-        dose('b', DateTime(2026, 10, 3, 8)),
-        dose('c', DateTime(2026, 10, 3, 11)),
-        dose('d', DateTime(2026, 10, 3, 12)),
-      ],
-      showAll: true,
-    );
+    final selected = selectReminderDoses([
+      dose('a', DateTime(2026, 10, 3, 9)),
+      dose('b', DateTime(2026, 10, 3, 8)),
+      dose('c', DateTime(2026, 10, 3, 11)),
+      dose('d', DateTime(2026, 10, 3, 12)),
+    ], showAll: true);
     final rings = stackReminderRings(selected);
     expect(rings, hasLength(2));
     expect(rings.first.doses.single.scheduleId, 'b');
@@ -81,18 +88,21 @@ void main() {
     expect(rings.last.sharesTimer, isTrue);
   });
 
-  test('doses in the same minute share one dotted ring of up to three colors', () {
-    final minute = DateTime(2026, 10, 3, 8);
-    final rings = stackReminderRings([
-      dose('a', minute, color: 1),
-      dose('b', minute.add(const Duration(seconds: 20)), color: 2),
-      dose('c', minute.add(const Duration(seconds: 40)), color: 3),
-      dose('d', minute.add(const Duration(seconds: 50)), color: 4),
-    ]);
-    expect(rings, hasLength(1));
-    expect(rings.single.sharesTimer, isTrue);
-    expect(rings.single.doses.map((item) => item.color), [1, 2, 3]);
-  });
+  test(
+    'doses in the same minute share one dotted ring of up to three colors',
+    () {
+      final minute = DateTime(2026, 10, 3, 8);
+      final rings = stackReminderRings([
+        dose('a', minute, color: 1),
+        dose('b', minute.add(const Duration(seconds: 20)), color: 2),
+        dose('c', minute.add(const Duration(seconds: 40)), color: 3),
+        dose('d', minute.add(const Duration(seconds: 50)), color: 4),
+      ]);
+      expect(rings, hasLength(1));
+      expect(rings.single.sharesTimer, isTrue);
+      expect(rings.single.doses.map((item) => item.color), [1, 2, 3]);
+    },
+  );
 
   test('the home widget can pin one schedule or the next dose only', () {
     final doses = [
@@ -101,35 +111,200 @@ void main() {
       dose('b', DateTime(2026, 10, 3, 9)),
     ];
     expect(
-      selectReminderDoses(doses, showAll: true, scheduleId: 'a')
-          .map((item) => item.targetAt.hour),
+      selectReminderDoses(
+        doses,
+        showAll: true,
+        scheduleId: 'a',
+      ).map((item) => item.targetAt.hour),
       [8],
     );
-    expect(
-      selectReminderDoses(doses, showAll: false).single.scheduleId,
-      'a',
-    );
+    expect(selectReminderDoses(doses, showAll: false).single.scheduleId, 'a');
   });
 
   test('later doses of the same medicine stay off the rings', () {
-    final selected = selectReminderDoses(
-      [
-        dose('amlodipine', DateTime(2026, 10, 3, 22)),
-        dose('amlodipine', DateTime(2026, 10, 4, 22)),
-        dose('amlodipine', DateTime(2026, 10, 5, 22)),
-        dose('metformin', DateTime(2026, 10, 3, 23)),
-      ],
-      showAll: true,
-    );
+    final selected = selectReminderDoses([
+      dose('amlodipine', DateTime(2026, 10, 3, 22)),
+      dose('amlodipine', DateTime(2026, 10, 4, 22)),
+      dose('amlodipine', DateTime(2026, 10, 5, 22)),
+      dose('metformin', DateTime(2026, 10, 3, 23)),
+    ], showAll: true);
 
-    expect(
-      selected.map((item) => '${item.scheduleId}-${item.targetAt.day}'),
-      ['amlodipine-3', 'metformin-3'],
-    );
+    expect(selected.map((item) => '${item.scheduleId}-${item.targetAt.day}'), [
+      'amlodipine-3',
+      'metformin-3',
+    ]);
     final rings = stackReminderRings(selected);
     expect(rings, hasLength(2));
     expect(rings.first.doses.single.name, 'amlodipine');
     expect(rings.last.doses.single.name, 'metformin');
+  });
+
+  test('a daily dose flashes for the first third of its gap', () {
+    const day = Duration(hours: 24);
+    expect(dueIndicatorWindow(day, 3), const Duration(hours: 8));
+    expect(
+      dueIndicatorWindow(const Duration(hours: 12), 3),
+      const Duration(hours: 4),
+    );
+    final dueAt = DateTime(2026, 10, 3, 8);
+    final overdue = dose('amlodipine', dueAt, interval: day);
+    final next = dose(
+      'amlodipine',
+      DateTime(2026, 10, 4, 8),
+      interval: day,
+      medicineId: 'amlodipine',
+    );
+    final other = dose(
+      'metformin',
+      DateTime(2026, 10, 3, 20),
+      interval: day,
+      medicineId: 'metformin',
+    );
+
+    bool flashing(DateTime now, {int? override, int appDivisor = 3}) =>
+        dueIndicatorFlashing(
+          target: dueAt,
+          now: now,
+          interval: day,
+          divisor: effectiveDueIndicatorDivisor(override, appDivisor),
+        );
+
+    expect(flashing(DateTime(2026, 10, 3, 10)), isTrue);
+    expect(flashing(dueAt.add(const Duration(hours: 8))), isFalse);
+
+    final during = dueCountdownRings(
+      [overdue, next, other],
+      now: DateTime(2026, 10, 3, 10),
+      appDivisor: 3,
+      showAll: false,
+    );
+    expect(during, hasLength(2));
+    expect(during.first.doses.single.scheduleId, 'amlodipine');
+    expect(during.first.doses.single.targetAt, dueAt);
+    expect(during.last.doses.single.scheduleId, 'metformin');
+    expect(
+      during.last.doses.single.targetAt.isAfter(DateTime(2026, 10, 3, 10)),
+      isTrue,
+    );
+    final sameMedicine = dueCountdownRings(
+      [overdue, next],
+      now: DateTime(2026, 10, 3, 10),
+      appDivisor: 3,
+      showAll: false,
+    );
+    expect(sameMedicine.last.doses.single.targetAt, DateTime(2026, 10, 4, 8));
+
+    final after = dueCountdownRings(
+      [overdue, next, other],
+      now: dueAt.add(const Duration(hours: 8)),
+      appDivisor: 3,
+    );
+    expect(after.first.doses.single.scheduleId, 'metformin');
+    expect(
+      after.first.doses.single.targetAt.isAfter(
+        dueAt.add(const Duration(hours: 8)),
+      ),
+      isTrue,
+    );
+    expect(
+      after.expand((ring) => ring.doses).map((item) => item.targetAt),
+      isNot(contains(dueAt)),
+    );
+  });
+
+  test('a schedule divisor replaces the app divisor', () {
+    const day = Duration(hours: 24);
+    final dueAt = DateTime(2026, 10, 3, 8);
+    final custom = dose(
+      'amlodipine',
+      dueAt,
+      interval: day,
+      dueIndicatorDivisor: 2,
+    );
+    final followed = dose('metformin', dueAt, interval: day);
+    final tenHours = dueAt.add(const Duration(hours: 10));
+
+    bool flashing(PlannedDose item, DateTime now, int appDivisor) =>
+        dueIndicatorFlashing(
+          target: item.targetAt,
+          now: now,
+          interval: item.interval,
+          divisor: effectiveDueIndicatorDivisor(
+            item.dueIndicatorDivisor,
+            appDivisor,
+          ),
+        );
+
+    expect(flashing(custom, tenHours, 3), isTrue);
+    expect(flashing(followed, tenHours, 3), isFalse);
+    expect(flashing(followed, dueAt.add(const Duration(hours: 5)), 4), isTrue);
+    expect(flashing(followed, dueAt.add(const Duration(hours: 6)), 4), isFalse);
+    expect(effectiveDueIndicatorDivisor(null, 4), 4);
+    expect(effectiveDueIndicatorDivisor(2, 4), 2);
+  });
+
+  test('the widget keeps the next dose until the due flash ends', () {
+    final dueAt = DateTime(2026, 10, 3, 8);
+    final now = DateTime(2026, 10, 3, 10);
+    final catalog = medicationWidgetCatalog(
+      [
+        dose('amlodipine', dueAt, interval: const Duration(hours: 24)),
+        dose(
+          'amlodipine',
+          DateTime(2026, 10, 4, 8),
+          interval: const Duration(hours: 24),
+          medicineId: 'amlodipine',
+        ),
+      ],
+      showAll: false,
+      schedules: const <MedicationSchedule>[],
+      now: now,
+      dueIndicatorDivisor: 3,
+      labels: const {'showsAll': 'All'},
+    );
+    final view = (catalog['views']! as Map)['']! as Map;
+    expect(
+      view['dueUntilMs'],
+      dueAt.add(const Duration(hours: 8)).millisecondsSinceEpoch,
+    );
+    expect(view['rings'], hasLength(2));
+    expect(view['name'], 'amlodipine');
+  });
+
+  test('the widget keeps the dose after the promoted one', () {
+    final dueAt = DateTime(2026, 10, 3, 8);
+    final now = DateTime(2026, 10, 3, 10);
+    final dayAfter = DateTime(2026, 10, 5, 8);
+    final catalog = medicationWidgetCatalog(
+      [
+        dose('amlodipine', dueAt, interval: const Duration(hours: 24)),
+        dose(
+          'amlodipine',
+          DateTime(2026, 10, 4, 8),
+          interval: const Duration(hours: 24),
+          medicineId: 'amlodipine',
+        ),
+        dose(
+          'amlodipine',
+          dayAfter,
+          interval: const Duration(hours: 24),
+          medicineId: 'amlodipine',
+        ),
+      ],
+      showAll: false,
+      schedules: const <MedicationSchedule>[],
+      now: now,
+      dueIndicatorDivisor: 3,
+      labels: const {'showsAll': 'All'},
+    );
+    final view = (catalog['views']! as Map)['']! as Map;
+    final rings = view['rings']! as List;
+    expect(rings, hasLength(3));
+    final last = (rings.last as Map)['doses']! as List;
+    expect(
+      (last.single as Map)['scheduledAtMs'],
+      dayAfter.millisecondsSinceEpoch,
+    );
   });
 
   test('countdown rounds an hour or more to a whole hour', () {
@@ -278,14 +453,76 @@ void main() {
 
   const grace = Duration(minutes: 60);
 
+  test('a dose pinned to now still stops flashing from its saved time', () {
+    final morning = DateTime(2026, 10, 3, 8);
+    final evening = DateTime(2026, 10, 3, 20);
+    final now = DateTime(2026, 10, 3, 12);
+    final anchors = <String, DateTime>{};
+    final targets = shiftedDoseTargets(
+      [
+        slot('morning', morning, times: const [8 * 60, 20 * 60]),
+        slot('evening', evening, times: const [8 * 60, 20 * 60]),
+      ],
+      now: now,
+      enabled: true,
+      grace: grace,
+      dueAnchors: anchors,
+    );
+    expect(targets['morning'], now);
+    expect(anchors['morning'], morning);
+
+    final pinned = PlannedDose(
+      scheduleId: 'morning',
+      targetAt: now,
+      dueAt: morning,
+      color: 1,
+      name: 'morning',
+      status: 'pending',
+      interval: const Duration(hours: 12),
+    );
+    final next = PlannedDose(
+      scheduleId: 'evening',
+      targetAt: targets['evening']!,
+      dueAt: anchors['evening'],
+      color: 2,
+      name: 'evening',
+      status: 'pending',
+      interval: const Duration(hours: 12),
+    );
+    expect(
+      dueIndicatorFlashing(
+        target: DateTime(2026, 10, 3, 11),
+        now: DateTime(2026, 10, 3, 11),
+        interval: pinned.interval,
+        divisor: 3,
+        dueAt: morning,
+      ),
+      isTrue,
+    );
+    expect(
+      dueIndicatorFlashing(
+        target: pinned.targetAt,
+        now: now,
+        interval: pinned.interval,
+        divisor: 3,
+        dueAt: pinned.dueAt,
+      ),
+      isFalse,
+    );
+    final rings = dueCountdownRings(
+      [pinned, next],
+      now: now,
+      appDivisor: 3,
+      showAll: false,
+    );
+    expect(rings.single.doses.single.scheduleId, 'evening');
+  });
+
   test('a dose still inside the limit keeps its saved time', () {
     final morning = DateTime(2026, 10, 3, 8);
     final evening = DateTime(2026, 10, 3, 20);
     final targets = shiftedDoseTargets(
-      [
-        slot('morning', morning),
-        slot('evening', evening),
-      ],
+      [slot('morning', morning), slot('evening', evening)],
       now: DateTime(2026, 10, 3, 8, 40),
       enabled: true,
       grace: grace,
@@ -293,77 +530,77 @@ void main() {
     expect(targets, isEmpty);
   });
 
-  test('past the limit, the missed dose is due now and the next one slides', () {
-    final morning = DateTime(2026, 10, 3, 8);
-    final evening = DateTime(2026, 10, 3, 20);
-    final now = DateTime(2026, 10, 3, 10, 30);
-    final targets = shiftedDoseTargets(
-      [
-        slot('morning', morning),
-        slot('evening', evening),
-      ],
-      now: now,
-      enabled: true,
-      grace: grace,
-    );
-    expect(targets['morning'], now);
-    expect(targets['evening'], DateTime(2026, 10, 3, 22, 30));
-  });
+  test(
+    'past the limit, the missed dose is due now and the next one slides',
+    () {
+      final morning = DateTime(2026, 10, 3, 8);
+      final evening = DateTime(2026, 10, 3, 20);
+      final now = DateTime(2026, 10, 3, 10, 30);
+      final targets = shiftedDoseTargets(
+        [slot('morning', morning), slot('evening', evening)],
+        now: now,
+        enabled: true,
+        grace: grace,
+      );
+      expect(targets['morning'], now);
+      expect(targets['evening'], DateTime(2026, 10, 3, 22, 30));
+    },
+  );
 
-  test('a late taken dose slides the next dose and an on-time dose clears it', () {
-    final morning = DateTime(2026, 10, 3, 8);
-    final evening = DateTime(2026, 10, 3, 20);
-    final nextMorning = DateTime(2026, 10, 4, 8);
-    final takenLate = shiftedDoseTargets(
-      [
-        slot(
-          'morning',
-          morning,
-          status: 'taken',
-          takenAt: DateTime(2026, 10, 3, 10, 30),
-        ),
-        slot('evening', evening),
-        slot('next', nextMorning),
-      ],
-      now: DateTime(2026, 10, 3, 12),
-      enabled: true,
-      grace: grace,
-    );
-    expect(takenLate.containsKey('morning'), isFalse);
-    expect(takenLate['evening'], DateTime(2026, 10, 3, 22, 30));
-    expect(takenLate['next'], DateTime(2026, 10, 4, 10, 30));
+  test(
+    'a late taken dose slides the next dose and an on-time dose clears it',
+    () {
+      final morning = DateTime(2026, 10, 3, 8);
+      final evening = DateTime(2026, 10, 3, 20);
+      final nextMorning = DateTime(2026, 10, 4, 8);
+      final takenLate = shiftedDoseTargets(
+        [
+          slot(
+            'morning',
+            morning,
+            status: 'taken',
+            takenAt: DateTime(2026, 10, 3, 10, 30),
+          ),
+          slot('evening', evening),
+          slot('next', nextMorning),
+        ],
+        now: DateTime(2026, 10, 3, 12),
+        enabled: true,
+        grace: grace,
+      );
+      expect(takenLate.containsKey('morning'), isFalse);
+      expect(takenLate['evening'], DateTime(2026, 10, 3, 22, 30));
+      expect(takenLate['next'], DateTime(2026, 10, 4, 10, 30));
 
-    final backOnTime = shiftedDoseTargets(
-      [
-        slot(
-          'morning',
-          morning,
-          status: 'taken',
-          takenAt: DateTime(2026, 10, 3, 10, 30),
-        ),
-        slot(
-          'evening',
-          evening,
-          status: 'taken',
-          takenAt: DateTime(2026, 10, 3, 20, 20),
-        ),
-        slot('next', nextMorning),
-      ],
-      now: DateTime(2026, 10, 3, 21),
-      enabled: true,
-      grace: grace,
-    );
-    expect(backOnTime, isEmpty);
-  });
+      final backOnTime = shiftedDoseTargets(
+        [
+          slot(
+            'morning',
+            morning,
+            status: 'taken',
+            takenAt: DateTime(2026, 10, 3, 10, 30),
+          ),
+          slot(
+            'evening',
+            evening,
+            status: 'taken',
+            takenAt: DateTime(2026, 10, 3, 20, 20),
+          ),
+          slot('next', nextMorning),
+        ],
+        now: DateTime(2026, 10, 3, 21),
+        enabled: true,
+        grace: grace,
+      );
+      expect(backOnTime, isEmpty);
+    },
+  );
 
   test('a miss closer to the next dose does not move that next dose', () {
     final morning = DateTime(2026, 10, 3, 8);
     final evening = DateTime(2026, 10, 3, 20);
     final targets = shiftedDoseTargets(
-      [
-        slot('morning', morning),
-        slot('evening', evening),
-      ],
+      [slot('morning', morning), slot('evening', evening)],
       now: DateTime(2026, 10, 3, 15),
       enabled: true,
       grace: grace,
@@ -420,10 +657,7 @@ void main() {
       savedReminderHorizonDays,
     );
     expect(
-      reminderHorizonDays(
-        shiftMissedDoseTimes: true,
-        grace: Duration.zero,
-      ),
+      reminderHorizonDays(shiftMissedDoseTimes: true, grace: Duration.zero),
       savedReminderHorizonDays,
     );
     expect(
@@ -458,18 +692,24 @@ void main() {
     );
 
     expect(at(DateTime(2026, 10, 3, 9)), isEmpty);
-    expect(at(DateTime(2026, 10, 3, 9, 1))['morning'], DateTime(2026, 10, 3, 9, 1));
-    expect(at(DateTime(2026, 10, 3, 9, 1))['evening'], DateTime(2026, 10, 3, 21, 1));
-    expect(at(DateTime(2026, 10, 3, 13, 59))['evening'], DateTime(2026, 10, 4, 1, 59));
+    expect(
+      at(DateTime(2026, 10, 3, 9, 1))['morning'],
+      DateTime(2026, 10, 3, 9, 1),
+    );
+    expect(
+      at(DateTime(2026, 10, 3, 9, 1))['evening'],
+      DateTime(2026, 10, 3, 21, 1),
+    );
+    expect(
+      at(DateTime(2026, 10, 3, 13, 59))['evening'],
+      DateTime(2026, 10, 4, 1, 59),
+    );
     expect(at(DateTime(2026, 10, 3, 14)), isEmpty);
     expect(
       shiftedDoseTargets(const [], now: morning, enabled: true, grace: grace),
       isEmpty,
     );
-    expect(
-      at(DateTime(2026, 10, 3, 10)).isEmpty,
-      isFalse,
-    );
+    expect(at(DateTime(2026, 10, 3, 10)).isEmpty, isFalse);
     expect(
       shiftedDoseTargets(
         [slot('morning', morning), slot('evening', evening)],
@@ -510,7 +750,10 @@ void main() {
     expect(taken(DateTime(2026, 10, 3, 7, 30)), isEmpty);
     expect(taken(null), isEmpty);
     expect(taken(DateTime(2026, 10, 3, 9)), isEmpty);
-    expect(taken(DateTime(2026, 10, 3, 9, 1))['evening'], DateTime(2026, 10, 3, 21, 1));
+    expect(
+      taken(DateTime(2026, 10, 3, 9, 1))['evening'],
+      DateTime(2026, 10, 3, 21, 1),
+    );
   });
 
   test('a skip clears a slide and a snooze does not become a new time', () {
@@ -594,26 +837,37 @@ void main() {
     expect(targets['evening'], DateTime(2026, 10, 3, 22, 30));
   });
 
-  test('a late take keeps the gap even when that passes the next clock time', () {
-    final targets = shiftedDoseTargets(
-      [
-        slot(
-          'first',
-          DateTime(2026, 10, 3, 8),
-          status: 'taken',
-          takenAt: DateTime(2026, 10, 3, 13),
-          times: const [8 * 60, 12 * 60, 14 * 60],
-        ),
-        slot('second', DateTime(2026, 10, 3, 12), times: const [8 * 60, 12 * 60, 14 * 60]),
-        slot('third', DateTime(2026, 10, 3, 14), times: const [8 * 60, 12 * 60, 14 * 60]),
-      ],
-      now: DateTime(2026, 10, 3, 13, 10),
-      enabled: true,
-      grace: grace,
-    );
-    expect(targets['second'], DateTime(2026, 10, 3, 17));
-    expect(targets['third'], DateTime(2026, 10, 3, 19));
-  });
+  test(
+    'a late take keeps the gap even when that passes the next clock time',
+    () {
+      final targets = shiftedDoseTargets(
+        [
+          slot(
+            'first',
+            DateTime(2026, 10, 3, 8),
+            status: 'taken',
+            takenAt: DateTime(2026, 10, 3, 13),
+            times: const [8 * 60, 12 * 60, 14 * 60],
+          ),
+          slot(
+            'second',
+            DateTime(2026, 10, 3, 12),
+            times: const [8 * 60, 12 * 60, 14 * 60],
+          ),
+          slot(
+            'third',
+            DateTime(2026, 10, 3, 14),
+            times: const [8 * 60, 12 * 60, 14 * 60],
+          ),
+        ],
+        now: DateTime(2026, 10, 3, 13, 10),
+        enabled: true,
+        grace: grace,
+      );
+      expect(targets['second'], DateTime(2026, 10, 3, 17));
+      expect(targets['third'], DateTime(2026, 10, 3, 19));
+    },
+  );
 
   test('doses saved for the same minute stay together', () {
     final now = DateTime(2026, 10, 3, 10, 30);
@@ -632,25 +886,28 @@ void main() {
     expect(targets['later'], DateTime(2026, 10, 3, 22, 30));
   });
 
-  test('past halfway a previous slide stays and the dose after it does not', () {
-    final targets = shiftedDoseTargets(
-      [
-        slot(
-          'morning',
-          DateTime(2026, 10, 3, 8),
-          status: 'taken',
-          takenAt: DateTime(2026, 10, 3, 10, 30),
-        ),
-        slot('evening', DateTime(2026, 10, 3, 20)),
-        slot('next', DateTime(2026, 10, 4, 8)),
-      ],
-      now: DateTime(2026, 10, 4, 5),
-      enabled: true,
-      grace: grace,
-    );
-    expect(targets['evening'], DateTime(2026, 10, 3, 22, 30));
-    expect(targets.containsKey('next'), isFalse);
-  });
+  test(
+    'past halfway a previous slide stays and the dose after it does not',
+    () {
+      final targets = shiftedDoseTargets(
+        [
+          slot(
+            'morning',
+            DateTime(2026, 10, 3, 8),
+            status: 'taken',
+            takenAt: DateTime(2026, 10, 3, 10, 30),
+          ),
+          slot('evening', DateTime(2026, 10, 3, 20)),
+          slot('next', DateTime(2026, 10, 4, 8)),
+        ],
+        now: DateTime(2026, 10, 4, 5),
+        enabled: true,
+        grace: grace,
+      );
+      expect(targets['evening'], DateTime(2026, 10, 3, 22, 30));
+      expect(targets.containsKey('next'), isFalse);
+    },
+  );
 
   test('an old miss past halfway does not move today, a late take does', () {
     final missedYesterday = shiftedDoseTargets(
@@ -743,8 +1000,18 @@ void main() {
     final now = DateTime(2026, 10, 3, 10, 30);
     final shared = shiftedDoseTargets(
       [
-        slot('am', DateTime(2026, 10, 3, 8), medicineId: 'same', scheduleId: 'a'),
-        slot('pm', DateTime(2026, 10, 3, 20), medicineId: 'same', scheduleId: 'b'),
+        slot(
+          'am',
+          DateTime(2026, 10, 3, 8),
+          medicineId: 'same',
+          scheduleId: 'a',
+        ),
+        slot(
+          'pm',
+          DateTime(2026, 10, 3, 20),
+          medicineId: 'same',
+          scheduleId: 'b',
+        ),
       ],
       now: now,
       enabled: true,
@@ -789,55 +1056,62 @@ void main() {
     expect(after, isEmpty);
   });
 
-  test('a taken, skipped, or snoozed dose does not get its clock alarm back', () {
-    final at = DateTime(2026, 10, 3, 20);
-    final now = DateTime(2026, 10, 3, 10);
-    expect(
-      doseClockAlarmClaimed(
-        slot('taken', at, status: 'taken', takenAt: now),
-        now,
-      ),
-      isTrue,
-    );
-    expect(
-      doseClockAlarmClaimed(slot('skipped', at, status: 'skipped'), now),
-      isTrue,
-    );
-    expect(doseClockAlarmClaimed(slot('open', at), now), isFalse);
-    expect(doseClockAlarmClaimed(null, now), isFalse);
-    expect(
-      doseClockAlarmClaimed(
-        slot(
-          'snoozed',
-          at,
-          status: 'snoozed',
-          snoozeUntil: DateTime(2026, 10, 3, 10, 30),
+  test(
+    'a taken, skipped, or snoozed dose does not get its clock alarm back',
+    () {
+      final at = DateTime(2026, 10, 3, 20);
+      final now = DateTime(2026, 10, 3, 10);
+      expect(
+        doseClockAlarmClaimed(
+          slot('taken', at, status: 'taken', takenAt: now),
+          now,
         ),
-        now,
-      ),
-      isTrue,
-    );
-    expect(
-      doseClockAlarmClaimed(
-        slot(
-          'expired',
-          at,
-          status: 'snoozed',
-          snoozeUntil: DateTime(2026, 10, 3, 9, 30),
+        isTrue,
+      );
+      expect(
+        doseClockAlarmClaimed(slot('skipped', at, status: 'skipped'), now),
+        isTrue,
+      );
+      expect(doseClockAlarmClaimed(slot('open', at), now), isFalse);
+      expect(doseClockAlarmClaimed(null, now), isFalse);
+      expect(
+        doseClockAlarmClaimed(
+          slot(
+            'snoozed',
+            at,
+            status: 'snoozed',
+            snoozeUntil: DateTime(2026, 10, 3, 10, 30),
+          ),
+          now,
         ),
-        now,
-      ),
-      isFalse,
-    );
-  });
+        isTrue,
+      );
+      expect(
+        doseClockAlarmClaimed(
+          slot(
+            'expired',
+            at,
+            status: 'snoozed',
+            snoozeUntil: DateTime(2026, 10, 3, 9, 30),
+          ),
+          now,
+        ),
+        isFalse,
+      );
+    },
+  );
 
   test('a weekly miss from before today stays due until halfway', () {
     final monday = DateTime(2026, 10, 5, 8);
     final nextMonday = DateTime(2026, 10, 12, 8);
     final now = DateTime(2026, 10, 6, 10);
     final stillDue = earlierOpenDosesStillDue(
-      earlierOpen: [slot('monday', monday, times: const [8 * 60])],
-      context: [slot('next', nextMonday, times: const [8 * 60])],
+      earlierOpen: [
+        slot('monday', monday, times: const [8 * 60]),
+      ],
+      context: [
+        slot('next', nextMonday, times: const [8 * 60]),
+      ],
       now: now,
       grace: grace,
     );
@@ -849,8 +1123,12 @@ void main() {
     final today = DateTime(2026, 10, 6, 8);
     final now = DateTime(2026, 10, 6, 10);
     final stillDue = earlierOpenDosesStillDue(
-      earlierOpen: [slot('yesterday', yesterday, times: const [8 * 60])],
-      context: [slot('today', today, times: const [8 * 60])],
+      earlierOpen: [
+        slot('yesterday', yesterday, times: const [8 * 60]),
+      ],
+      context: [
+        slot('today', today, times: const [8 * 60]),
+      ],
       now: now,
       grace: grace,
     );
@@ -870,7 +1148,9 @@ void main() {
           times: const [8 * 60],
         ),
       ],
-      context: [slot('today', DateTime(2026, 10, 6, 8), times: const [8 * 60])],
+      context: [
+        slot('today', DateTime(2026, 10, 6, 8), times: const [8 * 60]),
+      ],
       now: now,
       grace: grace,
     );
@@ -886,7 +1166,9 @@ void main() {
           times: const [8 * 60],
         ),
       ],
-      context: [slot('today', DateTime(2026, 10, 6, 8), times: const [8 * 60])],
+      context: [
+        slot('today', DateTime(2026, 10, 6, 8), times: const [8 * 60]),
+      ],
       now: now,
       grace: grace,
     );
@@ -937,35 +1219,38 @@ void main() {
     expect(anchors['evening'], DateTime(2026, 10, 4, 0));
   });
 
-  test('a dose saved before today still needs an alarm after it moves ahead', () {
-    final yesterday = DateTime(2026, 10, 2, 20);
-    final movedTo = DateTime(2026, 10, 3, 1);
-    final now = DateTime(2026, 10, 3, 0, 30);
-    expect(
-      earlierDoseAlarmMovedAhead(
-        scheduledAt: yesterday,
-        movedTo: movedTo,
-        now: now,
-      ),
-      isTrue,
-    );
-    expect(
-      earlierDoseAlarmMovedAhead(
-        scheduledAt: DateTime(2026, 10, 3, 8),
-        movedTo: DateTime(2026, 10, 3, 11),
-        now: now,
-      ),
-      isFalse,
-    );
-    expect(
-      earlierDoseAlarmMovedAhead(
-        scheduledAt: yesterday,
-        movedTo: null,
-        now: now,
-      ),
-      isFalse,
-    );
-  });
+  test(
+    'a dose saved before today still needs an alarm after it moves ahead',
+    () {
+      final yesterday = DateTime(2026, 10, 2, 20);
+      final movedTo = DateTime(2026, 10, 3, 1);
+      final now = DateTime(2026, 10, 3, 0, 30);
+      expect(
+        earlierDoseAlarmMovedAhead(
+          scheduledAt: yesterday,
+          movedTo: movedTo,
+          now: now,
+        ),
+        isTrue,
+      );
+      expect(
+        earlierDoseAlarmMovedAhead(
+          scheduledAt: DateTime(2026, 10, 3, 8),
+          movedTo: DateTime(2026, 10, 3, 11),
+          now: now,
+        ),
+        isFalse,
+      );
+      expect(
+        earlierDoseAlarmMovedAhead(
+          scheduledAt: yesterday,
+          movedTo: null,
+          now: now,
+        ),
+        isFalse,
+      );
+    },
+  );
 
   test('a late take stops sliding once a later dose passes halfway', () {
     final times = [8 * 60 + 42, 23 * 60 + 30];
@@ -1033,7 +1318,12 @@ void main() {
     final lastNight = listed.firstWhere((dose) => dose.id == 'pm0');
     expect(afterMidnight.containsKey('pm0'), isFalse);
     expect(
-      reminderDoseIsCurrent(lastNight, justAfterMidnight, afterMidnight, grace: grace),
+      reminderDoseIsCurrent(
+        lastNight,
+        justAfterMidnight,
+        afterMidnight,
+        grace: grace,
+      ),
       isTrue,
     );
     expect(
@@ -1056,8 +1346,7 @@ void main() {
     final morning = DateTime(2026, 10, 3, 8);
     final evening = DateTime(2026, 10, 3, 20);
     final now = DateTime(2026, 10, 3, 10, 30);
-    bool moves(DoseOccurrence dose) =>
-        dose.schedule.movesAfterMissedDose(true);
+    bool moves(DoseOccurrence dose) => dose.schedule.movesAfterMissedDose(true);
     final targets = shiftedDoseTargets(
       [
         slot('kept', morning, shiftMissedDoseTimes: false),
@@ -1098,7 +1387,9 @@ void main() {
     );
     expect(targets.containsKey('kept'), isFalse);
     final listed = dosesForReminderList(
-      history: [slot('old', DateTime(2026, 10, 2, 8), shiftMissedDoseTimes: true)],
+      history: [
+        slot('old', DateTime(2026, 10, 2, 8), shiftMissedDoseTimes: true),
+      ],
       upcoming: [slot('today', morning)],
       now: now,
       shiftMissedDoseTimes: false,

@@ -324,6 +324,16 @@ const homeBpChartSetting = EnumSetting(
   enabledWhen: true,
 );
 
+/// The second chart shown beside the measurement table in landscape.
+const homeSecondaryChartSetting = EnumSetting(
+  'home_secondary_chart',
+  defaultValue: 'classification',
+  titleKey: 'chartClassification',
+  options: ['dailyRange', 'classification', 'pulsePressure', 'medicineTiming'],
+  useRawLabels: true,
+  visible: false,
+);
+
 const graphMarkingsAction = ActionSetting(
   'graph_markings',
   titleKey: 'customGraphMarkings',
@@ -351,6 +361,18 @@ const startWithAddMeasurementPageSetting = BoolSetting(
   icon: Icons.electric_bolt_outlined,
   section: 'blood_pressure',
   order: 2,
+  dependsOn: 'blood_pressure_enabled',
+  enabledWhen: true,
+);
+
+const trackArmSideSetting = BoolSetting(
+  'track_arm_side',
+  defaultValue: false,
+  titleKey: 'trackArmSide',
+  subtitleKey: 'trackArmSideDescription',
+  icon: Icons.swap_horiz,
+  section: 'blood_pressure',
+  order: 4,
   dependsOn: 'blood_pressure_enabled',
   enabledWhen: true,
 );
@@ -412,7 +434,7 @@ const roundedReminderButtonSetting = BoolSetting(
   titleKey: 'useRoundedSquareReminderButton',
   icon: Icons.rounded_corner,
   section: 'medications',
-  order: 8,
+  order: 9,
 );
 
 const preferredPressureUnitSetting = EnumSetting(
@@ -793,6 +815,25 @@ const missedDoseShiftLimitSetting = IntSetting(
   enabledWhen: true,
 );
 
+const dueIndicatorDivisorSetting = IntSetting(
+  'due_indicator_divisor',
+  defaultValue: 3,
+  titleKey: 'dueIndicatorDivisor',
+  subtitleKey: 'dueIndicatorDivisorDesc',
+  icon: Icons.alarm_on_outlined,
+  section: 'medications',
+  order: 7,
+  min: 2,
+  max: 8,
+  step: 1,
+  dependsOn: 'medicine_feature_enabled',
+  enabledWhen: true,
+  searchTerms: {
+    'en': ['overdue', 'due', 'flash', 'third', 'window'],
+    'ar': ['متأخر', 'وميض', 'ثلث'],
+  },
+);
+
 const showAllReminderRingsSetting = BoolSetting(
   'show_all_reminder_rings',
   defaultValue: true,
@@ -800,7 +841,7 @@ const showAllReminderRingsSetting = BoolSetting(
   subtitleKey: 'showAllReminderRingsDesc',
   icon: Icons.donut_large_outlined,
   section: 'medications',
-  order: 7,
+  order: 8,
   dependsOn: 'medicine_feature_enabled',
   enabledWhen: true,
 );
@@ -975,6 +1016,7 @@ SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
   ],
   settings: [
     startWithAddMeasurementPageSetting,
+    trackArmSideSetting,
     allowManualTimeInputSetting,
     validateInputsSetting,
     allowMissingValuesSetting,
@@ -1000,6 +1042,7 @@ SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
     drawRegressionLinesSetting,
     interruptGraphAfterNDaysSetting,
     homeBpChartSetting,
+    homeSecondaryChartSetting,
     graphMarkingsAction,
     horizontalGraphLinesSetting,
     themeModeSetting,
@@ -1033,6 +1076,7 @@ SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
     overdueReminderIntervalSetting,
     shiftMissedDoseTimesSetting,
     missedDoseShiftLimitSetting,
+    dueIndicatorDivisorSetting,
     showAllReminderRingsSetting,
     debugDataServerSetting,
     bluetoothDevicesAction,

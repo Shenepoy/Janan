@@ -99,10 +99,7 @@ Future<int> _importHealth(
       removed: m['removed'] == 1 || m['removed'] == true,
     );
   }
-  for (final r in await _query(
-    sqlite,
-    'SELECT timestamp_unix_s, sys_kpa, dia_kpa, pul FROM blood_pressure',
-  )) {
+  for (final r in await _query(sqlite, 'SELECT * FROM blood_pressure')) {
     final timeS = r['timestamp_unix_s'] as int?;
     if (timeS == null) continue;
     final rec = BloodPressureRecord(
@@ -110,6 +107,8 @@ Future<int> _importHealth(
       sys: _decodePressure(r['sys_kpa']),
       dia: _decodePressure(r['dia_kpa']),
       pul: _decodeInt(r['pul']),
+      arm: BloodPressureArm.fromStorage(r['arm']),
+      source: BloodPressureRecordSource.fromStorage(r['source']),
     );
     if (rec.sys == null && rec.dia == null && rec.pul == null) continue;
     await bpRepo.add(rec);

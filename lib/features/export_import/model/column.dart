@@ -28,6 +28,7 @@ class NativeColumn extends ExportColumn {
     needlePin,
     intakes,
     bodyweight,
+    arm,
   ];
 
   static final NativeColumn timestampUnixMs = NativeColumn._create(
@@ -115,6 +116,12 @@ class NativeColumn extends ExportColumn {
     RowDataFieldType.weightKg,
     (entry) => entry.weight?.weight.kg.toString() ?? '',
     double.tryParse,
+  );
+  static final NativeColumn arm = NativeColumn._create(
+    'arm',
+    RowDataFieldType.arm,
+    (entry) => entry.record?.arm?.name ?? '',
+    BloodPressureArm.fromStorage,
   );
 
   final String _csvTitle;

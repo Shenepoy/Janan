@@ -6,12 +6,29 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Bundle
 import android.os.LocaleList
+import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
+import android.view.WindowManager
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity: FlutterFragmentActivity() {
+    private var hideStatusBarForCompactLandscape = false
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+    }
+
     companion object {
         private const val CHANNEL =
             "com.shenepoy.janan/bluetooth_foreground_service"
@@ -70,6 +87,21 @@ class MainActivity: FlutterFragmentActivity() {
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
+            "com.shenepoy.janan/system_ui",
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "setStatusBarVisible" -> {
+                    val visible = call.argument<Boolean>("visible") ?: true
+                    hideStatusBarForCompactLandscape = !visible
+                    setStatusBarVisible(visible)
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
             "com.shenepoy.janan/medication_widget",
         ).setMethodCallHandler { call, result ->
             when (call.method) {
@@ -121,5 +153,30 @@ class MainActivity: FlutterFragmentActivity() {
             arrayOf(Manifest.permission.POST_NOTIFICATIONS),
             NOTIFICATION_PERMISSION_REQUEST,
         )
+    }
+
+    private fun setStatusBarVisible(visible: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val controller = window.insetsController ?: return
+            controller.systemBarsBehavior =
+                WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            if (visible) {
+                controller.show(WindowInsets.Type.statusBars())
+            } else {
+                controller.hide(WindowInsets.Type.statusBars())
+            }
+            return
+        }
+
+        val decorView = window.decorView
+        val statusBarFlags =
+            View.SYSTEM_UI_FLAG_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        decorView.systemUiVisibility = if (visible) {
+            decorView.systemUiVisibility and statusBarFlags.inv()
+        } else {
+            decorView.systemUiVisibility or statusBarFlags
+        }
     }
 }

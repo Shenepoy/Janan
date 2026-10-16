@@ -155,6 +155,9 @@ class CsvConverter with Loggable {
             (piece) => piece.$1 == RowDataFieldType.intakes)?.$2 as List<dynamic>?;
       final weightData = recordPieces.firstWhereOrNull(
               (piece) => piece.$1 == RowDataFieldType.weightKg)?.$2 as double?;
+      final arm = recordPieces.firstWhereOrNull(
+        (piece) => piece.$1 == RowDataFieldType.arm,
+      )?.$2 as BloodPressureArm?;
 
       // manually trim quotes after https://pub.dev/packages/csv/changelog#600
       noteText = noteText.trim();
@@ -173,6 +176,8 @@ class CsvConverter with Loggable {
           sys: sys?.asMMHg,
           dia: dia?.asMMHg,
           pul: pul,
+          arm: arm,
+          source: BloodPressureRecordSource.imported,
         );
       }
       Note? note;

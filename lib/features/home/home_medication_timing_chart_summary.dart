@@ -1,9 +1,10 @@
 part of 'home_medication_timing_chart.dart';
 
 class _TimingSummary extends StatelessWidget {
-  const _TimingSummary({required this.counts});
+  const _TimingSummary({required this.counts, this.compact = false});
 
   final _DoseTimingCounts counts;
+  final bool compact;
 
   String _label(_DoseTiming timing) => switch (timing) {
     _DoseTiming.early => _text('homeMedicineEarly', 'Early'),
@@ -30,7 +31,7 @@ class _TimingSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          height: 28,
+          height: compact ? 14 : 28,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(14),
             child: CustomPaint(
@@ -43,7 +44,7 @@ class _TimingSummary extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: compact ? 8 : 18),
         Row(
           children: [
             for (final timing in timings)
@@ -79,11 +80,15 @@ class _TimingSummary extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         toWesternDigits('${percentages[timing]}%'),
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: _color(timing),
-                          fontWeight: FontWeight.w700,
-                          height: 1.15,
-                        ),
+                        style:
+                            (compact
+                                    ? theme.textTheme.titleMedium
+                                    : theme.textTheme.headlineSmall)
+                                ?.copyWith(
+                                  color: _color(timing),
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.15,
+                                ),
                       ),
                     ],
                   ),

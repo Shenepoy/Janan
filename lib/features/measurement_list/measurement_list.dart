@@ -45,6 +45,13 @@ class MeasurementList extends ConsumerWidget {
     final showBloodPressure =
         settings.bloodPressureEnabled &&
         filter != MeasurementListFilter.medicine;
+    final showArm =
+        showBloodPressure &&
+        (settings.trackArmSide ||
+            rows.any((entry) => entry.record?.arm != null));
+    final interactiveArm =
+        settings.trackArmSide &&
+        rows.any((entry) => entry.record?.source.isBluetoothDevice == true);
     final selection = ListSelectionScope.maybeOf<CombinedEntry>(context);
     final allSelected =
         selection != null && rows.isNotEmpty && rows.every(selection.contains);
@@ -68,12 +75,16 @@ class MeasurementList extends ConsumerWidget {
         diaColor: settings.diaColor,
         pulColor: settings.pulColor,
         showBloodPressure: showBloodPressure,
+        showArm: showArm,
+        interactiveArm: interactiveArm,
       ),
       rows: [
         for (var i = 0; i < rows.length; i++)
           MeasurementListRow(
             data: rows[i],
             showBloodPressure: showBloodPressure,
+            showArm: showArm,
+            interactiveArm: interactiveArm,
             showMedicineMark:
                 settings.bloodPressureEnabled &&
                 settings.medicineFeatureEnabled &&

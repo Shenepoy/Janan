@@ -54,6 +54,7 @@ class _DefaultPreset implements ExportPreset {
     NativeColumn.color.internalIdentifier,
     NativeColumn.intakes.internalIdentifier,
     NativeColumn.bodyweight.internalIdentifier,
+    NativeColumn.arm.internalIdentifier,
   ];
 
   @override
@@ -75,6 +76,7 @@ class _PDFPreset implements ExportPreset {
     NativeColumn.systolic.internalIdentifier,
     NativeColumn.diastolic.internalIdentifier,
     NativeColumn.pulse.internalIdentifier,
+    NativeColumn.arm.internalIdentifier,
     NativeColumn.notes.internalIdentifier,
     NativeColumn.bodyweight.internalIdentifier,
     NativeColumn.intakes.internalIdentifier,

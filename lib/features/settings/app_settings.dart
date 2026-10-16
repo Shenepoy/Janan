@@ -50,6 +50,7 @@ class AppSettings {
     required this.overdueReminderIntervalMinutes,
     required this.shiftMissedDoseTimes,
     required this.missedDoseShiftLimitMinutes,
+    required this.dueIndicatorDivisor,
     required this.showAllReminderRings,
     required this.needlePinBarWidth,
     required this.bottomAppBars,
@@ -57,6 +58,7 @@ class AppSettings {
     required this.bleInput,
     required this.bluetoothMeasurementsEnabled,
     required this.bloodPressureEnabled,
+    required this.trackArmSide,
     required this.medicineFeatureEnabled,
     required this.weightInput,
     required this.knownBleDev,
@@ -132,6 +134,7 @@ class AppSettings {
       ),
       shiftMissedDoseTimes: controller.get(shiftMissedDoseTimesSetting),
       missedDoseShiftLimitMinutes: controller.get(missedDoseShiftLimitSetting),
+      dueIndicatorDivisor: controller.get(dueIndicatorDivisorSetting),
       showAllReminderRings: controller.get(showAllReminderRingsSetting),
       needlePinBarWidth: controller.get(needlePinBarWidthSetting),
       bottomAppBars: controller.get(bottomAppBarsSetting),
@@ -142,6 +145,7 @@ class AppSettings {
       bleInput: bleInput,
       bluetoothMeasurementsEnabled: bleInput != BluetoothInputMode.disabled,
       bloodPressureEnabled: controller.get(bloodPressureEnabledSetting),
+      trackArmSide: controller.get(trackArmSideSetting),
       medicineFeatureEnabled: controller.get(medicineFeatureEnabledSetting),
       weightInput: controller.get(weightInputSetting),
       knownBleDev: decodeKnownBleDevices(
@@ -203,6 +207,7 @@ class AppSettings {
   final int overdueReminderIntervalMinutes;
   final bool shiftMissedDoseTimes;
   final int missedDoseShiftLimitMinutes;
+  final int dueIndicatorDivisor;
   final bool showAllReminderRings;
   final double needlePinBarWidth;
   final bool bottomAppBars;
@@ -210,6 +215,7 @@ class AppSettings {
   final BluetoothInputMode bleInput;
   final bool bluetoothMeasurementsEnabled;
   final bool bloodPressureEnabled;
+  final bool trackArmSide;
   final bool medicineFeatureEnabled;
   final bool weightInput;
   final List<KnownBleDevice> knownBleDev;
@@ -317,6 +323,7 @@ AppSettings appSettings(Ref ref) {
   ref.watch(settings.provider(overdueReminderIntervalSetting));
   ref.watch(settings.provider(shiftMissedDoseTimesSetting));
   ref.watch(settings.provider(missedDoseShiftLimitSetting));
+  ref.watch(settings.provider(dueIndicatorDivisorSetting));
   ref.watch(settings.provider(showAllReminderRingsSetting));
   ref.watch(settings.provider(needlePinBarWidthSetting));
   ref.watch(settings.provider(bottomAppBarsSetting));
@@ -324,6 +331,7 @@ AppSettings appSettings(Ref ref) {
   ref.watch(settings.provider(bleInputSetting));
   ref.watch(settings.provider(bluetoothMeasurementsEnabledSetting));
   ref.watch(settings.provider(bloodPressureEnabledSetting));
+  ref.watch(settings.provider(trackArmSideSetting));
   ref.watch(settings.provider(medicineFeatureEnabledSetting));
   ref.watch(settings.provider(weightInputSetting));
   ref.watch(settings.provider(knownBleDevicesSetting));

@@ -25,24 +25,31 @@ List<MeasurementTableColumn> bloodPressureColumns({
   required Color diaColor,
   required Color pulColor,
   bool showBloodPressure = true,
+  bool showArm = false,
+  bool interactiveArm = false,
 }) => showBloodPressure
     ? [
-        MeasurementTableColumn(label: 'time'.tr(), flex: 16),
+        MeasurementTableColumn(label: 'time'.tr(), flex: showArm ? 14 : 16),
         MeasurementTableColumn(
           label: 'sysShort'.tr(),
-          flex: 22,
+          flex: showArm ? 18 : 22,
           color: sysColor,
         ),
         MeasurementTableColumn(
           label: 'diaShort'.tr(),
-          flex: 22,
+          flex: showArm ? 18 : 22,
           color: diaColor,
         ),
         MeasurementTableColumn(
           label: 'pulShort'.tr(),
-          flex: 22,
+          flex: showArm ? 18 : 22,
           color: pulColor,
         ),
+        if (showArm)
+          MeasurementTableColumn(
+            label: 'measurementArm'.tr(),
+            flex: interactiveArm ? 14 : 12,
+          ),
       ]
     : [
         MeasurementTableColumn(label: 'time'.tr(), flex: 20),
@@ -253,6 +260,7 @@ class MeasurementTableRow extends StatelessWidget {
     return Semantics(
       button: true,
       label: entry.semanticsLabel,
+      explicitChildNodes: true,
       child: Material(
         color: entry.selected
             ? theme.colorScheme.primaryContainer.withValues(alpha: 0.45)

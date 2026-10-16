@@ -52,6 +52,7 @@ class ScriptedFormatter implements Formatter {
       RowDataFieldType.color => int.tryParse(text),
       RowDataFieldType.intakes => NativeColumn.intakes.decode(text),
       RowDataFieldType.weightKg => double.tryParse(text),
+      RowDataFieldType.arm => null,
     };
     if (value != null) return (restoreAbleType!, value);
     return null;

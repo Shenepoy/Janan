@@ -52,15 +52,17 @@ class BPSyncModel extends SyncModel with Loggable {
           final newSys = (x.value as NumericHealthValue).numericValue.toInt();
           records[x.uuid] = BloodPressureRecord(
             time: x.dateFrom,
-            sys: Pressure.mmHg(newSys),
-            dia: partialRecord?.dia,
+              sys: Pressure.mmHg(newSys),
+              dia: partialRecord?.dia,
+              source: BloodPressureRecordSource.healthConnect,
           );
         } else if (x.type == HealthDataType.BLOOD_PRESSURE_DIASTOLIC) {
           final newDia = (x.value as NumericHealthValue).numericValue.toInt();
           records[x.uuid] = BloodPressureRecord(
             time: x.dateFrom,
-            sys: partialRecord?.sys,
-            dia: Pressure.mmHg(newDia),
+              sys: partialRecord?.sys,
+              dia: Pressure.mmHg(newDia),
+              source: BloodPressureRecordSource.healthConnect,
           );
         } else {
           assert(false);
@@ -93,7 +95,10 @@ class BPSyncModel extends SyncModel with Loggable {
             time: x.time,
             sys: x.sys,
             dia: x.dia,
-            pul: appData[x.time.millisecondsSinceEpoch]?.pul
+            pul: appData[x.time.millisecondsSinceEpoch]?.pul,
+            arm: appData[x.time.millisecondsSinceEpoch]?.arm,
+            source:
+                appData[x.time.millisecondsSinceEpoch]?.source ?? x.source,
           ),
     ];
     _progress += 1;

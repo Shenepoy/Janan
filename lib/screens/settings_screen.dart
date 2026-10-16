@@ -77,6 +77,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   String? _activeSectionId;
   bool _searchOpen = false;
   bool _activeUpdateScheduled = false;
+  late final _sectionNavigation = SettingsSectionNavigation(
+    onSettled: _scheduleActiveSectionUpdate,
+  );
 
   bool get _isSearchOpen => widget.searchOpen?.value ?? _searchOpen;
 
@@ -100,6 +103,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     widget.searchOpen?.removeListener(_handleSearchOpenChanged);
     _scrollController.removeListener(_scheduleActiveSectionUpdate);
     _scrollController.dispose();
+    _sectionNavigation.dispose();
     _anchors.dispose();
     super.dispose();
   }
@@ -147,11 +151,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       setting.subtitleKey?.tr();
 
   void _scheduleActiveSectionUpdate() {
-    if (_activeUpdateScheduled) return;
+    if (_activeUpdateScheduled || _sectionNavigation.isNavigating) return;
     _activeUpdateScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _activeUpdateScheduled = false;
-      if (!mounted || _isSearchOpen) return;
+      if (!mounted || _isSearchOpen || _sectionNavigation.isNavigating) return;
       final scrollContext = _scrollViewportKey.currentContext;
       if (scrollContext == null) return;
       final active = activeSafaehSettingsSectionId(
@@ -167,6 +171,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   void _setSectionExpanded(String sectionId, bool expanded) {
     if (_sectionExpanded[sectionId] == expanded) return;
+    _sectionNavigation.layoutChanged();
     setState(() => _sectionExpanded[sectionId] = expanded);
   }
 
@@ -179,6 +184,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   void _setSubSectionExpanded(String sectionKey, String subKey, bool expanded) {
     final id = _subSectionId(sectionKey, subKey);
     if (_subSectionExpanded[id] == expanded) return;
+    _sectionNavigation.layoutChanged();
     setState(() => _subSectionExpanded[id] = expanded);
   }
 
@@ -187,16 +193,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     if (key == null) return;
     final wasExpanded =
         _sectionExpanded[section.key] ?? section.initiallyExpanded;
+    if (!wasExpanded) _sectionNavigation.layoutChanged();
     setState(() {
       _activeSectionId = section.key;
       _sectionExpanded[section.key] = true;
     });
-    if (!wasExpanded) {
-      await Future<void>.delayed(const Duration(milliseconds: 220));
-    }
-    if (!mounted) return;
-    await scrollToPageSection(key, controller: _scrollController);
-    _scheduleActiveSectionUpdate();
+    await _sectionNavigation.navigate(
+      () =>
+          scrollToPageSection(key, controller: _scrollController, alignment: 0),
+    );
   }
 
   Future<void> _selectSearchResult(SearchResult result) async {
@@ -212,6 +217,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         subKey == null ||
         subKey.isEmpty ||
         _isSubSectionExpanded(sectionKey, subKey);
+    if (!wasExpanded || !subWasExpanded) _sectionNavigation.layoutChanged();
     setState(() {
       _sectionExpanded[sectionKey] = true;
       if (subKey != null && subKey.isNotEmpty) {
@@ -219,12 +225,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       }
       _activeSectionId = sectionKey;
     });
-    if (!wasExpanded || !subWasExpanded) {
-      await Future<void>.delayed(const Duration(milliseconds: 220));
-    }
-    if (!mounted) return;
-    await _anchors.scrollTo(setting.key);
-    _scheduleActiveSectionUpdate();
+    await _sectionNavigation.navigate(() => _anchors.scrollTo(setting.key));
   }
 
   bool _isSearchResultVisible(SearchResult result) {
@@ -297,8 +298,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget _buildSettingsList(BuildContext context, SettingsProviders settings) {
     final bottomInset =
         SafaehBottomNavScope.maybeOf(context)?.contentInsetWithSafeArea ?? 0.0;
-    return ListView(
-      key: _scrollViewportKey,
+    return SettingsSectionList(
+      navigation: _sectionNavigation,
+      onUserScroll: _scheduleActiveSectionUpdate,
+      scrollViewKey: _scrollViewportKey,
       controller: _scrollController,
       padding: EdgeInsets.fromLTRB(0, 8, 0, bottomInset + 16),
       children: [

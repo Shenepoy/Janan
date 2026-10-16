@@ -7,6 +7,8 @@ const schema = Schema([
     Column.real('sys_kpa'),
     Column.real('dia_kpa'),
     Column.integer('pul'),
+    Column.text('arm'),
+    Column.text('source'),
   ]),
   Table.localOnly('notes', [
     Column.integer('timestamp_unix_s'),
@@ -43,6 +45,7 @@ const schema = Schema([
     Column.integer('active'),
     Column.integer('ended'),
     Column.integer('shift_missed_doses'),
+    Column.integer('due_indicator_divisor'),
   ]),
   Table.localOnly('dose_occurrences', [
     Column.text('schedule_id'),

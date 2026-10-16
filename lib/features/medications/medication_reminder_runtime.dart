@@ -85,6 +85,8 @@ Map<String, Object> medicationWidgetCatalog(
   required bool showAll,
   required List<MedicationSchedule> schedules,
   Map<String, String>? labels,
+  DateTime? now,
+  int dueIndicatorDivisor = 3,
 }) {
   final widgetLabels = labels ?? medicationReminderWidgetLabels();
   final choices = <Map<String, String>>[
@@ -115,26 +117,51 @@ Map<String, Object> medicationWidgetCatalog(
     'views': {
       for (final choice in choices)
         choice['id']!: _widgetView(
-          selectReminderDoses(
-            open,
-            showAll: showAll,
-            scheduleId: choice['id']!,
-          ),
+          open,
           widgetLabels,
           pinnedName: choice['id']!.isEmpty ? '' : choice['name']!,
           pinnedColor: colors[choice['id']],
+          showAll: showAll,
+          scheduleId: choice['id']!,
+          now: now,
+          dueIndicatorDivisor: dueIndicatorDivisor,
         ),
     },
   };
 }
 
 Map<String, Object> _widgetView(
-  List<PlannedDose> selected,
+  List<PlannedDose> open,
   Map<String, String> labels, {
   String pinnedName = '',
   int? pinnedColor,
+  bool showAll = true,
+  String scheduleId = '',
+  DateTime? now,
+  int dueIndicatorDivisor = 3,
 }) {
-  final rings = stackReminderRings(selected);
+  final countdownRings = now == null
+      ? stackReminderRings(
+          selectReminderDoses(open, showAll: showAll, scheduleId: scheduleId),
+        )
+      : dueCountdownRings(
+          open,
+          now: now,
+          appDivisor: dueIndicatorDivisor,
+          showAll: showAll,
+          scheduleId: scheduleId,
+        );
+  final rings = now == null
+      ? countdownRings
+      : [
+          ...countdownRings,
+          ..._laterReminderRings(
+            open,
+            countdownRings,
+            now: now,
+            scheduleId: scheduleId,
+          ),
+        ];
   final primary = rings.isEmpty ? null : rings.first;
   if (primary == null) {
     final view = Map<String, Object>.from(labels);
@@ -153,6 +180,11 @@ Map<String, Object> _widgetView(
     'color': primary.doses.first.color,
     'scheduledAtMs': primary.targetAt.millisecondsSinceEpoch,
     'status': primary.doses.first.status,
+    if (now != null && !primary.targetAt.isAfter(now))
+      'dueUntilMs': _dueUntil(
+        primary.doses.first,
+        dueIndicatorDivisor,
+      ).millisecondsSinceEpoch,
     'rings': [
       for (final ring in rings)
         {
@@ -169,11 +201,46 @@ Map<String, Object> _widgetView(
                 'color': dose.color,
                 'scheduledAtMs': dose.targetAt.millisecondsSinceEpoch,
                 'intervalMs': dose.interval.inMilliseconds,
+                'dueUntilMs': _dueUntil(
+                  dose,
+                  dueIndicatorDivisor,
+                ).millisecondsSinceEpoch,
               },
           ],
         },
     ],
   };
+}
+
+DateTime _dueUntil(PlannedDose dose, int appDivisor) {
+  final divisor = effectiveDueIndicatorDivisor(
+    dose.dueIndicatorDivisor,
+    appDivisor,
+  );
+  final start = dose.dueAt ?? dose.targetAt;
+  return start.add(dueIndicatorWindow(dose.interval, divisor));
+}
+
+/// Doses after the two countdown rings, one ring each.
+///
+/// The widget draws two rings. The rest stay in the snapshot so a dose whose
+/// flashing window ends can promote the following one without the app open.
+List<ReminderRingGroup> _laterReminderRings(
+  List<PlannedDose> open,
+  List<ReminderRingGroup> shown, {
+  required DateTime now,
+  required String scheduleId,
+}) {
+  final pinned = scheduleId.trim();
+  final used = <PlannedDose>{for (final ring in shown) ...ring.doses};
+  final extra = [
+    for (final dose in open)
+      if ((pinned.isEmpty || dose.scheduleId == pinned) &&
+          dose.targetAt.isAfter(now) &&
+          !used.contains(dose))
+        dose,
+  ]..sort((a, b) => a.targetAt.compareTo(b.targetAt));
+  return [for (final dose in extra) ReminderRingGroup([dose])];
 }
 
 /// Local notification and Android widget bridge for medication schedules.
@@ -486,9 +553,7 @@ class MedicationReminderRuntime {
       await _scheduleOverdueFollowUps(
         schedule: occurrence.schedule,
         scheduledAt:
-            followUpFrom[occurrence.id] ??
-            movedTo ??
-            occurrence.scheduledAt,
+            followUpFrom[occurrence.id] ?? movedTo ?? occurrence.scheduledAt,
         keyAt: occurrence.scheduledAt,
         bodyMinute: originalMinute,
         now: now,
@@ -591,9 +656,11 @@ class MedicationReminderRuntime {
     List<MedicationSchedule> schedules = const [],
     bool shiftMissedDoseTimes = false,
     Duration missedDoseShiftLimit = const Duration(minutes: 60),
+    int dueIndicatorDivisor = 3,
   }) async {
     if (!Platform.isAndroid) return;
     final now = DateTime.now();
+    final dueAnchors = <String, DateTime>{};
     final targets = shiftedDoseTargets(
       occurrences,
       now: now,
@@ -601,6 +668,7 @@ class MedicationReminderRuntime {
       grace: missedDoseShiftLimit,
       movesTimes: (dose) =>
           dose.schedule.movesAfterMissedDose(shiftMissedDoseTimes),
+      dueAnchors: dueAnchors,
     );
     final open = [
       for (final occurrence in occurrences)
@@ -609,6 +677,7 @@ class MedicationReminderRuntime {
               now,
               targets,
               grace: missedDoseShiftLimit,
+              dueAnchors: dueAnchors,
             )
             case final dose?)
           dose,
@@ -616,7 +685,13 @@ class MedicationReminderRuntime {
     try {
       await _widgetChannel.invokeMethod<void>('update', {
         'summary': jsonEncode(
-          medicationWidgetCatalog(open, showAll: showAll, schedules: schedules),
+          medicationWidgetCatalog(
+            open,
+            showAll: showAll,
+            schedules: schedules,
+            now: now,
+            dueIndicatorDivisor: dueIndicatorDivisor,
+          ),
         ),
       });
     } on MissingPluginException {
@@ -669,9 +744,7 @@ class MedicationReminderRuntime {
           when.difference(scheduledAt).inMinutes ~/
           (interval.inMinutes == 0 ? 1 : interval.inMinutes);
       await _scheduleReminder(
-        id: _notificationId(
-          _overdueNotificationKey(scheduleId, keyAt, index),
-        ),
+        id: _notificationId(_overdueNotificationKey(scheduleId, keyAt, index)),
         schedule: schedule,
         minute: bodyMinute,
         when: timezone.TZDateTime.from(when, timezone.local),
@@ -686,17 +759,13 @@ class MedicationReminderRuntime {
     DateTime now,
     Map<String, DateTime> targets, {
     Duration grace = Duration.zero,
+    Map<String, DateTime> dueAnchors = const {},
   }) {
     final status = occurrence.statusAt(now);
     if (status != 'pending' && status != 'snoozed' && status != 'unrecorded') {
       return null;
     }
-    if (!reminderDoseIsCurrent(
-      occurrence,
-      now,
-      targets,
-      grace: grace,
-    )) {
+    if (!reminderDoseIsCurrent(occurrence, now, targets, grace: grace)) {
       return null;
     }
     final target = doseTakeAt(occurrence, now, targets);
@@ -712,6 +781,8 @@ class MedicationReminderRuntime {
         occurrence.schedule,
         occurrence.scheduledAt,
       ),
+      dueIndicatorDivisor: occurrence.schedule.dueIndicatorDivisor,
+      dueAt: dueAnchors[occurrence.id],
     );
   }
 

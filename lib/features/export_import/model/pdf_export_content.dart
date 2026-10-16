@@ -112,10 +112,21 @@ class PdfExportContent {
     required WeightUnit weightUnit,
     required List<ExportColumn> columns,
     RangeLimits limits = RangeLimits.standard,
+    BloodPressureArm? armFilter,
+    String? armFilterLabel,
   }) {
     final newestFirst = List<CombinedEntry>.of(entries)
       ..sort((a, b) => b.time.compareTo(a.time));
-    final snapshot = DashboardSnapshot.from(entriesNewestFirst: newestFirst);
+    final bloodPressureEntries = newestFirst
+        .where(
+          (entry) =>
+              entry.record != null &&
+              (armFilter == null || entry.record!.arm == armFilter),
+        )
+        .toList();
+    final snapshot = DashboardSnapshot.from(
+      entriesNewestFirst: bloodPressureEntries,
+    );
     final analyzer = snapshot.period;
     final dateFormatter = WesternDateFormat(
       dateFormatString,
@@ -126,17 +137,18 @@ class PdfExportContent {
       title: _title(newestFirst, analyzer, dateFormatter),
       statistics: _statistics(
         snapshot,
-        newestFirst,
+        bloodPressureEntries,
         pressureUnit,
         dateFormatter,
         limits,
+        armFilterLabel: armFilterLabel,
       ),
       weightSeries: _weightSeries(newestFirst, weightUnit),
       medicineSeries: _medicineSeries(newestFirst),
       headers: columns.map((column) => column.userTitle()).toList(),
       columnTypes: columns.map((column) => column.restoreAbleType).toList(),
       chartPoints: [
-        for (final entry in newestFirst.reversed)
+        for (final entry in bloodPressureEntries.reversed)
           if (entry.sys != null || entry.dia != null)
             PdfExportChartPoint(
               time: entry.time,
@@ -208,8 +220,9 @@ PdfExportStatistics _statistics(
   List<CombinedEntry> newestFirst,
   PressureUnit pressureUnit,
   DateFormat dateFormatter,
-  RangeLimits limits,
-) {
+  RangeLimits limits, {
+  String? armFilterLabel,
+}) {
   final period = snapshot.period;
   final measurementsPerDay = _averageMeasurementsPerDay(period);
   final activityLine = measurementsPerDay == null
@@ -222,12 +235,15 @@ PdfExportStatistics _statistics(
             'perDay': formatDashboardNumber(measurementsPerDay, digits: 1),
           },
         );
+  final labelledActivityLine = armFilterLabel == null
+      ? activityLine
+      : '$activityLine · $armFilterLabel';
   final latestEntry = snapshot.latest;
   return PdfExportStatistics(
     count: snapshot.count,
     measurementsPerDay: measurementsPerDay,
     unitLabel: _pressureUnitLabel(pressureUnit),
-    activityLine: activityLine,
+    activityLine: labelledActivityLine,
     latest: latestEntry == null
         ? null
         : PdfExportLatestReading(
@@ -331,7 +347,8 @@ PdfWeightSeries? _weightSeries(
     for (final time in times)
       PdfWeightPoint(time: time, value: weightUnit.extract(byTime[time]!)),
   ];
-  final mean = points.map((point) => point.value).reduce((a, b) => a + b) /
+  final mean =
+      points.map((point) => point.value).reduce((a, b) => a + b) /
       points.length;
   return PdfWeightSeries(
     points: points,
@@ -359,9 +376,9 @@ List<PdfMedicineSeries> _medicineSeries(List<CombinedEntry> entries) {
       names[key] = name;
       units[key] = unit;
       colors.putIfAbsent(key, () => intake.medicine.color);
-      grouped.putIfAbsent(key, () => []).add(
-        PdfMedicineDose(time: intake.time, amount: amount),
-      );
+      grouped
+          .putIfAbsent(key, () => [])
+          .add(PdfMedicineDose(time: intake.time, amount: amount));
     }
   }
   final keys = grouped.keys.toList()..sort();
@@ -427,6 +444,13 @@ String _cell(
     case RowDataFieldType.intakes:
       if (entry.intake == null) return pdfMissingValue;
       return column.encode(entry);
+    case RowDataFieldType.arm:
+      return switch (entry.record?.arm) {
+        BloodPressureArm.left => 'leftArm'.tr(),
+        BloodPressureArm.right => 'rightArm'.tr(),
+        BloodPressureArm.unknown => 'armUnknown'.tr(),
+        null => pdfMissingValue,
+      };
     case RowDataFieldType.timestamp:
     case RowDataFieldType.notes:
     case RowDataFieldType.color:

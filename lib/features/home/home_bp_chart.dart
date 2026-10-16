@@ -21,6 +21,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:safaeh/safaeh.dart';
 
 /// Charts the user can cycle on the home dashboard.
 enum HomeBpChartKind {
@@ -41,6 +42,8 @@ enum HomeBpChartKind {
       values.asNameMap()[raw] ?? HomeBpChartKind.dailyRange;
 }
 
+enum _ArmChartFilter { all, left, right }
+
 const _inRangeColor = Color(0xFF7FC8BA);
 const _elevatedColor = Color(0xFFF9B132);
 const _highColor = Color(0xFFF87261);
@@ -52,6 +55,7 @@ class HomeBpChart extends StatelessWidget {
     super.key,
     this.showBloodPressure = true,
     this.showMedicine = false,
+    this.compact = false,
   });
 
   /// Whether the three blood-pressure charts can be selected.
@@ -60,6 +64,9 @@ class HomeBpChart extends StatelessWidget {
   /// Whether the medicine timing chart can be selected.
   final bool showMedicine;
 
+  /// Uses a shorter plot height when the chart shares a landscape dashboard.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) => CombinedEntryBuilder(
     rangeType: IntervalStoreManagerLocation.mainPage,
@@ -67,6 +74,7 @@ class HomeBpChart extends StatelessWidget {
       records: records,
       showBloodPressure: showBloodPressure,
       showMedicine: showMedicine,
+      compact: compact,
     ),
   );
 }
@@ -76,11 +84,13 @@ class _HomeBpChartView extends ConsumerStatefulWidget {
     required this.records,
     required this.showBloodPressure,
     required this.showMedicine,
+    required this.compact,
   });
 
   final List<BloodPressureRecord> records;
   final bool showBloodPressure;
   final bool showMedicine;
+  final bool compact;
 
   @override
   ConsumerState<_HomeBpChartView> createState() => _HomeBpChartViewState();
@@ -91,11 +101,14 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
   static const _swap = Duration(milliseconds: 420);
   static const _tallHeight = 220.0;
   static const _shortHeight = 116.0;
+  static const _compactTallHeight = 140.0;
+  static const _compactShortHeight = 104.0;
 
-  late final AnimationController _spin;
   late final AnimationController _size;
   late Animation<double> _height;
   late HomeBpChartKind _kind;
+  HomeBpChartKind? _secondKind;
+  var _armFilter = _ArmChartFilter.all;
 
   List<HomeBpChartKind> get _availableKinds => [
     if (widget.showBloodPressure) ...[
@@ -107,9 +120,9 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
   ];
 
   double _heightFor(HomeBpChartKind kind) => switch (kind) {
-    HomeBpChartKind.classification ||
-    HomeBpChartKind.medicineTiming => _shortHeight,
-    _ => _tallHeight,
+    HomeBpChartKind.classification || HomeBpChartKind.medicineTiming =>
+      widget.compact ? _compactShortHeight : _shortHeight,
+    _ => widget.compact ? _compactTallHeight : _tallHeight,
   };
 
   String _titleOf(HomeBpChartKind kind) => switch (kind) {
@@ -144,7 +157,9 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
   void initState() {
     super.initState();
     _kind = _availableKind(ref.readSetting<String>(homeBpChartSetting));
-    _spin = AnimationController(vsync: this, duration: _swap);
+    _secondKind = HomeBpChartKind.parse(
+      ref.readSetting<String>(homeSecondaryChartSetting),
+    );
     _size = AnimationController(vsync: this, duration: _swap);
     _height = AlwaysStoppedAnimation(_heightFor(_kind));
   }
@@ -152,8 +167,11 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
   @override
   void didUpdateWidget(covariant _HomeBpChartView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.compact != widget.compact) {
+      _size.stop();
+      _height = AlwaysStoppedAnimation(_heightFor(_kind));
+    }
     if (_availableKinds.isNotEmpty && !_availableKinds.contains(_kind)) {
-      _spin.stop();
       _size.stop();
       _kind = _availableKinds.first;
       _height = AlwaysStoppedAnimation(_heightFor(_kind));
@@ -162,7 +180,6 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
 
   @override
   void dispose() {
-    _spin.dispose();
     _size.dispose();
     super.dispose();
   }
@@ -170,7 +187,6 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
   void _cycle() {
     final kinds = _availableKinds;
     if (kinds.length < 2) return;
-    _spin.forward(from: 0);
     final next = kinds[(kinds.indexOf(_kind) + 1) % kinds.length];
     _height = Tween<double>(
       begin: _height.value,
@@ -180,6 +196,219 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
     _size.forward(from: 0);
     unawaited(ref.updateSetting<String>(homeBpChartSetting, next.name));
   }
+
+  List<HomeBpChartKind> get _visibleKinds {
+    final available = _availableKinds;
+    if (available.length < 2) return [_kind];
+    final second = _secondKind;
+    return [
+      _kind,
+      if (second != null && second != _kind && available.contains(second))
+        second
+      else
+        available.firstWhere((kind) => kind != _kind),
+    ];
+  }
+
+  void _cycleCompactChart(int slot) {
+    final visible = _visibleKinds;
+    final choices = _availableKinds
+        .where((kind) => kind == visible[slot] || !visible.contains(kind))
+        .toList();
+    if (choices.length < 2) return;
+    _selectCompactChart(
+      slot,
+      choices[(choices.indexOf(visible[slot]) + 1) % choices.length],
+    );
+  }
+
+  void _selectCompactChart(int slot, HomeBpChartKind kind) {
+    if (!_availableKinds.contains(kind)) return;
+    final visible = _visibleKinds;
+    if (visible.asMap().entries.any(
+      (entry) => entry.key != slot && entry.value == kind,
+    )) {
+      return;
+    }
+    setState(() {
+      if (slot == 0) {
+        // Preserve the second slot when changing the primary chart.
+        _secondKind = visible.length > 1 ? visible[1] : null;
+        _kind = kind;
+        _height = AlwaysStoppedAnimation(_heightFor(kind));
+      } else {
+        _secondKind = kind;
+      }
+    });
+    if (slot == 0) {
+      unawaited(ref.updateSetting<String>(homeBpChartSetting, kind.name));
+    }
+    if (_visibleKinds.length > 1) {
+      unawaited(
+        ref.updateSetting<String>(
+          homeSecondaryChartSetting,
+          _visibleKinds[1].name,
+        ),
+      );
+    }
+  }
+
+  Widget _buildCompactCharts({
+    required List<BloodPressureRecord> records,
+    required DateRange range,
+    required _ChartPeriod period,
+    required RangeLimits limits,
+    required bool showArmFilter,
+  }) => LayoutBuilder(
+    builder: (context, constraints) {
+      final kinds = _visibleKinds;
+      final sideBySide = constraints.maxWidth >= 560;
+      final textScale = MediaQuery.textScalerOf(context).scale(1);
+      final minimumHeight = 132.0 * math.max(1.0, textScale);
+      final height = constraints.hasBoundedHeight
+          ? math.max(
+              minimumHeight,
+              sideBySide
+                  ? constraints.maxHeight
+                  : (constraints.maxHeight - (kinds.length - 1) * 8) /
+                        kinds.length,
+            )
+          : minimumHeight;
+      Widget card(int slot) {
+        final kind = kinds[slot];
+        final theme = Theme.of(context);
+        return SizedBox(
+          height: height,
+          child: Card(
+            elevation: 0,
+            margin: EdgeInsets.zero,
+            color: theme.colorScheme.surfaceContainerLow,
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _iconOf(kind),
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _titleOf(kind),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.title(context),
+                        ),
+                      ),
+                      if (_availableKinds.length > kinds.length)
+                        SafaehCycleButton(
+                          key: ValueKey('home_chart_cycle_$slot'),
+                          tooltip: 'chartNext'.tr(),
+                          onPressed: () => _cycleCompactChart(slot),
+                        ),
+                      if (showArmFilter &&
+                          kind != HomeBpChartKind.medicineTiming)
+                        PopupMenuButton<_ArmChartFilter>(
+                          tooltip: switch (_armFilter) {
+                            _ArmChartFilter.all => 'allArms'.tr(),
+                            _ArmChartFilter.left => 'leftArm'.tr(),
+                            _ArmChartFilter.right => 'rightArm'.tr(),
+                          },
+                          icon: Icon(
+                            Icons.filter_alt_outlined,
+                            size: 18,
+                            color: _armFilter == _ArmChartFilter.all
+                                ? null
+                                : theme.colorScheme.primary,
+                          ),
+                          onSelected: (value) =>
+                              setState(() => _armFilter = value),
+                          itemBuilder: (context) => [
+                            for (final filter in _ArmChartFilter.values)
+                              CheckedPopupMenuItem(
+                                value: filter,
+                                checked: filter == _armFilter,
+                                child: Text(switch (filter) {
+                                  _ArmChartFilter.all => 'allArms'.tr(),
+                                  _ArmChartFilter.left => 'leftArm'.tr(),
+                                  _ArmChartFilter.right => 'rightArm'.tr(),
+                                }),
+                              ),
+                          ],
+                        ),
+                    ],
+                  ),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      layoutBuilder: (current, previous) => Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          for (final old in previous) IgnorePointer(child: old),
+                          ?current,
+                        ],
+                      ),
+                      child: KeyedSubtree(
+                        key: ValueKey(kind),
+                        child: switch (kind) {
+                          HomeBpChartKind.dailyRange => _DailyRangeChart(
+                            records: records,
+                            range: range,
+                            period: period,
+                          ),
+                          HomeBpChartKind.classification =>
+                            _ClassificationChart(
+                              records: records,
+                              limits: limits,
+                              compact: true,
+                            ),
+                          HomeBpChartKind.pulsePressure => _PulsePressureChart(
+                            records: records,
+                            range: range,
+                            period: period,
+                          ),
+                          HomeBpChartKind.medicineTiming =>
+                            const HomeMedicationTimingChartContent(
+                              compact: true,
+                            ),
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
+      return SingleChildScrollView(
+        child: sideBySide
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var slot = 0; slot < kinds.length; slot++) ...[
+                    if (slot > 0) const SizedBox(width: 8),
+                    Expanded(child: card(slot)),
+                  ],
+                ],
+              )
+            : Column(
+                children: [
+                  for (var slot = 0; slot < kinds.length; slot++) ...[
+                    if (slot > 0) const SizedBox(height: 8),
+                    card(slot),
+                  ],
+                ],
+              ),
+      );
+    },
+  );
 
   Widget _fadeSlot({
     required String text,
@@ -218,7 +447,18 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
   @override
   Widget build(BuildContext context) {
     Localizations.localeOf(context);
-    final limits = ref.watch(appSettingsProvider).rangeLimits;
+    final settings = ref.watch(appSettingsProvider);
+    final limits = settings.rangeLimits;
+    final armFilter = settings.trackArmSide ? _armFilter : _ArmChartFilter.all;
+    final chartRecords = widget.records
+        .where(
+          (record) => switch (armFilter) {
+            _ArmChartFilter.all => true,
+            _ArmChartFilter.left => record.arm == BloodPressureArm.left,
+            _ArmChartFilter.right => record.arm == BloodPressureArm.right,
+          },
+        )
+        .toList();
     final selectedRange = ref.watch(
       currentDateRangeProvider(IntervalStoreManagerLocation.mainPage),
     );
@@ -229,6 +469,15 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
     final titleHeight = titleStyle.fontSize! * (titleStyle.height ?? 1.25);
     final subtitleHeight =
         subtitleStyle.fontSize! * (subtitleStyle.height ?? 1.3);
+    if (widget.compact) {
+      return _buildCompactCharts(
+        records: chartRecords,
+        range: selectedRange,
+        period: period,
+        limits: limits,
+        showArmFilter: settings.trackArmSide,
+      );
+    }
     return DashboardSection(
       padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 16),
       child: Column(
@@ -266,23 +515,31 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
                 ),
               ),
               if (_availableKinds.length > 1)
-                IconButton(
-                  tooltip: 'chartNext'.tr(),
-                  style: IconButton.styleFrom(
-                    foregroundColor: theme.colorScheme.primary,
-                    minimumSize: const Size(48, 48),
-                  ),
-                  icon: RotationTransition(
-                    turns: CurvedAnimation(
-                      parent: _spin,
-                      curve: Curves.easeOutCubic,
-                    ),
-                    child: const Icon(Icons.change_circle, size: 28),
-                  ),
-                  onPressed: _cycle,
-                ),
+                SafaehCycleButton(tooltip: 'chartNext'.tr(), onPressed: _cycle),
             ],
           ),
+          if (settings.trackArmSide &&
+              widget.showBloodPressure &&
+              _kind != HomeBpChartKind.medicineTiming) ...[
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 6,
+              children: [
+                for (final filter in _ArmChartFilter.values)
+                  ChoiceChip(
+                    label: Text(switch (filter) {
+                      _ArmChartFilter.all => 'allArms'.tr(),
+                      _ArmChartFilter.left => 'leftArm'.tr(),
+                      _ArmChartFilter.right => 'rightArm'.tr(),
+                    }),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    selected: _armFilter == filter,
+                    onSelected: (_) => setState(() => _armFilter = filter),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           AnimatedBuilder(
             animation: _size,
@@ -310,19 +567,19 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
                   key: ValueKey(_kind),
                   child: switch (_kind) {
                     HomeBpChartKind.dailyRange => _DailyRangeChart(
-                      records: widget.records,
+                      records: chartRecords,
                       range: selectedRange,
                       period: period,
                     ),
                     HomeBpChartKind.classification => Align(
                       alignment: Alignment.topCenter,
                       child: _ClassificationChart(
-                        records: widget.records,
+                        records: chartRecords,
                         limits: limits,
                       ),
                     ),
                     HomeBpChartKind.pulsePressure => _PulsePressureChart(
-                      records: widget.records,
+                      records: chartRecords,
                       range: selectedRange,
                       period: period,
                     ),
@@ -732,10 +989,15 @@ MetricBandTone? _classify(BloodPressureRecord record, RangeLimits limits) {
 }
 
 class _ClassificationChart extends StatelessWidget {
-  const _ClassificationChart({required this.records, required this.limits});
+  const _ClassificationChart({
+    required this.records,
+    required this.limits,
+    this.compact = false,
+  });
 
   final List<BloodPressureRecord> records;
   final RangeLimits limits;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -766,7 +1028,7 @@ class _ClassificationChart extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          height: 32,
+          height: compact ? 14 : 32,
           width: double.infinity,
           child: CustomPaint(
             painter: _MixBarPainter(
@@ -778,7 +1040,7 @@ class _ClassificationChart extends StatelessWidget {
             child: const SizedBox.expand(),
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: compact ? 8 : 20),
         Row(
           children: [
             for (final tone in tones)
@@ -789,11 +1051,15 @@ class _ClassificationChart extends StatelessWidget {
                   labelStyle: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurface,
                   ),
-                  valueStyle: theme.textTheme.headlineSmall?.copyWith(
-                    color: _toneColor(tone),
-                    fontWeight: FontWeight.w700,
-                    height: 1.15,
-                  ),
+                  valueStyle:
+                      (compact
+                              ? theme.textTheme.titleMedium
+                              : theme.textTheme.headlineSmall)
+                          ?.copyWith(
+                            color: _toneColor(tone),
+                            fontWeight: FontWeight.w700,
+                            height: 1.15,
+                          ),
                 ),
               ),
           ],

@@ -204,35 +204,51 @@ class _MeasurementDetailScreenState
             const SizedBox(height: 12),
             EntryFormSection(
               title: 'bloodPressure'.tr(),
-              child: Row(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _PressureValue(
-                    title: 'sysLong'.tr(),
-                    kind: MetricKind.sys,
-                    accent: settings.sysColor,
-                    pressure: entry.sys,
-                    previous: _previousRecord?.sys,
-                    unit: unit,
-                    hopToken: _token('sys'),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _PressureValue(
+                        title: 'sysLong'.tr(),
+                        kind: MetricKind.sys,
+                        accent: settings.sysColor,
+                        pressure: entry.sys,
+                        previous: _previousRecord?.sys,
+                        unit: unit,
+                        hopToken: _token('sys'),
+                      ),
+                      const SizedBox(width: 12),
+                      _PressureValue(
+                        title: 'diaLong'.tr(),
+                        kind: MetricKind.dia,
+                        accent: settings.diaColor,
+                        pressure: entry.dia,
+                        previous: _previousRecord?.dia,
+                        unit: unit,
+                        hopToken: _token('dia'),
+                      ),
+                      const SizedBox(width: 12),
+                      _PulseValue(
+                        pulse: entry.pul,
+                        previous: _previousRecord?.pul,
+                        accent: settings.pulColor,
+                        hopToken: _token('pul'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  _PressureValue(
-                    title: 'diaLong'.tr(),
-                    kind: MetricKind.dia,
-                    accent: settings.diaColor,
-                    pressure: entry.dia,
-                    previous: _previousRecord?.dia,
-                    unit: unit,
-                    hopToken: _token('dia'),
-                  ),
-                  const SizedBox(width: 12),
-                  _PulseValue(
-                    pulse: entry.pul,
-                    previous: _previousRecord?.pul,
-                    accent: settings.pulColor,
-                    hopToken: _token('pul'),
-                  ),
+                  if (entry.record?.arm case final arm?) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      '${'measurementArm'.tr()}: ${switch (arm) {
+                        BloodPressureArm.left => 'leftArm'.tr(),
+                        BloodPressureArm.right => 'rightArm'.tr(),
+                        BloodPressureArm.unknown => 'armUnknown'.tr(),
+                      }}',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
                 ],
               ),
             ),

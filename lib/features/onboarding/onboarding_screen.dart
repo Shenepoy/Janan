@@ -215,6 +215,16 @@ class _FeatureSetupPage extends ConsumerWidget {
             onChanged: (value) =>
                 ref.updateSetting(bloodPressureEnabledSetting, value),
           ),
+          if (settings.bloodPressureEnabled)
+            SwitchListTile(
+              key: const Key('onboarding-track-arm-side'),
+              title: Text('trackArmSide'.tr()),
+              subtitle: Text('trackArmSideDescription'.tr()),
+              secondary: const Icon(Icons.swap_horiz),
+              value: settings.trackArmSide,
+              onChanged: (value) =>
+                  ref.updateSetting(trackArmSideSetting, value),
+            ),
           SwitchListTile(
             key: const Key('onboarding-feature-medicine'),
             title: Text('medications'.tr()),

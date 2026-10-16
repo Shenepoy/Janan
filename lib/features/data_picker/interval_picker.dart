@@ -51,27 +51,32 @@ class IntervalPicker extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final manager = ref.watch(intervalStoreManagerProvider);
     return ListenableBuilder(
-    listenable: manager,
-    builder: (context, _) {
-      final interval = manager.get(type);
-      return Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(16, _topPad, 16, _bottomPad),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _PillTrack(interval: interval),
-            const SizedBox(height: _rangeGap),
-            SizedBox(
-              height: _rangeHeight,
-              child: _RangeLine(
-                interval: interval,
-                customRangePickerCurrentDay: customRangePickerCurrentDay,
+      listenable: manager,
+      builder: (context, _) {
+        final interval = manager.get(type);
+        return Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            16,
+            _topPad,
+            16,
+            _bottomPad,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _PillTrack(interval: interval),
+              const SizedBox(height: _rangeGap),
+              SizedBox(
+                height: _rangeHeight,
+                child: _RangeLine(
+                  interval: interval,
+                  customRangePickerCurrentDay: customRangePickerCurrentDay,
+                ),
               ),
-            ),
-          ],
-        ),
-      );
-    },
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -167,7 +172,7 @@ class _RangeLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).toString();
-    final label = _rangeLabel(interval, locale);
+    final label = intervalRangeLabel(interval, locale);
     final canPage = interval.stepSize != TimeStep.lifetime;
     return Row(
       children: [
@@ -241,15 +246,15 @@ String _shortLabel(TimeStep step) => switch (step) {
   _ => step.localize(),
 };
 
-String _rangeLabel(IntervalStorage interval, String locale) {
+/// Format the currently selected range for compact controls and summaries.
+String intervalRangeLabel(IntervalStorage interval, String locale) {
   final start = interval.currentRange.start;
   final end = interval.currentRange.end;
   return switch (interval.stepSize) {
     TimeStep.day => WesternDateFormat.yMMMd(locale).format(start),
-    TimeStep.week => 'weekOfYear'.tr(namedArgs: {
-      'weekNum': '${start.weekOfYear}',
-      'year': '${start.year}',
-    }),
+    TimeStep.week => 'weekOfYear'.tr(
+      namedArgs: {'weekNum': '${start.weekOfYear}', 'year': '${start.year}'},
+    ),
     TimeStep.month => WesternDateFormat.yMMM(locale).format(start),
     TimeStep.year => WesternDateFormat.y(locale).format(start),
     TimeStep.lifetime => 'lifetime'.tr(),

@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:blood_pressure_app/config.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
-import 'package:blood_pressure_app/features/bluetooth/bluetooth_input.dart' show BluetoothInput;
+import 'package:blood_pressure_app/features/bluetooth/bluetooth_input.dart'
+    show BluetoothInput;
 import 'package:blood_pressure_app/features/old_bluetooth/logic/ble_read_cubit.dart';
 import 'package:blood_pressure_app/features/old_bluetooth/logic/bluetooth_cubit.dart';
 import 'package:blood_pressure_app/features/old_bluetooth/logic/characteristics/ble_measurement_data.dart';
@@ -21,13 +22,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Class for inputting measurement through bluetooth.
-/// 
+///
 /// This widget is superseded by [BluetoothInput].
 class OldBluetoothInput extends ConsumerStatefulWidget {
   /// Create a measurement input through bluetooth.
-  OldBluetoothInput({super.key,
-    required this.onMeasurement,
-  }) : assert(!isTestingEnvironment, "OldBluetoothInput isn't maintained in tests");
+  OldBluetoothInput({super.key, required this.onMeasurement})
+    : assert(
+        !isTestingEnvironment,
+        "OldBluetoothInput isn't maintained in tests",
+      );
 
   /// Called when a measurement was received through bluetooth.
   final void Function(BloodPressureRecord data) onMeasurement;
@@ -36,7 +39,8 @@ class OldBluetoothInput extends ConsumerStatefulWidget {
   ConsumerState<OldBluetoothInput> createState() => _OldBluetoothInputState();
 }
 
-class _OldBluetoothInputState extends ConsumerState<OldBluetoothInput> with Loggable {
+class _OldBluetoothInputState extends ConsumerState<OldBluetoothInput>
+    with Loggable {
   /// Whether the user expanded bluetooth input
   bool _isActive = false;
 
@@ -88,7 +92,9 @@ class _OldBluetoothInputState extends ConsumerState<OldBluetoothInput> with Logg
     final Guid characteristicUUID = Guid('2A35');
     _bluetoothSubscription = _bluetoothCubit.stream.listen((state) {
       if (state is! BluetoothReady) {
-        logDebug('_OldBluetoothInputState: _bluetoothSubscription state=$state, calling _returnToIdle');
+        logDebug(
+          '_OldBluetoothInputState: _bluetoothSubscription state=$state, calling _returnToIdle',
+        );
         _returnToIdle();
       }
     });
@@ -102,10 +108,13 @@ class _OldBluetoothInputState extends ConsumerState<OldBluetoothInput> with Logg
       initialData: _deviceScanCubit!.state,
       builder: (context, snap) {
         final DeviceScanState state = snap.data!;
-        logDebug('OldBluetoothInput _OldBluetoothInputState _deviceScanCubit: $state');
+        logDebug(
+          'OldBluetoothInput _OldBluetoothInputState _deviceScanCubit: $state',
+        );
         const SizeChangedLayoutNotification().dispatch(context);
-        return switch(state) {
-          DeviceListLoading() => _buildMainCard(context,
+        return switch (state) {
+          DeviceListLoading() => _buildMainCard(
+            context,
             title: Text('scanningForDevices'.tr()),
             child: const CircularProgressIndicator(),
           ),
@@ -114,10 +123,10 @@ class _OldBluetoothInputState extends ConsumerState<OldBluetoothInput> with Logg
             onAccepted: (dev) => _deviceScanCubit!.acceptDevice(dev),
           ),
           SingleDeviceAvailable() => DeviceSelection(
-            scanResults: [ state.device ],
+            scanResults: [state.device],
             onAccepted: (dev) => _deviceScanCubit!.acceptDevice(dev),
           ),
-            // distinction
+          // distinction
           DeviceSelected() => StreamBuilder<BleReadState>(
             stream: (_deviceReadCubit ??= BleReadCubit(
               state.device,
@@ -137,12 +146,14 @@ class _OldBluetoothInputState extends ConsumerState<OldBluetoothInput> with Logg
                   final BloodPressureRecord record = BloodPressureRecord(
                     time: state.data.timestamp ?? DateTime.now(),
                     sys: state.data.isMMHG
-                      ? Pressure.mmHg(state.data.systolic.toInt())
-                      : Pressure.kPa(state.data.systolic),
+                        ? Pressure.mmHg(state.data.systolic.toInt())
+                        : Pressure.kPa(state.data.systolic),
                     dia: state.data.isMMHG
-                      ? Pressure.mmHg(state.data.diastolic.toInt())
-                      : Pressure.kPa(state.data.diastolic),
+                        ? Pressure.mmHg(state.data.diastolic.toInt())
+                        : Pressure.kPa(state.data.diastolic),
                     pul: state.data.pulse?.toInt(),
+                    arm: null,
+                    source: BloodPressureRecordSource.bluetooth,
                   );
                   widget.onMeasurement(record);
                   setState(() {
@@ -153,12 +164,11 @@ class _OldBluetoothInputState extends ConsumerState<OldBluetoothInput> with Logg
               logDebug('_OldBluetoothInputState BleReadCubit: $state');
               const SizeChangedLayoutNotification().dispatch(context);
               return switch (state) {
-                BleReadInProgress() => _buildMainCard(context,
+                BleReadInProgress() => _buildMainCard(
+                  context,
                   child: const CircularProgressIndicator(),
                 ),
-                BleReadFailure() => MeasurementFailure(
-                  onTap: _returnToIdle,
-                ),
+                BleReadFailure() => MeasurementFailure(onTap: _returnToIdle),
                 BleReadSuccess() => MeasurementSuccess(
                   onTap: _returnToIdle,
                   data: state.data,
@@ -175,16 +185,13 @@ class _OldBluetoothInputState extends ConsumerState<OldBluetoothInput> with Logg
   Widget build(BuildContext context) {
     const SizeChangedLayoutNotification().dispatch(context);
     if (_finishedData != null) {
-      return MeasurementSuccess(
-        onTap: _returnToIdle,
-        data: _finishedData!,
-      );
+      return MeasurementSuccess(onTap: _returnToIdle, data: _finishedData!);
     }
     if (_isActive) return _buildActive(context);
     return ClosedBluetoothInput(
       bluetoothCubit: _bluetoothCubit,
       onStarted: () async {
-        setState(() =>_isActive = true);
+        setState(() => _isActive = true);
       },
       inputInfo: () async {
         if (context.mounted) {
@@ -199,12 +206,9 @@ class _OldBluetoothInputState extends ConsumerState<OldBluetoothInput> with Logg
     );
   }
 
-  Widget _buildMainCard(BuildContext context, {
+  Widget _buildMainCard(
+    BuildContext context, {
     required Widget child,
     Widget? title,
-  }) => InputCard(
-    onClosed: _returnToIdle,
-    title: title,
-    child: child,
-  );
+  }) => InputCard(onClosed: _returnToIdle, title: title, child: child);
 }

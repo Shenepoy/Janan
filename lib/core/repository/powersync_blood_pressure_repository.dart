@@ -26,23 +26,29 @@ class PowerSyncBloodPressureRepository extends BloodPressureRepository {
     );
     if (existing.isEmpty) {
       await _db.execute(
-        'INSERT INTO blood_pressure (id, timestamp_unix_s, sys_kpa, dia_kpa, pul) '
-        'VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO blood_pressure '
+        '(id, timestamp_unix_s, sys_kpa, dia_kpa, pul, arm, source) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?)',
         [
           _uuid.v4(),
           timeSec,
           record.sys?.kPa,
           record.dia?.kPa,
           record.pul,
+          record.arm?.name,
+          record.source.name,
         ],
       );
     } else {
       await _db.execute(
-        'UPDATE blood_pressure SET sys_kpa = ?, dia_kpa = ?, pul = ? WHERE id = ?',
+        'UPDATE blood_pressure SET sys_kpa = ?, dia_kpa = ?, pul = ?, '
+        'arm = ?, source = ? WHERE id = ?',
         [
           record.sys?.kPa,
           record.dia?.kPa,
           record.pul,
+          record.arm?.name,
+          record.source.name,
           existing.first['id'],
         ],
       );
@@ -53,7 +59,7 @@ class PowerSyncBloodPressureRepository extends BloodPressureRepository {
   @override
   Future<List<BloodPressureRecord>> get(DateRange range) async {
     final results = await _db.getAll(
-      'SELECT timestamp_unix_s, sys_kpa, dia_kpa, pul FROM blood_pressure '
+      'SELECT timestamp_unix_s, sys_kpa, dia_kpa, pul, arm, source FROM blood_pressure '
       'WHERE timestamp_unix_s BETWEEN ? AND ?',
       [range.startStamp, range.endStamp],
     );
@@ -64,6 +70,8 @@ class PowerSyncBloodPressureRepository extends BloodPressureRepository {
         sys: _decodePressure(r['sys_kpa']),
         dia: _decodePressure(r['dia_kpa']),
         pul: _decodeInt(r['pul']),
+        arm: BloodPressureArm.fromStorage(r['arm']),
+        source: BloodPressureRecordSource.fromStorage(r['source']),
       );
       if (rec.sys != null || rec.dia != null || rec.pul != null) {
         records.add(rec);

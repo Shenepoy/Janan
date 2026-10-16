@@ -8,6 +8,7 @@ import 'package:blood_pressure_app/features/export_import/ui/export_column_manag
 import 'package:blood_pressure_app/features/export_import/ui/export_field_format_documentation_screen.dart';
 import 'package:blood_pressure_app/features/export_import/ui/export_warn_banner.dart';
 import 'package:blood_pressure_app/features/export_import/ui/import_button.dart';
+import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:blood_pressure_app/features/settings/tiles/dropdown_list_tile.dart';
 import 'package:blood_pressure_app/features/settings/tiles/input_list_tile.dart';
@@ -28,6 +29,7 @@ class ExportImportScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(exportSettingsProvider);
+    final appSettings = ref.watch(appSettingsProvider);
     return ListenableBuilder(
       listenable: Listenable.merge([
         settings,
@@ -158,7 +160,10 @@ class ExportImportScreen extends ConsumerWidget {
                 if (settings.exportFormat == ExportFormat.csv)
                   _CsvOptions(ref: ref),
                 if (settings.exportFormat == ExportFormat.pdf)
-                  _PdfOptions(ref: ref),
+                  _PdfOptions(
+                    ref: ref,
+                    trackArmSide: appSettings.trackArmSide,
+                  ),
               ],
             ),
             if (showsColumns)
@@ -230,9 +235,10 @@ class _CsvOptions extends StatelessWidget {
 }
 
 class _PdfOptions extends StatelessWidget {
-  const _PdfOptions({required this.ref});
+  const _PdfOptions({required this.ref, required this.trackArmSide});
 
   final WidgetRef ref;
+  final bool trackArmSide;
 
   @override
   Widget build(BuildContext context) {
@@ -253,6 +259,21 @@ class _PdfOptions extends StatelessWidget {
             pdfExportSettings.exportStatistics = value;
           },
         ),
+        if (trackArmSide && pdfExportSettings.exportStatistics)
+          DropDownListTile<String>(
+            leading: const Icon(Icons.swap_horiz),
+            title: Text('pdfArmFilter'.tr()),
+            subtitle: Text('pdfArmFilterDescription'.tr()),
+            value: pdfExportSettings.armFilter,
+            items: [
+              DropdownMenuItem(value: 'all', child: Text('allArms'.tr())),
+              DropdownMenuItem(value: 'left', child: Text('leftArm'.tr())),
+              DropdownMenuItem(value: 'right', child: Text('rightArm'.tr())),
+            ],
+            onChanged: (value) {
+              if (value != null) pdfExportSettings.armFilter = value;
+            },
+          ),
         SwitchSettingsTile(
           title: Text('exportPdfExportData'.tr()),
           value: pdfExportSettings.exportData,

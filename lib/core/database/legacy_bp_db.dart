@@ -31,6 +31,7 @@ class LegacyBpDb {
         sys: _decodePressure(r['sys']),
         dia: _decodePressure(r['dia']),
         pul: _decodeInt(r['pul']),
+        source: BloodPressureRecordSource.unknown,
       );
       if (rec.sys != null || rec.dia != null || rec.pul != null) {
         records.add(rec);

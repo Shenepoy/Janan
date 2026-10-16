@@ -449,32 +449,37 @@ class _AppRootState extends ConsumerState<_AppRoot> {
         unawaited(_setDebugServer(enabled));
       });
     }
-    _intakeClaims = ref.read(medicineIntakeRepositoryProvider).subscribe().listen((
-      intake,
-    ) {
-      final settings = ref.read(appSettingsProvider);
-      final occurrenceId = intake?.occurrenceId;
-      if (!settings.shiftMissedDoseTimes) {
-        if (occurrenceId == null) return;
-        unawaited(
-          MedicationReminderRuntime.instance.cancelClaimedDose(occurrenceId),
-        );
-        ref.invalidate(homeMedicationOccurrencesProvider);
-        ref.invalidate(todayMedicationOccurrencesProvider);
-        ref.invalidate(medicationDayProvider);
-        return;
-      }
-      if (occurrenceId != null) {
-        unawaited(
-          MedicationReminderRuntime.instance.cancelClaimedDose(occurrenceId),
-        );
-      }
-      ref.invalidate(homeMedicationOccurrencesProvider);
-      ref.invalidate(todayMedicationOccurrencesProvider);
-      ref.invalidate(medicationDayProvider);
-      if (!mounted) return;
-      unawaited(_refreshMedicationRuntime(settings.medicineFeatureEnabled));
-    });
+    _intakeClaims = ref
+        .read(medicineIntakeRepositoryProvider)
+        .subscribe()
+        .listen((intake) {
+          final settings = ref.read(appSettingsProvider);
+          final occurrenceId = intake?.occurrenceId;
+          if (!settings.shiftMissedDoseTimes) {
+            if (occurrenceId == null) return;
+            unawaited(
+              MedicationReminderRuntime.instance.cancelClaimedDose(
+                occurrenceId,
+              ),
+            );
+            ref.invalidate(homeMedicationOccurrencesProvider);
+            ref.invalidate(todayMedicationOccurrencesProvider);
+            ref.invalidate(medicationDayProvider);
+            return;
+          }
+          if (occurrenceId != null) {
+            unawaited(
+              MedicationReminderRuntime.instance.cancelClaimedDose(
+                occurrenceId,
+              ),
+            );
+          }
+          ref.invalidate(homeMedicationOccurrencesProvider);
+          ref.invalidate(todayMedicationOccurrencesProvider);
+          ref.invalidate(medicationDayProvider);
+          if (!mounted) return;
+          unawaited(_refreshMedicationRuntime(settings.medicineFeatureEnabled));
+        });
   }
 
   @override
@@ -563,6 +568,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
           previous.shiftMissedDoseTimes != next.shiftMissedDoseTimes ||
           previous.missedDoseShiftLimitMinutes !=
               next.missedDoseShiftLimitMinutes ||
+          previous.dueIndicatorDivisor != next.dueIndicatorDivisor ||
           previous.showAllReminderRings != next.showAllReminderRings;
       if (remindersChanged) {
         unawaited(_refreshMedicationRuntime(next.medicineFeatureEnabled));

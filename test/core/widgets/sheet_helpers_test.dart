@@ -151,4 +151,51 @@ void main() {
     expect(find.byKey(const ValueKey('safaeh_cancel')), findsNothing);
     expect(find.byIcon(Icons.close), findsOneWidget);
   });
+
+  testWidgets('wide sheet content ignores the display horizontal safe inset', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewPadding = const FakeViewPadding(left: 96);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewPadding);
+
+    await pumpApp(
+      tester,
+      await materialApp(
+        Builder(
+          builder: (context) => TextButton(
+            key: const ValueKey('open-inset-sheet'),
+            onPressed: () {
+              showResponsiveSheet<void>(
+                context: context,
+                title: 'Inset sheet',
+                child: const SafeArea(
+                  child: SizedBox(
+                    key: ValueKey('inset-sheet-content'),
+                    width: 80,
+                    height: 80,
+                  ),
+                ),
+              );
+            },
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('open-inset-sheet')));
+    await tester.pumpAndSettle();
+
+    final panelRect = tester.getRect(
+      find.byKey(const ValueKey('safaeh_panel')),
+    );
+    final contentRect = tester.getRect(
+      find.byKey(const ValueKey('inset-sheet-content')),
+    );
+    expect(contentRect.center.dx, closeTo(panelRect.center.dx, 1));
+  });
 }

@@ -1,4 +1,5 @@
 export 'ble_blacklist_entry.dart';
+export 'blood_pressure_arm.dart';
 export 'blood_pressure_record.dart';
 export 'bodyweight_record.dart';
 export 'date_range.dart';

@@ -20,7 +20,7 @@ void main() {
     await tester.enterText(measurementValueField('Pulse'), '89');
 
     expect(key.currentState?.validate(), true);
-    expect(key.currentState?.save(), (sys: 123, dia: 67, pul: 89));
+    expect(key.currentState?.save(), (sys: 123, dia: 67, pul: 89, arm: null));
   });
 
   testWidgets('shows errors on bad inputs', (WidgetTester tester) async {
@@ -33,23 +33,38 @@ void main() {
     expect(find.text('..,..'), findsNothing);
 
     expect(find.text('Please enter a number'), findsNothing);
-    expect(find.text('Number <= 30? Turn off validation in settings!'), findsNothing);
+    expect(
+      find.text('Number <= 30? Turn off validation in settings!'),
+      findsNothing,
+    );
 
     await tester.enterText(find.byType(TextField).first, '13');
     await tester.pump();
     expect(key.currentState!.validate(), isFalse);
     await tester.pumpAndSettle();
 
-    expect(find.text('Number <= 30? Turn off validation in settings!'), findsOneWidget);
-    expect(find.text('Unrealistic value? Turn off validation in settings!'), findsNothing);
+    expect(
+      find.text('Number <= 30? Turn off validation in settings!'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Unrealistic value? Turn off validation in settings!'),
+      findsNothing,
+    );
 
     await tester.enterText(find.byType(TextField).first, '500');
     await tester.pump();
     expect(key.currentState!.validate(), isFalse);
     await tester.pumpAndSettle();
 
-    expect(find.text('Number <= 30? Turn off validation in settings!'), findsNothing);
-    expect(find.text('Unrealistic value? Turn off validation in settings!'), findsOneWidget);
+    expect(
+      find.text('Number <= 30? Turn off validation in settings!'),
+      findsNothing,
+    );
+    expect(
+      find.text('Unrealistic value? Turn off validation in settings!'),
+      findsOneWidget,
+    );
 
     await tester.enterText(measurementValueField('Systolic'), '123');
     await tester.enterText(measurementValueField('Diastolic'), '67');
@@ -58,8 +73,15 @@ void main() {
     expect(key.currentState!.validate(), isFalse);
     await tester.pumpAndSettle();
 
-    expect(find.text('Unrealistic value? Turn off validation in settings!'), findsNothing);
-    expect(find.text('Please enter a number'), findsOneWidget, reason: 'pul is null');
+    expect(
+      find.text('Unrealistic value? Turn off validation in settings!'),
+      findsNothing,
+    );
+    expect(
+      find.text('Please enter a number'),
+      findsOneWidget,
+      reason: 'pul is null',
+    );
 
     await tester.enterText(measurementValueField('Systolic'), '90');
     await tester.enterText(measurementValueField('Diastolic'), '130');
@@ -68,14 +90,25 @@ void main() {
     expect(key.currentState!.validate(), isFalse);
     await tester.pumpAndSettle();
 
-    expect(find.text('Unrealistic value? Turn off validation in settings!'), findsNothing);
-    expect(find.text('dia >= sys? Turn off validation in settings!'), findsOneWidget);
+    expect(
+      find.text('Unrealistic value? Turn off validation in settings!'),
+      findsNothing,
+    );
+    expect(
+      find.text('dia >= sys? Turn off validation in settings!'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('loads initial values', (WidgetTester tester) async {
-    await pumpApp(tester, await materialApp(BloodPressureForm(
-      initialValue: (sys: 123, dia: 67, pul: 89),
-    )));
+    await pumpApp(
+      tester,
+      await materialApp(
+        BloodPressureForm(
+          initialValue: (sys: 123, dia: 67, pul: 89, arm: null),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('123'), findsOneWidget);
     expect(find.text('67'), findsOneWidget);
