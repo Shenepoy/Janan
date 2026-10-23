@@ -49,6 +49,27 @@ void main() {
     expect(await repo.getAll(), [med]);
   });
 
+  test('editing a medicine retains its identity for linked records', () async {
+    expect(available, isTrue, reason: 'PowerSync must run this regression');
+    final repo = PowerSyncMedicineRepository(db!);
+    const original = Medicine(designation: 'Original', color: 1);
+    const edited = Medicine(designation: 'Renamed', color: 2);
+    await repo.add(original);
+    final id = await repo.idFor(original);
+    final intakeRepo = PowerSyncMedicineIntakeRepository(db!);
+    final time = DateTime(2026, 10, 23, 8);
+    await intakeRepo.add(
+      MedicineIntake(time: time, medicine: original, dosis: Weight.mg(5)),
+    );
+
+    await repo.update(original, edited);
+
+    expect(await repo.idFor(edited), id);
+    expect(await repo.idFor(original), isNull);
+    final intakes = await intakeRepo.get(DateRange.all());
+    expect(intakes.singleWhere((i) => i.time == time).medicine, original);
+  });
+
   test('intakes of a soft-deleted medicine still store', () async {
     if (!available) return;
     final medRepo = PowerSyncMedicineRepository(db!);

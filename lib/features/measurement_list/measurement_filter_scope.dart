@@ -22,9 +22,7 @@ class MeasurementFilterScope extends InheritedNotifier<MeasurementFilterControll
     required super.child,
   }) : super(notifier: controller);
 
-  static MeasurementFilterController? maybeOf(BuildContext context) {
-    return context
+  static MeasurementFilterController? maybeOf(BuildContext context) => context
         .dependOnInheritedWidgetOfExactType<MeasurementFilterScope>()
         ?.notifier;
-  }
 }

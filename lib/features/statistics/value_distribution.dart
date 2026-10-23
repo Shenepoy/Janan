@@ -1,7 +1,7 @@
 import 'dart:math';
-
 import 'package:blood_pressure_app/features/statistics/chart/chart_tooltip.dart';
 import 'package:blood_pressure_app/features/statistics/chart/time_axis_titles.dart';
+import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_snapshot.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -14,26 +14,30 @@ class ValueDistribution extends StatelessWidget {
     super.key,
     required this.values,
     required this.color,
+    this.fractionDigits = 0,
+    this.unitLabel = '',
   });
 
   /// Raw list of all values to calculate the distribution from.
-  final Iterable<int> values;
+  final Iterable<num> values;
 
   /// Color of the data bars on the graph.
   final Color color;
+  final int fractionDigits;
+  final String unitLabel;
 
   @override
   Widget build(BuildContext context) {
     final localeTag = Localizations.localeOf(context).toString();
     if (values.isEmpty) {
-      return Center(
-        child: SafaehStatusBody(message: Text('errNoData'.tr())),
-      );
+      return Center(child: SafaehStatusBody(message: Text('errNoData'.tr())));
     }
     return _ValueDistributionChart(
       key: ValueKey<String>(localeTag),
       values: values,
       color: color,
+      fractionDigits: fractionDigits,
+      unitLabel: unitLabel,
     );
   }
 }
@@ -43,13 +47,18 @@ class _ValueDistributionChart extends StatefulWidget {
     super.key,
     required this.values,
     required this.color,
+    required this.fractionDigits,
+    required this.unitLabel,
   });
 
-  final Iterable<int> values;
+  final Iterable<num> values;
   final Color color;
+  final int fractionDigits;
+  final String unitLabel;
 
   @override
-  State<_ValueDistributionChart> createState() => _ValueDistributionChartState();
+  State<_ValueDistributionChart> createState() =>
+      _ValueDistributionChartState();
 }
 
 class _ValueDistributionChartState extends State<_ValueDistributionChart> {
@@ -75,15 +84,27 @@ class _ValueDistributionChartState extends State<_ValueDistributionChart> {
 
   @override
   Widget build(BuildContext context) {
+    final values = widget.values.map((value) => value.toDouble()).toList();
+    final binFactor = pow(10, widget.fractionDigits).toDouble();
     final distribution = <int, int>{};
-    var sum = 0;
-    for (final v in widget.values) {
-      distribution[v] = (distribution[v] ?? 0) + 1;
-      sum += v;
+    for (final v in values) {
+      final bin = (v * binFactor).round();
+      distribution[bin] = (distribution[bin] ?? 0) + 1;
     }
     final minVal = distribution.keys.reduce(min);
     final maxVal = distribution.keys.reduce(max);
-    final avg = (sum / widget.values.length).round();
+    final central =
+        values.fold(0.0, (sum, value) => sum + value) / values.length;
+    final centralBin = (central * binFactor).round();
+    String formatted(num value) =>
+        formatDashboardNumber(value.toDouble(), digits: widget.fractionDigits);
+    final centralLabel = 'avgOf'.tr(namedArgs: {'txt': formatted(central)});
+    final minLabel = 'minOf'.tr(
+      namedArgs: {'txt': formatted(values.reduce(min))},
+    );
+    final maxLabel = 'maxOf'.tr(
+      namedArgs: {'txt': formatted(values.reduce(max))},
+    );
     final maxCount = distribution.values.reduce(max);
     final theme = Theme.of(context);
     final labelStyle = theme.textTheme.labelSmall ?? const TextStyle();
@@ -97,18 +118,16 @@ class _ValueDistributionChartState extends State<_ValueDistributionChart> {
               toY: (distribution[value] ?? 0).toDouble(),
               color: widget.color,
               width: 8,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(3),
+              ),
             ),
           ],
         ),
     ];
 
     return Semantics(
-      label: [
-        'minOf'.tr(namedArgs: {'txt': '$minVal'}),
-        'avgOf'.tr(namedArgs: {'txt': '$avg'}),
-        'maxOf'.tr(namedArgs: {'txt': '$maxVal'}),
-      ].join(', '),
+      label: [minLabel, centralLabel, maxLabel, widget.unitLabel].join(', '),
       child: Stack(
         children: [
           BarChart(
@@ -120,10 +139,8 @@ class _ValueDistributionChartState extends State<_ValueDistributionChart> {
               barGroups: groups,
               gridData: FlGridData(
                 drawVerticalLine: false,
-                getDrawingHorizontalLine: (_) => FlLine(
-                  color: theme.dividerColor,
-                  strokeWidth: 1,
-                ),
+                getDrawingHorizontalLine: (_) =>
+                    FlLine(color: theme.dividerColor, strokeWidth: 1),
               ),
               borderData: FlBorderData(
                 show: true,
@@ -156,11 +173,13 @@ class _ValueDistributionChartState extends State<_ValueDistributionChart> {
                       final v = value.round();
                       final String? text;
                       if (v == minVal) {
-                        text = 'minOf'.tr(namedArgs: {'txt': '$minVal'});
+                        text = minLabel;
                       } else if (v == maxVal && maxVal != minVal) {
-                        text = 'maxOf'.tr(namedArgs: {'txt': '$maxVal'});
-                      } else if (v == avg && avg != minVal && avg != maxVal) {
-                        text = 'avgOf'.tr(namedArgs: {'txt': '$avg'});
+                        text = maxLabel;
+                      } else if (v == centralBin &&
+                          centralBin != minVal &&
+                          centralBin != maxVal) {
+                        text = centralLabel;
                       } else {
                         return const SizedBox.shrink();
                       }
@@ -182,9 +201,7 @@ class _ValueDistributionChartState extends State<_ValueDistributionChart> {
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
                     final count = rod.toY.round();
                     return BarTooltipItem(
-                      '${group.x}\n${'occurrenceCount'.tr(namedArgs: {
-                        'count': '$count',
-                      })}',
+                      '${formatted(group.x / binFactor)} ${widget.unitLabel}\n${'occurrenceCount'.tr(namedArgs: {'count': '$count'})}',
                       chartTooltipTitleStyle(context),
                     );
                   },

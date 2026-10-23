@@ -26,6 +26,11 @@ Any meter that implements the Bluetooth [Blood Pressure Service (`0x1810`)](http
 | METIKO MT-YK-BPA1 | | Yonker | ? | |
 | Microlife BP3GY1-2N | BP3GY1-2N | Microlife | ? | Downloads all stored readings |
 
+The standard GATT profile applies swapped-field and hidden-user-ID decoding
+only to BM85, backed by recorded packets. BM48 and ELITE900 remain recognized
+names but use standard decoding; their decoding has not been verified here
+with device captures. Recognition alone is not a compatibility test.
+
 ### How meters send data
 
 Meters differ in when they talk and what they send.

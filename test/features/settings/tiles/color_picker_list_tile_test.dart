@@ -6,6 +6,78 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../util.dart';
 
 void main() {
+  testWidgets('quick choices update the preview and allow clearing the color', (
+    tester,
+  ) async {
+    Color selected = Colors.teal;
+    await pumpApp(
+      tester,
+      await materialApp(
+        StatefulBuilder(
+          builder: (context, setState) => ColorSelectionListTile(
+            title: const Text('Color'),
+            initialColor: selected,
+            showQuickColors: true,
+            onMainColorChanged: (value) => setState(() => selected = value),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byTooltip('Blue'));
+    await tester.pumpAndSettle();
+    expect(selected, Colors.blue);
+    expect(
+      tester.getCenter(find.text('Color')).dy,
+      tester.getCenter(find.byTooltip('More colors')).dy,
+    );
+    expect(find.byType(ColorPicker), findsNothing);
+    await tester.tap(find.byTooltip('No color'));
+    await tester.pumpAndSettle();
+    expect(selected, Colors.transparent);
+    expect(find.byType(CircleAvatar), findsNothing);
+    expect(
+      tester.getCenter(find.text('Color')).dy,
+      tester.getCenter(find.byTooltip('More colors')).dy,
+    );
+  });
+
+  testWidgets(
+    'narrow quick palette preserves custom colors and opens full palette',
+    (tester) async {
+      usePhoneTestSurface(tester);
+      const custom = Color(0xff123456);
+      Color? selected;
+      await pumpApp(
+        tester,
+        await materialApp(
+          Center(
+            child: SizedBox(
+              width: 200,
+              child: ColorSelectionListTile(
+                title: const Text('Color'),
+                initialColor: custom,
+                showQuickColors: true,
+                showTransparentColor: false,
+                onMainColorChanged: (value) => selected = value,
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.byTooltip('Custom color'), findsNWidgets(2));
+      expect(find.byTooltip('No color'), findsNothing);
+      await tester.tap(find.byTooltip('Custom color').last);
+      expect(selected, custom);
+      await tester.tap(find.byTooltip('More colors'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ColorPicker), findsOneWidget);
+      await tester.tap(find.byElementPredicate(findColored(Colors.red)));
+      await tester.pumpAndSettle();
+      expect(selected, Colors.red);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('should initialize without errors', (tester) async {
     await pumpApp(
       tester,

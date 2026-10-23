@@ -879,8 +879,7 @@ class _TimeFormatPickerState extends State<_TimeFormatPicker> {
   ];
 
   @override
-  Widget build(BuildContext context) {
-    return SafaehTilePickerBody<String>(
+  Widget build(BuildContext context) => SafaehTilePickerBody<String>(
       showTitleInBody: false,
       selected: widget.selected,
       options: [
@@ -892,5 +891,4 @@ class _TimeFormatPickerState extends State<_TimeFormatPicker> {
           ),
       ],
     );
-  }
 }

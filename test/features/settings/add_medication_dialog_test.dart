@@ -1,5 +1,4 @@
 import 'package:blood_pressure_app/features/settings/add_medication_dialog.dart';
-import 'package:blood_pressure_app/features/settings/tiles/color_picker_list_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
@@ -7,6 +6,37 @@ import 'package:blood_pressure_app/domain/domain.dart';
 import '../../util.dart';
 
 void main() {
+  testWidgets('medicine page returns the entered name and dose on save', (
+    tester,
+  ) async {
+    usePhoneTestSurface(tester);
+    Medicine? saved;
+    await pumpApp(
+      tester,
+      await materialApp(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () async {
+              saved = await showAddMedicineDialog(context);
+            },
+            child: const Text('New medicine'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('New medicine'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add medication'), findsOneWidget);
+    expect(find.byType(BackButton), findsOneWidget);
+    await tester.enterText(find.byType(TextFormField).first, 'Amlodipine');
+    await tester.enterText(find.byType(TextFormField).at(1), '5');
+    await tester.tap(find.text('Save medicine'));
+    await tester.pumpAndSettle();
+    expect(saved?.designation, 'Amlodipine');
+    expect(saved?.dosis?.mg, 5);
+    expect(find.byType(AddMedicationDialog), findsNothing);
+    expect(find.text('New medicine'), findsOneWidget);
+  });
   testWidgets('should prefill initialValue', (tester) async {
     await pumpApp(
       tester,
@@ -52,7 +82,7 @@ void main() {
     usePhoneTestSurface(tester);
     await pumpApp(tester, await materialApp(const AddMedicationDialog()));
 
-    await tester.tap(find.byType(ColorSelectionListTile));
+    await tester.tap(find.byTooltip('More colors'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -86,7 +116,7 @@ void main() {
 
   testWidgets('requires a name before save', (tester) async {
     await pumpApp(tester, await materialApp(const AddMedicationDialog()));
-    await tester.tap(find.text('SAVE'));
+    await tester.tap(find.text('Save medicine'));
     await tester.pumpAndSettle();
     expect(find.text('Please enter a name'), findsOneWidget);
     expect(find.byType(AddMedicationDialog), findsOneWidget);

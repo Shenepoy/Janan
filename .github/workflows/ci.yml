@@ -65,6 +65,11 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Test medication schedules across daylight saving time
+        env:
+          TZ: Europe/Berlin
+        run: flutter test test/core/medication_persistence_test.dart
+
       - name: Golden tests
         run: flutter test --tags gold --run-skipped
 
@@ -106,6 +111,13 @@ jobs:
 
       - name: Build debug APK
         run: flutter build apk --debug
+
+      - name: Native widget unit tests
+        working-directory: android
+        run: ./gradlew :app:testDebugUnitTest
+
+      - name: Signing property serialization
+        run: python3 scripts/ci/test_signing_properties.py
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

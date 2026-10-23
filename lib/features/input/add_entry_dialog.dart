@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
 import 'package:blood_pressure_app/components/confirm_deletion_dialog.dart';
-import 'package:blood_pressure_app/components/fullscreen_dialog.dart';
+import 'package:blood_pressure_app/components/form_bottom_action.dart';
+import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/features/input/forms/add_entry_form.dart';
 import 'package:blood_pressure_app/features/input/forms/add_multiple_entries_form.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
@@ -45,19 +46,30 @@ class AddEntryDialog extends ConsumerStatefulWidget {
 
 class _AddEntryDialogState extends ConsumerState<AddEntryDialog> with Loggable {
   final formKey = GlobalKey<AddMultipleEntriesFormState>();
+  bool _saving = false;
+  bool _committed = false;
 
   Future<void> _onSavePressed() async {
+    if (_saving || _committed) return;
     if (!(formKey.currentState?.validate() ?? false)) return;
     final result = formKey.currentState?.save();
-    logDebug('Returning result: $result');
-    if (result != null) {
+    if (result == null) return;
+    setState(() => _saving = true);
+    try {
       await widget.onCommit?.call(result);
+      _committed = true;
+      if (!mounted) return;
+      Navigator.pop(context, result);
+    } catch (error, stack) {
+      logError('Entry save failed', error: error, stackTrace: stack);
+      if (mounted) context.showError('entrySaveFailed'.tr());
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-    if (!mounted) return;
-    Navigator.pop(context, result);
   }
 
   Future<bool> shouldPop() async {
+    if (_saving) return false;
     if (ref.read(appSettingsProvider).validateInputs &&
         (formKey.currentState?.isDirty ?? false)) {
       final res = await showConfirmDeletionDialog(
@@ -86,38 +98,62 @@ class _AddEntryDialogState extends ConsumerState<AddEntryDialog> with Loggable {
           Navigator.pop(context, result);
         }
       },
-      child: FullscreenDialog(
-        actionButtonText: 'btnSave'.tr(),
-        actionAsFab: true,
-        fabBurstKind: burstKind,
-        onActionButtonPressed: _onSavePressed,
-        // Popping though in-app buttons
-        canClose: shouldPop,
-        bottomAppBar: ref.watch(appSettingsProvider).bottomAppBars,
-        body: AddMultipleEntriesForm(
-          key: formKey,
-          initialValue: widget.initialRecord == null
-              ? null
-              : [widget.initialRecord!],
-          showBluetooth: widget.initialRecord == null,
-          kind: kind,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: BackButton(
+            onPressed: () async {
+              if (await shouldPop() && context.mounted) {
+                Navigator.pop(context);
+              }
+            },
+          ),
+          title: Text(
+            widget.initialRecord != null
+                ? 'editEntry'.tr()
+                : switch (kind) {
+                    AddEntryKind.bloodPressure => 'addMeasurement'.tr(),
+                    AddEntryKind.medicine => 'logMedicineDose'.tr(),
+                    AddEntryKind.weight => 'addWeightEntry'.tr(),
+                  },
+          ),
+        ),
+        body: FormBottomAction.overlay(
+          label: kind == AddEntryKind.bloodPressure
+              ? 'saveReading'.tr()
+              : 'btnSave'.tr(),
+          icon: const Icon(Icons.check),
+          burstKind: burstKind,
+          onPressed: _saving || _committed ? null : _onSavePressed,
+          body: AddMultipleEntriesForm(
+            key: formKey,
+            initialValue: widget.initialRecord == null
+                ? null
+                : [widget.initialRecord!],
+            showBluetooth: widget.initialRecord == null,
+            kind: kind,
+            bottomPadding:
+                FormBottomAction.clearance +
+                MediaQuery.paddingOf(context).bottom,
+          ),
         ),
       ),
     );
   }
 }
 
-/// Shows a dialog to input a blood pressure measurement or a medication.
+/// Opens a full editor page for a reading or a medicine intake.
 Future<List<CombinedEntry>?> showAddEntryDialog(
   BuildContext context, [
   CombinedEntry? initialRecord,
   AddEntryKind? kind,
 ]) async {
   if (context.mounted) {
-    return showDialog<List<CombinedEntry>>(
-      context: context,
-      builder: (context) =>
-          AddEntryDialog(initialRecord: initialRecord, kind: kind),
+    return Navigator.push<List<CombinedEntry>>(
+      context,
+      MaterialPageRoute<List<CombinedEntry>>(
+        builder: (_) =>
+            AddEntryDialog(initialRecord: initialRecord, kind: kind),
+      ),
     );
   }
   return null;

@@ -1,6 +1,8 @@
 import 'package:blood_pressure_app/core/database/legacy_bp_db.dart';
+import 'package:blood_pressure_app/core/database/medication_backup_import.dart';
 import 'package:blood_pressure_app/core/repository/powersync_medicine_repository.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:powersync/powersync.dart';
 import 'package:sqflite/sqflite.dart';
 
 /// Import a `.db` file that is either legacy `bp.db` or a PowerSync `health.db`.
@@ -9,6 +11,7 @@ import 'package:sqflite/sqflite.dart';
 /// opened with PowerSync, so a random pick cannot get schema written onto it.
 Future<int> importMeasurementDatabase({
   required String path,
+  required PowerSyncDatabase targetDatabase,
   required BloodPressureRepository bpRepo,
   required NoteRepository noteRepo,
   required MedicineIntakeRepository intakeRepo,
@@ -30,6 +33,7 @@ Future<int> importMeasurementDatabase({
     if (await LegacyBpDb.looksLikeHealth(sqlite)) {
       return await _importHealth(
         sqlite,
+        targetDatabase: targetDatabase,
         bpRepo: bpRepo,
         noteRepo: noteRepo,
         intakeRepo: intakeRepo,
@@ -77,28 +81,14 @@ Future<int> _importLegacy(
 
 Future<int> _importHealth(
   Database sqlite, {
+  required PowerSyncDatabase targetDatabase,
   required BloodPressureRepository bpRepo,
   required NoteRepository noteRepo,
   required MedicineIntakeRepository intakeRepo,
   required MedicineRepository medRepo,
   required BodyweightRepository weightRepo,
 }) async {
-  var count = 0;
-  for (final m in await _query(
-    sqlite,
-    'SELECT * FROM medicines',
-  )) {
-    await _upsertMedicine(
-      medRepo,
-      Medicine(
-        designation: m['designation'].toString(),
-        dosis: _decodeMg(m['default_dose_mg']),
-        unit: MedicationUnit.parse(m['dose_unit']),
-        color: m['color'] as int?,
-      ),
-      removed: m['removed'] == 1 || m['removed'] == true,
-    );
-  }
+  var count = await importMedicationBackup(sqlite, targetDatabase);
   for (final r in await _query(sqlite, 'SELECT * FROM blood_pressure')) {
     final timeS = r['timestamp_unix_s'] as int?;
     if (timeS == null) continue;
@@ -136,33 +126,13 @@ Future<int> _importHealth(
     final timeS = r['timestamp_unix_s'] as int?;
     final kg = r['weight_kg'] as num?;
     if (timeS == null || kg == null) continue;
-    await weightRepo.add(BodyweightRecord(
-      time: DateTimeS.fromSecondsSinceEpoch(timeS),
-      weight: Weight.kg(kg.toDouble()),
-      impedanceOhm: (r['impedance_ohm'] as num?)?.toDouble(),
-    ));
-    count++;
-  }
-  for (final r in await _query(
-    sqlite,
-    'SELECT i.timestamp_unix_s, i.dosis_mg, m.designation, m.color, '
-    'm.default_dose_mg, m.dose_unit FROM intakes AS i '
-    'JOIN medicines AS m ON m.id = i.med_id '
-    'WHERE i.dosis_mg IS NOT NULL',
-  )) {
-    final timeS = r['timestamp_unix_s'] as int?;
-    final dosis = _decodeMg(r['dosis_mg']);
-    if (timeS == null || dosis == null) continue;
-    await intakeRepo.add(MedicineIntake(
-      time: DateTimeS.fromSecondsSinceEpoch(timeS),
-      dosis: dosis,
-      medicine: Medicine(
-        designation: r['designation'] as String,
-        dosis: _decodeMg(r['default_dose_mg']),
-        unit: MedicationUnit.parse(r['dose_unit']),
-        color: r['color'] as int?,
+    await weightRepo.add(
+      BodyweightRecord(
+        time: DateTimeS.fromSecondsSinceEpoch(timeS),
+        weight: Weight.kg(kg.toDouble()),
+        impedanceOhm: (r['impedance_ohm'] as num?)?.toDouble(),
       ),
-    ));
+    );
     count++;
   }
   return count;
@@ -197,9 +167,4 @@ int? _decodeInt(Object? value) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   return null;
-}
-
-Weight? _decodeMg(Object? value) {
-  if (value is! num) return null;
-  return Weight.mg(value.toDouble());
 }

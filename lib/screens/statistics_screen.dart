@@ -88,18 +88,17 @@ class _StatisticsDashboard extends StatelessWidget {
           DashboardSection(
             icon: Icons.bar_chart,
             title: 'valueDistribution'.tr(),
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 8),
-            child: SizedBox(
-              height: 260,
-              child: BloodPressureDistribution(
-                records: snapshot.entriesNewestFirst.records,
-              ),
+            explanation: 'valueDistributionExplanation'.tr(),
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 8),
+            child: BloodPressureDistribution(
+              records: snapshot.entriesNewestFirst.records,
             ),
           ),
           DashboardSection(
             icon: Icons.schedule,
             title: 'timeResolvedMetrics'.tr(),
-            padding: const EdgeInsetsDirectional.fromSTEB(8, 16, 8, 8),
+            explanation: 'clockChartExplanation'.tr(),
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 8),
             child: ClockBpGraph(
               measurements: snapshot.entriesNewestFirst.records,
             ),

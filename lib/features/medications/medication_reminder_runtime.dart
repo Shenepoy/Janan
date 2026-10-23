@@ -448,7 +448,7 @@ class MedicationReminderRuntime {
     };
     for (final schedule in schedules.where((item) => item.active)) {
       for (var offset = 0; offset < 14; offset++) {
-        final day = today.add(Duration(days: offset));
+        final day = DateTime(today.year, today.month, today.day + offset);
         if (!schedule.weekdays.contains(day.weekday)) continue;
         if (schedule.startDate != null &&
             _dateOnly(day).isBefore(_dateOnly(schedule.startDate!))) {
@@ -672,15 +672,13 @@ class MedicationReminderRuntime {
     );
     final open = [
       for (final occurrence in occurrences)
-        if (_plannedDose(
+        ?_plannedDose(
               occurrence,
               now,
               targets,
               grace: missedDoseShiftLimit,
               dueAnchors: dueAnchors,
-            )
-            case final dose?)
-          dose,
+            ),
     ]..sort((a, b) => a.targetAt.compareTo(b.targetAt));
     try {
       await _widgetChannel.invokeMethod<void>('update', {
@@ -708,8 +706,7 @@ class MedicationReminderRuntime {
     required timezone.TZDateTime when,
     required bool exact,
     String? payload,
-  }) {
-    return _notifications.zonedSchedule(
+  }) => _notifications.zonedSchedule(
       id: id,
       title: medicationReminderNotificationTitle(),
       body: formatMedicationDoseReminderBody(schedule, minute),
@@ -720,7 +717,6 @@ class MedicationReminderRuntime {
           : AndroidScheduleMode.inexactAllowWhileIdle,
       payload: payload ?? schedule.id,
     );
-  }
 
   Future<void> _scheduleOverdueFollowUps({
     required MedicationSchedule schedule,

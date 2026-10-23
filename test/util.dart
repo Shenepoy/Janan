@@ -743,6 +743,12 @@ Future<void> loadDialog(
 MedicineRepository medRepo([List<Medicine>? meds]) => MockMedRepo(meds);
 
 class MockMedRepo implements MedicineRepository {
+  @override
+  Future<void> update(Medicine original, Medicine replacement) async {
+    _meds[_meds.indexOf(original)] = replacement;
+    _controller.add(replacement);
+  }
+
   MockMedRepo(List<Medicine>? meds) {
     if (meds != null) _meds.addAll(meds);
   }
@@ -876,6 +882,11 @@ class MockMedicineIntakeRepository extends _MockRepo<MedicineIntake>
 
 class MockMedicineRepository extends _MockRepo<Medicine>
     implements MedicineRepository {
+  @override
+  Future<void> update(Medicine original, Medicine replacement) async {
+    data[data.indexOf(original)] = replacement;
+  }
+
   @override
   Future<List<Medicine>> getAll() async => data;
 }

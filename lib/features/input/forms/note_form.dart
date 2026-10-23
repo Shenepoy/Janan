@@ -7,9 +7,7 @@ import 'package:flutter/material.dart';
 /// Form to enter freeform text and select color.
 class NoteForm extends FormBase<(String?, Color?)> {
   /// Create form to enter freeform text and select color.
-  const NoteForm({super.key,
-    super.initialValue,
-  });
+  const NoteForm({super.key, super.initialValue});
 
   @override
   NoteFormState createState() => NoteFormState();
@@ -66,8 +64,8 @@ class NoteFormState extends FormStateBase<(String?, Color?), NoteForm> {
 
   @override
   bool get isDirty =>
-      _controller.text != (widget.initialValue?.$1 ?? '')
-      || _color != widget.initialValue?.$2;
+      _controller.text != (widget.initialValue?.$1 ?? '') ||
+      _color != widget.initialValue?.$2;
 
   @override
   Widget build(BuildContext context) {
@@ -118,6 +116,7 @@ class NoteFormState extends FormStateBase<(String?, Color?), NoteForm> {
                 ),
               ),
               swatchAtEnd: true,
+              showQuickColors: true,
               onMainColorChanged: (Color value) => setState(() {
                 _color = (value == Colors.transparent) ? null : value;
               }),

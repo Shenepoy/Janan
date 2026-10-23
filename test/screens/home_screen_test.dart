@@ -6,6 +6,7 @@ import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:safaeh/safaeh.dart';
 
 import '../model/blood_pressure_analyzer_test.dart';
 import '../util.dart';
@@ -90,6 +91,38 @@ void main() {
     final table = find.byType(MeasurementTable);
     expect(table, findsOneWidget);
     expect(tester.getRect(table).height, greaterThan(150));
+    final firstCard = tester.getRect(
+      find.byKey(const ValueKey('home_chart_card_0')),
+    );
+    final secondCard = tester.getRect(
+      find.byKey(const ValueKey('home_chart_card_1')),
+    );
+    expect(secondCard.top, greaterThan(firstCard.bottom));
+    expect(secondCard.left, firstCard.left);
+    for (var slot = 0; slot < 2; slot++) {
+      final header = tester.getRect(
+        find.byKey(ValueKey('home_chart_header_$slot')),
+      );
+      final card = tester.getRect(
+        find.byKey(ValueKey('home_chart_card_$slot')),
+      );
+      expect(header.bottom, lessThanOrEqualTo(card.top));
+      expect(
+        find.descendant(
+          of: find.byKey(ValueKey('home_chart_card_$slot')),
+          matching: find.byType(SafaehCycleButton),
+        ),
+        findsNothing,
+      );
+    }
+    expect(secondCard.bottom, lessThanOrEqualTo(280));
+    expect(
+      find.descendant(
+        of: find.byType(HomeBpChart),
+        matching: find.byType(SingleChildScrollView),
+      ),
+      findsNothing,
+    );
     expect(tester.widget<MeasurementTable>(table).rows, hasLength(1));
     expect(tester.takeException(), isNull);
   });
@@ -148,7 +181,9 @@ void main() {
       'Medicine timing',
     ];
     for (var tap = 0; tap < 24; tap++) {
-      await tester.tap(find.byKey(ValueKey('home_chart_cycle_${tap % 2}')));
+      final button = find.byKey(ValueKey('home_chart_cycle_${tap % 2}'));
+      await tester.ensureVisible(button);
+      await tester.tap(button);
       await tester.pump(const Duration(milliseconds: 16));
       var visible = 0;
       for (final title in titles) {
@@ -157,6 +192,15 @@ void main() {
         visible += count;
       }
       expect(visible, 2);
+      final viewport = tester.getRect(find.byType(HomeBpChart));
+      for (var slot = 0; slot < 2; slot++) {
+        final card = tester.getRect(
+          find.byKey(ValueKey('home_chart_card_$slot')),
+        );
+        expect(card.top, greaterThanOrEqualTo(viewport.top));
+        expect(card.bottom, lessThanOrEqualTo(viewport.bottom));
+        expect(card.right, lessThanOrEqualTo(viewport.right));
+      }
       expect(tester.takeException(), isNull);
     }
     await tester.pumpAndSettle();

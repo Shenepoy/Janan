@@ -4,6 +4,29 @@ This walkthrough documents the Android-first reminder flow and its native home-s
 
 The example uses demo data: Amlodipine 5 mg at 8:00 AM on weekdays. The sample dose is marked Taken only to demonstrate the recorded-dose and widget states.
 
+## Medication navigation
+
+The medication area now has three persistent tabs: **Today**, **Reminders**, and
+**Medicines**. Swipe between them or tap a tab. Switching preserves the selected
+day and does not push another
+screen. Back returns to the screen from which the medication area was opened.
+
+- The home calendar and notification/widget routes open **Today**.
+- The reminder setup route opens **Reminders**. Tap a card to edit, use its switch
+  to pause/resume, and use its labeled overflow menu to edit or end a reminder.
+  Ending still requires confirmation and preserves dose history.
+- Settings → Manage medications opens **Medicines**. Each medicine has an
+  **Add reminder** action that preselects it in the schedule editor; edit/delete
+  actions are in the medicine's overflow menu.
+- The header bell opens notification permission and exact-timing settings.
+
+Within the tabbed area, horizontal swipes change screens. Use the daily log's
+date arrows or calendar to browse history. The standalone daily log retains its
+day-swipe behavior.
+
+The walkthrough screenshots below predate this navigation update. Reminder
+scheduling, dose actions, and widget behavior are unchanged.
+
 ## Build and setup
 
 ### Select the emulator for capture
@@ -100,7 +123,9 @@ The schedule list shows the medicine, dose, time, recurrence, and active state. 
 
 ### 9. Open today's agenda
 
-Tap **Today's medicines** in the attached home panel or use the calendar action in the schedule list to open the agenda. Upcoming doses appear in time order with their current status.
+Tap **Today's medicines** in the attached home panel or choose the **Today** tab
+in the medication area. Upcoming doses appear in time order with their current
+status.
 
 ![Upcoming dose](screenshots/medication-reminders/09-today-upcoming-dose.png)
 
@@ -164,3 +189,20 @@ The ring advances as the dose approaches. Within one hour, the label and ring tu
 - The app was cold-launched through PolyScreen to refresh the native widget after restoring automatic date and time. ADB was used earlier for build/install diagnostics and `am kill` to simulate a stopped background process while retaining the launcher's cached widget view. All visible screen interaction was performed through PolyScreen.
 - The widget's **OPEN TODAY** route was manually verified after the process kill; the final capture shows the Today agenda and the saved Taken state.
 - The demo schedule was marked Taken during the walkthrough. It is sample data, not a statement that anyone took the medicine.
+
+### Navigation update validation (October 21, 2026)
+
+- Full test suite: 782 passed. Medication/settings/localization checks: 89 passed.
+- All seven golden tests passed. The reminder list was also reviewed under
+  system dark mode; the emulator's original light-mode setting was restored.
+- Navigation regression coverage includes one-step Back behavior, retaining the
+  selected day, opening a reminder with its medicine selected, cancellation of
+  the end confirmation, and English/Arabic portrait/landscape at 1.6× text.
+- Analyzer passes with 21 existing informational findings. Debug APK built and
+  installed on `emulator-5554`, logical display `0`, without clearing app data.
+- PolyScreen verified all three tabs on the emulator. No raw ADB UI fallback was
+  used; the settings page-index trigger required screenshot-based coordinates
+  because its semantic tap plan pointed to the middle of the screen.
+- Captures: Medicines `mobile://artifacts/display-0-1792549595963-27cf73ce-75a6-4ab3-bf11-21bbf2d749dc.png`,
+  Reminders `mobile://artifacts/display-0-1792549608294-139806d5-4342-4b48-9916-5f64fcd88dd5.png`,
+  Today `mobile://artifacts/display-0-1792549622287-040d45e0-b10d-4c6f-9256-4323ddef7ef7.png`.

@@ -170,6 +170,11 @@ class _FakeMedicineRepository extends MedicineRepository {
   final List<Medicine> medicines;
 
   @override
+  Future<void> update(Medicine original, Medicine replacement) async {
+    medicines[medicines.indexOf(original)] = replacement;
+  }
+
+  @override
   Future<void> add(Medicine value) async {}
 
   @override

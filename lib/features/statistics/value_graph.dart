@@ -5,6 +5,7 @@ import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/statistics/chart/chart_legend.dart';
+import 'package:blood_pressure_app/features/statistics/chart/chart_pressure_scale.dart';
 import 'package:blood_pressure_app/features/statistics/chart/chart_tooltip.dart';
 import 'package:blood_pressure_app/features/statistics/chart/graph_series.dart';
 import 'package:blood_pressure_app/features/statistics/chart/medication_dot_painter.dart';
@@ -19,8 +20,7 @@ export 'package:blood_pressure_app/features/statistics/chart/graph_series.dart';
 
 /// A graph of [BloodPressureRecord] values.
 ///
-/// Note that this can't follow the users preferred unit as this would not allow
-/// to put all data on one graph
+/// Pressure uses the preferred unit; pulse retains a separate bpm axis.
 class BloodPressureValueGraph extends ConsumerWidget {
   /// Create a new graph of [BloodPressureRecord] values.
   const BloodPressureValueGraph({
@@ -132,9 +132,14 @@ class _BloodPressureValueChartState
         ? Colors.white60
         : Colors.black45;
 
-    final sys = records.sysGraph();
-    final dia = records.diaGraph();
-    final pul = records.pulGraph();
+    final scale = ChartPressureScale(settings.preferredPressureUnit);
+    final sys = records
+        .where((r) => r.sys != null)
+        .map((r) => (r.time, scale.pressure(r.sys!)));
+    final dia = records
+        .where((r) => r.dia != null)
+        .map((r) => (r.time, scale.pressure(r.dia!)));
+    final pul = records.pulGraph().map((p) => (p.$1, scale.pulse(p.$2)));
     final disconnected = isGraphEntirelyDisconnected(
       sys: sys,
       dia: dia,
@@ -166,35 +171,38 @@ class _BloodPressureValueChartState
     }
 
     for (final r in records) {
-      consider(r.sys?.mmHg.toDouble());
-      consider(r.dia?.mmHg.toDouble());
-      consider(r.pul?.toDouble());
+      consider(r.sys == null ? null : scale.pressure(r.sys!));
+      consider(r.dia == null ? null : scale.pressure(r.dia!));
+      consider(r.pul == null ? null : scale.pulse(r.pul!));
     }
     for (final line in settings.horizontalGraphLines) {
-      consider(line.height.toDouble());
+      consider(scale.fromMmHg(line.height));
     }
     if (!minY.isFinite || !maxY.isFinite) {
       minY = 0;
       maxY = 1;
     }
     if (minY == maxY) {
-      minY -= 5;
-      maxY += 5;
+      minY -= scale.fromMmHg(5);
+      maxY += scale.fromMmHg(5);
     }
     maxY += (maxY - minY) * 0.20;
 
     final bars = <LineChartBarData>[];
     var metricBarCount = 0;
+    final pulseBars = <int>{};
 
     void addMetric(
       Iterable<(DateTime, double)> series,
       Color color, {
       double? warnValue,
+      bool isPulse = false,
     }) {
       for (final segment in splitSeriesByGap(
         series,
         settings.interruptGraphAfterNDays,
       )) {
+        if (isPulse) pulseBars.add(bars.length);
         bars.add(
           _metricBar(
             segment,
@@ -207,9 +215,17 @@ class _BloodPressureValueChartState
       }
     }
 
-    addMetric(sys, settings.sysColor, warnValue: settings.sysWarn.toDouble());
-    addMetric(dia, settings.diaColor, warnValue: settings.diaWarn.toDouble());
-    addMetric(pul, settings.pulColor);
+    addMetric(
+      sys,
+      settings.sysColor,
+      warnValue: scale.fromMmHg(settings.sysWarn),
+    );
+    addMetric(
+      dia,
+      settings.diaColor,
+      warnValue: scale.fromMmHg(settings.diaWarn),
+    );
+    addMetric(pul, settings.pulColor, isPulse: true);
 
     if (settings.drawRegressionLines) {
       for (final series in [sys.toList(), dia.toList()]) {
@@ -272,9 +288,15 @@ class _BloodPressureValueChartState
                 Expanded(
                   child: ChartLegend(
                     items: [
-                      ('sysShort'.tr(), settings.sysColor),
-                      ('diaShort'.tr(), settings.diaColor),
-                      ('pulShort'.tr(), settings.pulColor),
+                      (
+                        '${'sysShort'.tr()} (${scale.unit.name})',
+                        settings.sysColor,
+                      ),
+                      (
+                        '${'diaShort'.tr()} (${scale.unit.name})',
+                        settings.diaColor,
+                      ),
+                      ('${'pulShort'.tr()} (${'bpm'.tr()})', settings.pulColor),
                     ],
                   ),
                 ),
@@ -313,7 +335,20 @@ class _BloodPressureValueChartState
                 ),
                 titlesData: FlTitlesData(
                   topTitles: const AxisTitles(),
-                  rightTitles: const AxisTitles(),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 36,
+                      maxIncluded: false,
+                      getTitlesWidget: (value, meta) => SideTitleWidget(
+                        meta: meta,
+                        child: Text(
+                          '${scale.pulseFromCoordinate(value).round()}',
+                          style: labelStyle.copyWith(color: settings.pulColor),
+                        ),
+                      ),
+                    ),
+                  ),
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -323,6 +358,7 @@ class _BloodPressureValueChartState
                         value: value,
                         meta: meta,
                         style: labelStyle,
+                        fractionDigits: scale.digits,
                       ),
                     ),
                   ),
@@ -345,7 +381,7 @@ class _BloodPressureValueChartState
                   horizontalLines: [
                     for (final line in settings.horizontalGraphLines)
                       HorizontalLine(
-                        y: line.height.toDouble(),
+                        y: scale.fromMmHg(line.height),
                         color: line.color,
                         strokeWidth: 2,
                         dashArray: const [10, 5],
@@ -374,6 +410,10 @@ class _BloodPressureValueChartState
                       final time = DateTime.fromMillisecondsSinceEpoch(
                         metric.first.x.round(),
                       );
+                      final byTimestamp = <double, List<LineBarSpot>>{};
+                      for (final spot in metric) {
+                        byTimestamp.putIfAbsent(spot.x, () => []).add(spot);
+                      }
                       final items = <LineTooltipItem?>[];
                       var first = true;
                       for (final spot in touched) {
@@ -389,15 +429,24 @@ class _BloodPressureValueChartState
                               chartTooltipTitleStyle(context),
                               textAlign: TextAlign.start,
                               children: [
-                                for (final m in metric)
-                                  TextSpan(
-                                    text: '\n${m.y.round()}',
-                                    style: chartTooltipValueStyle(
-                                      context,
-                                      m.bar.color ??
-                                          theme.colorScheme.onSurface,
+                                for (final group in byTimestamp.entries) ...[
+                                  if (group.key != metric.first.x)
+                                    TextSpan(
+                                      text:
+                                          '\n${dateFormatter.format(DateTime.fromMillisecondsSinceEpoch(group.key.round()))}',
+                                      style: chartTooltipTitleStyle(context),
                                     ),
-                                  ),
+                                  for (final m in group.value)
+                                    TextSpan(
+                                      text:
+                                          '\n${pulseBars.contains(m.barIndex) ? '${scale.pulseFromCoordinate(m.y).round()} ${'bpm'.tr()}' : '${scale.format(m.y)} ${scale.unit.name}'}',
+                                      style: chartTooltipValueStyle(
+                                        context,
+                                        m.bar.color ??
+                                            theme.colorScheme.onSurface,
+                                      ),
+                                    ),
+                                ],
                               ],
                             ),
                           );

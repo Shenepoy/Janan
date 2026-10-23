@@ -27,12 +27,14 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         for (widgetId in appWidgetIds) {
             updateWidget(context, appWidgetManager, widgetId)
         }
+        rescheduleRefresh(context, appWidgetManager)
     }
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         for (widgetId in appWidgetIds) {
             MedicationWidgetStore.clearScheduleId(context, widgetId)
         }
+        rescheduleRefresh(context, AppWidgetManager.getInstance(context))
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -150,7 +152,7 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
 
             views.setTextViewText(
                 R.id.widget_countdown,
-                countdownText(
+                medicationWidgetCountdownText(
                     if (overdue) now - targetAt else targetAt - now,
                     overdue = overdue,
                     nowLabel = nowLabel,
@@ -184,18 +186,9 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
             )
         }
 
-        val labelRefresh = nextCountdownRefresh(targetAt, now, hasDose)
-        val dueRefresh = presented?.nextDueUntil?.takeIf { it > now }
-        scheduleRefresh(
-            context,
-            when {
-                labelRefresh == null -> dueRefresh
-                dueRefresh == null -> labelRefresh
-                else -> minOf(labelRefresh, dueRefresh)
-            },
-        )
-
+        val identity = medicationWidgetLaunchIdentity(context.packageName, widgetId)
         val intent = Intent(context, MainActivity::class.java).apply {
+            action = identity.action
             putExtra("route", "/medications/today")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -207,6 +200,25 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         )
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
         manager.updateAppWidget(widgetId, views)
+    }
+
+    private fun rescheduleRefresh(context: Context, manager: AppWidgetManager) {
+        val provider = ComponentName(context, MedicationHomeWidgetProvider::class.java)
+        val now = System.currentTimeMillis()
+        // onUpdate can contain only one reconfigured widget. The shared alarm
+        // must still account for the deadlines of every installed widget.
+        val next = nextMedicationWidgetRefresh(manager.getAppWidgetIds(provider)) { widgetId ->
+            val presented = presentReminder(MedicationWidgetStore.viewFor(context, widgetId), now)
+            val targetAt = presented?.at ?: 0L
+            val labelRefresh = nextCountdownRefresh(targetAt, now, targetAt > 0L)
+            val dueRefresh = presented?.nextDueUntil?.takeIf { it > now }
+            when {
+                labelRefresh == null -> dueRefresh
+                dueRefresh == null -> labelRefresh
+                else -> minOf(labelRefresh, dueRefresh)
+            }
+        }
+        scheduleRefresh(context, next)
     }
 
     private fun scheduleRefresh(context: Context, triggerAtMillis: Long?) {
@@ -258,27 +270,6 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         if (remaining >= span) return 0.08f
         val elapsed = 1f - remaining.toFloat() / span.toFloat()
         return elapsed.coerceIn(0.08f, 1f)
-    }
-
-    private fun countdownText(
-        deltaMillis: Long,
-        overdue: Boolean,
-        nowLabel: String,
-        hourUnit: String,
-        minuteUnit: String,
-    ): String {
-        if (deltaMillis <= 0L) return nowLabel
-        val minutes = if (overdue) {
-            (deltaMillis / MINUTE_MILLIS).coerceAtLeast(1L)
-        } else {
-            (deltaMillis + MINUTE_MILLIS - 1L) / MINUTE_MILLIS
-        }
-        return if (minutes >= 60L) {
-            val hours = if (overdue) minutes / 60L else (minutes + 59L) / 60L
-            "$hours$hourUnit"
-        } else {
-            "$minutes$minuteUnit"
-        }
     }
 
     private fun nextCountdownRefresh(

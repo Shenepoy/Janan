@@ -28,6 +28,7 @@ const schema = Schema([
     Column.integer('removed'),
   ]),
   Table.localOnly('intakes', [
+    Column.text('medicine_snapshot_json'),
     Column.integer('timestamp_unix_s'),
     Column.text('med_id'),
     Column.real('dosis_mg'),
@@ -48,6 +49,7 @@ const schema = Schema([
     Column.integer('due_indicator_divisor'),
   ]),
   Table.localOnly('dose_occurrences', [
+    Column.text('instruction_snapshot_json'),
     Column.text('schedule_id'),
     Column.text('local_key'),
     Column.integer('scheduled_unix_s'),

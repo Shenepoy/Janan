@@ -48,3 +48,17 @@ Delete-data uses repositories / `DELETE FROM` local-only tables, not a file wipe
 `.db` export runs `PRAGMA wal_checkpoint(FULL)` on the open `health.db` first so the copied bytes include the WAL, then reads `{databases}/health.db`.
 
 `.db` import opens the picked file read-only with sqflite and sniffs tables: `Timestamps` is legacy `bp.db`; a `blood_pressure` table or view is the live schema. Anything else returns 0 imported rows and is never opened with PowerSync, so a random file does not get schema written onto it.
+
+Medication backups restore catalog medicines, reminders, dose occurrences,
+intakes, and Bluetooth exclusions. The medication graph is restored in one
+transaction, remapping catalog references when an equivalent medicine exists.
+Stable reminder IDs survive edits and repeated imports. Existing completed
+outcomes win over stale pending backups; an incoming completion promotes a
+pending dose and restores its intake link together. An active catalog medicine
+in a backup revives an equivalent soft-deleted medicine.
+
+Intakes store a medicine-description snapshot, including their recorded unit.
+Completed occurrences store their dose-instruction snapshot. Catalog and
+reminder edits cannot reinterpret these historical values. Older rows without
+snapshots are frozen before the shared description or instruction changes;
+values overwritten before snapshots existed cannot be reconstructed.

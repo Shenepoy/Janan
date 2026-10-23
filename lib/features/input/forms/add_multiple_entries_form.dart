@@ -29,7 +29,11 @@ class AddMultipleEntriesForm extends FormBase<List<CombinedEntry>> {
     this.showBluetooth = true,
     this.bluetoothCubit,
     this.mockBleInput,
+    this.bottomPadding = 88,
   });
+
+  /// Space reserved for the editor's floating save action.
+  final double bottomPadding;
 
   /// Which measurement form to show.
   final AddEntryKind kind;
@@ -107,9 +111,9 @@ class AddMultipleEntriesFormState
   }
 
   @override
-  bool get isEmpty =>
-      (_multipleValues != null && _multipleValues!.length > 1) ||
-      (_singleEntryForm.currentState?.isEmpty ?? true);
+  bool get isEmpty => _multipleValues != null
+      ? _multipleValues!.isEmpty
+      : (_singleEntryForm.currentState?.isEmpty ?? true);
 
   @override
   bool get isDirty {
@@ -197,6 +201,7 @@ class AddMultipleEntriesFormState
           context.locale.toString(),
         );
         return ListView.builder(
+          padding: EdgeInsets.only(bottom: widget.bottomPadding),
           itemCount: values.length,
           itemBuilder: (context, idx) => ListTile(
             title: Text(formatter.format(values[idx].time)),
@@ -232,7 +237,7 @@ class AddMultipleEntriesFormState
               : widget.kind == AddEntryKind.weight && settings.weightInput);
       return ListView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+        padding: EdgeInsets.fromLTRB(16, 10, 16, widget.bottomPadding),
         children: [
           if (showMockBle) widget.mockBleInput!.call(_onExternalMeasurements),
           if (showBle)

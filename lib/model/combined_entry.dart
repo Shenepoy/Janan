@@ -167,6 +167,7 @@ extension CombinedEntryList on List<CombinedEntry> {
     List<BodyweightRecord>? weights,
   ]) {
     final entries = <DateTime, CombinedEntry>{};
+    final simultaneousIntakes = <CombinedEntry>[];
 
     for (final r in records) {
       entries.putIfAbsent(r.time, () => CombinedEntry(time: r.time));
@@ -179,7 +180,14 @@ extension CombinedEntryList on List<CombinedEntry> {
     }
     for (final i in intakes) {
       entries.putIfAbsent(i.time, () => CombinedEntry(time: i.time));
-      entries[i.time]!.intake = i;
+      final entry = entries[i.time]!;
+      if (entry.intake == null) {
+        entry.intake = i;
+      } else {
+        // Export formats use one primary intake per row. Keep additional
+        // medicines as separate rows without changing their actual timestamp.
+        simultaneousIntakes.add(CombinedEntry(time: i.time, intake: i));
+      }
     }
     if (weights != null) {
       for (final w in weights) {
@@ -188,7 +196,7 @@ extension CombinedEntryList on List<CombinedEntry> {
       }
     }
 
-    return entries.values.toList();
+    return [...entries.values, ...simultaneousIntakes];
   }
 
   /// Hide standalone medicine rows when a blood-pressure reading exists that

@@ -262,150 +262,139 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
   }) => LayoutBuilder(
     builder: (context, constraints) {
       final kinds = _visibleKinds;
-      final sideBySide = constraints.maxWidth >= 560;
-      final textScale = MediaQuery.textScalerOf(context).scale(1);
-      final minimumHeight = 132.0 * math.max(1.0, textScale);
-      final height = constraints.hasBoundedHeight
-          ? math.max(
-              minimumHeight,
-              sideBySide
-                  ? constraints.maxHeight
-                  : (constraints.maxHeight - (kinds.length - 1) * 8) /
-                        kinds.length,
-            )
-          : minimumHeight;
+      final available = math.max(
+        0.0,
+        (constraints.hasBoundedHeight ? constraints.maxHeight : 320.0) -
+            kinds.length * 48 -
+            (kinds.length - 1) * 4,
+      );
+      bool summary(HomeBpChartKind kind) =>
+          kind == HomeBpChartKind.classification ||
+          kind == HomeBpChartKind.medicineTiming;
+      final mixed = kinds.length == 2 && summary(kinds[0]) != summary(kinds[1]);
+      final summaryHeight = math.min(
+        64.0 * math.max(1.0, MediaQuery.textScalerOf(context).scale(1)),
+        available / kinds.length,
+      );
+      double bodyHeight(int slot) {
+        if (summary(kinds[slot])) return summaryHeight;
+        return mixed ? available - summaryHeight : available / kinds.length;
+      }
+
       Widget card(int slot) {
         final kind = kinds[slot];
         final theme = Theme.of(context);
-        return SizedBox(
-          height: height,
-          child: Card(
-            elevation: 0,
-            margin: EdgeInsets.zero,
-            color: theme.colorScheme.surfaceContainerLow,
-            clipBehavior: Clip.antiAlias,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+        return Column(
+          key: ValueKey('home_chart_section_$slot'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              key: ValueKey('home_chart_header_$slot'),
+              height: 48,
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        _iconOf(kind),
-                        size: 18,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _titleOf(kind),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppText.title(context),
-                        ),
-                      ),
-                      if (_availableKinds.length > kinds.length)
-                        SafaehCycleButton(
-                          key: ValueKey('home_chart_cycle_$slot'),
-                          tooltip: 'chartNext'.tr(),
-                          onPressed: () => _cycleCompactChart(slot),
-                        ),
-                      if (showArmFilter &&
-                          kind != HomeBpChartKind.medicineTiming)
-                        PopupMenuButton<_ArmChartFilter>(
-                          tooltip: switch (_armFilter) {
-                            _ArmChartFilter.all => 'allArms'.tr(),
-                            _ArmChartFilter.left => 'leftArm'.tr(),
-                            _ArmChartFilter.right => 'rightArm'.tr(),
-                          },
-                          icon: Icon(
-                            Icons.filter_alt_outlined,
-                            size: 18,
-                            color: _armFilter == _ArmChartFilter.all
-                                ? null
-                                : theme.colorScheme.primary,
-                          ),
-                          onSelected: (value) =>
-                              setState(() => _armFilter = value),
-                          itemBuilder: (context) => [
-                            for (final filter in _ArmChartFilter.values)
-                              CheckedPopupMenuItem(
-                                value: filter,
-                                checked: filter == _armFilter,
-                                child: Text(switch (filter) {
-                                  _ArmChartFilter.all => 'allArms'.tr(),
-                                  _ArmChartFilter.left => 'leftArm'.tr(),
-                                  _ArmChartFilter.right => 'rightArm'.tr(),
-                                }),
-                              ),
-                          ],
-                        ),
-                    ],
-                  ),
                   Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      layoutBuilder: (current, previous) => Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          for (final old in previous) IgnorePointer(child: old),
-                          ?current,
-                        ],
-                      ),
-                      child: KeyedSubtree(
-                        key: ValueKey(kind),
-                        child: switch (kind) {
-                          HomeBpChartKind.dailyRange => _DailyRangeChart(
-                            records: records,
-                            range: range,
-                            period: period,
-                          ),
-                          HomeBpChartKind.classification =>
-                            _ClassificationChart(
-                              records: records,
-                              limits: limits,
-                              compact: true,
-                            ),
-                          HomeBpChartKind.pulsePressure => _PulsePressureChart(
-                            records: records,
-                            range: range,
-                            period: period,
-                          ),
-                          HomeBpChartKind.medicineTiming =>
-                            const HomeMedicationTimingChartContent(
-                              compact: true,
-                            ),
-                        },
-                      ),
+                    child: Text(
+                      _titleOf(kind),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.title(context).copyWith(fontSize: 14),
                     ),
                   ),
+                  if (_availableKinds.length > kinds.length)
+                    SafaehCycleButton(
+                      key: ValueKey('home_chart_cycle_$slot'),
+                      tooltip: 'chartNext'.tr(),
+                      onPressed: () => _cycleCompactChart(slot),
+                    ),
+                  if (showArmFilter && kind != HomeBpChartKind.medicineTiming)
+                    PopupMenuButton<_ArmChartFilter>(
+                      tooltip: switch (_armFilter) {
+                        _ArmChartFilter.all => 'allArms'.tr(),
+                        _ArmChartFilter.left => 'leftArm'.tr(),
+                        _ArmChartFilter.right => 'rightArm'.tr(),
+                      },
+                      icon: Icon(
+                        Icons.filter_alt_outlined,
+                        size: 18,
+                        color: _armFilter == _ArmChartFilter.all
+                            ? null
+                            : theme.colorScheme.primary,
+                      ),
+                      onSelected: (value) => setState(() => _armFilter = value),
+                      itemBuilder: (context) => [
+                        for (final filter in _ArmChartFilter.values)
+                          CheckedPopupMenuItem(
+                            value: filter,
+                            checked: filter == _armFilter,
+                            child: Text(switch (filter) {
+                              _ArmChartFilter.all => 'allArms'.tr(),
+                              _ArmChartFilter.left => 'leftArm'.tr(),
+                              _ArmChartFilter.right => 'rightArm'.tr(),
+                            }),
+                          ),
+                      ],
+                    ),
                 ],
               ),
             ),
-          ),
+            Expanded(
+              child: Card(
+                key: ValueKey('home_chart_card_$slot'),
+                elevation: 0,
+                margin: EdgeInsets.zero,
+                color: theme.colorScheme.surfaceContainerLow,
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    layoutBuilder: (current, previous) => Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        for (final old in previous) IgnorePointer(child: old),
+                        ?current,
+                      ],
+                    ),
+                    child: KeyedSubtree(
+                      key: ValueKey(kind),
+                      child: switch (kind) {
+                        HomeBpChartKind.dailyRange => _DailyRangeChart(
+                          records: records,
+                          range: range,
+                          period: period,
+                        ),
+                        HomeBpChartKind.classification => _ClassificationChart(
+                          records: records,
+                          limits: limits,
+                          compact: true,
+                        ),
+                        HomeBpChartKind.pulsePressure => _PulsePressureChart(
+                          records: records,
+                          range: range,
+                          period: period,
+                        ),
+                        HomeBpChartKind.medicineTiming =>
+                          const HomeMedicationTimingChartContent(compact: true),
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
       }
 
-      return SingleChildScrollView(
-        child: sideBySide
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (var slot = 0; slot < kinds.length; slot++) ...[
-                    if (slot > 0) const SizedBox(width: 8),
-                    Expanded(child: card(slot)),
-                  ],
-                ],
-              )
-            : Column(
-                children: [
-                  for (var slot = 0; slot < kinds.length; slot++) ...[
-                    if (slot > 0) const SizedBox(height: 8),
-                    card(slot),
-                  ],
-                ],
-              ),
+      return Flex(
+        direction: Axis.vertical,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var slot = 0; slot < kinds.length; slot++) ...[
+            if (slot > 0) const SizedBox(height: 4),
+            SizedBox(height: 48 + bodyHeight(slot), child: card(slot)),
+          ],
+        ],
       );
     },
   );
@@ -479,7 +468,7 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
       );
     }
     return DashboardSection(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 16),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 8, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -750,14 +739,11 @@ class _DailyRangeChart extends StatelessWidget {
     final theme = Theme.of(context);
     final locale = context.locale.toString();
     final axisDateFormat = switch (period.axisBucket) {
-      _RangeBucket.day => WesternDateFormat('ccc', locale),
-      _RangeBucket.week => WesternDateFormat('d/M', locale),
-      _RangeBucket.month => WesternDateFormat(
-        period.dataBucket == _RangeBucket.week || slots.length <= 12
-            ? 'M'
-            : 'M/yy',
-        locale,
-      ),
+      _RangeBucket.day || _RangeBucket.week => WesternDateFormat.MMMd(locale),
+      _RangeBucket.month =>
+        slots.first.start.year == slots.last.start.year
+            ? WesternDateFormat.MMM(locale)
+            : WesternDateFormat('MMM yy', locale),
     };
     String? labelAt(int index, DateTime start) {
       if (period.dataBucket == _RangeBucket.week &&
@@ -821,15 +807,17 @@ class _RangeBarPainter extends CustomPainter {
     final filled = slots.where((s) => s.hasData).toList();
     if (filled.isEmpty || size.width <= 0 || size.height <= 0) return;
 
-    var rawMin = filled.map((s) => s.min!).reduce(math.min);
-    var rawMax = filled.map((s) => s.max!).reduce(math.max);
-    if (rawMin == rawMax) {
-      rawMin -= 8;
-      rawMax += 8;
+    final rawMin = filled.map((s) => s.min!).reduce(math.min);
+    final rawMax = filled.map((s) => s.max!).reduce(math.max);
+    final pad = math.max(4.0, (rawMax - rawMin) * 0.10);
+    var minY = ((rawMin - pad) / 10).floor() * 10.0;
+    var maxY = ((rawMax + pad) / 10).ceil() * 10.0;
+    // Keep a narrow or single reading legible without exaggerating its range.
+    if (maxY - minY < 20) {
+      final center = ((rawMin + rawMax) / 20).round() * 10.0;
+      minY = center - 10;
+      maxY = center + 10;
     }
-    final pad = math.max(8.0, (rawMax - rawMin) * 0.18);
-    final minY = ((rawMin - pad) / 10).floor() * 10.0;
-    final maxY = ((rawMax + pad) / 10).ceil() * 10.0;
     final span = math.max(10.0, maxY - minY);
     final step = span <= 30
         ? 10.0
@@ -881,6 +869,7 @@ class _RangeBarPainter extends CustomPainter {
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
 
+    var lastLabelRight = double.negativeInfinity;
     for (var i = 0; i < count; i++) {
       final slot = slots[i];
       final cx = plot.left + cell * (i + 0.5);
@@ -919,7 +908,10 @@ class _RangeBarPainter extends CustomPainter {
           plot.left,
           plot.right - label.width,
         );
-        label.paint(canvas, Offset(labelLeft, plot.bottom + 6));
+        if (labelLeft >= lastLabelRight + 8) {
+          label.paint(canvas, Offset(labelLeft, plot.bottom + 6));
+          lastLabelRight = labelLeft + label.width;
+        }
       }
     }
   }
@@ -1028,7 +1020,7 @@ class _ClassificationChart extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          height: compact ? 14 : 32,
+          height: compact ? 10 : 32,
           width: double.infinity,
           child: CustomPaint(
             painter: _MixBarPainter(
@@ -1040,7 +1032,7 @@ class _ClassificationChart extends StatelessWidget {
             child: const SizedBox.expand(),
           ),
         ),
-        SizedBox(height: compact ? 8 : 20),
+        SizedBox(height: compact ? 4 : 20),
         Row(
           children: [
             for (final tone in tones)
@@ -1048,12 +1040,14 @@ class _ClassificationChart extends StatelessWidget {
                 child: _MixLegend(
                   tone: tone,
                   percent: ((counts[tone]! / total) * 100).round(),
-                  labelStyle: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
+                  labelStyle:
+                      (compact
+                              ? theme.textTheme.bodySmall
+                              : theme.textTheme.bodyMedium)
+                          ?.copyWith(color: theme.colorScheme.onSurface),
                   valueStyle:
                       (compact
-                              ? theme.textTheme.titleMedium
+                              ? theme.textTheme.titleSmall
                               : theme.textTheme.headlineSmall)
                           ?.copyWith(
                             color: _toneColor(tone),
@@ -1295,8 +1289,26 @@ class _PulsePressureChart extends StatelessWidget {
                   return const SizedBox.shrink();
                 }
                 final point = points[index];
+                final labelCapacity = math.max(
+                  2,
+                  (meta.parentAxisSize / 44).floor(),
+                );
+                final widthLabelEvery = math.max(
+                  labelEvery,
+                  (points.length / labelCapacity).ceil(),
+                );
                 if (isMonthlyIndex) {
                   if (!isMonthBoundary(index)) {
+                    return const SizedBox.shrink();
+                  }
+                  final boundaries = [
+                    for (var i = 0; i < points.length; i++)
+                      if (isMonthBoundary(i)) i,
+                  ];
+                  final boundaryEvery = (boundaries.length / labelCapacity)
+                      .ceil();
+                  if (boundaries.indexOf(index) % boundaryEvery != 0 &&
+                      index != boundaries.last) {
                     return const SizedBox.shrink();
                   }
                   final labelDate = monthDateAt(index);
@@ -1319,7 +1331,7 @@ class _PulsePressureChart extends StatelessWidget {
                 final nearLastLabel =
                     sparseLabels && !isLast && points.length - 1 - index < 3;
                 if (nearLastLabel ||
-                    (index != 0 && !isLast && index % labelEvery != 0)) {
+                    (index != 0 && !isLast && index % widthLabelEvery != 0)) {
                   return const SizedBox.shrink();
                 }
                 final text = axisDateFormat.format(point.start);

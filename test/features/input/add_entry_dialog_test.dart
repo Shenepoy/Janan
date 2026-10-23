@@ -11,7 +11,7 @@ import '../../model/export_import/record_formatter_test.dart';
 import '../../util.dart';
 
 void main() {
-  testWidgets('respects bottomAppBars', (tester) async {
+  testWidgets('uses the same top header as the reminder editor', (tester) async {
     await pumpApp(tester, await appBase(const AddEntryDialog(),
       settings: TestSettingsSeed(bottomAppBars: false),
     ));
@@ -20,7 +20,7 @@ void main() {
     await testSettingsController!.set(bottomAppBarsSetting, true);
     await tester.pump();
 
-    expect(tester.getCenter(find.byType(AppBar)).dy, greaterThan(initialHeights));
+    expect(tester.getCenter(find.byType(AppBar)).dy, initialHeights);
   });
 
   testWidgets('should show everything on initial page', (tester) async {
@@ -30,7 +30,7 @@ void main() {
 
     expect(find.byType(DropdownButton<Medicine?>), findsNothing, reason: 'No medication in settings.');
     expect(find.byIcon(Icons.check), findsOneWidget);
-    expect(find.byIcon(Icons.close), findsOneWidget);
+    expect(find.byType(BackButton), findsOneWidget);
     expect(find.text('Systolic'), findsWidgets);
     expect(find.text('Diastolic'), findsWidgets);
     expect(find.text('Pulse'), findsWidgets);
@@ -47,7 +47,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DropdownButton<Medicine?>), findsNothing, reason: 'No medication in settings.');
     expect(find.byIcon(Icons.check), findsOneWidget);
-    expect(find.byIcon(Icons.close), findsOneWidget);
+    expect(find.byType(BackButton), findsOneWidget);
     expect(find.text('Test note'), findsOneWidget);
     expect(find.text('123'), findsOneWidget);
     expect(find.text('56'), findsOneWidget);
@@ -85,7 +85,7 @@ void main() {
     expect(find.byType(DropdownButton<Medicine?>), findsNothing, reason: 'No medication in settings.');
 
     expect(find.byType(AddEntryDialog), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.close));
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
 
     expect(find.byType(AddEntryDialog), findsNothing);
@@ -228,7 +228,7 @@ void main() {
         showAddEntryDialog(context, mockEntry(sys: 12)));
 
     expect(find.byType(AddEntryDialog), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.close));
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.byType(AddEntryDialog), findsNothing);
   });
@@ -239,7 +239,7 @@ void main() {
 
     expect(find.byType(AddEntryDialog), findsOneWidget);
     await tester.enterText(measurementValueField('Systolic'), '130');
-    await tester.tap(find.byIcon(Icons.close));
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.byType(AddEntryDialog), findsOneWidget);
   });

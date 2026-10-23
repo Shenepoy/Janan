@@ -21,8 +21,8 @@ KEY_PASSWORD="${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
 keystore_path="$ROOT_DIR/android/release-keystore.jks"
 echo "$KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
 
-printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
-  "$keystore_path" "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" \
-  > "$ROOT_DIR/android/key.properties"
+export KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD
+python3 "$ROOT_DIR/scripts/ci/write_signing_properties.py" \
+  "$keystore_path" "$ROOT_DIR/android/key.properties"
 
-echo "Wrote android/key.properties for alias $KEY_ALIAS"
+echo "Wrote android/key.properties"

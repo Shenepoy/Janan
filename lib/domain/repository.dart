@@ -5,6 +5,7 @@ import 'package:blood_pressure_app/domain/medication_schedule.dart';
 import 'package:blood_pressure_app/domain/medicine.dart';
 import 'package:blood_pressure_app/domain/medicine_intake.dart';
 import 'package:blood_pressure_app/domain/note.dart';
+import 'package:blood_pressure_app/domain/units/weight.dart';
 
 /// High-level access to stored health records.
 abstract class Repository<T> {
@@ -33,6 +34,17 @@ abstract class BodyweightRepository extends Repository<BodyweightRecord> {}
 
 /// Repository for [MedicineIntake]s.
 abstract class MedicineIntakeRepository extends Repository<MedicineIntake> {
+  /// Records a planned dose and its outcome together. Persistent repositories
+  /// resolve its identity from storage rather than relying on stale UI values.
+  Future<void> recordScheduledDose(DoseOccurrence occurrence) => add(
+    MedicineIntake(
+      time: DateTime.now(),
+      medicine: occurrence.schedule.medicine,
+      dosis: Weight.mg(occurrence.schedule.doseAmount),
+      occurrenceId: occurrence.id,
+    ),
+  );
+
   /// Returns the most recently used intake for each medicine, newest first.
   ///
   /// Implementations can override this to avoid loading the full history.
@@ -85,6 +97,11 @@ abstract class MedicationScheduleRepository {
 
 /// Repository for medicines that are taken by the user.
 abstract class MedicineRepository extends Repository<Medicine> {
+  /// Edits a catalog medicine, merging into an identical active entry if needed.
+  ///
+  /// Historical intakes and completed dose instructions keep their snapshots.
+  Future<void> update(Medicine original, Medicine replacement);
+
   /// Get medicines that have not been marked as removed.
   Future<List<Medicine>> getAll();
 

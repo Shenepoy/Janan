@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:blood_pressure_app/domain/domain.dart';
-import 'package:powersync/powersync.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 import 'package:uuid/uuid.dart';
 
 /// PowerSync implementation of [BloodPressureRepository].
 class PowerSyncBloodPressureRepository extends BloodPressureRepository {
   PowerSyncBloodPressureRepository(this._db);
 
-  final PowerSyncDatabase _db;
+  final SqliteWriteContext _db;
   final _uuid = const Uuid();
   final _controller = StreamController<BloodPressureRecord?>.broadcast();
 
@@ -19,40 +19,42 @@ class PowerSyncBloodPressureRepository extends BloodPressureRepository {
       "Adding records that don't contain values(sys,dia,pul) can't be accessed "
       'and should therefore not be added to the repository.',
     );
-    final timeSec = record.time.secondsSinceEpoch;
-    final existing = await _db.getAll(
-      'SELECT id FROM blood_pressure WHERE timestamp_unix_s = ?',
-      [timeSec],
-    );
-    if (existing.isEmpty) {
-      await _db.execute(
-        'INSERT INTO blood_pressure '
-        '(id, timestamp_unix_s, sys_kpa, dia_kpa, pul, arm, source) '
-        'VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [
-          _uuid.v4(),
-          timeSec,
-          record.sys?.kPa,
-          record.dia?.kPa,
-          record.pul,
-          record.arm?.name,
-          record.source.name,
-        ],
+    await _db.writeTransaction((tx) async {
+      final timeSec = record.time.secondsSinceEpoch;
+      final existing = await tx.getAll(
+        'SELECT id FROM blood_pressure WHERE timestamp_unix_s = ?',
+        [timeSec],
       );
-    } else {
-      await _db.execute(
-        'UPDATE blood_pressure SET sys_kpa = ?, dia_kpa = ?, pul = ?, '
-        'arm = ?, source = ? WHERE id = ?',
-        [
-          record.sys?.kPa,
-          record.dia?.kPa,
-          record.pul,
-          record.arm?.name,
-          record.source.name,
-          existing.first['id'],
-        ],
-      );
-    }
+      if (existing.isEmpty) {
+        await tx.execute(
+          'INSERT INTO blood_pressure '
+          '(id, timestamp_unix_s, sys_kpa, dia_kpa, pul, arm, source) '
+          'VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [
+            _uuid.v4(),
+            timeSec,
+            record.sys?.kPa,
+            record.dia?.kPa,
+            record.pul,
+            record.arm?.name,
+            record.source.name,
+          ],
+        );
+      } else {
+        await tx.execute(
+          'UPDATE blood_pressure SET sys_kpa = ?, dia_kpa = ?, pul = ?, '
+          'arm = ?, source = ? WHERE id = ?',
+          [
+            record.sys?.kPa,
+            record.dia?.kPa,
+            record.pul,
+            record.arm?.name,
+            record.source.name,
+            existing.first['id'],
+          ],
+        );
+      }
+    });
     _controller.add(record);
   }
 
@@ -82,12 +84,14 @@ class PowerSyncBloodPressureRepository extends BloodPressureRepository {
 
   @override
   Future<void> remove(BloodPressureRecord value) async {
-    await _db.execute(
-      'DELETE FROM blood_pressure WHERE timestamp_unix_s = ?',
-      [value.time.secondsSinceEpoch],
-    );
+    await _db.execute('DELETE FROM blood_pressure WHERE timestamp_unix_s = ?', [
+      value.time.secondsSinceEpoch,
+    ]);
     _controller.add(null);
   }
+
+  /// Publishes a committed write performed by the entry transaction coordinator.
+  void notifyExternalWrite() => _controller.add(null);
 
   @override
   Stream<BloodPressureRecord?> subscribe() => _controller.stream;

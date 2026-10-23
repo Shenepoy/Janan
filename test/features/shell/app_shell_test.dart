@@ -10,6 +10,7 @@ import 'package:blood_pressure_app/features/measurement_list/selection/selection
 import 'package:blood_pressure_app/features/shell/app_shell.dart';
 import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_range_bar.dart';
+import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_page_body.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:blood_pressure_app/screens/settings_screen.dart';
 import 'package:camera_cutout/camera_cutout.dart';
@@ -53,6 +54,213 @@ Future<void> _reveal(WidgetTester tester, Finder list, Finder target) async {
 }
 
 void main() {
+  for (final direction in [ui.TextDirection.ltr, ui.TextDirection.rtl]) {
+    testWidgets('floating titles keep their start anchor in $direction', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final page = ValueNotifier<double>(0);
+      addTearDown(page.dispose);
+      await pumpApp(
+        tester,
+        await appBaseWithData(
+          Directionality(
+            textDirection: direction,
+            child: Scaffold(
+              body: SizedBox(
+                width: 380,
+                height: 56,
+                child: ValueListenableBuilder<double>(
+                  valueListenable: page,
+                  builder: (context, value, _) => DashboardAppBar(
+                    page: value,
+                    floating: true,
+                    titleKeys: const [
+                      'measurements',
+                      'weight',
+                      'statistics',
+                      'settings',
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      double startOf(String title) {
+        final rect = tester.getRect(
+          find.descendant(
+            of: find.byType(DashboardAppBar),
+            matching: find.text(title),
+          ),
+        );
+        return direction == ui.TextDirection.ltr ? rect.left : rect.right;
+      }
+
+      final anchor = startOf('Measurements');
+      for (final value in [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 3.0]) {
+        page.value = value;
+        await tester.pump();
+        for (final title in [
+          'Measurements',
+          'Weight',
+          'Statistics',
+          'Settings',
+        ]) {
+          if (find
+              .descendant(
+                of: find.byType(DashboardAppBar),
+                matching: find.text(title),
+              )
+              .evaluate()
+              .isNotEmpty) {
+            expect(startOf(title), closeTo(anchor, 0.01));
+          }
+        }
+        expect(tester.takeException(), isNull);
+      }
+    });
+  }
+
+  for (final locale in [const Locale('en'), const Locale('ar')]) {
+    testWidgets('range morph dismisses and reopens in $locale', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.physicalSize = const Size(800, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await pumpApp(
+        tester,
+        await appBaseWithData(
+          const Scaffold(
+            body: Align(
+              alignment: AlignmentDirectional.topEnd,
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: DashboardRangeButton(
+                  type: IntervalStoreManagerLocation.mainPage,
+                ),
+              ),
+            ),
+          ),
+          locale: locale,
+        ),
+      );
+      final button = find.byKey(const ValueKey('landscape_range_button'));
+      final surface = find.byKey(
+        const ValueKey('landscape_range_morph_surface'),
+      );
+      double opacity() => tester
+          .widget<Opacity>(
+            find.byKey(const ValueKey('landscape_range_source_visibility')),
+          )
+          .opacity;
+      final source = tester.getRect(button);
+      await tester.tap(button);
+      await tester.pump();
+      Rect? visibleTitle;
+      for (var frame = 0; frame < 24; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        final controls = tester.widget<Opacity>(
+          find.byKey(const ValueKey('landscape_range_controls_visibility')),
+        );
+        if (controls.opacity == 0) continue;
+        final title = tester.getRect(
+          find.byKey(const ValueKey('landscape_range_title')),
+        );
+        // Text fades at its final position instead of sliding through the
+        // expanding surface, in both reading directions.
+        if (visibleTitle != null) expect(title, visibleTitle);
+        visibleTitle = title;
+      }
+      expect(visibleTitle, isNotNull);
+      await tester.pumpAndSettle();
+      final target = tester.getRect(surface);
+      expect(
+        locale.languageCode == 'ar' ? target.left : target.right,
+        closeTo(locale.languageCode == 'ar' ? source.left : source.right, 0.01),
+      );
+      expect(target.top, closeTo(source.top, 0.01));
+      await tester.tapAt(const Offset(400, 350));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(opacity(), 0);
+      for (var frame = 0; frame < 20; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(
+          surface.evaluate().isNotEmpty || opacity() == 1,
+          isTrue,
+          reason: 'The returning surface and source must not both disappear',
+        );
+      }
+      await tester.pumpAndSettle();
+      expect(surface, findsNothing);
+      expect(opacity(), 1);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(opacity(), 1);
+      await tester.tap(button);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.tapAt(const Offset(400, 350));
+      await tester.pumpAndSettle();
+      expect(surface, findsNothing);
+      expect(opacity(), 1);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      tester.view.physicalSize = const Size(400, 800);
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      await tester.pumpAndSettle();
+      expect(surface, findsNothing);
+      expect(opacity(), 1);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('range morph respects reduced motion', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpApp(
+      tester,
+      await appBaseWithData(
+        Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: const Scaffold(
+              body: Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: DashboardRangeButton(
+                    type: IntervalStoreManagerLocation.mainPage,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey('landscape_range_button')));
+    await tester.pumpAndSettle();
+    final modalContext = tester.element(
+      find.byKey(const ValueKey('landscape_range_modal')),
+    );
+    expect(ModalRoute.of(modalContext)!.transitionDuration, Duration.zero);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('landscape_range_morph_surface')),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('renders the bottom navigation as a body overlay', (
     tester,
   ) async {
@@ -137,19 +345,48 @@ void main() {
     final compactRangeSize = tester.getSize(rangeButton);
     expect(compactRangeSize, const Size(164, 48));
     final originalRange = rangeSummary();
+    final originalButtonRect = tester.getRect(rangeButton);
+    final morph = find.byKey(const ValueKey('landscape_range_morph_surface'));
+    double sourceOpacity() => tester
+        .widget<Opacity>(
+          find.byKey(const ValueKey('landscape_range_source_visibility')),
+        )
+        .opacity;
     await tester.tap(rangeButton);
+    await tester.pump();
+    expect(sourceOpacity(), 0);
+    expect(tester.getRect(morph), originalButtonRect);
+    final calendar = find.byKey(
+      const ValueKey('landscape_range_morph_calendar'),
+    );
+    expect(calendar, findsOneWidget);
+    final calendarStart = tester.getRect(calendar).left;
+    await tester.pump(const Duration(milliseconds: 90));
+    expect(tester.getRect(morph).width, greaterThan(originalButtonRect.width));
+    expect(tester.getRect(morph).width, lessThan(360));
+    expect(tester.getRect(morph).top, closeTo(originalButtonRect.top, 0.01));
     await tester.pumpAndSettle();
     expect(find.byType(DashboardRangeBar), findsOneWidget);
     final modal = find.byKey(const ValueKey('landscape_range_modal'));
     final buttonRect = tester.getRect(rangeButton);
     final modalRect = tester.getRect(modal);
     expect(modalRect.right, closeTo(buttonRect.right, 1));
-    expect(modalRect.top, closeTo(buttonRect.bottom + 8, 1));
+    expect(modalRect.top, closeTo(buttonRect.top, 1));
+    expect(sourceOpacity(), 0);
+    expect(tester.getRect(calendar).left, lessThan(calendarStart));
+    expect(calendar, findsOneWidget);
     expect(find.text('30D'), findsOneWidget);
     await tester.tap(find.text('30D'));
     await tester.pump();
     await tester.tap(find.byIcon(Icons.close));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(sourceOpacity(), 0);
+    expect(tester.getRect(morph).width, lessThan(360));
+    expect(tester.getRect(morph).width, greaterThan(originalButtonRect.width));
     await tester.pumpAndSettle();
+    expect(sourceOpacity(), 1);
+    expect(morph, findsNothing);
     expect(find.byType(DashboardRangeBar), findsNothing);
     expect(rangeSummary(), isNot(originalRange));
 
@@ -515,7 +752,7 @@ void main() {
       final actions = find.byType(NavigationActionButtons);
       expect(tester.getRect(date).right, closeTo(788, 0.01));
       expect(tester.getRect(actions).right, closeTo(784, 0.01));
-      expect(tester.getRect(find.byKey(pageKey)).right, closeTo(742, 0.01));
+      expect(tester.getRect(find.byKey(pageKey)).right, closeTo(728, 0.01));
       // A lower camera overlaps the action column; only that column moves inward.
       native.emit(snapshot(const Rect.fromLTWH(750, 270, 32, 32)));
       await tester.pumpAndSettle();
@@ -532,7 +769,85 @@ void main() {
       native.emit(snapshot(const Rect.fromLTWH(18, 170, 32, 32)));
       await tester.pumpAndSettle();
       expect(tester.getRect(find.byKey(pageKey)).left, closeTo(76, 0.01));
-      expect(tester.getRect(find.byKey(pageKey)).right, closeTo(784, 0.01));
+      expect(tester.getRect(find.byKey(pageKey)).right, closeTo(728, 0.01));
+      expect(
+        tester.getRect(find.byKey(pageKey)).right,
+        lessThanOrEqualTo(tester.getRect(actions).left),
+      );
+    },
+  );
+
+  testWidgets(
+    'landscape lists scroll under chrome with reachable first and last rows',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.padding = const FakeViewPadding(top: 72, bottom: 96);
+      addTearDown(tester.view.resetPadding);
+      await pumpApp(
+        tester,
+        await _minimalShell(
+          pages: [
+            const Text('home-page'),
+            Scaffold(
+              primary: false,
+              body: SafeArea(
+                top: false,
+                child: DashboardPageBody(
+                  children: [
+                    for (var i = 0; i < 24; i++)
+                      SizedBox(
+                        key: ValueKey('edge-row-$i'),
+                        height: 48,
+                        child: TextButton(
+                          onPressed: () {},
+                          child: Text('weight row $i'),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const Text('stats-page'),
+            const Text('settings-page'),
+          ],
+        ),
+      );
+      await tester.tap(find.byKey(AppShell.navWeightKey));
+      await tester.pumpAndSettle();
+      final list = find.descendant(
+        of: find.byType(DashboardPageBody),
+        matching: find.byType(ListView),
+      );
+      final viewport = tester.getRect(list);
+      expect(viewport.top, 0);
+      expect(viewport.bottom, 400);
+      final header = tester.getRect(find.byType(DashboardAppBar));
+      final first = find.byKey(const ValueKey('edge-row-0'));
+      expect(tester.getRect(first).top, greaterThan(header.bottom));
+      final position = tester
+          .state<ScrollableState>(
+            find.descendant(of: list, matching: find.byType(Scrollable)),
+          )
+          .position;
+      position.jumpTo(80);
+      await tester.pump();
+      expect(tester.getRect(first).top, lessThan(header.bottom));
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      final last = find.byKey(const ValueKey('edge-row-23'));
+      expect(last.hitTestable(), findsOneWidget);
+      final safeBottom = MediaQuery.viewPaddingOf(
+        tester.element(find.byType(AppShell)),
+      ).bottom;
+      expect(
+        tester.getRect(last).bottom,
+        lessThanOrEqualTo(viewport.bottom - safeBottom),
+      );
+      position.jumpTo(0);
+      await tester.pump();
+      expect(first.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 

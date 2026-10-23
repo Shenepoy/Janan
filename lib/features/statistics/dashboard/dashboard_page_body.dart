@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:blood_pressure_app/features/shell/shell_scroll_insets.dart';
 import 'package:flutter/material.dart';
 import 'package:safaeh/safaeh.dart';
 
@@ -11,6 +14,7 @@ class DashboardPageBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scrollInsets = ShellScrollInsets.of(context);
     final bottomInset =
         SafaehBottomNavScope.maybeOf(context)?.contentInsetWithSafeArea ?? 88.0;
     final spaced = <Widget>[];
@@ -20,7 +24,12 @@ class DashboardPageBody extends StatelessWidget {
     }
     return SafaehContentBand(
       child: ListView(
-        padding: EdgeInsetsDirectional.fromSTEB(16, 16, 16, bottomInset),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          16,
+          16 + scrollInsets.top,
+          16,
+          math.max(16.0, bottomInset) + scrollInsets.bottom,
+        ),
         children: spaced,
       ),
     );

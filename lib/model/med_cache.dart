@@ -13,6 +13,12 @@ class MedCache with ChangeNotifier {
 
   final MedicineRepository _repo;
 
+  /// Refreshes catalog state after restoring a database graph directly.
+  Future<void> reload() async {
+    _meds = await _repo.getAll();
+    notifyListeners();
+  }
+
   List<Medicine> _meds;
 
   List<Medicine> get medications => UnmodifiableListView(_meds);

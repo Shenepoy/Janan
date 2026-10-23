@@ -1,7 +1,6 @@
-import 'package:blood_pressure_app/components/fullscreen_dialog.dart';
+import 'package:blood_pressure_app/components/form_bottom_action.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/input/forms/entry_form_section.dart';
-import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/tiles/color_picker_list_tile.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safaeh/safaeh.dart';
 
-/// Dialog to enter values for a [Medicine].
+/// Full-page editor for a [Medicine].
 class AddMedicationDialog extends ConsumerStatefulWidget {
   /// Create a dialog to enter values for a [Medicine].
   const AddMedicationDialog({super.key, this.initialValue});
@@ -71,105 +70,120 @@ class _AddMedicationDialogState extends ConsumerState<AddMedicationDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(appSettingsProvider);
-    return FullscreenDialog(
-      actionButtonText: 'btnSave'.tr(),
-      onActionButtonPressed: _save,
-      bottomAppBar: settings.bottomAppBars,
-      body: Form(
-        key: formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
-          children: [
-            EntryFormSection(
-              title: 'addMedication'.tr(),
-              child: Column(
-                children: [
-                  TextFormField(
-                    focusNode: nameFocusNode,
-                    decoration: InputDecoration(
-                      labelText: 'name'.tr(),
-                      hintText: 'medicationNameHint'.tr(),
-                      helperText: 'medicationNameHelper'.tr(),
+    final bottomClearance =
+        FormBottomAction.clearance + MediaQuery.paddingOf(context).bottom;
+    return Scaffold(
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: Text(
+          widget.initialValue == null
+              ? 'addMedication'.tr()
+              : 'editMedication'.tr(),
+        ),
+      ),
+      body: FormBottomAction.overlay(
+        label: 'saveMedication'.tr(),
+        icon: const Icon(Icons.check),
+        onPressed: _save,
+        body: Form(
+          key: formKey,
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(16, 10, 16, bottomClearance),
+            children: [
+              EntryFormSection(
+                title: 'reminderMedicineSection'.tr(),
+                child: Column(
+                  children: [
+                    TextFormField(
+                      focusNode: nameFocusNode,
+                      decoration: InputDecoration(
+                        labelText: 'name'.tr(),
+                        hintText: 'medicationNameHint'.tr(),
+                        helperText: 'medicationNameHelper'.tr(),
+                      ),
+                      initialValue: _designation,
+                      textCapitalization: TextCapitalization.sentences,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'errNameRequired'.tr();
+                        }
+                        return null;
+                      },
+                      onSaved: (value) => _designation = value?.trim(),
                     ),
-                    initialValue: _designation,
-                    textCapitalization: TextCapitalization.sentences,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'errNameRequired'.tr();
-                      }
-                      return null;
-                    },
-                    onSaved: (value) => _designation = value?.trim(),
-                  ),
-                  const SizedBox(height: 16),
-                  ColorSelectionListTile(
-                    title: Text('color'.tr()),
-                    showTransparentColor: false,
-                    onMainColorChanged: (value) => setState(() {
-                      _color = value;
-                    }),
-                    initialColor: _color,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
+                    const SizedBox(height: 16),
+                    ColorSelectionListTile(
+                      title: Text('color'.tr()),
+                      showQuickColors: true,
+                      showTransparentColor: false,
+                      onMainColorChanged: (value) => setState(() {
+                        _color = value;
+                      }),
+                      initialColor: _color,
                     ),
-                    decoration: InputDecoration(
-                      labelText: 'defaultDosis'.tr(),
-                      hintText: formatDoseAmount(1),
-                      helperText: 'defaultDosisHint'.tr(),
-                      suffixIconConstraints: const BoxConstraints(minWidth: 92),
-                      suffixIcon: Semantics(
-                        label: 'medicationUnit'.tr(),
-                        button: true,
-                        child: Padding(
-                          padding: const EdgeInsetsDirectional.only(end: 4),
-                          child: SafaehAnchoredDropdownChip<MedicationUnit>(
-                            key: const ValueKey('medication-unit-dropdown'),
-                            icon: Icons.straighten,
-                            label: _unit.labelKey.tr(),
-                            selected: _unit,
-                            options: [
-                              for (final unit in MedicationUnit.values)
-                                SafaehDropdownOption(
-                                  value: unit,
-                                  label: unit.labelKey.tr(),
-                                ),
-                            ],
-                            onSelected: (unit) => setState(() => _unit = unit),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'defaultDosis'.tr(),
+                        hintText: formatDoseAmount(1),
+                        helperText: 'defaultDosisHint'.tr(),
+                        suffixIconConstraints: const BoxConstraints(
+                          minWidth: 92,
+                        ),
+                        suffixIcon: Semantics(
+                          label: 'medicationUnit'.tr(),
+                          button: true,
+                          child: Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 4),
+                            child: SafaehAnchoredDropdownChip<MedicationUnit>(
+                              key: const ValueKey('medication-unit-dropdown'),
+                              icon: Icons.straighten,
+                              label: _unit.labelKey.tr(),
+                              selected: _unit,
+                              options: [
+                                for (final unit in MedicationUnit.values)
+                                  SafaehDropdownOption(
+                                    value: unit,
+                                    label: unit.labelKey.tr(),
+                                  ),
+                              ],
+                              onSelected: (unit) =>
+                                  setState(() => _unit = unit),
+                            ),
                           ),
                         ),
                       ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'([0-9]+(\.([0-9]*))?)'),
+                        ),
+                      ],
+                      initialValue: _defaultDosis?.toString(),
+                      onSaved: (value) => _defaultDosis =
+                          double.tryParse(value ?? '') ??
+                          int.tryParse(value ?? '')?.toDouble(),
                     ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                        RegExp(r'([0-9]+(\.([0-9]*))?)'),
-                      ),
-                    ],
-                    initialValue: _defaultDosis?.toString(),
-                    onSaved: (value) => _defaultDosis =
-                        double.tryParse(value ?? '') ??
-                        int.tryParse(value ?? '')?.toDouble(),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Shows a full screen dialog to input a medicine.
-///
-/// The created medicine gets an index that was never in settings.
+/// Opens a medicine editor page and returns the saved values to its caller.
 Future<Medicine?> showAddMedicineDialog(
   BuildContext context, {
   Medicine? initialValue,
-}) => showDialog<Medicine?>(
-  context: context,
-  builder: (context) => AddMedicationDialog(initialValue: initialValue),
+}) => Navigator.push<Medicine>(
+  context,
+  MaterialPageRoute<Medicine>(
+    builder: (_) => AddMedicationDialog(initialValue: initialValue),
+  ),
 );

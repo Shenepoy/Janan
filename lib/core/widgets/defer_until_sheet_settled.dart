@@ -71,9 +71,7 @@ class _DeferUntilSheetSettledState extends State<DeferUntilSheetSettled> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return _settled ? widget.child : widget.placeholder;
-  }
+  Widget build(BuildContext context) => _settled ? widget.child : widget.placeholder;
 }
 
 /// Cheap rows that stand in for a [SafaehOptionList] while the sheet moves.

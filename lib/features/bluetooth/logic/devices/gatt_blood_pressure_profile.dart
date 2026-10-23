@@ -49,10 +49,10 @@ class GattBloodPressureProfile extends BleDeviceProfile with Loggable {
     required Iterable<UUID> characteristicUUIDs,
   }) => containsUuid(serviceUUIDs, serviceUUID);
 
-  /// Whether [advertisedName] belongs to a model that sends multi-byte fields
-  /// big endian and always includes a user id without setting its flag.
+  /// Only BM85 has packet evidence for swapped fields and a hidden user ID.
+  /// Recognition of other models does not imply these decoding quirks.
   static bool isKnownBigEndianDevice(String? advertisedName) =>
-      bleNameContainsAnyToken(advertisedName, const ['BM48', 'BM85', 'ELITE900']);
+      bleNameContainsAnyToken(advertisedName, const ['BM85']);
 
   @override
   Future<BleDeviceReadResult> read(BleGattSession session) async {
@@ -77,10 +77,12 @@ class GattBloodPressureProfile extends BleDeviceProfile with Loggable {
       'reading GATT data from ${session.deviceName} (bigEndian: $bigEndian)',
     );
 
-    final canRead = gattCharacteristic.properties
-        .contains(GATTCharacteristicProperty.read);
-    final canIndicate = gattCharacteristic.properties
-        .contains(GATTCharacteristicProperty.indicate);
+    final canRead = gattCharacteristic.properties.contains(
+      GATTCharacteristicProperty.read,
+    );
+    final canIndicate = gattCharacteristic.properties.contains(
+      GATTCharacteristicProperty.indicate,
+    );
     if (canRead) {
       final data = await session.read(gattCharacteristic);
       final decoded = BleMeasurementData.decode(
@@ -89,7 +91,9 @@ class GattBloodPressureProfile extends BleDeviceProfile with Loggable {
         alwaysSendsUserId: bigEndian,
       );
       if (decoded == null) {
-        logWarning('Failed to decode GATT measurement $data for ${session.device}');
+        logWarning(
+          'Failed to decode GATT measurement $data for ${session.device}',
+        );
         return const BleDeviceReadFailure('Could not decode data');
       }
       return BleBloodPressureRead([decoded]);

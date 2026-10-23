@@ -31,7 +31,7 @@ class _TimingSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          height: compact ? 14 : 28,
+          height: compact ? 10 : 28,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(14),
             child: CustomPaint(
@@ -44,7 +44,7 @@ class _TimingSummary extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(height: compact ? 8 : 18),
+        SizedBox(height: compact ? 4 : 18),
         Row(
           children: [
             for (final timing in timings)
@@ -70,9 +70,13 @@ class _TimingSummary extends StatelessWidget {
                               _label(timing),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurface,
-                              ),
+                              style:
+                                  (compact
+                                          ? theme.textTheme.bodySmall
+                                          : theme.textTheme.bodyMedium)
+                                      ?.copyWith(
+                                        color: theme.colorScheme.onSurface,
+                                      ),
                             ),
                           ),
                         ],
@@ -82,7 +86,7 @@ class _TimingSummary extends StatelessWidget {
                         toWesternDigits('${percentages[timing]}%'),
                         style:
                             (compact
-                                    ? theme.textTheme.titleMedium
+                                    ? theme.textTheme.titleSmall
                                     : theme.textTheme.headlineSmall)
                                 ?.copyWith(
                                   color: _color(timing),

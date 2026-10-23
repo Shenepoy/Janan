@@ -7,6 +7,7 @@ import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart'
 import 'package:blood_pressure_app/features/measurement_list/measurement_filter_scope.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
+import 'package:blood_pressure_app/features/shell/shell_scroll_insets.dart';
 import 'package:blood_pressure_app/features/shell/shell_tab.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_range_bar.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
@@ -406,6 +407,8 @@ class _AppShellViewState extends State<_AppShellView> {
                                 child: SafeArea(
                                   left: false,
                                   right: false,
+                                  top: false,
+                                  bottom: false,
                                   child: LayoutBuilder(
                                     builder: (context, constraints) {
                                       final rangeWidth =
@@ -420,10 +423,8 @@ class _AppShellViewState extends State<_AppShellView> {
                                                   headerEndInset -
                                                   48)
                                               .clamp(0.0, 400.0);
-                                      // The floating chrome occupies 56 dp from
-                                      // y=12. Keep a comfortable 12 px gap below
-                                      // it while reclaiming the old oversized
-                                      // blank band above landscape pages.
+                                      // Scrollable pages keep this clearance in
+                                      // their content rather than their viewport.
                                       const contentTop = 80.0;
                                       return Stack(
                                         fit: StackFit.expand,
@@ -432,24 +433,34 @@ class _AppShellViewState extends State<_AppShellView> {
                                             child: AnimatedPadding(
                                               duration: tokens.navMotion,
                                               curve: Curves.fastOutSlowIn,
-                                              padding:
-                                                  EdgeInsetsDirectional.fromSTEB(
-                                                    math.max(
-                                                      compactSurfaceWidth + 12,
-                                                      rtl
-                                                          ? contentInsets.right
-                                                          : contentInsets.left,
-                                                    ),
-                                                    contentTop,
-                                                    math.max(
-                                                      16,
-                                                      contentEndInset,
-                                                    ),
-                                                    12,
-                                                  ),
+                                              padding: EdgeInsetsDirectional.fromSTEB(
+                                                math.max(
+                                                  compactSurfaceWidth + 12,
+                                                  rtl
+                                                      ? contentInsets.right
+                                                      : contentInsets.left,
+                                                ),
+                                                0,
+                                                math.max(
+                                                  // Keep the floating actions clear of
+                                                  // charts and table cells in either rotation.
+                                                  72,
+                                                  contentEndInset,
+                                                ),
+                                                0,
+                                              ),
                                               child: _shellPages(
                                                 pages: pages,
                                                 localeTag: localeTag,
+                                                landscapeInsets:
+                                                    EdgeInsets.only(
+                                                      top:
+                                                          shellPadding.top +
+                                                          contentTop,
+                                                      bottom:
+                                                          shellPadding.bottom +
+                                                          4,
+                                                    ),
                                               ),
                                             ),
                                           ),
@@ -457,7 +468,7 @@ class _AppShellViewState extends State<_AppShellView> {
                                             duration: tokens.navMotion,
                                             curve: Curves.fastOutSlowIn,
                                             start: railWidth + 20,
-                                            top: 12,
+                                            top: shellPadding.top + 12,
                                             width: appBarWidth,
                                             height: kToolbarHeight,
                                             child: _LandscapeFloatingChrome(
@@ -497,15 +508,13 @@ class _AppShellViewState extends State<_AppShellView> {
                                           ),
                                           PositionedDirectional(
                                             end: math.max(12, headerEndInset),
-                                            top: 12,
+                                            top: shellPadding.top + 12,
                                             child: AnimatedBuilder(
                                               animation: _pageController,
-                                              child: _LandscapeFloatingChrome(
-                                                child: DashboardRangeButton(
-                                                  type:
-                                                      IntervalStoreManagerLocation
-                                                          .mainPage,
-                                                ),
+                                              child: DashboardRangeButton(
+                                                type:
+                                                    IntervalStoreManagerLocation
+                                                        .mainPage,
                                               ),
                                               builder: (context, child) {
                                                 final rangeFactor =
@@ -651,6 +660,7 @@ class _AppShellViewState extends State<_AppShellView> {
   Widget _shellPages({
     required List<Widget> pages,
     required String localeTag,
+    EdgeInsets landscapeInsets = EdgeInsets.zero,
   }) => ShellTabScope(
     activeTab: _tabs[_index],
     child: PageView(
@@ -662,7 +672,27 @@ class _AppShellViewState extends State<_AppShellView> {
           _KeepAlivePage(
             // Keep identity tied to each tab as settings change.
             key: ValueKey<String>('shell-page-${_tabs[i].name}-$localeTag'),
-            child: pages[i],
+            child: ShellScrollInsets(
+              insets:
+                  _tabs[i] == ShellTab.weight || _tabs[i] == ShellTab.statistics
+                  ? landscapeInsets
+                  : EdgeInsets.zero,
+              child: Padding(
+                padding:
+                    _tabs[i] == ShellTab.weight ||
+                        _tabs[i] == ShellTab.statistics
+                    ? EdgeInsets.zero
+                    : landscapeInsets,
+                child: Builder(
+                  builder: (context) => MediaQuery.removePadding(
+                    context: context,
+                    removeTop: landscapeInsets.top > 0,
+                    removeBottom: landscapeInsets.bottom > 0,
+                    child: pages[i],
+                  ),
+                ),
+              ),
+            ),
           ),
       ],
     ),

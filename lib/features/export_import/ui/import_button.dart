@@ -1,24 +1,29 @@
 import 'dart:convert';
 
 import 'package:blood_pressure_app/core/database/db_import.dart';
+import 'package:blood_pressure_app/core/repository/powersync_medicine_intake_repository.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
+import 'package:blood_pressure_app/core/repository/repository_providers.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/features/export_import/model/csv_converter.dart';
 import 'package:blood_pressure_app/features/export_import/model/csv_record_parsing_actor.dart';
 import 'package:blood_pressure_app/features/export_import/ui/import_preview_dialog.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminder_providers.dart';
+import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Text button to import entries like configured in the context.
-class ImportButton extends StatelessWidget {
+class ImportButton extends ConsumerWidget {
   /// Create text button to import entries like configured in the context.
   const ImportButton({super.key});
 
   @override
-  Widget build(BuildContext context) => TextButton.icon(
+  Widget build(BuildContext context, WidgetRef ref) => TextButton.icon(
     label: Text('import'.tr()),
     icon: Icon(Icons.file_upload_outlined),
     onPressed: () async {
@@ -34,7 +39,7 @@ class ImportButton extends StatelessWidget {
       final name = file.name;
       final dot = name.lastIndexOf('.');
       final extension = dot >= 0 ? name.substring(dot + 1).toLowerCase() : '';
-      switch(extension) {
+      switch (extension) {
         case 'csv':
           final binaryContent = await file.readAsBytes();
           if (!context.mounted) return;
@@ -49,10 +54,7 @@ class ImportButton extends StatelessWidget {
           if (!context.mounted) return;
           final importedRecords = await showImportPreview(
             context,
-            CsvRecordParsingActor(
-              converter,
-              utf8.decode(binaryContent),
-            ),
+            CsvRecordParsingActor(converter, utf8.decode(binaryContent)),
             exportColumnsManager,
             context.readAppSettings().bottomAppBars,
           );
@@ -70,7 +72,11 @@ class ImportButton extends StatelessWidget {
             if (e.intake != null) await intakeRepo.add(e.intake!);
           });
           if (!context.mounted) return;
-          context.showSuccess('importSuccess'.tr(namedArgs: {'count': '${importedRecords.length}'}));
+          context.showSuccess(
+            'importSuccess'.tr(
+              namedArgs: {'count': '${importedRecords.length}'},
+            ),
+          );
           break;
         case 'db':
           if (file.path == null) return;
@@ -78,17 +84,36 @@ class ImportButton extends StatelessWidget {
           try {
             count = await importMeasurementDatabase(
               path: file.path!,
+              targetDatabase: context.healthDatabase,
               bpRepo: context.bpRepo,
               noteRepo: context.noteRepo,
               intakeRepo: context.intakeRepo,
               medRepo: context.medRepo,
               weightRepo: context.weightRepo,
             );
+            if (!context.mounted) return;
+            await context.medCache.reload();
+            if (!context.mounted) return;
+            final intakes = context.intakeRepo;
+            if (intakes is PowerSyncMedicineIntakeRepository) {
+              intakes.notifyExternalWrite();
+            }
+            ref.invalidate(medicationSchedulesProvider);
+            ref.invalidate(medicationDayProvider);
+            ref.invalidate(todayMedicationOccurrencesProvider);
+            ref.invalidate(homeMedicationOccurrencesProvider);
+            await syncMedicationReminders(
+              ref.read(medicationScheduleRepositoryProvider),
+              context.readAppSettings(),
+            );
           } catch (e) {
-            // DB doesn't conform
+            if (context.mounted) context.showError('errNotImportable'.tr());
+            return;
           }
           if (!context.mounted) return;
-          context.showSuccess('importSuccess'.tr(namedArgs: {'count': '$count'}));
+          context.showSuccess(
+            'importSuccess'.tr(namedArgs: {'count': '$count'}),
+          );
           break;
         default:
           context.showError('errWrongImportFormat'.tr());

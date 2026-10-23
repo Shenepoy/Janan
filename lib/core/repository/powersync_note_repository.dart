@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:blood_pressure_app/domain/domain.dart';
-import 'package:powersync/powersync.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 import 'package:uuid/uuid.dart';
 
 /// PowerSync implementation of [NoteRepository].
 class PowerSyncNoteRepository extends NoteRepository {
   PowerSyncNoteRepository(this._db);
 
-  final PowerSyncDatabase _db;
+  final SqliteWriteContext _db;
   final _uuid = const Uuid();
   final _controller = StreamController<Note?>.broadcast();
 
@@ -18,22 +18,25 @@ class PowerSyncNoteRepository extends NoteRepository {
       assert(false, 'Attempting to store a note without content and color');
       return;
     }
-    final timeSec = note.time.secondsSinceEpoch;
-    final existing = await _db.getAll(
-      'SELECT id FROM notes WHERE timestamp_unix_s = ?',
-      [timeSec],
-    );
-    if (existing.isEmpty) {
-      await _db.execute(
-        'INSERT INTO notes (id, timestamp_unix_s, note, color) VALUES (?, ?, ?, ?)',
-        [_uuid.v4(), timeSec, note.note, note.color],
+    await _db.writeTransaction((tx) async {
+      final timeSec = note.time.secondsSinceEpoch;
+      final existing = await tx.getAll(
+        'SELECT id FROM notes WHERE timestamp_unix_s = ?',
+        [timeSec],
       );
-    } else {
-      await _db.execute(
-        'UPDATE notes SET note = ?, color = ? WHERE id = ?',
-        [note.note, note.color, existing.first['id']],
-      );
-    }
+      if (existing.isEmpty) {
+        await tx.execute(
+          'INSERT INTO notes (id, timestamp_unix_s, note, color) VALUES (?, ?, ?, ?)',
+          [_uuid.v4(), timeSec, note.note, note.color],
+        );
+      } else {
+        await tx.execute('UPDATE notes SET note = ?, color = ? WHERE id = ?', [
+          note.note,
+          note.color,
+          existing.first['id'],
+        ]);
+      }
+    });
     _controller.add(note);
   }
 
@@ -57,12 +60,14 @@ class PowerSyncNoteRepository extends NoteRepository {
 
   @override
   Future<void> remove(Note value) async {
-    await _db.execute(
-      'DELETE FROM notes WHERE timestamp_unix_s = ?',
-      [value.time.secondsSinceEpoch],
-    );
+    await _db.execute('DELETE FROM notes WHERE timestamp_unix_s = ?', [
+      value.time.secondsSinceEpoch,
+    ]);
     _controller.add(null);
   }
+
+  /// Publishes a committed write performed by the entry transaction coordinator.
+  void notifyExternalWrite() => _controller.add(null);
 
   @override
   Stream<Note?> subscribe() => _controller.stream;

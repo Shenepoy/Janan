@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_snapshot.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -8,6 +9,7 @@ Widget valueAxisTitle({
   required double value,
   required TitleMeta meta,
   required TextStyle style,
+  int fractionDigits = 0,
 }) {
   final step = meta.appliedInterval;
   if (step > 0) {
@@ -22,6 +24,9 @@ Widget valueAxisTitle({
   }
   return SideTitleWidget(
     meta: meta,
-    child: Text(value.round().toString(), style: style),
+    child: Text(
+      formatDashboardNumber(value, digits: fractionDigits),
+      style: style,
+    ),
   );
 }

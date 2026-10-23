@@ -28,7 +28,9 @@ void main() {
 
     final junkPath = p.join(dir.path, 'notes.db');
     final junk = await openDatabase(junkPath);
-    await junk.execute('CREATE TABLE notes (id INTEGER PRIMARY KEY, body TEXT)');
+    await junk.execute(
+      'CREATE TABLE notes (id INTEGER PRIMARY KEY, body TEXT)',
+    );
     await junk.insert('notes', {'id': 1, 'body': 'hello'});
     await junk.close();
     final before = File(junkPath).readAsBytesSync();
@@ -44,6 +46,7 @@ void main() {
 
     final count = await importMeasurementDatabase(
       path: junkPath,
+      targetDatabase: db,
       bpRepo: PowerSyncBloodPressureRepository(db),
       noteRepo: PowerSyncNoteRepository(db),
       intakeRepo: PowerSyncMedicineIntakeRepository(db),

@@ -100,6 +100,7 @@ class BluetoothScanForegroundService : Service() {
                 context,
                 0,
                 Intent(context, MainActivity::class.java).apply {
+                    action = bluetoothStatusLaunchIdentity(context.packageName).action
                     flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP
                 },
@@ -121,6 +122,7 @@ class BluetoothScanForegroundService : Service() {
                 context,
                 1,
                 Intent(context, MainActivity::class.java).apply {
+                    action = bluetoothResultLaunchIdentity(context.packageName).action
                     flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP
                 },

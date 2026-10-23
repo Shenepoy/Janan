@@ -1,5 +1,4 @@
 import 'package:blood_pressure_app/features/input/forms/note_form.dart';
-import 'package:blood_pressure_app/features/settings/tiles/color_picker_list_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -26,7 +25,7 @@ void main() {
     expect(key.currentState!.validate(), true);
 
     await tester.enterText(find.byType(TextField), 'some test note!');
-    await tester.tap(find.byType(ColorSelectionListTile));
+    await tester.tap(find.byTooltip('More colors'));
     await tester.pump();
     await tester.tap(find.byElementPredicate(findColored(Colors.red)));
 
@@ -35,12 +34,16 @@ void main() {
   });
 
   testWidgets('loads initial values', (WidgetTester tester) async {
-    await pumpApp(tester, await materialApp(NoteForm(
-      initialValue: ('Some note text from test', Colors.cyan),
-    )));
+    await pumpApp(
+      tester,
+      await materialApp(
+        NoteForm(initialValue: ('Some note text from test', Colors.cyan)),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Some note text from test'), findsOneWidget);
-    await tester.tap(find.byElementPredicate(findColored(Colors.cyan)));
+    expect(find.byTooltip('Custom color'), findsNothing);
+    expect(find.byTooltip('Cyan'), findsNWidgets(2));
   });
 
   testWidgets('saves only filled inputs', (WidgetTester tester) async {
@@ -53,7 +56,10 @@ void main() {
     final v = ('Some note text from test', Colors.cyan);
 
     final key = GlobalKey<NoteFormState>();
-    await pumpApp(tester, await materialApp(NoteForm(key: key, initialValue: v)));
+    await pumpApp(
+      tester,
+      await materialApp(NoteForm(key: key, initialValue: v)),
+    );
     expect(key.currentState!.save(), v);
   });
 }

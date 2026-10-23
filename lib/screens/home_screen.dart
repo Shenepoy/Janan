@@ -165,10 +165,10 @@ class _AppHomeState extends ConsumerState<AppHome> {
                                 entries.isNotEmpty) {
                               return Padding(
                                 padding: const EdgeInsetsDirectional.fromSTEB(
-                                  16,
-                                  16,
-                                  16,
-                                  16,
+                                  8,
+                                  6,
+                                  8,
+                                  2,
                                 ),
                                 child: Row(
                                   crossAxisAlignment:
@@ -176,7 +176,7 @@ class _AppHomeState extends ConsumerState<AppHome> {
                                   children: [
                                     if (showChart)
                                       Expanded(
-                                        flex: 5,
+                                        flex: 6,
                                         child: _graphCard(
                                           showBloodPressure:
                                               showBloodPressureChart,
@@ -186,7 +186,7 @@ class _AppHomeState extends ConsumerState<AppHome> {
                                       ),
                                     if (showChart) const SizedBox(width: 12),
                                     Expanded(
-                                      flex: 6,
+                                      flex: 5,
                                       child: Card(
                                         clipBehavior: Clip.antiAlias,
                                         child: MeasurementList(

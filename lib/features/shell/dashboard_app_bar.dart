@@ -66,7 +66,23 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
         : BleHomeSyncIndicator.slotWidth;
     return SafaehMorphingAppBar(
       page: page,
-      titles: [for (final key in titleKeys) Text(key.tr())],
+      titles: [
+        for (final key in titleKeys)
+          if (floating)
+            SizedBox(
+              width: double.infinity,
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  key.tr(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            )
+          else
+            Text(key.tr()),
+      ],
       // Reserve the same leading width as the trailing action slot. This
       // keeps the title on the physical center line even when actions morph.
       centerTitle: !floating,

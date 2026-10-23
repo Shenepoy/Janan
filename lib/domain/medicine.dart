@@ -5,11 +5,16 @@ import 'package:blood_pressure_app/domain/units/weight.dart';
 class Medicine {
   /// Create a medicine description.
   const Medicine({
+    this.id,
     required this.designation,
     this.color,
     this.dosis,
     this.unit = MedicationUnit.mg,
   });
+
+  /// Stable catalog identity, when loaded from storage. Value equality remains
+  /// based on the medicine description, so unsaved values can still match it.
+  final String? id;
 
   /// Name of the medicine.
   final String designation;

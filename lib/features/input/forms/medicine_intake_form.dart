@@ -49,12 +49,14 @@ class MedicineIntakeForm extends FormBase<(Medicine, Weight)> {
 class _IntakeSlot {
   _IntakeSlot({
     this.medicine,
+    this.occurrenceId,
     required this.time,
     required this.showTime,
     String dose = '',
   }) : controller = TextEditingController(text: dose);
 
   Medicine? medicine;
+  String? occurrenceId;
   DateTime time;
   bool showTime;
   String? error;
@@ -106,6 +108,7 @@ class MedicineIntakeFormState
         for (final intake in intakes)
           _IntakeSlot(
             medicine: intake.medicine,
+            occurrenceId: intake.occurrenceId,
             dose: _doseText(intake.dosis.mg),
             time: intake.time,
             showTime:
@@ -178,6 +181,7 @@ class MedicineIntakeFormState
         MedicineIntake(
           time: time,
           medicine: slot.medicine!,
+          occurrenceId: slot.occurrenceId,
           dosis: Weight.mg(double.parse(slot.controller.text)),
         ),
       );
@@ -277,6 +281,7 @@ class MedicineIntakeFormState
 
   void _selectMedicine(_IntakeSlot slot, Medicine? med) {
     setState(() {
+      if (slot.medicine != med) slot.occurrenceId = null;
       slot.medicine = med;
       slot.error = null;
       if (med != null) {
@@ -321,73 +326,69 @@ class MedicineIntakeFormState
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-      listenable: context.medCache,
-      builder: (context, _) {
-        final meds = context.medCache.medications;
-        if (meds.isEmpty) {
-          return EntryFormSection(
-            title: 'medications'.tr(),
-            child: SafaehInlineBanner(
-              message: 'noMedicationsHint'.tr(),
-              tone: SafaehBannerTone.info,
-              actions: [
-                TextButton.icon(
-                  onPressed: () => Navigator.of(
-                    context,
-                  ).pushNamed('/settings/medications'),
-                  icon: const Icon(Icons.medication_outlined),
-                  label: Text('manageMedications'.tr()),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final filled = [
-          for (final slot in _slots)
-            if (slot.medicine != null) slot,
-        ];
-        final empty = _slots.cast<_IntakeSlot?>().firstWhere(
-          (slot) => slot!.medicine == null,
-          orElse: () => null,
-        );
-        final extras = <Medicine>[];
-        for (final slot in filled) {
-          final match = _matchMed(meds, slot.medicine);
-          if (match != null &&
-              !meds.contains(match) &&
-              !extras.contains(match)) {
-            extras.add(match);
-          }
-        }
-        final options = [...extras, ...meds];
-        final canAdd =
-            widget.allowMultiple && empty == null && filled.isNotEmpty;
+    listenable: context.medCache,
+    builder: (context, _) {
+      final meds = context.medCache.medications;
+      if (meds.isEmpty) {
         return EntryFormSection(
           title: 'medications'.tr(),
-          trailing: canAdd
-              ? _RoundStepButton(
-                  icon: Icons.add,
-                  tooltip: 'addMedication'.tr(),
-                  onPressed: () => _addFromPicker(options),
-                )
-              : null,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i < filled.length; i++) ...[
-                if (i > 0) const SizedBox(height: 12),
-                _doseCard(meds, filled[i]),
-              ],
-              if (empty != null) ...[
-                if (filled.isNotEmpty) const SizedBox(height: 12),
-                _AddMedicationRow(onTap: () => _openPicker(empty, options)),
-              ],
+          child: SafaehInlineBanner(
+            message: 'noMedicationsHint'.tr(),
+            tone: SafaehBannerTone.info,
+            actions: [
+              TextButton.icon(
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/settings/medications'),
+                icon: const Icon(Icons.medication_outlined),
+                label: Text('manageMedications'.tr()),
+              ),
             ],
           ),
         );
-      },
-    );
+      }
+
+      final filled = [
+        for (final slot in _slots)
+          if (slot.medicine != null) slot,
+      ];
+      final empty = _slots.cast<_IntakeSlot?>().firstWhere(
+        (slot) => slot!.medicine == null,
+        orElse: () => null,
+      );
+      final extras = <Medicine>[];
+      for (final slot in filled) {
+        final match = _matchMed(meds, slot.medicine);
+        if (match != null && !meds.contains(match) && !extras.contains(match)) {
+          extras.add(match);
+        }
+      }
+      final options = [...extras, ...meds];
+      final canAdd = widget.allowMultiple && empty == null && filled.isNotEmpty;
+      return EntryFormSection(
+        title: 'medications'.tr(),
+        trailing: canAdd
+            ? _RoundStepButton(
+                icon: Icons.add,
+                tooltip: 'addMedication'.tr(),
+                onPressed: () => _addFromPicker(options),
+              )
+            : null,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < filled.length; i++) ...[
+              if (i > 0) const SizedBox(height: 12),
+              _doseCard(meds, filled[i]),
+            ],
+            if (empty != null) ...[
+              if (filled.isNotEmpty) const SizedBox(height: 12),
+              _AddMedicationRow(onTap: () => _openPicker(empty, options)),
+            ],
+          ],
+        ),
+      );
+    },
+  );
 
   Future<void> _addFromPicker(List<Medicine> options) async {
     FocusScope.of(context).unfocus();
@@ -416,12 +417,12 @@ class MedicineIntakeFormState
     required List<Medicine> options,
     required Medicine? selected,
   }) => showResponsiveSheet<Object>(
-      context: context,
-      title: 'selectMedication'.tr(),
-      maxHeight: MediaQuery.sizeOf(context).height * 0.75,
-      showDragHandle: true,
-      child: _MedicinePickerSheet(medicines: options, selected: selected),
-    );
+    context: context,
+    title: 'selectMedication'.tr(),
+    maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+    showDragHandle: true,
+    child: _MedicinePickerSheet(medicines: options, selected: selected),
+  );
 
   Widget _doseCard(List<Medicine> meds, _IntakeSlot slot) {
     final theme = Theme.of(context);
@@ -717,15 +718,15 @@ class _RoundStepButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => IconButton.filledTonal(
-      onPressed: onPressed,
-      tooltip: tooltip,
-      icon: Icon(icon, size: 20),
-      style: IconButton.styleFrom(
-        visualDensity: VisualDensity.compact,
-        minimumSize: const Size(40, 40),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-    );
+    onPressed: onPressed,
+    tooltip: tooltip,
+    icon: Icon(icon, size: 20),
+    style: IconButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      minimumSize: const Size(40, 40),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    ),
+  );
 }
 
 class _MedSwatch extends StatelessWidget {
@@ -871,7 +872,8 @@ class _FieldCaption extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Text(text, style: AppText.label(context));
+  Widget build(BuildContext context) =>
+      Text(text, style: AppText.label(context));
 }
 
 class _IntakeTimeField extends StatelessWidget {

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
+import 'package:blood_pressure_app/components/form_bottom_action.dart';
 import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/core/repository/repository_providers.dart';
@@ -26,7 +27,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safaeh/safaeh.dart';
 
 part 'medication_reminder_dose_action_buttons.dart';
-part 'medication_reminder_glass_bottom_action.dart';
 part 'medication_reminder_day_page_header.dart';
 part 'medication_reminder_day_log_page.dart';
 part 'medication_reminder_collapsed_taken_log.dart';
@@ -64,14 +64,16 @@ Future<List<DoseOccurrence>> upcomingDoseOccurrences(
       ? const <DoseOccurrence>[]
       : await repository.getExistingOccurrences(
           DateRange(
-            start: firstDay.subtract(const Duration(days: 14)),
+            start: DateTime(firstDay.year, firstDay.month, firstDay.day - 14),
             end: firstDay.subtract(const Duration(milliseconds: 1)),
           ),
         );
   final upcoming = <DoseOccurrence>[];
   for (var offset = 0; offset < horizon; offset++) {
     upcoming.addAll(
-      await repository.getOccurrences(firstDay.add(Duration(days: offset))),
+      await repository.getOccurrences(
+        DateTime(firstDay.year, firstDay.month, firstDay.day + offset),
+      ),
     );
   }
   return dosesForReminderList(
@@ -304,7 +306,10 @@ String _doseDayLabel(BuildContext context, DateTime date, DateTime now) {
   if (DateUtils.isSameDay(target, today)) {
     return _t('reminderTodayShort', 'Today');
   }
-  if (DateUtils.isSameDay(target, today.add(const Duration(days: 1)))) {
+  if (DateUtils.isSameDay(
+    target,
+    DateTime(today.year, today.month, today.day + 1),
+  )) {
     return _t('reminderTomorrow', 'Tomorrow');
   }
   return DateFormat.E(context.locale.toString()).format(target);
@@ -317,8 +322,9 @@ const _countdownSiren = Color(0xFFFFF6F4);
 
 Color _countdownStateColor(DateTime target, DateTime now) {
   if (!target.isAfter(now)) return _countdownRed;
-  if (target.difference(now) <= const Duration(hours: 1))
+  if (target.difference(now) <= const Duration(hours: 1)) {
     return _countdownYellow;
+  }
   return _countdownGreen;
 }
 
@@ -1046,12 +1052,13 @@ _RingLayer _ringLayer(
     markProgress: shared
         ? [
             for (final dose in group.doses)
-              outer
-                  ? doseRingFraction(dose.targetAt, now, dose.interval)
-                  : math.min(
-                      doseRingFraction(dose.targetAt, now, dose.interval),
-                      _innerOpenCap,
-                    ),
+              if (outer)
+                doseRingFraction(dose.targetAt, now, dose.interval)
+              else
+                math.min(
+                  doseRingFraction(dose.targetAt, now, dose.interval),
+                  _innerOpenCap,
+                ),
           ]
         : const [],
   );
@@ -2046,7 +2053,9 @@ class _MedicationPanelEmpty extends ConsumerWidget {
 }
 
 class MedicationSchedulesScreen extends ConsumerWidget {
-  const MedicationSchedulesScreen({super.key});
+  const MedicationSchedulesScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   Future<void> _add(BuildContext context) async {
     await Navigator.push<void>(
@@ -2108,26 +2117,29 @@ class MedicationSchedulesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final schedules = ref.watch(medicationSchedulesProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_t('reminderSchedulesTitle', 'Medicine reminders')),
-        actions: [
-          IconButton(
-            tooltip: _t('reminderSettingsTitle', 'Reminder settings'),
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.push<void>(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => const MedicationReminderSettingsScreen(),
-              ),
+      appBar: embedded
+          ? null
+          : AppBar(
+              title: Text(_t('reminderSchedulesTitle', 'Medicine reminders')),
+              actions: [
+                IconButton(
+                  tooltip: _t('reminderSettingsTitle', 'Reminder settings'),
+                  icon: const Icon(Icons.settings_outlined),
+                  onPressed: () => Navigator.push<void>(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const MedicationReminderSettingsScreen(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: _t('reminderTodayTitle', "Today's medicines"),
+                  icon: const Icon(Icons.today_outlined),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/medications/today'),
+                ),
+              ],
             ),
-          ),
-          IconButton(
-            tooltip: _t('reminderTodayTitle', "Today's medicines"),
-            icon: const Icon(Icons.today_outlined),
-            onPressed: () => Navigator.pushNamed(context, '/medications/today'),
-          ),
-        ],
-      ),
       floatingActionButton: AnimatedFloatingActionButton(
         onPressed: () => _add(context),
         burstKind: FabBurstKind.bills,
@@ -2159,10 +2171,19 @@ class MedicationSchedulesScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 104),
               children: [
-                _ReminderInfoBanner(
-                  text: _t(
-                    'reminderLocalNote',
-                    'Your reminder plan stays on this device.',
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 4),
+                  child: Text(
+                    'medicationScheduleOverview'.tr(
+                      namedArgs: {
+                        'active': '${items.where((s) => s.active).length}',
+                        'paused':
+                            '${items.where((s) => s.state == MedicationScheduleState.paused).length}',
+                      },
+                    ),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -2211,7 +2232,9 @@ class MedicationSchedulesScreen extends ConsumerWidget {
 }
 
 class TodayMedicinesScreen extends ConsumerStatefulWidget {
-  const TodayMedicinesScreen({super.key});
+  const TodayMedicinesScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   ConsumerState<TodayMedicinesScreen> createState() =>
@@ -2240,8 +2263,11 @@ class _TodayMedicinesScreenState extends ConsumerState<TodayMedicinesScreen> {
     super.dispose();
   }
 
-  DateTime get _day =>
-      _today.subtract(Duration(days: (_pageCount - 1) - _page));
+  DateTime get _day => DateTime(
+    _today.year,
+    _today.month,
+    _today.day - ((_pageCount - 1) - _page),
+  );
 
   void _step(int delta) {
     final next = (_page + delta).clamp(0, _pageCount - 1);
@@ -2264,7 +2290,11 @@ class _TodayMedicinesScreenState extends ConsumerState<TodayMedicinesScreen> {
     final selected = await showDashboardDay(
       context: anchor,
       initialDate: _day,
-      firstDate: _today.subtract(const Duration(days: _pageCount - 1)),
+      firstDate: DateTime(
+        _today.year,
+        _today.month,
+        _today.day - (_pageCount - 1),
+      ),
       lastDate: _today,
     );
     if (!mounted || selected == null) return;
@@ -2317,43 +2347,64 @@ class _TodayMedicinesScreenState extends ConsumerState<TodayMedicinesScreen> {
       },
       orElse: () => null,
     );
-    final bottomClearance =
-        _GlassBottomAction.clearance + MediaQuery.paddingOf(context).bottom;
+    final bottomClearance = widget.embedded
+        ? 24.0 + MediaQuery.paddingOf(context).bottom
+        : FormBottomAction.clearance + MediaQuery.paddingOf(context).bottom;
+    final header = _DayPageHeader(
+      label: DateFormat.yMMMMEEEEd(locale).format(_day),
+      summary: summary,
+      canGoBack: _page > 0,
+      canGoForward: _page < _pageCount - 1,
+      onBack: () => _step(-1),
+      onForward: () => _step(1),
+      onPickDay: _pickDay,
+    );
+    final pages = PageView.builder(
+      // In the tabbed area horizontal gestures change medication screens.
+      // History remains available through the date arrows and calendar.
+      physics: widget.embedded ? const NeverScrollableScrollPhysics() : null,
+      controller: _pages,
+      itemCount: _pageCount,
+      onPageChanged: (page) => setState(() => _page = page),
+      itemBuilder: (context, index) => _DayLogPage(
+        day: DateTime(
+          _today.year,
+          _today.month,
+          _today.day - ((_pageCount - 1) - index),
+        ),
+        bottomClearance: bottomClearance,
+        onTaken: (dose) => _setStatus(dose, 'taken'),
+        onSkip: (dose) => _setStatus(dose, 'skipped'),
+        onSnooze: (dose) => _setStatus(
+          dose,
+          'snoozed',
+          snoozeUntil: DateTime.now().add(const Duration(minutes: 10)),
+        ),
+      ),
+    );
+    if (widget.embedded) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            child: header,
+          ),
+          Expanded(child: pages),
+        ],
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 72,
         titleSpacing: 0,
         centerTitle: false,
-        title: _DayPageHeader(
-          label: DateFormat.yMMMMEEEEd(locale).format(_day),
-          summary: summary,
-          canGoBack: _page > 0,
-          canGoForward: _page < _pageCount - 1,
-          onBack: () => _step(-1),
-          onForward: () => _step(1),
-          onPickDay: _pickDay,
-        ),
+        title: header,
       ),
-      body: _GlassBottomAction.overlay(
+      body: FormBottomAction.overlay(
         onPressed: () => Navigator.pushNamed(context, '/medications'),
         icon: const Icon(Icons.edit_calendar_outlined),
         label: _t('reminderManageSchedules', 'Manage reminders'),
-        body: PageView.builder(
-          controller: _pages,
-          itemCount: _pageCount,
-          onPageChanged: (page) => setState(() => _page = page),
-          itemBuilder: (context, index) => _DayLogPage(
-            day: _today.subtract(Duration(days: (_pageCount - 1) - index)),
-            bottomClearance: bottomClearance,
-            onTaken: (dose) => _setStatus(dose, 'taken'),
-            onSkip: (dose) => _setStatus(dose, 'skipped'),
-            onSnooze: (dose) => _setStatus(
-              dose,
-              'snoozed',
-              snoozeUntil: DateTime.now().add(const Duration(minutes: 10)),
-            ),
-          ),
-        ),
+        body: pages,
       ),
     );
   }
@@ -2433,7 +2484,14 @@ bool _sameCalendarDay(DateTime time, DateTime day) =>
 enum _MedicationRepeatPreset { everyDay, weekdays, weekends, custom }
 
 class MedicationScheduleEditorScreen extends ConsumerStatefulWidget {
-  const MedicationScheduleEditorScreen({super.key, this.initial});
+  const MedicationScheduleEditorScreen({
+    super.key,
+    this.initial,
+    this.medicine,
+  });
+
+  /// Preselect a catalog medicine when creating a reminder.
+  final Medicine? medicine;
 
   final MedicationSchedule? initial;
 
@@ -2464,14 +2522,15 @@ class _MedicationScheduleEditorScreenState
   void initState() {
     super.initState();
     final initial = widget.initial;
-    _medicine = initial?.medicine;
+    _medicine = initial?.medicine ?? widget.medicine;
     _doseController.text = initial?.doseAmount.toString() ?? '';
     _times = [...?initial?.timeMinutes]..sort();
     _doseTimings = [
       for (var index = 0; index < _times.length; index++)
-        index < (initial?.doseTimings.length ?? 0)
-            ? initial!.doseTimings[index]
-            : MedicationDoseTiming.anytime,
+        if (index < (initial?.doseTimings.length ?? 0))
+          initial!.doseTimings[index]
+        else
+          MedicationDoseTiming.anytime,
     ];
     _startDate = initial?.startDate;
     _endDate = initial?.endDate;
@@ -2533,9 +2592,10 @@ class _MedicationScheduleEditorScreenState
         ? [for (var index = 0; index < _times.length; index++) index]
         : [
             for (var index = 0; index < count; index++)
-              count == 1
-                  ? 0
-                  : (index * (_times.length - 1) / (count - 1)).round(),
+              if (count == 1)
+                0
+              else
+                (index * (_times.length - 1) / (count - 1)).round(),
           ];
     final assignedTargets = <int>{};
     for (final sourceIndex in sourceIndices) {
@@ -2590,7 +2650,7 @@ class _MedicationScheduleEditorScreenState
     final suggestions = _suggestedDailyTimes[_times.length + 1]!;
     final defaultMinute = suggestions.firstWhere(
       (minute) => !_times.contains(minute),
-      orElse: () => (_times.last + 180).clamp(0, 23 * 60).toInt(),
+      orElse: () => (_times.last + 180).clamp(0, 23 * 60),
     );
     final selected = await showTimePicker(
       context: context,
@@ -2708,7 +2768,8 @@ class _MedicationScheduleEditorScreenState
         .save(
           MedicationSchedule(
             id: widget.initial?.id,
-            medicineId: widget.initial?.medicineId ?? '',
+            // Resolve the current selection, which may differ from the saved plan.
+            medicineId: '',
             medicine: _medicine!,
             doseAmount: double.parse(_doseController.text),
             doseUnit: _medicine!.unit,
@@ -2757,7 +2818,7 @@ class _MedicationScheduleEditorScreenState
     final formatTime = MaterialLocalizations.of(context).formatTimeOfDay;
     final locale = context.locale.toString();
     final bottomClearance =
-        _GlassBottomAction.clearance + MediaQuery.paddingOf(context).bottom;
+        FormBottomAction.clearance + MediaQuery.paddingOf(context).bottom;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -2766,7 +2827,7 @@ class _MedicationScheduleEditorScreenState
               : _t('reminderEditSchedule', 'Edit reminder'),
         ),
       ),
-      body: _GlassBottomAction.overlay(
+      body: FormBottomAction.overlay(
         onPressed: _saving ? null : _save,
         icon: _saving
             ? const SizedBox(
@@ -2930,7 +2991,7 @@ class _MedicationScheduleEditorScreenState
                               children: [
                                 for (var count = 1; count <= 6; count++)
                                   ChoiceChip(
-                                    label: Text('${count}×'),
+                                    label: Text('$count×'),
                                     selected: _times.length == count,
                                     onSelected: (_) => _setDoseCount(count),
                                   ),
@@ -3405,56 +3466,114 @@ class _ScheduleCard extends StatelessWidget {
     final days = schedule.weekdays.length == 7
         ? _t('reminderEveryDay', 'Every day')
         : schedule.weekdays.map((day) => weekdayLabels[day - 1]).join(' · ');
+    final rawColor = schedule.medicine.color;
+    final color = rawColor == null || rawColor == 0
+        ? theme.colorScheme.primary
+        : Color(rawColor);
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-        child: Row(
-          children: [
-            Icon(Icons.medication_outlined, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: InkWell(
-                onTap: onEdit,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      schedule.medicine.designation,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      formatMedicationDose(
-                        schedule.doseAmount,
-                        schedule.doseUnit,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text('$times · $days', style: theme.textTheme.bodySmall),
-                    if (timingNotes.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        timingNotes,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
+      margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: InkWell(
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: color.withValues(alpha: 0.12),
+                    foregroundColor: color,
+                    child: const Icon(Icons.medication_outlined),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          schedule.medicine.designation,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
+                        Text(
+                          formatMedicationDose(
+                            schedule.doseAmount,
+                            schedule.doseUnit,
+                          ),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Semantics(
+                    label:
+                        '${schedule.medicine.designation}: ${_scheduleStateLabel(schedule.state)}',
+                    child: Switch(value: schedule.active, onChanged: onToggle),
+                  ),
+                  PopupMenuButton<String>(
+                    tooltip: 'medicationReminderActions'.tr(),
+                    onSelected: (action) {
+                      if (action == 'edit') {
+                        onEdit();
+                      } else {
+                        onEnd();
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      PopupMenuItem(value: 'edit', child: Text('edit'.tr())),
+                      if (schedule.state != MedicationScheduleState.ended)
+                        PopupMenuItem(
+                          value: 'end',
+                          child: Text(
+                            'reminderEndAction'.tr(),
+                            style: TextStyle(color: theme.colorScheme.error),
+                          ),
+                        ),
                     ],
-                  ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.schedule_outlined, size: 18, color: color),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(times, style: theme.textTheme.titleSmall),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 26),
+                child: Text(
+                  days,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
-            ),
-            Switch(value: schedule.active, onChanged: onToggle),
-            if (schedule.state != MedicationScheduleState.ended)
-              IconButton(
-                tooltip: _t('reminderEndAction', 'End reminder'),
-                onPressed: onEnd,
-                icon: const Icon(Icons.stop_circle_outlined),
-              ),
-          ],
+              if (timingNotes.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 26),
+                  child: Text(
+                    timingNotes,
+                    style: theme.textTheme.bodySmall?.copyWith(color: color),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

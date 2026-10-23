@@ -1,11 +1,16 @@
-part of 'medication_reminders_screens.dart';
+import 'dart:ui' as ui;
+
+import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
+import 'package:flutter/material.dart';
 
 /// One action in the same floating glass bar as the phone navigation.
-class _GlassBottomAction extends StatelessWidget {
-  const _GlassBottomAction({
+class FormBottomAction extends StatelessWidget {
+  const FormBottomAction({
+    super.key,
     required this.icon,
     required this.label,
     required this.onPressed,
+    this.burstKind = FabBurstKind.bills,
   });
 
   /// Room the page keeps clear above the floating bar, including its lift.
@@ -17,6 +22,7 @@ class _GlassBottomAction extends StatelessWidget {
     required Widget icon,
     required String label,
     required VoidCallback? onPressed,
+    FabBurstKind burstKind = FabBurstKind.bills,
   }) => Stack(
     fit: StackFit.expand,
     children: [
@@ -25,10 +31,11 @@ class _GlassBottomAction extends StatelessWidget {
         left: 0,
         right: 0,
         bottom: 8,
-        child: _GlassBottomAction(
+        child: FormBottomAction(
           icon: icon,
           label: label,
           onPressed: onPressed,
+          burstKind: burstKind,
         ),
       ),
     ],
@@ -37,6 +44,7 @@ class _GlassBottomAction extends StatelessWidget {
   final Widget icon;
   final String label;
   final VoidCallback? onPressed;
+  final FabBurstKind burstKind;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +59,7 @@ class _GlassBottomAction extends StatelessWidget {
         : cs.primary;
     return AnimatedFloatingActionButton(
       onPressed: onPressed,
-      burstKind: FabBurstKind.bills,
+      burstKind: burstKind,
       customBuilder: (context, animatedIcon, activate) => SafeArea(
         top: false,
         child: Padding(
@@ -116,5 +124,3 @@ class _GlassBottomAction extends StatelessWidget {
     );
   }
 }
-
-/// One day of medicine logs. Swipe or use the arrows to move a day at a time.

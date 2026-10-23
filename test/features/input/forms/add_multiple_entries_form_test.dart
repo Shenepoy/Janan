@@ -10,22 +10,29 @@ import '../../../model/blood_pressure_analyzer_test.dart';
 import '../../../util.dart';
 
 void main() {
-  testWidgets("doesn't update time from ble if setting isn't set", (tester) async {
+  testWidgets("doesn't update time from ble if setting isn't set", (
+    tester,
+  ) async {
     final key = GlobalKey<AddMultipleEntriesFormState>();
     final initialTime = DateTime.now();
 
-    await pumpApp(tester, await appBase(AddMultipleEntriesForm(key: key,
-      initialValue: [CombinedEntry(time: initialTime)],
-      mockBleInput: (callback) => ListTile(
-        onTap: () => callback([mockRecord(time: DateTime(2000))]),
-        title: Text('mockBleInput'),
+    await pumpApp(
+      tester,
+      await appBase(
+        AddMultipleEntriesForm(
+          key: key,
+          initialValue: [CombinedEntry(time: initialTime)],
+          mockBleInput: (callback) => ListTile(
+            onTap: () => callback([mockRecord(time: DateTime(2000))]),
+            title: Text('mockBleInput'),
+          ),
+        ),
+        settings: TestSettingsSeed(
+          bleInput: BluetoothInputMode.disabled,
+          trustBLETime: false,
+        ),
       ),
-    ),
-      settings: TestSettingsSeed(
-        bleInput: BluetoothInputMode.disabled,
-        trustBLETime: false,
-      ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('mockBleInput'));
@@ -42,18 +49,23 @@ void main() {
     final key = GlobalKey<AddMultipleEntriesFormState>();
     final initialTime = DateTime.now();
 
-    await pumpApp(tester, await appBase(AddMultipleEntriesForm(key: key,
-      initialValue: [CombinedEntry(time: initialTime)],
-      mockBleInput: (callback) => ListTile(
-        onTap: () => callback([mockRecord(time: DateTime(2000))]),
-        title: Text('mockBleInput'),
+    await pumpApp(
+      tester,
+      await appBase(
+        AddMultipleEntriesForm(
+          key: key,
+          initialValue: [CombinedEntry(time: initialTime)],
+          mockBleInput: (callback) => ListTile(
+            onTap: () => callback([mockRecord(time: DateTime(2000))]),
+            title: Text('mockBleInput'),
+          ),
+        ),
+        settings: TestSettingsSeed(
+          bleInput: BluetoothInputMode.disabled,
+          trustBLETime: true,
+        ),
       ),
-    ),
-      settings: TestSettingsSeed(
-        bleInput: BluetoothInputMode.disabled,
-        trustBLETime: true,
-      ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('mockBleInput'));
@@ -63,24 +75,31 @@ void main() {
 
   testWidgets('shows warning if time from ble is too old', (tester) async {
     usePhoneTestSurface(tester);
-    await pumpApp(tester, await appBase(AddMultipleEntriesForm(
-      mockBleInput: (callback) => ListTile(
-        onTap: () => callback([mockRecord(time: DateTime(2000))]),
-        title: Text('mockBleInput'),
+    await pumpApp(
+      tester,
+      await appBase(
+        AddMultipleEntriesForm(
+          mockBleInput: (callback) => ListTile(
+            onTap: () => callback([mockRecord(time: DateTime(2000))]),
+            title: Text('mockBleInput'),
+          ),
+        ),
+        settings: TestSettingsSeed(
+          bleInput: BluetoothInputMode.disabled,
+          trustBLETime: true,
+        ),
       ),
-    ),
-      settings: TestSettingsSeed(
-        bleInput: BluetoothInputMode.disabled,
-        trustBLETime: true,
-      ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(SafaehConfirmSheet), findsNothing);
     await tester.tap(find.text('mockBleInput'));
     await tester.pumpAndSettle();
     expect(find.byType(SafaehConfirmSheet), findsOneWidget);
-    expect(find.textContaining('The bluetooth device reported a time off by'), findsOneWidget);
+    expect(
+      find.textContaining('The bluetooth device reported a time off by'),
+      findsOneWidget,
+    );
     expect(find.text('OK'), findsOneWidget);
 
     await tapSafaehConfirm(tester);
@@ -93,26 +112,35 @@ void main() {
     expect(find.byType(SafaehConfirmSheet), findsOneWidget);
   });
 
-  testWidgets('allows disabling warning if time from ble is too old', (tester) async {
+  testWidgets('allows disabling warning if time from ble is too old', (
+    tester,
+  ) async {
     usePhoneTestSurface(tester);
-    await pumpApp(tester, await appBase(AddMultipleEntriesForm(
-      mockBleInput: (callback) => ListTile(
-        onTap: () => callback([mockRecord(time: DateTime(2000))]),
-        title: Text('mockBleInput'),
+    await pumpApp(
+      tester,
+      await appBase(
+        AddMultipleEntriesForm(
+          mockBleInput: (callback) => ListTile(
+            onTap: () => callback([mockRecord(time: DateTime(2000))]),
+            title: Text('mockBleInput'),
+          ),
+        ),
+        settings: TestSettingsSeed(
+          bleInput: BluetoothInputMode.disabled,
+          trustBLETime: true,
+        ),
       ),
-    ),
-      settings: TestSettingsSeed(
-        bleInput: BluetoothInputMode.disabled,
-        trustBLETime: true,
-      ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(SafaehConfirmSheet), findsNothing);
     await tester.tap(find.text('mockBleInput'));
     await tester.pumpAndSettle();
     expect(find.byType(SafaehConfirmSheet), findsOneWidget);
-    expect(find.textContaining('The bluetooth device reported a time off by'), findsOneWidget);
+    expect(
+      find.textContaining('The bluetooth device reported a time off by'),
+      findsOneWidget,
+    );
     expect(find.text('Don\'t show again'), findsOneWidget);
 
     await tester.tap(find.text('Don\'t show again'));
@@ -130,18 +158,22 @@ void main() {
       mockRecord(time: DateTime(2001), sys: 234),
       mockRecord(time: DateTime(2002), sys: 345),
     ];
-    await pumpApp(tester, await appBase(AddMultipleEntriesForm(
-      key: key,
-      mockBleInput: (callback) => ListTile(
-        onTap: () => callback(testMeasurements),
-        title: Text('mockBleInput'),
+    await pumpApp(
+      tester,
+      await appBase(
+        AddMultipleEntriesForm(
+          key: key,
+          mockBleInput: (callback) => ListTile(
+            onTap: () => callback(testMeasurements),
+            title: Text('mockBleInput'),
+          ),
+        ),
+        settings: TestSettingsSeed(
+          bleInput: BluetoothInputMode.disabled,
+          trustBLETime: true,
+        ),
       ),
-    ),
-      settings: TestSettingsSeed(
-        bleInput: BluetoothInputMode.disabled,
-        trustBLETime: true,
-      ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(AddEntryForm), findsOneWidget);
@@ -153,6 +185,7 @@ void main() {
     expect(find.text('mockBleInput'), findsNothing);
     expect(find.byType(AddEntryForm), findsNothing);
     expect(find.text('234'), findsOneWidget);
+    expect(key.currentState!.isEmpty, isFalse);
 
     final returnedEntry = key.currentState!.save();
     expect(returnedEntry?.length, testMeasurements.length);
@@ -160,12 +193,15 @@ void main() {
   });
 
   testWidgets('separates bluetooth check from manual entry', (tester) async {
-    await pumpApp(tester, await appBase(
-      AddMultipleEntriesForm(
-        mockBleInput: (_) => const ListTile(title: Text('mockBleInput')),
+    await pumpApp(
+      tester,
+      await appBase(
+        AddMultipleEntriesForm(
+          mockBleInput: (_) => const ListTile(title: Text('mockBleInput')),
+        ),
+        settings: TestSettingsSeed(bleInput: BluetoothInputMode.disabled),
       ),
-      settings: TestSettingsSeed(bleInput: BluetoothInputMode.disabled),
-    ));
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('mockBleInput'), findsOneWidget);
@@ -174,18 +210,20 @@ void main() {
   });
 
   testWidgets('hides bluetooth when showBluetooth is false', (tester) async {
-    await pumpApp(tester, await appBase(
-      AddMultipleEntriesForm(
-        showBluetooth: false,
-        mockBleInput: (_) => const ListTile(title: Text('mockBleInput')),
+    await pumpApp(
+      tester,
+      await appBase(
+        AddMultipleEntriesForm(
+          showBluetooth: false,
+          mockBleInput: (_) => const ListTile(title: Text('mockBleInput')),
+        ),
+        settings: TestSettingsSeed(bleInput: BluetoothInputMode.disabled),
       ),
-      settings: TestSettingsSeed(bleInput: BluetoothInputMode.disabled),
-    ));
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('mockBleInput'), findsNothing);
     expect(find.text('Or enter manually'), findsNothing);
     expect(find.byType(AddEntryForm), findsOneWidget);
   });
-
 }

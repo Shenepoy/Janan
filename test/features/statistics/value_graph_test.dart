@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/model/blood_pressure/pressure_unit.dart';
 import 'package:blood_pressure_app/app.dart';
 import 'package:blood_pressure_app/features/settings/graph_screen.dart';
 import 'package:blood_pressure_app/features/statistics/value_graph.dart';
@@ -12,6 +13,82 @@ import '../../model/blood_pressure_analyzer_test.dart';
 import '../../util.dart';
 
 void main() {
+  testWidgets('tooltip keeps different reading timestamps separate', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      await materialApp(
+        BloodPressureValueGraph(
+          records: [
+            mockRecord(time: DateTime(2026, 10, 1, 8), sys: 120),
+            mockRecord(time: DateTime(2026, 10, 1, 8, 10), dia: 80),
+            mockRecord(time: DateTime(2026, 10, 3, 8), sys: 130, dia: 85),
+          ],
+          colors: [],
+          intakes: [],
+        ),
+      ),
+    );
+    final data = tester.widget<LineChart>(find.byType(LineChart)).data;
+    final touched = [
+      LineBarSpot(data.lineBarsData[0], 0, data.lineBarsData[0].spots.first),
+      LineBarSpot(data.lineBarsData[1], 1, data.lineBarsData[1].spots.first),
+    ];
+    final items = data.lineTouchData.touchTooltipData.getTooltipItems(touched);
+    final text = items.nonNulls
+        .map(
+          (item) =>
+              item.text +
+              (item.children ?? []).map((s) => s.toPlainText()).join(),
+        )
+        .join('\n');
+    expect(text, contains('08:00'));
+    expect(text, contains('08:10'));
+  });
+  testWidgets(
+    'kPa chart converts pressure, reference lines, and pulse axis consistently',
+    (tester) async {
+      await pumpApp(
+        tester,
+        await materialApp(
+          BloodPressureValueGraph(
+            records: [
+              mockRecord(
+                time: DateTime(2026, 10, 1),
+                sys: 120,
+                dia: 80,
+                pul: 60,
+              ),
+              mockRecord(
+                time: DateTime(2026, 10, 2),
+                sys: 130,
+                dia: 85,
+                pul: 72,
+              ),
+            ],
+            colors: [],
+            intakes: [],
+          ),
+          settings: TestSettingsSeed(
+            preferredPressureUnit: PressureUnit.kPa,
+            horizontalGraphLines: [HorizontalGraphLine(Colors.blue, 140)],
+          ),
+        ),
+      );
+      final data = tester.widget<LineChart>(find.byType(LineChart)).data;
+      expect(data.lineBarsData[0].spots.first.y, closeTo(15.99864, 1e-6));
+      expect(data.lineBarsData[1].spots.first.y, closeTo(10.66576, 1e-6));
+      expect(data.lineBarsData[2].spots.first.y, closeTo(7.99932, 1e-6));
+      expect(
+        data.extraLinesData.horizontalLines.single.y,
+        closeTo(18.66508, 1e-6),
+      );
+      expect(data.titlesData.rightTitles.sideTitles.showTitles, isTrue);
+      expect(find.text('sys (kPa)'), findsOneWidget);
+      expect(find.text('pul (bpm)'), findsOneWidget);
+    },
+  );
   test('Creates correct sys series', () {
     final records = [
       mockRecord(time: DateTime(2000), sys: 123),
@@ -89,102 +166,170 @@ void main() {
     expect(segments[0], hasLength(2));
     expect(segments[1], hasLength(2));
   });
-  test('isGraphEntirelyDisconnected is true when every segment is a single point', () {
-    expect(isGraphEntirelyDisconnected(
-      sys: [
-        (DateTime(2003), 110.0),
-        (DateTime(2005), 123.0),
-      ],
-      dia: const [],
-      pul: const [],
-      interruptAfterNDays: 5,
-    ), isTrue);
-    expect(isGraphEntirelyDisconnected(
-      sys: [
-        (DateTime(2003), 110.0),
-        (DateTime(2005), 123.0),
-      ],
-      dia: const [],
-      pul: const [],
-      interruptAfterNDays: -1,
-    ), isFalse);
-  });
-  testWidgets('BloodPressureValueGraph shows when there are not enough values', (tester) async {
-    await pumpApp(tester, await _buildGraph([], [], []));
-    await tester.pump();
-    expect(find.text('Not enough data to draw a graph.'), findsOneWidget);
-  });
-  testWidgets('[gold] graph with all extras is rendered correctly', (tester) async {
-    await pumpApp(tester, await _buildGraph([
-      mockRecord(time: DateTime(2005), sys: 123, dia: 80, pul: 50),
-      mockRecord(time: DateTime(2003), sys: 110, dia: 73, pul: 130),
-      mockRecord(time: DateTime(2003, 5), sys: 140, dia: 74, pul: 64),
-      mockRecord(time: DateTime(2007), sys: 132, dia: 100, pul: 75),
-    ], [
-      (DateTime(2005), Colors.purple),
-      (DateTime(2005, 3), Colors.tealAccent),
-      (DateTime(2007), Colors.yellow),
-    ], [
-      mockIntake(mockMedicine(color: Colors.blueGrey), time: DateTime(2005).millisecondsSinceEpoch),
-      mockIntake(mockMedicine(color: Colors.indigoAccent), time: DateTime(2004).millisecondsSinceEpoch),
-    ],
-    settings: TestSettingsSeed(
-      drawRegressionLines: true,
-      graphLineThickness: 3.2,
-      diaWarn: 75,
-      needlePinBarWidth: 7.0,
-      horizontalGraphLines: [
-        HorizontalGraphLine(Colors.lightBlue, 113),
-        HorizontalGraphLine(Colors.amber, 45),
-      ],
-      interruptGraphAfterNDays: 0,
-    )), extraPumps: 0);
+  test(
+    'isGraphEntirelyDisconnected is true when every segment is a single point',
+    () {
+      expect(
+        isGraphEntirelyDisconnected(
+          sys: [(DateTime(2003), 110.0), (DateTime(2005), 123.0)],
+          dia: const [],
+          pul: const [],
+          interruptAfterNDays: 5,
+        ),
+        isTrue,
+      );
+      expect(
+        isGraphEntirelyDisconnected(
+          sys: [(DateTime(2003), 110.0), (DateTime(2005), 123.0)],
+          dia: const [],
+          pul: const [],
+          interruptAfterNDays: -1,
+        ),
+        isFalse,
+      );
+    },
+  );
+  testWidgets(
+    'BloodPressureValueGraph shows when there are not enough values',
+    (tester) async {
+      await pumpApp(tester, await _buildGraph([], [], []));
+      await tester.pump();
+      expect(find.text('Not enough data to draw a graph.'), findsOneWidget);
+    },
+  );
+  testWidgets('[gold] graph with all extras is rendered correctly', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      await _buildGraph(
+        [
+          mockRecord(time: DateTime(2005), sys: 123, dia: 80, pul: 50),
+          mockRecord(time: DateTime(2003), sys: 110, dia: 73, pul: 130),
+          mockRecord(time: DateTime(2003, 5), sys: 140, dia: 74, pul: 64),
+          mockRecord(time: DateTime(2007), sys: 132, dia: 100, pul: 75),
+        ],
+        [
+          (DateTime(2005), Colors.purple),
+          (DateTime(2005, 3), Colors.tealAccent),
+          (DateTime(2007), Colors.yellow),
+        ],
+        [
+          mockIntake(
+            mockMedicine(color: Colors.blueGrey),
+            time: DateTime(2005).millisecondsSinceEpoch,
+          ),
+          mockIntake(
+            mockMedicine(color: Colors.indigoAccent),
+            time: DateTime(2004).millisecondsSinceEpoch,
+          ),
+        ],
+        settings: TestSettingsSeed(
+          drawRegressionLines: true,
+          graphLineThickness: 3.2,
+          diaWarn: 75,
+          needlePinBarWidth: 7.0,
+          horizontalGraphLines: [
+            HorizontalGraphLine(Colors.lightBlue, 113),
+            HorizontalGraphLine(Colors.amber, 45),
+          ],
+          interruptGraphAfterNDays: 0,
+        ),
+      ),
+      extraPumps: 0,
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Not enough data to draw a graph.'), findsNothing);
 
-    await expectLater(find.byType(BloodPressureValueGraph), myMatchesGoldenFile('full_graph-years.png'));
+    await expectLater(
+      find.byType(BloodPressureValueGraph),
+      myMatchesGoldenFile('full_graph-years.png'),
+    );
   }, tags: 'gold');
 
-  testWidgets('BloodPressureValueGraph is fine with enough values in sys category', (tester) async {
-    await pumpApp(tester, await _buildGraph([
-      mockRecord(time: DateTime(2005), sys: 123),
-      mockRecord(time: DateTime(2003), sys: 110),
-    ], [], []));
-    await tester.pump();
-    expect(find.text('Not enough data to draw a graph.'), findsNothing);
-    expect(find.byType(LineChart), findsOneWidget);
-  });
-  testWidgets('BloodPressureValueGraph is fine with enough values in dia category', (tester) async {
-    await pumpApp(tester, await _buildGraph([
-      mockRecord(time: DateTime(2005), dia: 123),
-      mockRecord(time: DateTime(2003), dia: 110),
-    ], [], []));
-    await tester.pump();
-    expect(find.text('Not enough data to draw a graph.'), findsNothing);
-    expect(find.byType(LineChart), findsOneWidget);
-  });
-  testWidgets('BloodPressureValueGraph is fine with enough values in pul category', (tester) async {
-    await pumpApp(tester, await _buildGraph([
-      mockRecord(time: DateTime(2005), pul: 123),
-      mockRecord(time: DateTime(2003), pul: 110),
-    ], [], []));
-    await tester.pump();
-    expect(find.text('Not enough data to draw a graph.'), findsNothing);
-    expect(find.byType(LineChart), findsOneWidget);
-  });
+  testWidgets(
+    'BloodPressureValueGraph is fine with enough values in sys category',
+    (tester) async {
+      await pumpApp(
+        tester,
+        await _buildGraph(
+          [
+            mockRecord(time: DateTime(2005), sys: 123),
+            mockRecord(time: DateTime(2003), sys: 110),
+          ],
+          [],
+          [],
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Not enough data to draw a graph.'), findsNothing);
+      expect(find.byType(LineChart), findsOneWidget);
+    },
+  );
+  testWidgets(
+    'BloodPressureValueGraph is fine with enough values in dia category',
+    (tester) async {
+      await pumpApp(
+        tester,
+        await _buildGraph(
+          [
+            mockRecord(time: DateTime(2005), dia: 123),
+            mockRecord(time: DateTime(2003), dia: 110),
+          ],
+          [],
+          [],
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Not enough data to draw a graph.'), findsNothing);
+      expect(find.byType(LineChart), findsOneWidget);
+    },
+  );
+  testWidgets(
+    'BloodPressureValueGraph is fine with enough values in pul category',
+    (tester) async {
+      await pumpApp(
+        tester,
+        await _buildGraph(
+          [
+            mockRecord(time: DateTime(2005), pul: 123),
+            mockRecord(time: DateTime(2003), pul: 110),
+          ],
+          [],
+          [],
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Not enough data to draw a graph.'), findsNothing);
+      expect(find.byType(LineChart), findsOneWidget);
+    },
+  );
   testWidgets('Displays warning when data is too far apart', (tester) async {
-    await pumpApp(tester, await materialApp(_buildGraphWithoutApp([
-      mockRecord(time: DateTime(2005), sys: 123),
-      mockRecord(time: DateTime(2003), sys: 110),
-    ], [], []),
-      settings: TestSettingsSeed(interruptGraphAfterNDays: 5),
-      routes: { AppRoute.settingsGraph.path: (_) => const GraphScreen(), },
-    ));
+    await pumpApp(
+      tester,
+      await materialApp(
+        _buildGraphWithoutApp(
+          [
+            mockRecord(time: DateTime(2005), sys: 123),
+            mockRecord(time: DateTime(2003), sys: 110),
+          ],
+          [],
+          [],
+        ),
+        settings: TestSettingsSeed(interruptGraphAfterNDays: 5),
+        routes: {AppRoute.settingsGraph.path: (_) => const GraphScreen()},
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('The time between measurements is greater than the maximum distance displayed without interruptions. You can change that in the settings.'), findsOneWidget);
+    expect(
+      find.text(
+        'The time between measurements is greater than the maximum distance displayed without interruptions. You can change that in the settings.',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Open Settings'), findsOneWidget);
 
     expect(find.byType(GraphScreen), findsNothing);
@@ -193,84 +338,133 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700));
     expect(find.byType(GraphScreen), findsOneWidget);
   });
-  testWidgets('Not displaying bigGraphSplit warning when splitting is disabled', (tester) async {
-    await pumpApp(tester, await _buildGraph([
-      mockRecord(time: DateTime(2005), sys: 123),
-      mockRecord(time: DateTime(2003), sys: 110),
-    ], [], [], settings: TestSettingsSeed(interruptGraphAfterNDays: 0)));
-    expect(find.text('The time between measurements is greater than the maximum distance displayed without interruptions. You can change that in the settings.'), findsNothing);
+  testWidgets('Not displaying bigGraphSplit warning when splitting is disabled', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      await _buildGraph(
+        [
+          mockRecord(time: DateTime(2005), sys: 123),
+          mockRecord(time: DateTime(2003), sys: 110),
+        ],
+        [],
+        [],
+        settings: TestSettingsSeed(interruptGraphAfterNDays: 0),
+      ),
+    );
+    expect(
+      find.text(
+        'The time between measurements is greater than the maximum distance displayed without interruptions. You can change that in the settings.',
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('[gold] graph renders area at start correctly', (tester) async {
-    await pumpApp(tester, await _buildGraph([
-        mockRecord(time: DateTime(2003), sys: 170, dia: 100, pul: 50),
-        mockRecord(time: DateTime(2005), sys: 110, dia: 70, pul: 50),
-      ], [], [],
-      settings: TestSettingsSeed(
-        diaWarn: 75,
-        sysWarn: 120,
-        interruptGraphAfterNDays: 0,
+    await pumpApp(
+      tester,
+      await _buildGraph(
+        [
+          mockRecord(time: DateTime(2003), sys: 170, dia: 100, pul: 50),
+          mockRecord(time: DateTime(2005), sys: 110, dia: 70, pul: 50),
+        ],
+        [],
+        [],
+        settings: TestSettingsSeed(
+          diaWarn: 75,
+          sysWarn: 120,
+          interruptGraphAfterNDays: 0,
+        ),
       ),
-    ), extraPumps: 0);
+      extraPumps: 0,
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Not enough data to draw a graph.'), findsNothing);
 
-    await expectLater(find.byType(BloodPressureValueGraph), myMatchesGoldenFile('value-graph-start-warn.png'));
+    await expectLater(
+      find.byType(BloodPressureValueGraph),
+      myMatchesGoldenFile('value-graph-start-warn.png'),
+    );
   }, tags: 'gold');
   testWidgets('[gold] graph renders area at end correctly', (tester) async {
-    await pumpApp(tester, await _buildGraph([
-      mockRecord(time: DateTime(2005), sys: 170, dia: 100, pul: 50),
-      mockRecord(time: DateTime(2003), sys: 110, dia: 70, pul: 50),
-    ], [], [],
-      settings: TestSettingsSeed(
-        diaWarn: 75,
-        sysWarn: 120,
-        interruptGraphAfterNDays: 0,
+    await pumpApp(
+      tester,
+      await _buildGraph(
+        [
+          mockRecord(time: DateTime(2005), sys: 170, dia: 100, pul: 50),
+          mockRecord(time: DateTime(2003), sys: 110, dia: 70, pul: 50),
+        ],
+        [],
+        [],
+        settings: TestSettingsSeed(
+          diaWarn: 75,
+          sysWarn: 120,
+          interruptGraphAfterNDays: 0,
+        ),
       ),
-    ), extraPumps: 0);
+      extraPumps: 0,
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Not enough data to draw a graph.'), findsNothing);
 
-    await expectLater(find.byType(BloodPressureValueGraph), myMatchesGoldenFile('value-graph-end-warn.png'));
+    await expectLater(
+      find.byType(BloodPressureValueGraph),
+      myMatchesGoldenFile('value-graph-end-warn.png'),
+    );
   }, tags: 'gold');
   testWidgets('[gold] warn area not drawn above graph', (tester) async {
-    await pumpApp(tester, await _buildGraph([
-      mockRecord(time: DateTime(2005), sys: 103, dia: null, pul: null),
-      mockRecord(time: DateTime(2003), sys: 89, dia: null, pul: null),
-    ], [], [],
-      settings: TestSettingsSeed(
-        sysWarn: 120,
-        interruptGraphAfterNDays: 0,
+    await pumpApp(
+      tester,
+      await _buildGraph(
+        [
+          mockRecord(time: DateTime(2005), sys: 103, dia: null, pul: null),
+          mockRecord(time: DateTime(2003), sys: 89, dia: null, pul: null),
+        ],
+        [],
+        [],
+        settings: TestSettingsSeed(sysWarn: 120, interruptGraphAfterNDays: 0),
       ),
-    ), extraPumps: 0);
+      extraPumps: 0,
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Not enough data to draw a graph.'), findsNothing);
 
-    await expectLater(find.byType(BloodPressureValueGraph), myMatchesGoldenFile('value-graph-warn-not-above.png'));
+    await expectLater(
+      find.byType(BloodPressureValueGraph),
+      myMatchesGoldenFile('value-graph-warn-not-above.png'),
+    );
   }, tags: 'gold');
   testWidgets('[gold] interrupts graph correctly', (tester) async {
-    await pumpApp(tester, await _buildGraph([
-      mockRecord(time: DateTime(2026, 2, 28), sys: 110),
-      mockRecord(time: DateTime(2026, 3, 1), sys: 120),
-      mockRecord(time: DateTime(2026, 3, 2), sys: 89),
-      mockRecord(time: DateTime(2026, 3, 3), sys: 100),
-      mockRecord(time: DateTime(2026, 3, 6), sys: 88),
-      mockRecord(time: DateTime(2026, 3, 7), sys: 110),
-      mockRecord(time: DateTime(2026, 3, 8), sys: 97),
-      mockRecord(time: DateTime(2026, 3, 10), sys: 80),
-    ], [], [],
-      settings: TestSettingsSeed(
-        sysWarn: 120,
-        interruptGraphAfterNDays: 2,
+    await pumpApp(
+      tester,
+      await _buildGraph(
+        [
+          mockRecord(time: DateTime(2026, 2, 28), sys: 110),
+          mockRecord(time: DateTime(2026, 3, 1), sys: 120),
+          mockRecord(time: DateTime(2026, 3, 2), sys: 89),
+          mockRecord(time: DateTime(2026, 3, 3), sys: 100),
+          mockRecord(time: DateTime(2026, 3, 6), sys: 88),
+          mockRecord(time: DateTime(2026, 3, 7), sys: 110),
+          mockRecord(time: DateTime(2026, 3, 8), sys: 97),
+          mockRecord(time: DateTime(2026, 3, 10), sys: 80),
+        ],
+        [],
+        [],
+        settings: TestSettingsSeed(sysWarn: 120, interruptGraphAfterNDays: 2),
       ),
-    ), extraPumps: 0);
+      extraPumps: 0,
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    await expectLater(find.byType(BloodPressureValueGraph), myMatchesGoldenFile('value-graph-interrupts.png'));
+    await expectLater(
+      find.byType(BloodPressureValueGraph),
+      myMatchesGoldenFile('value-graph-interrupts.png'),
+    );
   }, tags: 'gold');
 }
 
@@ -293,7 +487,9 @@ Widget _buildGraphWithoutApp(
   height: 300,
   child: BloodPressureValueGraph(
     records: data,
-    colors: colors.map((e) => Note(time: e.$1, color: e.$2.toARGB32())).toList(),
+    colors: colors
+        .map((e) => Note(time: e.$1, color: e.$2.toARGB32()))
+        .toList(),
     intakes: intakes,
   ),
 );

@@ -24,11 +24,11 @@ import 'package:blood_pressure_app/features/input/forms/add_entry_form.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_providers.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_runtime.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
+import 'package:blood_pressure_app/features/medications/medications_screen.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_screen.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/export_import_screen.dart';
 import 'package:blood_pressure_app/features/settings/graph_screen.dart';
-import 'package:blood_pressure_app/features/settings/medicine_manager_screen.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/shell/app_shell.dart';
 import 'package:blood_pressure_app/l10n/western_digits.dart';
@@ -669,14 +669,14 @@ class _AppRootState extends ConsumerState<_AppRoot> {
               const HealthConnectScreen(),
           AppRoute.settingsMedications.path: (_) =>
               settings.medicineFeatureEnabled
-              ? const MedicineManagerScreen()
+              ? const MedicationsScreen(initialTab: MedicationTab.medicines)
               : _shell(ShellTab.home),
           AppRoute.medicationSchedules.path: (_) =>
               settings.medicineFeatureEnabled
-              ? const MedicationSchedulesScreen()
+              ? const MedicationsScreen(initialTab: MedicationTab.reminders)
               : _shell(ShellTab.home),
           AppRoute.medicationToday.path: (_) => settings.medicineFeatureEnabled
-              ? const TodayMedicinesScreen()
+              ? const MedicationsScreen()
               : _shell(ShellTab.home),
         },
       ),

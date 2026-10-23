@@ -1,36 +1,38 @@
 import 'dart:async';
 
 import 'package:blood_pressure_app/domain/domain.dart';
-import 'package:powersync/powersync.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 import 'package:uuid/uuid.dart';
 
 /// PowerSync implementation of [BodyweightRepository].
 class PowerSyncBodyweightRepository extends BodyweightRepository {
   PowerSyncBodyweightRepository(this._db);
 
-  final PowerSyncDatabase _db;
+  final SqliteWriteContext _db;
   final _uuid = const Uuid();
   final _controller = StreamController<BodyweightRecord?>.broadcast();
 
   @override
   Future<void> add(BodyweightRecord record) async {
-    final timeSec = record.time.secondsSinceEpoch;
-    final existing = await _db.getAll(
-      'SELECT id FROM weights WHERE timestamp_unix_s = ?',
-      [timeSec],
-    );
-    if (existing.isEmpty) {
-      await _db.execute(
-        'INSERT INTO weights (id, timestamp_unix_s, weight_kg, impedance_ohm) '
-        'VALUES (?, ?, ?, ?)',
-        [_uuid.v4(), timeSec, record.weight.kg, record.impedanceOhm],
+    await _db.writeTransaction((tx) async {
+      final timeSec = record.time.secondsSinceEpoch;
+      final existing = await tx.getAll(
+        'SELECT id FROM weights WHERE timestamp_unix_s = ?',
+        [timeSec],
       );
-    } else {
-      await _db.execute(
-        'UPDATE weights SET weight_kg = ?, impedance_ohm = ? WHERE id = ?',
-        [record.weight.kg, record.impedanceOhm, existing.first['id']],
-      );
-    }
+      if (existing.isEmpty) {
+        await tx.execute(
+          'INSERT INTO weights (id, timestamp_unix_s, weight_kg, impedance_ohm) '
+          'VALUES (?, ?, ?, ?)',
+          [_uuid.v4(), timeSec, record.weight.kg, record.impedanceOhm],
+        );
+      } else {
+        await tx.execute(
+          'UPDATE weights SET weight_kg = ?, impedance_ohm = ? WHERE id = ?',
+          [record.weight.kg, record.impedanceOhm, existing.first['id']],
+        );
+      }
+    });
     _controller.add(record);
   }
 
@@ -59,6 +61,9 @@ class PowerSyncBodyweightRepository extends BodyweightRepository {
     );
     _controller.add(null);
   }
+
+  /// Publishes a committed write performed by the entry transaction coordinator.
+  void notifyExternalWrite() => _controller.add(null);
 
   @override
   Stream<BodyweightRecord?> subscribe() => _controller.stream;

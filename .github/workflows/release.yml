@@ -57,8 +57,15 @@ jobs:
         run: flutter analyze --no-fatal-infos
 
       - name: Test
-        continue-on-error: true
         run: flutter test
+
+      - name: Test medication schedules across daylight saving time
+        env:
+          TZ: Europe/Berlin
+        run: flutter test test/core/medication_persistence_test.dart
+
+      - name: Golden tests
+        run: flutter test --tags gold --run-skipped
 
   build-apk:
     name: Signed APKs
@@ -93,6 +100,9 @@ jobs:
 
       - name: Disable analytics
         run: flutter config --no-analytics --suppress-analytics
+
+      - name: Signing property serialization
+        run: python3 scripts/ci/test_signing_properties.py
 
       - name: Decode release keystore
         env:

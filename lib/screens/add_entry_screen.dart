@@ -1,3 +1,8 @@
+import 'package:blood_pressure_app/core/repository/powersync_blood_pressure_repository.dart';
+import 'package:blood_pressure_app/core/repository/powersync_bodyweight_repository.dart';
+import 'package:blood_pressure_app/core/repository/powersync_entry_store.dart';
+import 'package:blood_pressure_app/core/repository/powersync_medicine_intake_repository.dart';
+import 'package:blood_pressure_app/core/repository/powersync_note_repository.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/export_import/ui/export_button.dart';
@@ -27,27 +32,40 @@ class AddEntryScreen extends StatelessWidget with Loggable {
       initialRecord: initialRecord,
       kind: kind ?? AddEntryKind.fromEntry(initialRecord),
       onCommit: (castedList) async {
-        if (initialRecord?.record != null) {
-          await recordRepo.remove(initialRecord!.record!);
-        }
-        if (initialRecord?.note != null) {
-          await noteRepo.remove(initialRecord!.note!);
-        }
-        for (final intake
-            in initialRecord?.allIntakes ?? const <MedicineIntake>[]) {
-          await intakeRepo.remove(intake);
-        }
-        if (initialRecord?.weight != null) {
-          await weightRepo.remove(initialRecord!.weight!);
-        }
-
-        for (final entry in castedList) {
-          if (entry.record != null) await recordRepo.add(entry.record!);
-          if (entry.note != null) await noteRepo.add(entry.note!);
-          for (final intake in entry.allIntakes) {
-            await intakeRepo.add(intake);
+        if (recordRepo is PowerSyncBloodPressureRepository &&
+            noteRepo is PowerSyncNoteRepository &&
+            intakeRepo is PowerSyncMedicineIntakeRepository &&
+            weightRepo is PowerSyncBodyweightRepository) {
+          await PowerSyncEntryStore(
+            context.healthDatabase,
+            recordRepo,
+            noteRepo,
+            intakeRepo,
+            weightRepo,
+          ).replace(initialRecord, castedList);
+        } else {
+          if (initialRecord?.record != null) {
+            await recordRepo.remove(initialRecord!.record!);
           }
-          if (entry.weight != null) await weightRepo.add(entry.weight!);
+          if (initialRecord?.note != null) {
+            await noteRepo.remove(initialRecord!.note!);
+          }
+          for (final intake
+              in initialRecord?.allIntakes ?? const <MedicineIntake>[]) {
+            await intakeRepo.remove(intake);
+          }
+          if (initialRecord?.weight != null) {
+            await weightRepo.remove(initialRecord!.weight!);
+          }
+
+          for (final entry in castedList) {
+            if (entry.record != null) await recordRepo.add(entry.record!);
+            if (entry.note != null) await noteRepo.add(entry.note!);
+            for (final intake in entry.allIntakes) {
+              await intakeRepo.add(intake);
+            }
+            if (entry.weight != null) await weightRepo.add(entry.weight!);
+          }
         }
 
         if (context.mounted && context.exportSettings.exportAfterEveryEntry) {

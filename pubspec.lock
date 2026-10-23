@@ -1394,7 +1394,7 @@ packages:
     source: hosted
     version: "0.9.4"
   sqlite_async:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: sqlite_async
       sha256: "83aff15d2bb3b296d35e15419a85c3207df3baca62b64b778958a59eb291502d"
