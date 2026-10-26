@@ -314,21 +314,12 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         val nextDueUntil: Long,
     )
 
-    private data class WidgetRing(
-        val at: Long,
-        val dotted: Boolean,
-        val colors: IntArray,
-        val times: LongArray,
-        val intervals: LongArray,
-        val status: String,
-        val dueUntils: LongArray = longArrayOf(),
-        val names: Array<String> = emptyArray(),
-    )
-
     /// Drops doses whose due window has ended and promotes the next ring.
     private fun presentReminder(summary: JSONObject?, now: Long): PresentedReminder? {
         if (summary == null) return null
-        val kept = reminderRings(summary).mapNotNull { withoutExpired(it, now) }
+        val kept = selectMedicationWidgetRings(
+            reminderRings(summary), now, summary.optBoolean("showAll", true),
+        )
         if (kept.isEmpty()) return null
         val headline = kept.first()
         val at = headline.times.firstOrNull() ?: headline.at
@@ -352,44 +343,6 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
             nextDueUntil = nextDue,
         )
     }
-
-    private fun withoutExpired(ring: WidgetRing, now: Long): WidgetRing? {
-        if (ring.times.isEmpty()) {
-            val due = ring.dueUntils.firstOrNull() ?: 0L
-            val expired = ring.at > 0L && ring.at <= now && due > 0L && now >= due
-            return if (expired) null else ring
-        }
-        val keep = ring.times.indices.filter { index ->
-            val doseAt = ring.times[index]
-            val due = ring.dueUntils.valueAt(index)
-            !(doseAt > 0L && doseAt <= now && due > 0L && now >= due)
-        }
-        if (keep.isEmpty()) return null
-        if (keep.size == ring.times.size) return ring
-        return WidgetRing(
-            at = ring.times[keep.first()],
-            dotted = keep.size > 1,
-            colors = IntArray(keep.size) {
-                ring.colors.valueAt(keep[it], DEFAULT_MEDICINE_COLOR)
-            },
-            times = LongArray(keep.size) { ring.times[keep[it]] },
-            intervals = LongArray(keep.size) {
-                ring.intervals.valueAt(keep[it], DAY_MILLIS)
-            },
-            status = ring.status,
-            dueUntils = LongArray(keep.size) { ring.dueUntils.valueAt(keep[it]) },
-            names = Array(keep.size) { ring.names.valueAt(keep[it]) },
-        )
-    }
-
-    private fun LongArray.valueAt(index: Int, fallback: Long = 0L): Long =
-        if (index in indices) this[index] else fallback
-
-    private fun IntArray.valueAt(index: Int, fallback: Int): Int =
-        if (index in indices) this[index] else fallback
-
-    private fun Array<String>.valueAt(index: Int): String =
-        if (index in indices) this[index] else ""
 
     private data class RingMark(val progress: Float, val color: Int)
 
@@ -446,6 +399,9 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
                     status = ring.optString("status", "pending"),
                     dueUntils = dueUntils,
                     names = names,
+                    medicineKeys = Array(times.size) { doseIndex ->
+                        doses?.optJSONObject(doseIndex)?.optString("medicineKey", "").orEmpty()
+                    },
                 )
             }
         }

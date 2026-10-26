@@ -13,11 +13,13 @@ Future<SettingsProviders> initializeAppSettings({
   SettingsStorage? storage,
 }) async {
   if (storage != null) {
-    return initializeSettings(
+    final settings = await initializeSettings(
       registry: createAppSettingsRegistry(),
       storage: storage,
       localizationProvider: await loadSettingsLocalizationProvider(),
     );
+    await _completeLegacyOnboarding(settings);
+    return settings;
   }
 
   final prefs = CoercingSettingsStorage(SharedPreferencesStorage());
@@ -35,13 +37,17 @@ Future<SettingsProviders> initializeAppSettings({
     localizationProvider: await loadSettingsLocalizationProvider(),
   );
   await file.importLegacyFilesIfNeeded(settings.controller);
+  await _completeLegacyOnboarding(settings);
   await _deleteEdadatJsonIfPresent();
   return settings;
 }
 
 /// Copy [from] into [to], keeping [DoubleSetting] keys as doubles.
 @visibleForTesting
-Future<void> copySettingsStorage(SettingsStorage from, SettingsStorage to) async {
+Future<void> copySettingsStorage(
+  SettingsStorage from,
+  SettingsStorage to,
+) async {
   final doubleKeys = {
     for (final setting in createAppSettingsRegistry().settings)
       if (setting is DoubleSetting) setting.key,
@@ -82,7 +88,23 @@ Future<void> copySettingsStorage(SettingsStorage from, SettingsStorage to) async
 }
 
 Future<void> _deleteEdadatJsonIfPresent() async {
-  final path = join(await getDatabasesPath(), 'settings', EdadatFileStorage.fileName);
+  final path = join(
+    await getDatabasesPath(),
+    'settings',
+    EdadatFileStorage.fileName,
+  );
   final file = File(path);
   if (file.existsSync()) file.deleteSync();
+}
+
+/// Build 58 introduced the tour. A build number written during a newer first
+/// launch is not evidence that the user finished onboarding.
+Future<void> _completeLegacyOnboarding(SettingsProviders settings) async {
+  final controller = settings.controller;
+  final lastVersion = controller.get(lastVersionSetting);
+  if (lastVersion > 0 &&
+      lastVersion < 58 &&
+      !controller.get(onboardingCompletedSetting)) {
+    await controller.set(onboardingCompletedSetting, true);
+  }
 }

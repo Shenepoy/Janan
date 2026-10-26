@@ -294,6 +294,50 @@ void main() {
     );
   });
 
+  for (final direction in [ui.TextDirection.ltr, ui.TextDirection.rtl]) {
+    testWidgets('landscape rail rows track the closing surface in $direction', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpApp(
+        tester,
+        await _minimalShell(
+          textDirection: direction,
+          pages: const [
+            Text('home'),
+            Text('weight'),
+            Text('stats'),
+            Text('settings'),
+          ],
+        ),
+      );
+      final rail = find.byKey(const ValueKey('shell_landscape_sidenav_rail'));
+      final tile = find.byKey(AppShell.navHomeKey);
+      final icon = find.descendant(of: tile, matching: find.byType(Icon));
+      final iconCenter = tester.getCenter(icon);
+      await tester.tap(
+        find.byKey(const ValueKey('shell_landscape_sidenav_expand')),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getCenter(icon), iconCenter);
+      await tester.tap(
+        find.byKey(const ValueKey('shell_landscape_sidenav_collapse')),
+      );
+      await tester.pump();
+      for (var frame = 0; frame < 20; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(tester.getCenter(icon), iconCenter);
+        expect(
+          tester.getSize(tile).width,
+          closeTo(tester.getSize(rail).width - 16, 0.1),
+          reason: 'the selected pill must follow the rail edge on frame $frame',
+        );
+        expect(tester.takeException(), isNull);
+      }
+    });
+  }
+
   testWidgets('uses floating landscape chrome with expandable sidenav', (
     tester,
   ) async {
@@ -1267,6 +1311,54 @@ void main() {
     expect(find.text('weight-page'), findsNothing);
   });
 
+  for (final size in [const Size(400, 800), const Size(900, 400)]) {
+    for (final direction in [ui.TextDirection.ltr, ui.TextDirection.rtl]) {
+      testWidgets('weight toggle keeps settings in place at $size $direction', (
+        tester,
+      ) async {
+        await tester.binding.setSurfaceSize(size);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final showWeight = ValueNotifier(false);
+        addTearDown(showWeight.dispose);
+        const marker = ValueKey('settings-frame-marker');
+        await pumpApp(
+          tester,
+          await _minimalShell(
+            textDirection: direction,
+            showWeightListenable: showWeight,
+            pages: const [
+              Text('home-page'),
+              Text('weight-page'),
+              Text('stats-page'),
+              Center(child: Text('settings-page', key: marker)),
+            ],
+          ),
+        );
+        await tester.tap(find.byKey(AppShell.navSettingsKey));
+        await tester.pumpAndSettle();
+        final before = tester.getRect(find.byKey(marker));
+        for (final enabled in [true, false, true]) {
+          showWeight.value = enabled;
+          for (var frame = 0; frame < 30; frame++) {
+            await tester.pump(const Duration(milliseconds: 16));
+            final reason =
+                'Settings must remain visible and stationary '
+                'on frame $frame when weight is '
+                '${enabled ? "enabled" : "disabled"}';
+            expect(find.byKey(marker), findsOneWidget, reason: reason);
+            expect(tester.getRect(find.byKey(marker)), before, reason: reason);
+            expect(
+              tester.widget<DashboardAppBar>(find.byType(DashboardAppBar)).page,
+              enabled ? 3 : 2,
+              reason:
+                  'The title must follow the new Settings index immediately',
+            );
+          }
+        }
+      });
+    }
+  }
+
   testWidgets('keeps the settings scroll position when weight is enabled', (
     tester,
   ) async {
@@ -1301,17 +1393,23 @@ void main() {
       matching: find.byType(Scrollable),
     );
     expect(settingsScrollable, findsOneWidget);
-    final weightToggle = find.text(
-      'Activate weight related features',
-      skipOffstage: false,
+    final weightToggle = find.descendant(
+      of: find.byType(SwitchListTile, skipOffstage: false),
+      matching: find.text('Weight', skipOffstage: false),
     );
     await _reveal(tester, settingsList, weightToggle);
     await tester.pump();
     final before = tester.widget<ListView>(settingsList).controller!.offset;
     expect(before, greaterThan(0));
 
-    await tester.tap(weightToggle);
+    final toggleRect = tester.getRect(weightToggle);
+    final listState = tester.state(settingsScrollable);
+    await tester.tap(
+      find.ancestor(of: weightToggle, matching: find.byType(SwitchListTile)),
+    );
     await tester.pump();
+    expect(tester.getRect(weightToggle), toggleRect);
+    expect(tester.state(settingsScrollable), same(listState));
     expect(
       find.descendant(
         of: find.byType(DashboardAppBar),
@@ -1370,15 +1468,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     final settingsList = find.byType(ListView);
-    final weightToggle = find.text(
-      'Activate weight related features',
-      skipOffstage: false,
+    final weightToggle = find.descendant(
+      of: find.byType(SwitchListTile, skipOffstage: false),
+      matching: find.text('Weight', skipOffstage: false),
     );
     await _reveal(tester, settingsList, weightToggle);
     await tester.pump();
 
     Future<void> toggleWeight() async {
-      await tester.tap(weightToggle);
+      await tester.tap(
+        find.ancestor(of: weightToggle, matching: find.byType(SwitchListTile)),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
     }
@@ -1418,6 +1518,7 @@ void main() {
 }
 
 Future<Widget> _minimalShell({
+  ui.TextDirection? textDirection,
   HomePresenceObserver? presence,
   required List<Widget> pages,
   TestSettingsSeed? seed,
@@ -1454,7 +1555,13 @@ Future<Widget> _minimalShell({
     ],
     child: SafaehTheme(
       data: const SafaehThemeData(),
-      child: MaterialApp(home: shell),
+      child: MaterialApp(
+        home: shell,
+        builder: textDirection == null
+            ? null
+            : (context, child) =>
+                  Directionality(textDirection: textDirection, child: child!),
+      ),
     ),
   );
 }

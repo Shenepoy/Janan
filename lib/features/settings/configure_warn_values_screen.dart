@@ -21,7 +21,10 @@ class ConfigureWarnValuesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
     return Scaffold(
-      appBar: AppBar(forceMaterialTransparency: true),
+      appBar: AppBar(
+        title: Text('warnValues'.tr()),
+        forceMaterialTransparency: true,
+      ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: null,
         label: Text('determineWarnValues'.tr()),
@@ -46,6 +49,7 @@ class ConfigureWarnValuesScreen extends ConsumerWidget {
         base: FloatingActionButtonLocation.endFloat,
       ),
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 104),
         children: [
           CustomBanner(
             content: Column(children: [
@@ -64,8 +68,9 @@ class ConfigureWarnValuesScreen extends ConsumerWidget {
                     }));
                   }
                 },
-                child: SizedBox(
-                  height: 48,
+                child: ConstrainedBox(
+                  // Allow the translated link to wrap at larger text sizes.
+                  constraints: const BoxConstraints(minHeight: 48),
                   child: Center(
                     child: Text(
                       'warnAboutTxt2'.tr(),

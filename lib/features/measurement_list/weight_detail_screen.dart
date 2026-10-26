@@ -8,6 +8,7 @@ import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_measurement_duplicates.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/eufy_body_composition.dart';
 import 'package:blood_pressure_app/features/input/forms/entry_form_section.dart';
+import 'package:blood_pressure_app/features/measurement_list/detail_date_time_values.dart';
 import 'package:blood_pressure_app/features/measurement_list/detail_form_value.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_change.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_info.dart';
@@ -189,24 +190,11 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
         children: [
           EntryFormSection(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                DetailTitleRow(
-                  titles: [
-                    Text('date'.tr(), style: AppText.title(context)),
-                    Text('time'.tr(), style: AppText.title(context)),
-                  ],
-                ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DetailFormValue(value: date, hopToken: _token('date')),
-                    const SizedBox(width: 12),
-                    DetailFormValue(value: timeOfDay, hopToken: _token('time')),
-                  ],
-                ),
-              ],
+            child: DetailDateTimeValues(
+              date: date,
+              time: timeOfDay,
+              dateHopToken: _token('date'),
+              timeHopToken: _token('time'),
             ),
           ),
           const SizedBox(height: 12),

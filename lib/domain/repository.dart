@@ -36,9 +36,13 @@ abstract class BodyweightRepository extends Repository<BodyweightRecord> {}
 abstract class MedicineIntakeRepository extends Repository<MedicineIntake> {
   /// Records a planned dose and its outcome together. Persistent repositories
   /// resolve its identity from storage rather than relying on stale UI values.
-  Future<void> recordScheduledDose(DoseOccurrence occurrence) => add(
+  /// [takenAt] backdates an unrecorded dose; omitting it uses the current time.
+  Future<void> recordScheduledDose(
+    DoseOccurrence occurrence, {
+    DateTime? takenAt,
+  }) => add(
     MedicineIntake(
-      time: DateTime.now(),
+      time: takenAt ?? DateTime.now(),
       medicine: occurrence.schedule.medicine,
       dosis: Weight.mg(occurrence.schedule.doseAmount),
       occurrenceId: occurrence.id,
@@ -85,10 +89,12 @@ abstract class MedicationScheduleRepository {
   Future<List<DoseOccurrence>> getExistingOccurrences(DateRange range);
 
   /// Change an occurrence state and, when taken, add a linked medicine intake.
+  /// [takenAt] overrides the recording time for a previously unrecorded dose.
   Future<void> setOccurrenceStatus(
     DoseOccurrence occurrence,
     String status, {
     DateTime? snoozeUntil,
+    DateTime? takenAt,
   });
 
   /// Removes a schedule and its occurrences while preserving recorded intakes.

@@ -7,6 +7,46 @@ void main() {
   final due = DateTime(2026, 10, 3, 8);
 
   test(
+    'historical dose actions start at 24 hours and backdate Taken by one hour',
+    () {
+      final occurrence = DoseOccurrence(
+        id: 'morning.2026-10-03.480',
+        schedule: const MedicationSchedule(
+          medicineId: 'medicine',
+          medicine: Medicine(designation: 'Medicine'),
+          doseAmount: 5,
+          doseUnit: MedicationUnit.mg,
+          timeMinutes: [480],
+          weekdays: {1, 2, 3, 4, 5, 6, 7},
+        ),
+        scheduledAt: due,
+        status: 'pending',
+      );
+      final cutoff = due.add(const Duration(days: 1));
+      expect(doseIsDayOverdue(occurrence, due), isFalse);
+      expect(
+        doseIsDayOverdue(
+          occurrence,
+          cutoff.subtract(const Duration(seconds: 1)),
+        ),
+        isFalse,
+      );
+      expect(
+        historicalDoseTakenAt(
+          occurrence,
+          cutoff.subtract(const Duration(seconds: 1)),
+        ),
+        isNull,
+      );
+      expect(doseIsDayOverdue(occurrence, cutoff), isTrue);
+      expect(
+        historicalDoseTakenAt(occurrence, cutoff),
+        DateTime(2026, 10, 3, 9),
+      );
+    },
+  );
+
+  test(
     'overdue reminders repeat after the dose, skipping times already passed',
     () {
       expect(
@@ -268,6 +308,10 @@ void main() {
       dueAt.add(const Duration(hours: 8)).millisecondsSinceEpoch,
     );
     expect(view['rings'], hasLength(2));
+    expect(view['showAll'], isFalse);
+    final firstDose =
+        (((view['rings'] as List).first as Map)['doses'] as List).first as Map;
+    expect(firstDose['medicineKey'], 'amlodipine');
     expect(view['name'], 'amlodipine');
   });
 
@@ -338,6 +382,24 @@ void main() {
       '13h',
     );
     expect(formatCompactCountdown(Duration.zero, overdue: false), 'now');
+    expect(
+      formatCompactCountdown(
+        const Duration(hours: 2),
+        overdue: false,
+        hourUnit: 'س',
+        minuteUnit: 'د',
+      ),
+      '2س',
+    );
+    expect(
+      formatCompactCountdown(
+        const Duration(minutes: 45),
+        overdue: false,
+        hourUnit: 'س',
+        minuteUnit: 'د',
+      ),
+      '45د',
+    );
 
     final daily = MedicationSchedule(
       medicineId: 'amlodipine',

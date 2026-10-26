@@ -72,7 +72,7 @@ void main() {
                 actions: const [
                   SheetAction(
                     value: 'done',
-                    label: 'Done',
+                    label: 'Mark as taken',
                     leading: Icon(Icons.check),
                   ),
                   SheetAction(
@@ -101,7 +101,7 @@ void main() {
       isTrue,
     );
 
-    await tester.tap(find.text('Done'));
+    await tester.tap(find.text('Mark as taken'));
     await tester.pumpAndSettle();
     expect(result, 'done');
   });

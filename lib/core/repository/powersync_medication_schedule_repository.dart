@@ -282,9 +282,10 @@ class PowerSyncMedicationScheduleRepository
     DoseOccurrence occurrence,
     String status, {
     DateTime? snoozeUntil,
+    DateTime? takenAt,
   }) async {
     if (status == 'taken') {
-      await _intakes.recordScheduledDose(occurrence);
+      await _intakes.recordScheduledDose(occurrence, takenAt: takenAt);
       return;
     }
     await _db.writeTransaction((tx) async {

@@ -68,13 +68,13 @@ void main() {
     // settings
 
     expect(find.byType(GraphScreen), findsNothing);
-    await tester.scrollUntilVisible(find.text('Graph settings'), settingsScrollAmount);
-    await tester.tap(find.text('Graph settings'));
+    await tester.scrollUntilVisible(find.text('Chart settings'), settingsScrollAmount);
+    await tester.tap(find.text('Chart settings'));
     await tester.pumpAndSettle();
     expect(find.byType(GraphScreen), findsOneWidget);
     // graph settings
     expect(find.byType(ConfigureWarnValuesScreen), findsNothing);
-    await tester.tap(find.text('Determine warn values'));
+    await tester.tap(find.text('Set warning values by age'));
     await tester.pumpAndSettle();
     expect(find.byType(ConfigureWarnValuesScreen), findsOneWidget);
     // warn values
@@ -109,7 +109,7 @@ void main() {
     expect(find.byType(ExportColumnsManagementScreen), findsOneWidget);
     // export column manager
     expect(find.byType(AddExportColumnDialog), findsNothing);
-    await tester.tap(find.text('Add exportformat'));
+    await tester.tap(find.text('Add export column'));
     await tester.pumpAndSettle();
     expect(find.byType(AddExportColumnDialog), findsOneWidget);
     // add export column
@@ -141,8 +141,8 @@ void main() {
     await tester.scrollUntilVisible(find.text('About'), settingsScrollAmount);
     await tester.tap(find.text('About'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('3rd party licenses'), settingsScrollAmount);
-    await tester.tap(find.text('3rd party licenses'));
+    await tester.scrollUntilVisible(find.text('Third-party licenses'), settingsScrollAmount);
+    await tester.tap(find.text('Third-party licenses'));
     await tester.pumpAndSettle();
     expect(find.byType(LicensePage), findsOneWidget);
     // delete data

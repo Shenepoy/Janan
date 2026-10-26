@@ -4,23 +4,42 @@ import android.Manifest
 import android.app.LocaleManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.LocaleList
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
+import com.dexterous.flutterlocalnotifications.FlutterLocalNotificationsPlugin
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.StandardMethodCodec
 
 class MainActivity: FlutterFragmentActivity() {
     private var hideStatusBarForCompactLandscape = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+        // Android retains the task's original intent after process death. A
+        // restored reminder is no longer a new tap: let Flutter boot normally.
+        // This must run before super attaches receive_intent / notifications.
+        val restoringReminder = savedInstanceState != null &&
+            (intent.getStringExtra("route") == "/medications/today" ||
+                intent.action == "SELECT_NOTIFICATION" ||
+                intent.action == "SELECT_FOREGROUND_NOTIFICATION_ACTION")
+        if (restoringReminder) {
+            intent = Intent(this, MainActivity::class.java)
+                .setAction(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_LAUNCHER)
+        }
+        // FlutterFragment also saves the widget's initial route in its arguments.
+        // Recreate it so that route cannot override the app's normal startup.
+        super.onCreate(if (restoringReminder) null else savedInstanceState)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes = window.attributes.apply {
                 layoutInDisplayCutoutMode =
@@ -37,6 +56,25 @@ class MainActivity: FlutterFragmentActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        val messenger = flutterEngine.dartExecutor.binaryMessenger
+        // Serial across alarm changes and widget drawing. Permission dialogs
+        // still run on main through the notification handler's dispatcher.
+        val reminderQueue = messenger.makeBackgroundTaskQueue()
+        val notifications = flutterEngine.plugins.get(FlutterLocalNotificationsPlugin::class.java)
+            as? FlutterLocalNotificationsPlugin
+        if (notifications != null) {
+            val mainHandler = Handler(Looper.getMainLooper())
+            MethodChannel(
+                messenger,
+                "dexterous.com/flutter/local_notifications",
+                StandardMethodCodec.INSTANCE,
+                reminderQueue,
+            ).setMethodCallHandler(
+                ReminderNotificationHandler(notifications) { action ->
+                    mainHandler.post { action() }
+                },
+            )
+        }
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -101,8 +139,10 @@ class MainActivity: FlutterFragmentActivity() {
         }
 
         MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
+            messenger,
             "com.shenepoy.janan/medication_widget",
+            StandardMethodCodec.INSTANCE,
+            reminderQueue,
         ).setMethodCallHandler { call, result ->
             when (call.method) {
                 "update" -> {

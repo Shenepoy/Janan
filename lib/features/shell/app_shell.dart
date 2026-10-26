@@ -5,6 +5,7 @@ import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
 import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_filter_scope.dart';
+import 'package:blood_pressure_app/features/medications/medication_history_screen.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
 import 'package:blood_pressure_app/features/shell/shell_scroll_insets.dart';
@@ -59,6 +60,7 @@ class AppShell extends ConsumerWidget {
   final VoidCallback? onSettingsSearch;
 
   static const navHomeKey = ValueKey<String>('shell_nav_home');
+  static const navMedicationsKey = ValueKey<String>('shell_nav_medications');
   static const navWeightKey = ValueKey<String>('shell_nav_weight');
   static const navStatisticsKey = ValueKey<String>('shell_nav_statistics');
   static const navSettingsKey = ValueKey<String>('shell_nav_settings');
@@ -70,9 +72,12 @@ class AppShell extends ConsumerWidget {
     final showBloodPressure =
         this.showBloodPressure ?? settings.bloodPressureEnabled;
     final showMedicine = this.showMedicine ?? settings.medicineFeatureEnabled;
+    final showMedicationHistory =
+        showMedicine && settings.medicationHistoryDisplay == 'separatePage';
     final tabs = visibleShellTabs(
       showWeight: enabled,
       showBloodPressure: showBloodPressure,
+      showMedicationHistory: showMedicationHistory,
     );
     return SafaehDeviceCutoutScope(
       child: _AppShellView(
@@ -82,6 +87,7 @@ class AppShell extends ConsumerWidget {
         showWeight: enabled,
         showBloodPressure: showBloodPressure,
         showMedicine: showMedicine,
+        showMedicationHistory: showMedicationHistory,
         settingsSearchOpen: settingsSearchOpen,
         onSettingsSearch: onSettingsSearch,
       ),
@@ -96,6 +102,7 @@ class _AppShellView extends StatefulWidget {
     required this.showWeight,
     required this.showBloodPressure,
     required this.showMedicine,
+    required this.showMedicationHistory,
     this.settingsSearchOpen,
     this.onSettingsSearch,
     this.homePresence,
@@ -107,6 +114,7 @@ class _AppShellView extends StatefulWidget {
   final bool showWeight;
   final bool showBloodPressure;
   final bool showMedicine;
+  final bool showMedicationHistory;
   final ValueNotifier<bool>? settingsSearchOpen;
   final VoidCallback? onSettingsSearch;
 
@@ -125,11 +133,11 @@ class _AppShellViewState extends State<_AppShellView> {
   bool _landscapeNavCollapsed = true;
   bool _isLandscape = false;
   bool _compactLandscapeStatusBarHidden = false;
-  int _tabLayoutVersion = 0;
 
   List<ShellTab> get _tabs => visibleShellTabs(
     showWeight: widget.showWeight,
     showBloodPressure: widget.showBloodPressure,
+    showMedicationHistory: widget.showMedicationHistory,
   );
 
   List<Widget> get _visiblePages {
@@ -137,6 +145,8 @@ class _AppShellViewState extends State<_AppShellView> {
     return [
       widget.pages[0],
       if (widget.showWeight) widget.pages[1],
+      if (widget.showMedicationHistory)
+        const MedicationHistoryScreen(embedded: true),
       if (widget.showBloodPressure) widget.pages[2],
       widget.pages[3],
     ];
@@ -157,12 +167,14 @@ class _AppShellViewState extends State<_AppShellView> {
   void didUpdateWidget(covariant _AppShellView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.showWeight == widget.showWeight &&
-        oldWidget.showBloodPressure == widget.showBloodPressure) {
+        oldWidget.showBloodPressure == widget.showBloodPressure &&
+        oldWidget.showMedicationHistory == widget.showMedicationHistory) {
       return;
     }
     final oldTabs = visibleShellTabs(
       showWeight: oldWidget.showWeight,
       showBloodPressure: oldWidget.showBloodPressure,
+      showMedicationHistory: oldWidget.showMedicationHistory,
     );
     final current = oldTabs[_index.clamp(0, oldTabs.length - 1)];
     var next = _tabs.indexOf(current);
@@ -170,16 +182,11 @@ class _AppShellViewState extends State<_AppShellView> {
     _index = next;
     _page = next.toDouble();
     _updatePresence();
-    final layoutVersion = ++_tabLayoutVersion;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || layoutVersion != _tabLayoutVersion) return;
-      if (_pageController.hasClients) {
-        _pageController.jumpToPage(next);
-      }
-      if (_page != next.toDouble() && mounted) {
-        setState(() => _page = next.toDouble());
-      }
-    });
+    // Rebase the viewport before the changed tab list is laid out. Waiting
+    // until after paint briefly shows the page at the old numeric index.
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(next);
+    }
   }
 
   @override
@@ -275,6 +282,12 @@ class _AppShellViewState extends State<_AppShellView> {
           selectedIcon: Icons.scale,
           tileKey: AppShell.navWeightKey,
         ),
+        ShellTab.medications => SafaehSidenavDestination(
+          label: 'medications'.tr(),
+          icon: Icons.medication_outlined,
+          selectedIcon: Icons.medication,
+          tileKey: AppShell.navMedicationsKey,
+        ),
         ShellTab.statistics => SafaehSidenavDestination(
           label: 'statistics'.tr(),
           icon: Icons.insights_outlined,
@@ -321,6 +334,7 @@ class _AppShellViewState extends State<_AppShellView> {
     final titleKeys = [
       'measurements',
       if (widget.showWeight) 'weight',
+      if (widget.showMedicationHistory) 'medications',
       if (widget.showBloodPressure) 'statistics',
       'settings',
     ];
@@ -465,8 +479,11 @@ class _AppShellViewState extends State<_AppShellView> {
                                             ),
                                           ),
                                           AnimatedPositionedDirectional(
-                                            duration: tokens.navMotion,
-                                            curve: Curves.fastOutSlowIn,
+                                            duration: safaehResolvedMotion(
+                                              context,
+                                              tokens.navMotion,
+                                            ),
+                                            curve: Curves.easeInOutCubic,
                                             start: railWidth + 20,
                                             top: shellPadding.top + 12,
                                             width: appBarWidth,
@@ -557,42 +574,62 @@ class _AppShellViewState extends State<_AppShellView> {
                                 top: 0,
                                 bottom: 0,
                                 end: 0,
-                                child: SafaehSidenav(
-                                  key: const ValueKey(
-                                    'shell_landscape_sidenav',
+                                // Drive the rail once. Safaeh 0.12 otherwise
+                                // animates its rows behind the surface width.
+                                child: TweenAnimationBuilder<double>(
+                                  tween: Tween(
+                                    begin: _landscapeNavCollapsed
+                                        ? compactRailWidth
+                                        : tokens.expandedNavWidth,
+                                    end: _landscapeNavCollapsed
+                                        ? compactRailWidth
+                                        : tokens.expandedNavWidth,
                                   ),
-                                  overlay: true,
-                                  collapsed: _landscapeNavCollapsed,
-                                  onToggleCompact: () => setState(() {
-                                    _landscapeNavCollapsed =
-                                        !_landscapeNavCollapsed;
-                                  }),
-                                  title: 'title'.tr(),
-                                  selectedIndex: _index,
-                                  onDestinationSelected: _go,
-                                  destinations: destinations,
-                                  expandTooltip: MaterialLocalizations.of(
+                                  duration: safaehResolvedMotion(
                                     context,
-                                  ).openAppDrawerTooltip,
-                                  collapseTooltip: MaterialLocalizations.of(
-                                    context,
-                                  ).closeButtonTooltip,
-                                  compactWidth: compactRailWidth,
-                                  expandedWidth: tokens.expandedNavWidth,
-                                  duration: tokens.navMotion,
-                                  cutouts: cutouts,
-                                  floatingAppearance:
-                                      const SafaehFloatingAppearance(
-                                        style: SafaehFloatingSurfaceStyle.glass,
-                                      ),
-                                  railKey: const ValueKey(
-                                    'shell_landscape_sidenav_rail',
+                                    tokens.navMotion,
                                   ),
-                                  expandKey: const ValueKey(
-                                    'shell_landscape_sidenav_expand',
-                                  ),
-                                  collapseKey: const ValueKey(
-                                    'shell_landscape_sidenav_collapse',
+                                  curve: Curves.easeInOutCubic,
+                                  builder: (context, width, _) => SafaehSidenav(
+                                    key: const ValueKey(
+                                      'shell_landscape_sidenav',
+                                    ),
+                                    overlay: true,
+                                    collapsed:
+                                        _landscapeNavCollapsed &&
+                                        width == compactRailWidth,
+                                    onToggleCompact: () => setState(() {
+                                      _landscapeNavCollapsed =
+                                          !_landscapeNavCollapsed;
+                                    }),
+                                    title: 'title'.tr(),
+                                    selectedIndex: _index,
+                                    onDestinationSelected: _go,
+                                    destinations: destinations,
+                                    expandTooltip: MaterialLocalizations.of(
+                                      context,
+                                    ).openAppDrawerTooltip,
+                                    collapseTooltip: MaterialLocalizations.of(
+                                      context,
+                                    ).closeButtonTooltip,
+                                    compactWidth: compactRailWidth,
+                                    expandedWidth: width,
+                                    duration: Duration.zero,
+                                    cutouts: cutouts,
+                                    floatingAppearance:
+                                        const SafaehFloatingAppearance(
+                                          style:
+                                              SafaehFloatingSurfaceStyle.glass,
+                                        ),
+                                    railKey: const ValueKey(
+                                      'shell_landscape_sidenav_rail',
+                                    ),
+                                    expandKey: const ValueKey(
+                                      'shell_landscape_sidenav_expand',
+                                    ),
+                                    collapseKey: const ValueKey(
+                                      'shell_landscape_sidenav_collapse',
+                                    ),
                                   ),
                                 ),
                               ),
@@ -623,7 +660,9 @@ class _AppShellViewState extends State<_AppShellView> {
                     floatingActionButton: _index < dataTabCount
                         ? NavigationActionButtons(
                             kind: _actionKind(),
-                            showBloodPressure: widget.showBloodPressure,
+                            showBloodPressure:
+                                _tabs[_index] != ShellTab.medications &&
+                                widget.showBloodPressure,
                             showMedicine: widget.showMedicine,
                           )
                         : null,

@@ -50,6 +50,7 @@ class ExportImportScreen extends ConsumerWidget {
                   context,
                   MaterialPageRoute<void>(
                     builder: (context) => InformationScreen(
+                      title: 'exportImport'.tr(),
                       text: 'exportImportDocumentation'.tr(),
                     ),
                   ),
@@ -76,7 +77,7 @@ class ExportImportScreen extends ConsumerWidget {
             SettingsPageCard(
               key: const ValueKey('export-destination'),
               sectionId: 'export-destination',
-              title: 'exportSettings'.tr(),
+              title: 'exportOptions'.tr(),
               icon: Icons.folder_outlined,
               children: [
                 if (Platform.isAndroid)

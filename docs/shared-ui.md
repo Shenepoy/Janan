@@ -58,3 +58,21 @@ and opening/dismissing the full palette. No raw ADB UI fallback was used.
 The single-row refinement passed 28 focused selector and editor tests, including
 English/Arabic portrait and landscape layouts with enlarged text and keyboard
 insets.
+
+Landscape rail motion now uses Safaeh's interpolated surface width directly for
+its destination rows. Previously each row animated that changing width again,
+so the selected pill lagged behind the edge and was clipped during closing.
+Overlay labels and the title fade with the available width, destination icons
+stay anchored, and Janan's floating header uses the same cubic easing and
+respects reduced motion.
+
+The shared implementation and frame regression tests are in the sibling
+`../Safaeh` checkout. The ignored `pubspec_overrides.yaml` connects it for local
+development; the published dependency and lockfile remain unchanged. A Safaeh
+package release and dependency update are needed to distribute the shared fix.
+Validation passed 245 Safaeh tests, 26 Janan shell tests, both focused analyzer
+checks, and an Android debug build. PolyScreen on `emulator-5554`, logical
+display `0`, verified opening/closing and captured a recording whose intermediate
+frames retain the selected pill's rounded edge. Tests cover LTR/RTL, label
+fading, and reversal during closing. ADB was used to lock landscape rotation
+because PolyScreen has no orientation setter; taps and captures used PolyScreen.

@@ -1,3 +1,7 @@
+import 'dart:ui' as ui;
+
+import 'package:blood_pressure_app/l10n/western_digits.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 /// A info screen to show possible time format codes.
@@ -45,39 +49,74 @@ DAY                          d
  SECOND                       s''';
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      backgroundColor: Theme.of(context).primaryColor,
-    ),
-    body: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SingleChildScrollView(
-        child: Table(
-          columnWidths: const {
-            0: FlexColumnWidth(0.71),
-            1: FlexColumnWidth(0.29),
-          },
-          children: _buildRows(context),
+  Widget build(BuildContext context) {
+    final exampleTime = DateTime(2026, 10, 24, 17, 8, 42);
+    final codes = _formats
+        .trim()
+        .split('\n')
+        .map((line) => line.trim().split(RegExp(r'\s{2,}')).last);
+    return Scaffold(
+      appBar: AppBar(title: Text('formatReferenceTitle'.tr())),
+      body: SafeArea(
+        top: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Text('formatReferenceHint'.tr()),
+                const SizedBox(height: 20),
+                Table(
+                  columnWidths: const {
+                    0: FlexColumnWidth(),
+                    1: FlexColumnWidth(2),
+                  },
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  border: TableBorder(
+                    horizontalInside: BorderSide(
+                      color: Theme.of(context).dividerColor,
+                    ),
+                  ),
+                  children: [
+                    TableRow(
+                      children: [
+                        _cell('formatCode'.tr(), heading: true),
+                        _cell('formatExample'.tr(), heading: true),
+                      ],
+                    ),
+                    for (final code in codes)
+                      TableRow(
+                        children: [
+                          _cell(code, code: true),
+                          _cell(
+                            WesternDateFormat(
+                              code,
+                              context.locale.toString(),
+                            ).format(exampleTime),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-    ),);
-
-  List<TableRow> _buildRows(BuildContext context) {
-    final List<TableRow> rowsOut = [
-      TableRow(
-        decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
-          ),),
-        ),
-        children: const [Text('ICU Name'), Text('Skeleton')],
-      ),
-    ];
-    final lines = _formats.trim().split('\n');
-    for (int i = 0; i < lines.length; i++) {
-      final List<String> values = lines[i].trim().split(RegExp(r'\s{2,}'));
-      rowsOut.add(TableRow(children: [Text(values[0]), Text(values[1])]));
-    }
-    return rowsOut;
+    );
   }
+
+  Widget _cell(String text, {bool heading = false, bool code = false}) =>
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: Text(
+          text,
+          textDirection: code ? ui.TextDirection.ltr : null,
+          style: TextStyle(
+            fontWeight: heading ? FontWeight.bold : null,
+            fontFamily: code ? 'monospace' : null,
+          ),
+        ),
+      );
 }

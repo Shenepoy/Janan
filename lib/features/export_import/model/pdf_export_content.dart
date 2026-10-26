@@ -128,10 +128,8 @@ class PdfExportContent {
       entriesNewestFirst: bloodPressureEntries,
     );
     final analyzer = snapshot.period;
-    final dateFormatter = WesternDateFormat(
-      dateFormatString,
-      locale ?? Intl.defaultLocale ?? 'en',
-    );
+    final resolvedLocale = locale ?? Intl.defaultLocale ?? 'en';
+    final dateFormatter = WesternDateFormat(dateFormatString, resolvedLocale);
 
     return PdfExportContent(
       title: _title(newestFirst, analyzer, dateFormatter),
@@ -164,7 +162,7 @@ class PdfExportContent {
         for (final entry in newestFirst)
           [
             for (final column in columns)
-              _cell(entry, column, pressureUnit, weightUnit),
+              _cell(entry, column, pressureUnit, weightUnit, resolvedLocale),
           ],
       ],
     );
@@ -196,6 +194,36 @@ class PdfExportContent {
 
   /// One series per medicine, name order.
   final List<PdfMedicineSeries> medicineSeries;
+
+  /// Every calendar date covered by the report, including gaps between entries.
+  List<DateTime> get reportDays {
+    final times = <DateTime>[
+      for (final point in chartPoints) point.time,
+      for (final point in weightSeries?.points ?? const <PdfWeightPoint>[])
+        point.time,
+      for (final series in medicineSeries)
+        for (final dose in series.doses) dose.time,
+      ...rowDays,
+    ];
+    if (times.isEmpty) return const [];
+    DateTime dayOf(DateTime time) => DateTime(time.year, time.month, time.day);
+    var start = dayOf(times.first);
+    var end = start;
+    for (final time in times) {
+      final day = dayOf(time);
+      if (day.isBefore(start)) start = day;
+      if (day.isAfter(end)) end = day;
+    }
+    return [
+      for (
+        var day = start;
+        !day.isAfter(end);
+        // Local calendar days can be 23 or 25 hours long.
+        day = DateTime(day.year, day.month, day.day + 1)
+      )
+        day,
+    ];
+  }
 }
 
 String _title(
@@ -430,7 +458,13 @@ String _cell(
   ExportColumn column,
   PressureUnit pressureUnit,
   WeightUnit weightUnit,
+  String locale,
 ) {
+  // TimeColumn caches a formatter for CSV use. PDF dates must follow this
+  // report's locale, including after the app language has changed.
+  if (column is TimeColumn) {
+    return WesternDateFormat(column.formatPattern, locale).format(entry.time);
+  }
   switch (column.restoreAbleType) {
     case RowDataFieldType.sys:
       return _pdfPressure(entry.sys, pressureUnit);

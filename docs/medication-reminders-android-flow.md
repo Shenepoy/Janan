@@ -206,3 +206,136 @@ The ring advances as the dose approaches. Within one hour, the label and ring tu
 - Captures: Medicines `mobile://artifacts/display-0-1792549595963-27cf73ce-75a6-4ab3-bf11-21bbf2d749dc.png`,
   Reminders `mobile://artifacts/display-0-1792549608294-139806d5-4342-4b48-9916-5f64fcd88dd5.png`,
   Today `mobile://artifacts/display-0-1792549622287-040d45e0-b10d-4c6f-9256-4323ddef7ef7.png`.
+
+### Reminder task restoration validation (October 24, 2026)
+
+Android keeps a task's original launch intent after killing its background
+process. FlutterFragment also saves the widget's `route` extra as its initial
+route. Clearing only the intent leaves that saved fragment route able to
+override the app's normal startup destination. MainActivity now resets both
+when recreating a reminder-launched activity from saved state. Fresh reminder
+launches still open Today; reopening the old task follows normal startup
+settings (Home by default).
+
+Regression procedure on `emulator-5554`, logical display `0`, with onboarding
+completed and **Start with Add measurement page** disabled:
+
+1. Tap the native reminder widget and confirm Today opens.
+2. Navigate back to Home, then open Settings. Press Android Home and wait for
+   the launcher widget to appear.
+3. Record `adb -s emulator-5554 shell pidof com.shenepoy.janan.debug`, then run
+   `adb -s emulator-5554 shell am kill com.shenepoy.janan.debug`.
+4. Reopen Janan through PolyScreen `mobile_app_launch`. Confirm the process ID
+   changed, Measurements is visible, and the Today medication tabs are absent.
+5. Repeat with a notification launch. Also check that a fresh notification
+   launch after process death opens Today instead of being treated as a resume.
+
+The tool-driven regression failed before the fix (Today visible after a new
+process started) and passed afterward for widget and notification tasks. The
+debug APK built successfully, and 14 medication runtime/navigation tests passed.
+Android fragment restoration requires the emulator check; Flutter widget tests
+alone do not cover it.
+
+Device UI interaction and assertions used PolyScreen semantic tools. ADB was
+used for installation, process diagnostics and `am kill`. The notification
+check used an ADB UI fallback to deliver the plugin's `SELECT_NOTIFICATION`
+intent with notification ID `0`, because PolyScreen's launch tool cannot set
+custom actions/extras; this checked routing, not notification delivery. No
+reminder schedules or dose records were changed.
+
+### Calendar tab and startup Back behavior (October 25, 2026)
+
+The daily dose tab is now labeled **Calendar**, using the existing translated
+calendar label. Calendar, Reminders, and Medicines remain tabs in one screen.
+Reminder startup explicitly builds Home plus the requested calendar screen:
+Flutter's default expansion of `/medications/today` previously added a second
+medication screen for `/medications`, so Back incorrectly appeared to switch
+from Calendar to Reminders. The navigation regression now checks that one Back
+returns directly Home, alongside tab/date retention and English/Arabic layout
+coverage.
+
+Validation: 17 focused tests passed and the changed Dart files passed analysis.
+The debug APK was installed on `emulator-5554`, display `0`; PolyScreen confirmed
+the widget opens **Calendar** and a single Android Back returns to Measurements.
+The launcher hierarchy could not become idle while its widget animated, so the
+widget tap used its position from a PolyScreen screenshot. Calendar and Home
+were verified through semantic accessibility matches. No ADB UI fallback was
+used for this check.
+
+### Enable/disable processing (October 25, 2026)
+
+Changing a reminder now disables its switch, edit action, and action menu while
+showing a progress indicator. The pending state belongs to the app's provider
+scope, so leaving and reopening the screen cannot submit the same change twice.
+The row stays in place until processing finishes, then reflects the stored
+state. Save and refresh failures release the controls and show an error.
+
+Alarm scheduling/cancellation and widget updates use one serial Android
+background task queue. Permission requests, initialization, and other
+Activity-dependent notification calls are dispatched to the main thread.
+The Dart rebuild queue also releases its completed tail, including after an
+error, so later rebuilds can proceed.
+
+The regression command is:
+
+```sh
+fvm flutter test --no-pub test/features/medications/medication_schedule_toggle_test.dart
+```
+
+Before the change, both pause and resume checks failed because the pending
+switch still had an enabled callback. The checks now cover pending writes,
+pending refreshes, repeated taps, failures, and leaving/reopening during work.
+Android handler tests additionally check worker execution for alarm methods and
+main-thread dispatch for permission/Activity methods.
+
+On `emulator-5554`, display `0`, a temporary probe measured about 0.66 seconds of
+main-thread work for the first 100 alarms during a pause. After the change, the
+same alarm work logged `main=false`. PolyScreen captured the disabled switch
+and spinner while enabling a reminder:
+`mobile://artifacts/display-0-1792877535003-0e51abbe-3204-4c27-b920-f1eba0103be3.png`.
+The timing probes were removed afterward. ADB was used for build/install and
+logs; screen input and validation used PolyScreen. The sample reminder's
+original enabled state was restored.
+
+Final validation passed: 19 focused Flutter tests, two Android handler tests,
+analysis of the changed Dart files, and the debug APK build. With the final APK,
+PolyScreen verified pausing, switching to Calendar immediately after starting
+the update, returning to Reminders, and enabling the reminder again.
+
+### Reminder card movement (October 25, 2026)
+
+After a state change finishes, the card now slides, fades, and subtly scales
+into its new group over 360 ms. The surrounding rows ease into the space it
+leaves. Re-enabling plays the reverse direction. Outgoing cards ignore input
+and are excluded from accessibility so there are no duplicate actions during
+the transition. Reduced-motion mode skips the transition.
+
+Validation: 18 focused tests, changed-file analysis, and the debug APK build
+passed. PolyScreen recorded a pause/resume cycle on `emulator-5554`, display
+`0`, and the sample medicine was returned to its original active state. Motion
+was reviewed from the recording:
+`mobile://artifacts/recording-1792878250851-0-f4e93f6b-1fd4-4daf-a9f3-5fd9910a2f7b.mp4`.
+
+### Recording old doses (October 25, 2026)
+
+An unrecorded dose at least 24 elapsed hours past its scheduled time now offers
+**Taken** and **Skip**, without Snooze. The Calendar and reminder panel share
+this rule. Taken passes the original scheduled time plus exactly one hour to
+the repository, which atomically saves the intake and updates the original
+occurrence. The original scheduled date and occurrence link remain intact.
+Repeating Taken preserves the first saved recording time. Current doses keep
+their existing Snooze action and current-time recording behavior.
+
+The exact one-hour offset can cross midnight for late-night slots; the intake
+timestamp then falls on the next date, while Calendar completion belongs to
+the original scheduled dose.
+
+Validation: 76 focused Flutter tests passed (two unrelated DST tests skipped),
+changed-file analysis passed, and the debug APK built and installed. The new
+tests cover the 24-hour boundary, historical Taken and Skip from Calendar,
+current-dose behavior, and real database persistence without adding an intake
+to today's history. PolyScreen verified the current three-button layout and
+the historical two-button layout on `emulator-5554`, display `0`:
+`mobile://artifacts/display-0-1792878986149-6e5290df-f549-4950-9a48-a20512744b65.png`.
+The emulator check did not record any intakes; persistence was checked in a
+temporary test database. ADB was used for build/install, with no ADB UI fallback.

@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:blood_pressure_app/features/settings/time_formats_reference_screen.dart';
+import 'package:blood_pressure_app/l10n/bidi.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,14 +10,17 @@ import 'package:url_launcher/url_launcher.dart';
 /// Screen to show long markdown text.
 class InformationScreen extends StatelessWidget {
   /// Create a screen to display long markdown text.
-  const InformationScreen({super.key, required this.text});
+  const InformationScreen({super.key, required this.text, this.title});
 
   /// text in markdown format
   final String text;
 
+  final String? title;
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
+      title: title == null ? null : Text(title!),
       forceMaterialTransparency: true,
     ),
     body: Container(
@@ -23,7 +28,7 @@ class InformationScreen extends StatelessWidget {
       child: Markdown(
         selectable: true,
         onTapLink: getLinkTapHandler(context),
-        data: text,
+        data: context.locale.languageCode == 'ar' ? isolateMarkdownCodes(text) : text,
       ),
     ),
   );

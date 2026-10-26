@@ -5,6 +5,7 @@ import 'package:blood_pressure_app/features/medications/medication_reminder_prov
 import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
 import 'package:blood_pressure_app/features/medications/medications_screen.dart';
 import 'package:blood_pressure_app/model/med_cache.dart';
+import 'package:blood_pressure_app/features/shell/initial_route_stack.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,7 +22,11 @@ final _schedule = MedicationSchedule(
   weekdays: const {1, 2, 3, 4, 5, 6, 7},
 );
 
-Future<Widget> _app(Widget child, {Locale locale = const Locale('en')}) async {
+Future<Widget> _app(
+  Widget child, {
+  Locale locale = const Locale('en'),
+  List<MedicationSchedule>? schedules,
+}) async {
   final medicines = medRepo([_medicine]);
   return materialApp(
     child,
@@ -29,7 +34,9 @@ Future<Widget> _app(Widget child, {Locale locale = const Locale('en')}) async {
     store: MockHealthStore()..medRepo = medicines,
     overrides: [
       medCacheProvider.overrideWithValue(MedCache(medicines, [_medicine])),
-      medicationSchedulesProvider.overrideWith((ref) async => [_schedule]),
+      medicationSchedulesProvider.overrideWith(
+        (ref) async => schedules ?? [_schedule],
+      ),
       medicationDayProvider.overrideWith((ref, day) async => []),
       homeMedicationOccurrencesProvider.overrideWith((ref) async => []),
     ],
@@ -37,6 +44,34 @@ Future<Widget> _app(Widget child, {Locale locale = const Locale('en')}) async {
 }
 
 void main() {
+  testWidgets('a reminder launch returns directly Home with one Back', (
+    tester,
+  ) async {
+    usePhoneTestSurface(tester);
+    final routes = <String, WidgetBuilder>{
+      '/': (_) => const Scaffold(body: Text('Home')),
+      '/medications': (_) =>
+          const MedicationsScreen(initialTab: MedicationTab.reminders),
+      '/medications/today': (_) => const MedicationsScreen(),
+    };
+    await pumpApp(
+      tester,
+      await _app(
+        MaterialApp(
+          initialRoute: '/medications/today',
+          onGenerateInitialRoutes: (name) => initialRouteStack(name, routes),
+          routes: routes,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(MedicationsScreen), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.byType(MedicationsScreen), findsNothing);
+  });
+
   for (final locale in [const Locale('en'), const Locale('ar')]) {
     testWidgets('swipes change tabs in $locale and retain the daily log date', (
       tester,
@@ -101,7 +136,8 @@ void main() {
     await tester.tap(find.text('Medicines'));
     await tester.pumpAndSettle();
     expect(find.text('Amlodipine'), findsOneWidget);
-    await tester.tap(find.text('Today'));
+    expect(find.text('Add reminder'), findsNothing);
+    await tester.tap(find.text('Calendar'));
     await tester.pumpAndSettle();
     expect(tester.state(find.byType(TodayMedicinesScreen)), same(todayState));
     expect(find.byTooltip('Next'), findsOneWidget);
@@ -118,7 +154,10 @@ void main() {
     usePhoneTestSurface(tester);
     await pumpApp(
       tester,
-      await _app(const MedicationsScreen(initialTab: MedicationTab.medicines)),
+      await _app(
+        const MedicationsScreen(initialTab: MedicationTab.medicines),
+        schedules: const [],
+      ),
     );
     await tester.tap(find.text('Add reminder'));
     await tester.pumpAndSettle();
@@ -175,9 +214,14 @@ void main() {
           ),
         );
         final tabs = locale.languageCode == 'ar'
-            ? ['اليوم', 'التذكيرات', 'الأدوية']
-            : ['Today', 'Reminders', 'Medicines'];
+            ? ['التقويم', 'التذكيرات', 'الأدوية']
+            : ['Calendar', 'Reminders', 'Medicines'];
         for (final tab in tabs) {
+          // Long translated labels use a scrollable tab bar at large text sizes.
+          await tester.ensureVisible(
+            find.descendant(of: find.byType(TabBar), matching: find.text(tab)),
+          );
+          await tester.pumpAndSettle();
           await tester.tap(
             find.descendant(of: find.byType(TabBar), matching: find.text(tab)),
           );

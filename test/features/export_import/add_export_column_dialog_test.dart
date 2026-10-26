@@ -12,13 +12,13 @@ void main() {
       await pumpApp(tester, await materialApp(AddExportColumnDialog()));
       expect(tester.takeException(), isNull);
 
-      expect(find.text('SAVE'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
       expect(find.byIcon(Icons.close), findsOneWidget);
-      expect(find.text('CSV-title'), findsOneWidget);
+      expect(find.text('CSV column name'), findsOneWidget);
       expect(find.text('Field format'), findsOneWidget);
       expect(find.text('Please enter a value'), findsOneWidget);
-      expect(find.text('null'), findsOneWidget);
-      expect(find.textContaining('Sys'), findsOneWidget);
+      expect(find.text('This format cannot be imported back.'), findsOneWidget);
+      expect(find.text('Systolic: 123'), findsOneWidget);
       expect(find.byIcon(Icons.info_outline).hitTestable(), findsOneWidget);
       expect(find.byIcon(Icons.arrow_downward), findsNWidgets(2));
     });
@@ -28,13 +28,13 @@ void main() {
       ),);
       expect(tester.takeException(), isNull);
 
-      expect(find.text('SAVE'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
       expect(find.byIcon(Icons.close), findsOneWidget);
-      expect(find.text('CSV-title'), findsAtLeastNWidgets(1));
+      expect(find.text('CSV column name'), findsAtLeastNWidgets(1));
       expect(find.text('Field format'), findsAtLeastNWidgets(1));
       expect(find.text('csvTitle'), findsOneWidget);
       expect(find.text(r'formatPattern$SYS'), findsOneWidget);
-      expect(find.textContaining('Sys'), findsOneWidget);
+      expect(find.text('Systolic: 123'), findsNWidgets(2));
       expect(find.byIcon(Icons.info_outline).hitTestable(), findsOneWidget);
       expect(find.byIcon(Icons.arrow_downward), findsNWidgets(2));
     });
@@ -45,9 +45,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Please enter a value'), findsNothing);
-      expect(find.text('null'), findsNothing);
+      expect(find.text('This format cannot be imported back.'), findsNothing);
       expect(find.textContaining('formatPattern'), findsNWidgets(2));
-      expect(find.textContaining('RowDataFieldType.sys'), findsOneWidget);
+      expect(find.text('Systolic: 123'), findsNWidgets(2));
     });
     testWidgets('should open format Info screen', (tester) async {
       await pumpApp(tester, await materialApp(AddExportColumnDialog()));
@@ -85,20 +85,20 @@ void main() {
 
       expect(returnedValue, false);
 
-      expect(find.ancestor(of: find.text('CSV-title').first, matching: find.byType(TextFormField)),
+      expect(find.ancestor(of: find.text('CSV column name').first, matching: find.byType(TextFormField)),
           findsAtLeastNWidgets(1),);
       await tester.enterText(
-          find.ancestor(of: find.text('CSV-title').first, matching: find.byType(TextFormField)),
+          find.ancestor(of: find.text('CSV column name').first, matching: find.byType(TextFormField)),
           'testCsvTitle',);
 
-      expect(find.ancestor(of: find.text('CSV-title').first, matching: find.byType(TextFormField)),
+      expect(find.ancestor(of: find.text('CSV column name').first, matching: find.byType(TextFormField)),
           findsAtLeastNWidgets(1),);
       await tester.enterText(
           find.ancestor(of: find.text('Field format').first, matching: find.byType(TextFormField)),
           r'test$SYSformat',);
 
-      expect(find.text('SAVE'), findsOneWidget);
-      await tester.tap(find.text('SAVE'));
+      expect(find.text('Save'), findsOneWidget);
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AddExportColumnDialog), findsNothing);
@@ -115,14 +115,14 @@ void main() {
 
       expect(returnedValue, false);
 
-      expect(find.ancestor(of: find.text('CSV-title').first, matching: find.byType(TextFormField)),
+      expect(find.ancestor(of: find.text('CSV column name').first, matching: find.byType(TextFormField)),
           findsAtLeastNWidgets(1),);
       await tester.enterText(
-          find.ancestor(of: find.text('CSV-title').first, matching: find.byType(TextFormField)),
+          find.ancestor(of: find.text('CSV column name').first, matching: find.byType(TextFormField)),
           'changedCsvTitle',);
 
-      expect(find.text('SAVE'), findsOneWidget);
-      await tester.tap(find.text('SAVE'));
+      expect(find.text('Save'), findsOneWidget);
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AddExportColumnDialog), findsNothing);

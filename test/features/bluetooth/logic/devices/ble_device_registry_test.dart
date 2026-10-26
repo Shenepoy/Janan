@@ -22,7 +22,7 @@ void main() {
       );
       expect(
         registry.resolveAdvertisement(
-          name: 'Unknown',
+          name: 'Not specified',
           serviceUUIDs: [uuid(GattBloodPressureProfile.serviceUUID)],
         )?.id,
         'gatt-blood-pressure',
@@ -39,7 +39,7 @@ void main() {
       );
       expect(
         registry.resolveAdvertisement(
-          name: 'Unknown',
+          name: 'Not specified',
           serviceUUIDs: [uuid(YonkerProfile.serviceUUID)],
         )?.id,
         'yonker',
@@ -49,12 +49,12 @@ void main() {
     test('nameless fff0 looks like Microlife, not a scale', () {
       expect(
         registry.resolveAdvertisement(
-          name: 'Unknown',
+          name: 'Not specified',
           serviceUUIDs: [uuid('fff0')],
         )?.id,
         'microlife',
       );
-      expect(registry.isEufyP1ScaleName('Unknown'), isFalse);
+      expect(registry.isEufyP1ScaleName('Not specified'), isFalse);
     });
 
     test('eufy T9147 is a P1 scale by name', () {

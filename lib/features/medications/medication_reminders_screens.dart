@@ -19,6 +19,7 @@ import 'package:blood_pressure_app/features/medications/recent_medicine_quick_lo
 import 'package:blood_pressure_app/features/settings/add_medication_dialog.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_date_range_sheet.dart';
+import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +32,7 @@ part 'medication_reminder_day_page_header.dart';
 part 'medication_reminder_day_log_page.dart';
 part 'medication_reminder_collapsed_taken_log.dart';
 part 'medication_reminder_day_log_card.dart';
+part 'medication_schedule_list.dart';
 
 ShapeBorder _medicationFabShape(
   ThemeData theme, {
@@ -136,7 +138,13 @@ Future<void>? _reminderSyncTail;
 Future<void> _enqueueReminderWork(Future<void> Function() action) {
   final previous = _reminderSyncTail ?? Future<void>.value();
   final run = previous.then((_) => action());
-  _reminderSyncTail = run.catchError((Object _) {});
+  final tail = run.catchError((Object _) {});
+  _reminderSyncTail = tail;
+  unawaited(
+    tail.then((_) {
+      if (identical(_reminderSyncTail, tail)) _reminderSyncTail = null;
+    }),
+  );
   return run;
 }
 
@@ -332,7 +340,13 @@ String _formatCompactCountdown(
   Duration remaining, {
   required bool overdue,
   String dueNow = 'now',
-}) => formatCompactCountdown(remaining, overdue: overdue, dueNow: dueNow);
+}) => formatCompactCountdown(
+  remaining,
+  overdue: overdue,
+  dueNow: dueNow,
+  hourUnit: _t('reminderWidgetHourUnit', 'h'),
+  minuteUnit: _t('reminderWidgetMinuteUnit', 'm'),
+);
 
 /// Open doses listed under the featured next dose.
 ///
@@ -1425,6 +1439,9 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
         occurrence,
         status,
         snoozeUntil: snoozeUntil,
+        takenAt: status == 'taken'
+            ? historicalDoseTakenAt(occurrence, DateTime.now())
+            : null,
       );
       await _recordDoseReminder(
         repository,
@@ -1574,7 +1591,7 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
                             ),
                             onPressed: () => Navigator.of(
                               context,
-                            ).pushNamed('/add-medicine'),
+                            ).popAndPushNamed<void, void>('/add-medicine'),
                             icon: const Icon(Icons.add, size: 18),
                             label: Text(
                               _t('reminderLogManualDose', 'Log Manual Dose'),
@@ -1593,7 +1610,7 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
                             ),
                             onPressed: () => Navigator.of(
                               context,
-                            ).pushNamed('/medications/today'),
+                            ).popAndPushNamed<void, void>('/medications/today'),
                             icon: const Icon(
                               Icons.calendar_today_outlined,
                               size: 16,
@@ -1804,6 +1821,7 @@ class _MedicationDoseActionCard extends StatelessWidget {
             const SizedBox(height: 9),
             _DoseActionButtons(
               saving: saving,
+              historical: doseIsDayOverdue(occurrence, now),
               onTaken: onTaken,
               onSnooze: onSnooze,
               onSkip: onSkip,
@@ -1839,7 +1857,7 @@ class _DoseActionSegment extends StatelessWidget {
       child: InkWell(
         onTap: onPressed,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -1853,8 +1871,7 @@ class _DoseActionSegment extends StatelessWidget {
               Flexible(
                 child: Text(
                   label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: color,
                     fontWeight: FontWeight.w700,
@@ -2042,7 +2059,9 @@ class _MedicationPanelEmpty extends ConsumerWidget {
         if (!hasSchedules) ...[
           const SizedBox(height: 12),
           FilledButton.icon(
-            onPressed: () => Navigator.of(context).pushNamed('/medications'),
+            onPressed: () => Navigator.of(
+              context,
+            ).popAndPushNamed<void, void>('/medications'),
             icon: const Icon(Icons.add),
             label: Text(_t('reminderAddSchedule', 'Add reminder')),
           ),
@@ -2052,7 +2071,52 @@ class _MedicationPanelEmpty extends ConsumerWidget {
   );
 }
 
-class MedicationSchedulesScreen extends ConsumerWidget {
+String _scheduleKey(MedicationSchedule schedule) =>
+    schedule.id ?? schedule.medicineId;
+
+final _scheduleUpdatesProvider =
+    NotifierProvider<_ScheduleUpdates, Set<String>>(_ScheduleUpdates.new);
+
+/// Owns pending changes beyond the lifetime of the screen that started them.
+class _ScheduleUpdates extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => {};
+
+  Future<void> save(
+    MedicationSchedule schedule,
+    MedicationScheduleState nextState,
+  ) async {
+    final key = _scheduleKey(schedule);
+    if (state.contains(key)) return;
+    final repository = ref.read(medicationScheduleRepositoryProvider);
+    final settings = ref.read(appSettingsProvider);
+    state = {...state, key};
+    var saved = false;
+    try {
+      await repository.save(schedule.copyWith(state: nextState));
+      saved = true;
+      await syncMedicationReminders(repository, settings);
+    } finally {
+      if (ref.mounted) {
+        try {
+          if (saved) {
+            // Keep the row in place while working, then show the stored state
+            // before the control can accept another tap (also after a sync error).
+            ref.invalidate(todayMedicationOccurrencesProvider);
+            ref.invalidate(medicationDayProvider);
+            ref.invalidate(homeMedicationOccurrencesProvider);
+            ref.invalidate(medicationSchedulesProvider);
+            await ref.read(medicationSchedulesProvider.future);
+          }
+        } finally {
+          if (ref.mounted) state = {...state}..remove(key);
+        }
+      }
+    }
+  }
+}
+
+class MedicationSchedulesScreen extends ConsumerWidget with Loggable {
   const MedicationSchedulesScreen({super.key, this.embedded = false});
 
   final bool embedded;
@@ -2067,19 +2131,21 @@ class MedicationSchedulesScreen extends ConsumerWidget {
   }
 
   Future<void> _saveScheduleState(
+    BuildContext context,
     WidgetRef ref,
     MedicationSchedule schedule,
     MedicationScheduleState state,
   ) async {
-    await ref
-        .read(medicationScheduleRepositoryProvider)
-        .save(schedule.copyWith(state: state));
-    final repository = ref.read(medicationScheduleRepositoryProvider);
-    await syncMedicationReminders(repository, ref.read(appSettingsProvider));
-    ref.invalidate(medicationSchedulesProvider);
-    ref.invalidate(todayMedicationOccurrencesProvider);
-    ref.invalidate(medicationDayProvider);
-    ref.invalidate(homeMedicationOccurrencesProvider);
+    try {
+      await ref.read(_scheduleUpdatesProvider.notifier).save(schedule, state);
+    } catch (error, stack) {
+      logError(
+        'Medication reminder update failed',
+        error: error,
+        stackTrace: stack,
+      );
+      if (context.mounted) context.showError('entrySaveFailed'.tr());
+    }
   }
 
   Future<void> _endSchedule(
@@ -2109,13 +2175,19 @@ class MedicationSchedulesScreen extends ConsumerWidget {
         ],
       ),
     );
-    if (confirmed != true) return;
-    await _saveScheduleState(ref, schedule, MedicationScheduleState.ended);
+    if (confirmed != true || !context.mounted) return;
+    await _saveScheduleState(
+      context,
+      ref,
+      schedule,
+      MedicationScheduleState.ended,
+    );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final schedules = ref.watch(medicationSchedulesProvider);
+    final pending = ref.watch(_scheduleUpdatesProvider);
     return Scaffold(
       appBar: embedded
           ? null
@@ -2168,10 +2240,10 @@ class MedicationSchedulesScreen extends ConsumerWidget {
           }
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(medicationSchedulesProvider),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 104),
+            child: _AnimatedScheduleList(
               children: [
                 Padding(
+                  key: const ValueKey(#scheduleOverview),
                   padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 4),
                   child: Text(
                     'medicationScheduleOverview'.tr(
@@ -2186,10 +2258,11 @@ class MedicationSchedulesScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(key: ValueKey(#scheduleOverviewGap), height: 12),
                 for (final state in MedicationScheduleState.values)
                   if (items.any((schedule) => schedule.state == state)) ...[
                     Padding(
+                      key: ValueKey(state),
                       padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
                       child: Text(
                         _scheduleStateLabel(state),
@@ -2203,7 +2276,9 @@ class MedicationSchedulesScreen extends ConsumerWidget {
                       (schedule) => schedule.state == state,
                     ))
                       _ScheduleCard(
+                        key: ValueKey(_scheduleKey(schedule)),
                         schedule: schedule,
+                        busy: pending.contains(_scheduleKey(schedule)),
                         onEdit: () => Navigator.push<void>(
                           context,
                           MaterialPageRoute<void>(
@@ -2213,6 +2288,7 @@ class MedicationSchedulesScreen extends ConsumerWidget {
                           ),
                         ),
                         onToggle: (active) => _saveScheduleState(
+                          context,
                           ref,
                           schedule,
                           active
@@ -2322,6 +2398,9 @@ class _TodayMedicinesScreenState extends ConsumerState<TodayMedicinesScreen> {
       occurrence,
       status,
       snoozeUntil: snoozeUntil,
+      takenAt: status == 'taken'
+          ? historicalDoseTakenAt(occurrence, DateTime.now())
+          : null,
     );
     await _recordDoseReminder(
       repository,
@@ -3436,13 +3515,16 @@ class _MedicationScheduleEditorScreenState
 
 class _ScheduleCard extends StatelessWidget {
   const _ScheduleCard({
+    super.key,
     required this.schedule,
+    required this.busy,
     required this.onEdit,
     required this.onToggle,
     required this.onEnd,
   });
 
   final MedicationSchedule schedule;
+  final bool busy;
   final VoidCallback onEdit;
   final ValueChanged<bool> onToggle;
   final VoidCallback onEnd;
@@ -3477,7 +3559,7 @@ class _ScheduleCard extends StatelessWidget {
       color: theme.colorScheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: InkWell(
-        onTap: onEdit,
+        onTap: busy ? null : onEdit,
         child: Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 16),
           child: Column(
@@ -3516,9 +3598,19 @@ class _ScheduleCard extends StatelessWidget {
                   Semantics(
                     label:
                         '${schedule.medicine.designation}: ${_scheduleStateLabel(schedule.state)}',
-                    child: Switch(value: schedule.active, onChanged: onToggle),
+                    child: Switch(
+                      value: schedule.active,
+                      onChanged: busy ? null : onToggle,
+                    ),
                   ),
                   PopupMenuButton<String>(
+                    enabled: !busy,
+                    icon: busy
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : null,
                     tooltip: 'medicationReminderActions'.tr(),
                     onSelected: (action) {
                       if (action == 'edit') {

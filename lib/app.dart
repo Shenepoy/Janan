@@ -31,6 +31,7 @@ import 'package:blood_pressure_app/features/settings/export_import_screen.dart';
 import 'package:blood_pressure_app/features/settings/graph_screen.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/shell/app_shell.dart';
+import 'package:blood_pressure_app/features/shell/initial_route_stack.dart';
 import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
@@ -229,9 +230,6 @@ class _AppState extends ConsumerState<App> with Loggable {
           settings.bleInput != BluetoothInputMode.disabled) {
         await ref.updateSetting(syncBluetoothOnLaunchSetting, true);
       }
-      if (settings.lastVersion > 0 && !settings.onboardingCompleted) {
-        await ref.updateSetting(onboardingCompletedSetting, true);
-      }
       await ref.updateSetting(
         lastVersionSetting,
         buildNumber < 58 ? 58 : buildNumber,
@@ -404,7 +402,8 @@ class _AppState extends ConsumerState<App> with Loggable {
   @override
   Widget build(BuildContext context) {
     if (_ready && _entryDB != null) return _bootScope();
-    _loadFuture ??= _loadApp();
+    // Startup migrations update settings providers after this build completes.
+    _loadFuture ??= Future<void>(_loadApp);
     return ConsistentFutureBuilder(
       future: _loadFuture!,
       cacheFuture: true,
@@ -591,6 +590,41 @@ class _AppRootState extends ConsumerState<_AppRoot> {
         });
       }
     }
+    final routes = {
+      AppRoute.onboarding.path: (_) =>
+          OnboardingScreen(firstRun: !settings.onboardingCompleted),
+      AppRoute.home.path: (_) => _shell(ShellTab.home),
+      AppRoute.add.path: (_) => settings.bloodPressureEnabled
+          ? const AddEntryScreen(kind: AddEntryKind.bloodPressure)
+          : _shell(ShellTab.home),
+      AppRoute.addWeight.path: (_) => settings.weightInput
+          ? const AddEntryScreen(kind: AddEntryKind.weight)
+          : _shell(ShellTab.home),
+      AppRoute.addMedicine.path: (_) => settings.medicineFeatureEnabled
+          ? const AddEntryScreen(kind: AddEntryKind.medicine)
+          : _shell(ShellTab.home),
+      AppRoute.weight.path: (_) => settings.weightInput
+          ? _shell(ShellTab.weight)
+          : _shell(ShellTab.home),
+      AppRoute.statistics.path: (_) => settings.bloodPressureEnabled
+          ? _shell(ShellTab.statistics)
+          : _shell(ShellTab.home),
+      AppRoute.settings.path: (_) => _shell(ShellTab.settings),
+      AppRoute.settingsExport.path: (_) => const ExportImportScreen(),
+      AppRoute.settingsGraph.path: (_) => settings.bloodPressureEnabled
+          ? const GraphScreen()
+          : _shell(ShellTab.home),
+      AppRoute.settingsHealthConnect.path: (_) => const HealthConnectScreen(),
+      AppRoute.settingsMedications.path: (_) => settings.medicineFeatureEnabled
+          ? const MedicationsScreen(initialTab: MedicationTab.medicines)
+          : _shell(ShellTab.home),
+      AppRoute.medicationSchedules.path: (_) => settings.medicineFeatureEnabled
+          ? const MedicationsScreen(initialTab: MedicationTab.reminders)
+          : _shell(ShellTab.home),
+      AppRoute.medicationToday.path: (_) => settings.medicineFeatureEnabled
+          ? const MedicationsScreen()
+          : _shell(ShellTab.home),
+    };
     final isRtl = context.locale.languageCode == 'ar';
     return SafaehTheme(
       data: const SafaehThemeData(
@@ -641,44 +675,10 @@ class _AppRootState extends ConsumerState<_AppRoot> {
           );
         },
         initialRoute: widget.initialRoute.path,
-        routes: {
-          AppRoute.onboarding.path: (_) =>
-              OnboardingScreen(firstRun: !settings.onboardingCompleted),
-          AppRoute.home.path: (_) => _shell(ShellTab.home),
-          AppRoute.add.path: (_) => settings.bloodPressureEnabled
-              ? const AddEntryScreen(kind: AddEntryKind.bloodPressure)
-              : _shell(ShellTab.home),
-          AppRoute.addWeight.path: (_) => settings.weightInput
-              ? const AddEntryScreen(kind: AddEntryKind.weight)
-              : _shell(ShellTab.home),
-          AppRoute.addMedicine.path: (_) => settings.medicineFeatureEnabled
-              ? const AddEntryScreen(kind: AddEntryKind.medicine)
-              : _shell(ShellTab.home),
-          AppRoute.weight.path: (_) => settings.weightInput
-              ? _shell(ShellTab.weight)
-              : _shell(ShellTab.home),
-          AppRoute.statistics.path: (_) => settings.bloodPressureEnabled
-              ? _shell(ShellTab.statistics)
-              : _shell(ShellTab.home),
-          AppRoute.settings.path: (_) => _shell(ShellTab.settings),
-          AppRoute.settingsExport.path: (_) => const ExportImportScreen(),
-          AppRoute.settingsGraph.path: (_) => settings.bloodPressureEnabled
-              ? const GraphScreen()
-              : _shell(ShellTab.home),
-          AppRoute.settingsHealthConnect.path: (_) =>
-              const HealthConnectScreen(),
-          AppRoute.settingsMedications.path: (_) =>
-              settings.medicineFeatureEnabled
-              ? const MedicationsScreen(initialTab: MedicationTab.medicines)
-              : _shell(ShellTab.home),
-          AppRoute.medicationSchedules.path: (_) =>
-              settings.medicineFeatureEnabled
-              ? const MedicationsScreen(initialTab: MedicationTab.reminders)
-              : _shell(ShellTab.home),
-          AppRoute.medicationToday.path: (_) => settings.medicineFeatureEnabled
-              ? const MedicationsScreen()
-              : _shell(ShellTab.home),
-        },
+        onGenerateInitialRoutes: widget.initialRoute == AppRoute.medicationToday
+            ? (name) => initialRouteStack(name, routes)
+            : null,
+        routes: routes,
       ),
     );
   }

@@ -28,7 +28,7 @@ class BleEngineSettingsTile extends ConsumerWidget {
     final mode = settings.bleInput;
     return ListTile(
       leading: const Icon(Icons.bluetooth),
-      title: Text('bluetoothInput'.tr()),
+      title: Text('bluetoothEngine'.tr()),
       subtitle: Text(mode.localize()),
       trailing: settingsChevronEnd(context),
       enabled: settings.bluetoothMeasurementsEnabled,
@@ -36,7 +36,7 @@ class BleEngineSettingsTile extends ConsumerWidget {
           ? () async {
               final result = await showOptionPickerSheet<BluetoothInputMode>(
                 context,
-                title: 'bluetoothInput'.tr(),
+                title: 'bluetoothEngine'.tr(),
                 selected: mode,
                 maxHeight: MediaQuery.sizeOf(context).height * 0.75,
                 options: [

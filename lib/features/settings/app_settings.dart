@@ -60,6 +60,7 @@ class AppSettings {
     required this.bloodPressureEnabled,
     required this.trackArmSide,
     required this.medicineFeatureEnabled,
+    this.medicationHistoryDisplay = 'combined',
     required this.weightInput,
     required this.knownBleDev,
     required this.weightUnit,
@@ -147,6 +148,7 @@ class AppSettings {
       bloodPressureEnabled: controller.get(bloodPressureEnabledSetting),
       trackArmSide: controller.get(trackArmSideSetting),
       medicineFeatureEnabled: controller.get(medicineFeatureEnabledSetting),
+      medicationHistoryDisplay: controller.get(medicationHistoryDisplaySetting),
       weightInput: controller.get(weightInputSetting),
       knownBleDev: decodeKnownBleDevices(
         controller.get(knownBleDevicesSetting),
@@ -217,6 +219,9 @@ class AppSettings {
   final bool bloodPressureEnabled;
   final bool trackArmSide;
   final bool medicineFeatureEnabled;
+
+  /// combined, recentTable, or separatePage.
+  final String medicationHistoryDisplay;
   final bool weightInput;
   final List<KnownBleDevice> knownBleDev;
   final WeightUnit weightUnit;
@@ -333,6 +338,7 @@ AppSettings appSettings(Ref ref) {
   ref.watch(settings.provider(bloodPressureEnabledSetting));
   ref.watch(settings.provider(trackArmSideSetting));
   ref.watch(settings.provider(medicineFeatureEnabledSetting));
+  ref.watch(settings.provider(medicationHistoryDisplaySetting));
   ref.watch(settings.provider(weightInputSetting));
   ref.watch(settings.provider(knownBleDevicesSetting));
   ref.watch(settings.provider(preferredWeightUnitSetting));
@@ -376,17 +382,19 @@ extension AppSettingsRef on WidgetRef {
       updateSetting(languageSetting, languageKeyFromLocale(locale));
 
   Future<void> setBleInput(BluetoothInputMode mode) async {
-    await updateSetting(bleInputSetting, mode.name);
-    await updateSetting(
+    // The caller can leave the page while storage is writing. Keep the
+    // operation on the app-owned controller, not the departing widget's ref.
+    final controller = read(settingsControllerProvider);
+    if (!await controller.set(bleInputSetting, mode.name)) return;
+    await controller.set(
       bluetoothMeasurementsEnabledSetting,
       mode != BluetoothInputMode.disabled,
     );
   }
 
-  Future<void> setBluetoothMeasurementsEnabled(bool enabled) async {
+  Future<void> setBluetoothMeasurementsEnabled(bool enabled) {
     final mode = read(appSettingsProvider).bleInput;
-    await updateSetting(bluetoothMeasurementsEnabledSetting, enabled);
-    await setBleInput(
+    return setBleInput(
       enabled
           ? mode == BluetoothInputMode.disabled
                 ? BluetoothInputMode.newBluetoothInputCrossPlatform

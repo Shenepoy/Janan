@@ -65,10 +65,10 @@ jobs:
       - name: Test
         run: flutter test
 
-      - name: Test medication schedules across daylight saving time
+      - name: Test schedules and PDF dates across daylight saving time
         env:
           TZ: Europe/Berlin
-        run: flutter test test/core/medication_persistence_test.dart
+        run: flutter test test/core/medication_persistence_test.dart test/model/export_import/pdf_export_content_test.dart
 
       - name: Golden tests
         run: flutter test --tags gold --run-skipped

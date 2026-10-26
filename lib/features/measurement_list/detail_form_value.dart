@@ -17,6 +17,7 @@ class DetailFormValue extends StatelessWidget {
     this.fractionDigits = 0,
     this.onTap,
     this.hopToken = 0,
+    this.expand = true,
   });
 
   /// Colored caption. Empty hides the label.
@@ -43,6 +44,9 @@ class DetailFormValue extends StatelessWidget {
   /// When non-zero, the value hops after an edit.
   final int hopToken;
 
+  /// Whether this field fills a column in its parent's row.
+  final bool expand;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -51,19 +55,16 @@ class DetailFormValue extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (label.isNotEmpty) ...[
-          Text(
-            label,
-            style: AppText.label(context, color: ring),
-          ),
+          Text(label, style: AppText.label(context, color: ring)),
           const SizedBox(height: 4),
         ],
         ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 52),
           child: Align(
             alignment: AlignmentDirectional.centerStart,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
               children: [
                 hopping(
                   hopToken,
@@ -79,17 +80,14 @@ class DetailFormValue extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (unit != null || (change != null && change!.hasComparison)) ...[
-                  const SizedBox(width: 6),
+                if (unit != null ||
+                    (change != null && change!.hasComparison)) ...[
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (unit != null)
-                        Text(
-                          unit!,
-                          style: AppText.subtitle(context),
-                        ),
+                        Text(unit!, style: AppText.subtitle(context)),
                       if (change != null && change!.hasComparison)
                         MetricChangeChip(
                           change: change!,
@@ -105,15 +103,14 @@ class DetailFormValue extends StatelessWidget {
         ),
       ],
     );
-    return Expanded(
-      child: onTap == null
-          ? child
-          : InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(12),
-              child: child,
-            ),
-    );
+    final content = onTap == null
+        ? child
+        : InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: child,
+          );
+    return expand ? Expanded(child: content) : content;
   }
 }
 
@@ -127,15 +124,15 @@ class DetailTitleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var i = 0; i < titles.length; i++) ...[
-            if (i > 0) const SizedBox(width: 12),
-            Expanded(child: titles[i]),
-          ],
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < titles.length; i++) ...[
+          if (i > 0) const SizedBox(width: 12),
+          Expanded(child: titles[i]),
         ],
-      ),
-    );
+      ],
+    ),
+  );
 }

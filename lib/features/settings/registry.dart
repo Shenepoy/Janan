@@ -547,7 +547,7 @@ const bottomAppBarsSetting = BoolSetting(
 const weightInputSetting = BoolSetting(
   'weight_input',
   defaultValue: false,
-  titleKey: 'activateWeightFeatures',
+  titleKey: 'weight',
   icon: Icons.scale,
   section: 'weight',
   order: 0,
@@ -583,7 +583,7 @@ const bluetoothMeasurementsEnabledSetting = BoolSetting(
 const bleInputSetting = EnumSetting(
   'ble_input',
   defaultValue: 'disabled',
-  titleKey: 'bluetoothInput',
+  titleKey: 'bluetoothEngine',
   subtitleKey: 'bluetoothInputDesc',
   options: ['disabled', 'oldBluetoothInput', 'newBluetoothInputCrossPlatform'],
   optionLabels: {
@@ -736,6 +736,24 @@ const medicationsAction = ActionSetting(
   icon: Icons.medication,
   section: 'medications',
   order: 1,
+);
+
+/// Where recorded medicine intakes appear in the main navigation.
+const medicationHistoryDisplaySetting = EnumSetting(
+  'medication_history_display',
+  defaultValue: 'combined',
+  titleKey: 'medicationHistoryDisplay',
+  options: ['combined', 'recentTable', 'separatePage'],
+  optionLabels: {
+    'combined': 'medicationHistoryCombined',
+    'recentTable': 'medicationHistoryRecentTable',
+    'separatePage': 'medicationHistorySeparatePage',
+  },
+  icon: Icons.table_rows_outlined,
+  section: 'medications',
+  order: 10,
+  dependsOn: 'medicine_feature_enabled',
+  enabledWhen: true,
 );
 
 const medicationNotificationsEnabledSetting = BoolSetting(
@@ -1071,6 +1089,7 @@ SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
     sysHighMmHgSetting,
     diaHighMmHgSetting,
     medicationsAction,
+    medicationHistoryDisplaySetting,
     medicationNotificationsEnabledSetting,
     overdueReminderCountSetting,
     overdueReminderIntervalSetting,

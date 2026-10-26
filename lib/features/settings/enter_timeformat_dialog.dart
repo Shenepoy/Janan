@@ -1,6 +1,9 @@
+import 'dart:ui' as ui;
+
 import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:blood_pressure_app/features/export_import/ui/export_field_format_documentation_screen.dart';
+import 'package:blood_pressure_app/l10n/bidi.dart';
 import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -59,7 +62,9 @@ class _EnterTimeFormatDialogState extends State<EnterTimeFormatDialog> {
             shrinkWrap: true,
             onTapLink: getLinkTapHandler(context),
             physics: const NeverScrollableScrollPhysics(),
-            data: 'enterTimeFormatDesc'.tr(),
+            data: context.locale.languageCode == 'ar'
+                ? isolateMarkdownCodes('enterTimeFormatDesc'.tr())
+                : 'enterTimeFormatDesc'.tr(),
           ),
           Text(
             WesternDateFormat(
@@ -70,6 +75,7 @@ class _EnterTimeFormatDialogState extends State<EnterTimeFormatDialog> {
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
+              textDirection: ui.TextDirection.ltr,
               controller: timeFormatFieldController,
               focusNode: focusNode,
               decoration: InputDecoration(

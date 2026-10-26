@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_info.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
@@ -64,13 +66,13 @@ class MetricInfoDialog extends StatelessWidget {
           if (currentBand != null) ...[
             const SizedBox(height: 8),
             Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: _BandPill(band: currentBand),
             ),
           ] else if (info.note != null) ...[
             const SizedBox(height: 8),
             Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: Chip(label: Text(info.note!)),
             ),
           ],
@@ -97,7 +99,7 @@ class MetricInfoDialog extends StatelessWidget {
           if (info.warnLabel != null) ...[
             const SizedBox(height: 8),
             Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: Chip(
                 label: Text(info.warnLabel!),
                 side: BorderSide(color: theme.colorScheme.outline),
@@ -178,6 +180,7 @@ class _RangeRow extends StatelessWidget {
           ),
           Text(
             band.interval,
+            textDirection: ui.TextDirection.ltr,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

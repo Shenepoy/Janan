@@ -17,6 +17,24 @@ class MedicationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final labels = [
+      'reminderCalendar'.tr(),
+      'medicationTabReminders'.tr(),
+      'medicationTabMedicines'.tr(),
+    ];
+    final style = theme.textTheme.titleSmall!;
+    final labelWidth =
+        (MediaQuery.sizeOf(context).width - 32) / labels.length - 16;
+    var scrollable = false;
+    for (final label in labels) {
+      final painter = TextPainter(
+        text: TextSpan(text: label, style: style),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout();
+      if (painter.width > labelWidth) scrollable = true;
+      painter.dispose();
+    }
     return DefaultTabController(
       length: MedicationTab.values.length,
       initialIndex: initialTab.index,
@@ -36,7 +54,7 @@ class MedicationsScreen extends StatelessWidget {
             ),
           ],
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(64),
+            preferredSize: const Size.fromHeight(60),
             child: Padding(
               padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 12),
               child: Material(
@@ -44,6 +62,11 @@ class MedicationsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24),
                 clipBehavior: Clip.antiAlias,
                 child: TabBar(
+                  isScrollable: scrollable,
+                  tabAlignment: scrollable
+                      ? TabAlignment.center
+                      : TabAlignment.fill,
+                  labelStyle: style,
                   splashBorderRadius: BorderRadius.circular(24),
                   dividerHeight: 0,
                   indicatorSize: TabBarIndicatorSize.tab,
@@ -53,12 +76,8 @@ class MedicationsScreen extends StatelessWidget {
                   ),
                   labelColor: theme.colorScheme.onPrimaryContainer,
                   unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                  tabs: [
-                    Tab(text: 'medicationTabToday'.tr()),
-                    Tab(text: 'medicationTabReminders'.tr()),
-                    Tab(text: 'medicationTabMedicines'.tr()),
-                  ],
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  tabs: [for (final label in labels) Tab(text: label)],
                 ),
               ),
             ),

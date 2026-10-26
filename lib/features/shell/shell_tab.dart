@@ -8,6 +8,9 @@ enum ShellTab {
   /// Weight history. Omitted from the bar when weight features are off.
   weight,
 
+  /// Medicine intake history, when configured as a separate page.
+  medications,
+
   /// Statistics.
   statistics,
 
@@ -19,9 +22,11 @@ enum ShellTab {
 List<ShellTab> visibleShellTabs({
   required bool showWeight,
   bool showBloodPressure = true,
+  bool showMedicationHistory = false,
 }) => [
   ShellTab.home,
   if (showWeight) ShellTab.weight,
+  if (showMedicationHistory) ShellTab.medications,
   if (showBloodPressure) ShellTab.statistics,
   ShellTab.settings,
 ];

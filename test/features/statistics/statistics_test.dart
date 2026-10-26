@@ -168,13 +168,13 @@ void main() {
         tester.getCenter(find.descendant(of: sys, matching: find.text('111'))).dx,
         lessThan(tester.getCenter(find.descendant(of: sys, matching: find.text('100–122'))).dx),
       );
-      expect(
-        tester.getCenter(find.descendant(of: sys, matching: find.text('111'))).dy,
-        closeTo(
-          tester.getCenter(find.descendant(of: sys, matching: find.text('100–122'))).dy,
-          16,
-        ),
-      );
+      final number = tester.getRect(find.descendant(of: sys, matching: find.text('111')));
+      final range = tester.getRect(find.descendant(of: sys, matching: find.text('100–122')));
+      final column = tester.getRect(sys);
+      // Supporting values may wrap below the average when space is tight.
+      expect(range.top, greaterThanOrEqualTo(number.top));
+      expect(range.right, lessThanOrEqualTo(column.right));
+      expect(range.bottom, lessThanOrEqualTo(column.bottom));
     });
 
     testWidgets('hides change chips when there is no previous window', (

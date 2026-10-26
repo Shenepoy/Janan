@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_list.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_list_entry.dart';
 import 'package:blood_pressure_app/features/shell/app_shell.dart';
@@ -74,6 +75,13 @@ void main() {
     expect(find.byType(MeasurementListRow), findsOneWidget);
     expect(find.text('Amlodipine'), findsNothing);
     expect(find.text('120'), findsOneWidget);
+
+    await tester.element(filter).setLocale(const Locale('en'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<SafaehAnchoredDropdownChip<MeasurementListFilter>>(filter).label, 'Blood pressure');
+    await tester.element(filter).setLocale(const Locale('ar'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<SafaehAnchoredDropdownChip<MeasurementListFilter>>(filter).label, 'ضغط الدم');
   });
 }
 

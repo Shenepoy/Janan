@@ -15,8 +15,8 @@ void main() {
     )));
 
     expect(find.text('Looking for BM59…'), findsOneWidget);
-    expect(find.text('Will keep looking for 1 minute.'), findsOneWidget);
-    expect(find.text('Look'), findsOneWidget);
+    expect(find.text('Searching for up to 1 minute.'), findsOneWidget);
+    expect(find.text('Search'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     expect(find.byIcon(Icons.pause), findsNothing);
   });
@@ -121,7 +121,7 @@ void main() {
     expect(find.text('Reading stored measurements…'), findsOneWidget);
     expect(find.text('Scanning for extra devices'), findsOneWidget);
     expect(find.text('Read'), findsOneWidget);
-    expect(find.text('Will keep looking for 1 minute.'), findsNothing);
+    expect(find.text('Searching for up to 1 minute.'), findsNothing);
   });
 
   testWidgets('shows reading progress after the connection is open', (tester) async {
@@ -153,6 +153,6 @@ void main() {
     )));
 
     expect(find.text('Imported 3 new measurements'), findsOneWidget);
-    expect(find.text('9 already saved were skipped'), findsOneWidget);
+    expect(find.text('Skipped 9 already saved readings'), findsOneWidget);
   });
 }

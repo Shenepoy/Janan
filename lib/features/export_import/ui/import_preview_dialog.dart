@@ -1,4 +1,3 @@
-
 import 'dart:math';
 
 import 'package:blood_pressure_app/components/custom_banner.dart';
@@ -16,15 +15,16 @@ import 'package:flutter/scheduler.dart';
 /// Pops the scope with a list of measurements on save ([List<BloodPressureRecord>?]).
 class ImportPreviewDialog extends StatefulWidget {
   /// Create a preview of how the app would import csv with options.
-  const ImportPreviewDialog({super.key,
+  const ImportPreviewDialog({
+    super.key,
     required this.bottomAppBar,
-    required this.initialActor, 
+    required this.initialActor,
     required this.columnsManager,
   });
 
   /// Whether to move the app bar to the bottom of the screen.
   final bool bottomAppBar;
-  
+
   /// The columns available for selection.
   final ExportColumnsManager columnsManager;
 
@@ -63,14 +63,18 @@ class _ImportPreviewDialogState extends State<ImportPreviewDialog> {
     }
     final err = _actor.attemptParse().error;
     if (err != null) {
-      messenger.showMaterialBanner(CustomBanner(
-        content: Text(err.localize(),
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
+      messenger.showMaterialBanner(
+        CustomBanner(
+          content: Text(
+            err.localize(),
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+          action: TextButton(
+            onPressed: messenger.hideCurrentMaterialBanner,
+            child: Text('btnConfirm'.tr()),
+          ),
         ),
-        action: TextButton(
-          onPressed: messenger.hideCurrentMaterialBanner,
-          child: Text('btnConfirm'.tr())),
-      ),);
+      );
       setState(() {
         _showingError = true;
       });
@@ -81,116 +85,151 @@ class _ImportPreviewDialogState extends State<ImportPreviewDialog> {
   Widget build(BuildContext context) => FullscreenDialog(
     bottomAppBar: widget.bottomAppBar,
     actionButtonText: 'import'.tr(),
-    onActionButtonPressed: (_showingError) ? null : () {
-      final result = _actor.attemptParse();
-      if (result.hasError()) return;
-      Navigator.pop<List<CombinedEntry>>(context, result.getOr((e) => null));
-    },
-    actions: [
-      CheckboxMenuButton(
-        value: _actor.hasHeadline,
-        onChanged: (state) => setState(() {
-          _actor.hasHeadline = state ?? true;
-          _actor.attemptParse();
-        }),
-        child: Text('titleInCsv'.tr()),
-      ),
-    ],
-    body: SingleChildScrollView(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (int colIdx = 0; colIdx < _actor.columnNames.length; colIdx++)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+    onActionButtonPressed: (_showingError)
+        ? null
+        : () {
+            final result = _actor.attemptParse();
+            if (result.hasError()) return;
+            Navigator.pop<List<CombinedEntry>>(
+              context,
+              result.getOr((e) => null),
+            );
+          },
+    body: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Semantics(
+            header: true,
+            child: Text(
+              'importPreview'.tr(),
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          ),
+        ),
+        CheckboxMenuButton(
+          value: _actor.hasHeadline,
+          onChanged: (state) => setState(() {
+            _actor.hasHeadline = state ?? true;
+            _actor.attemptParse();
+          }),
+          child: Text('titleInCsv'.tr()),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DropdownButton<ExportColumn?>(
-                    items: [
-                      DropdownMenuItem<ExportColumn?>(
-                        child: Text(
-                          MaterialLocalizations.of(context).keyboardKeySelect,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontStyle: FontStyle.italic,
-                          ),
+                  for (
+                    int colIdx = 0;
+                    colIdx < _actor.columnNames.length;
+                    colIdx++
+                  )
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        DropdownButton<ExportColumn?>(
+                          items: [
+                            DropdownMenuItem<ExportColumn?>(
+                              child: Text(
+                                MaterialLocalizations.of(
+                                  context,
+                                ).keyboardKeySelect,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(fontStyle: FontStyle.italic),
+                              ),
+                            ),
+                            for (final parser
+                                in widget.columnsManager.getAllColumns())
+                              DropdownMenuItem<ExportColumn?>(
+                                value: parser,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(parser.csvTitle),
+                                      if (parser.formatPattern != null)
+                                        Text(
+                                          parser.formatPattern!,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.labelSmall,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                          value: _actor.columnParsers[colIdx],
+                          onChanged: (parser) {
+                            setState(() {
+                              _actor.changeColumnParser(colIdx, parser);
+                            });
+                            _updateBanner();
+                          },
                         ),
-                      ),
-                      for (final parser in widget.columnsManager.getAllColumns())
-                        DropdownMenuItem<ExportColumn?>(
-                          value: parser,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(parser.csvTitle),
-                                if (parser.formatPattern != null)
-                                  Text(parser.formatPattern!, style: Theme.of(context).textTheme.labelSmall,),
-                              ],
+                        const Divider(),
+                        for (
+                          int rowIdx = 0;
+                          rowIdx <
+                              (_limitRows
+                                  ? min(_actor.dataLines.length, _kRowLimit)
+                                  : _actor.dataLines.length);
+                          rowIdx++
+                        )
+                          _buildCell(
+                            rowIdx,
+                            _actor.dataLines[rowIdx][colIdx],
+                            _actor.columnParsers[colIdx],
+                          ),
+                        if (_limitRows && _kRowLimit < _actor.dataLines.length)
+                          Align(
+                            alignment: AlignmentDirectional.center,
+                            child: TextButton(
+                              onPressed: () => setState(() {
+                                _limitRows = false;
+                              }),
+                              child: const Text('…'),
                             ),
                           ),
-                        ),
-                    ],
-                    value: _actor.columnParsers[colIdx],
-                    onChanged: (parser) {
-                      setState(() {
-                        _actor.changeColumnParser(colIdx, parser);
-                      });
-                      _updateBanner();
-                    },
-                  ),
-                  const Divider(),
-                  for (int rowIdx = 0; rowIdx < (_limitRows
-                      ? min(_actor.dataLines.length, _kRowLimit)
-                      : _actor.dataLines.length); rowIdx++)
-                    _buildCell(
-                      rowIdx,
-                      _actor.dataLines[rowIdx][colIdx],
-                      _actor.columnParsers[colIdx],
-                    ),
-                  if (_limitRows && _kRowLimit < _actor.dataLines.length)
-                    Align(
-                      alignment: AlignmentDirectional.center,
-                      child: TextButton(
-                        onPressed: () => setState(() {_limitRows = false;}),
-                        child: const Text('…'),
-                      ),
+                      ],
                     ),
                 ],
               ),
-          ],
+            ),
+          ),
         ),
-      ),
+      ],
     ),
   );
 
   Widget _buildCell(int lineNumber, String csvContent, ExportColumn? parser) {
     Widget buildContent(String txt, [Color? color]) => Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 6,
-        horizontal: 4,
-      ),
-      child: Text(txt, style: TextStyle(color: color,),),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      child: Text(txt, style: TextStyle(color: color)),
     );
 
     final parsed = parser?.decode(csvContent);
     if (parsed?.$2 == null) {
       return Tooltip(
-        message: 'errParseFailedDecodingField'.tr(namedArgs: {
-          'lineNumber': '$lineNumber',
-          'fieldContent': parsed?.$1.localize() ?? csvContent,
-        }),
+        message: 'errParseFailedDecodingField'.tr(
+          namedArgs: {
+            'lineNumber': '$lineNumber',
+            'fieldContent': parsed?.$1.localize() ?? csvContent,
+          },
+        ),
         child: buildContent(csvContent, Theme.of(context).colorScheme.error),
       );
     }
 
     var text = parsed!.$2.toString();
     if (text.isEmpty) text = '-';
-    return Tooltip(
-      message: csvContent,
-      child: buildContent(text),
-    );
+    return Tooltip(message: csvContent, child: buildContent(text));
   }
 }
 
@@ -199,12 +238,12 @@ Future<List<CombinedEntry>?> showImportPreview(
   BuildContext context,
   CsvRecordParsingActor initialActor,
   ExportColumnsManager columnsManager,
-  bool bottomAppBar,) =>
-  showDialog<List<CombinedEntry>>(
-    context: context, builder: (context) =>
-    ImportPreviewDialog(
-      bottomAppBar: bottomAppBar,
-      initialActor: initialActor,
-      columnsManager: columnsManager,
-    ),
-  );
+  bool bottomAppBar,
+) => showDialog<List<CombinedEntry>>(
+  context: context,
+  builder: (context) => ImportPreviewDialog(
+    bottomAppBar: bottomAppBar,
+    initialActor: initialActor,
+    columnsManager: columnsManager,
+  ),
+);

@@ -185,6 +185,7 @@ Map<String, Object> _widgetView(
         primary.doses.first,
         dueIndicatorDivisor,
       ).millisecondsSinceEpoch,
+    'showAll': showAll,
     'rings': [
       for (final ring in rings)
         {
@@ -198,6 +199,7 @@ Map<String, Object> _widgetView(
             for (final dose in ring.doses)
               {
                 'name': dose.name,
+                'medicineKey': dose.medicineKey,
                 'color': dose.color,
                 'scheduledAtMs': dose.targetAt.millisecondsSinceEpoch,
                 'intervalMs': dose.interval.inMilliseconds,
@@ -240,7 +242,9 @@ List<ReminderRingGroup> _laterReminderRings(
           !used.contains(dose))
         dose,
   ]..sort((a, b) => a.targetAt.compareTo(b.targetAt));
-  return [for (final dose in extra) ReminderRingGroup([dose])];
+  return [
+    for (final dose in extra) ReminderRingGroup([dose]),
+  ];
 }
 
 /// Local notification and Android widget bridge for medication schedules.
@@ -673,12 +677,12 @@ class MedicationReminderRuntime {
     final open = [
       for (final occurrence in occurrences)
         ?_plannedDose(
-              occurrence,
-              now,
-              targets,
-              grace: missedDoseShiftLimit,
-              dueAnchors: dueAnchors,
-            ),
+          occurrence,
+          now,
+          targets,
+          grace: missedDoseShiftLimit,
+          dueAnchors: dueAnchors,
+        ),
     ]..sort((a, b) => a.targetAt.compareTo(b.targetAt));
     try {
       await _widgetChannel.invokeMethod<void>('update', {
@@ -707,16 +711,16 @@ class MedicationReminderRuntime {
     required bool exact,
     String? payload,
   }) => _notifications.zonedSchedule(
-      id: id,
-      title: medicationReminderNotificationTitle(),
-      body: formatMedicationDoseReminderBody(schedule, minute),
-      scheduledDate: when,
-      notificationDetails: _medicationNotificationDetails(),
-      androidScheduleMode: exact
-          ? AndroidScheduleMode.exactAllowWhileIdle
-          : AndroidScheduleMode.inexactAllowWhileIdle,
-      payload: payload ?? schedule.id,
-    );
+    id: id,
+    title: medicationReminderNotificationTitle(),
+    body: formatMedicationDoseReminderBody(schedule, minute),
+    scheduledDate: when,
+    notificationDetails: _medicationNotificationDetails(),
+    androidScheduleMode: exact
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle,
+    payload: payload ?? schedule.id,
+  );
 
   Future<void> _scheduleOverdueFollowUps({
     required MedicationSchedule schedule,

@@ -6,6 +6,7 @@ import 'package:blood_pressure_app/features/measurement_list/measurement_filter_
 import 'package:blood_pressure_app/features/measurement_list/measurement_list.dart';
 import 'package:blood_pressure_app/features/measurement_list/selection/list_selection.dart';
 import 'package:blood_pressure_app/features/measurement_list/selection/selection_action_bar.dart';
+import 'package:blood_pressure_app/features/medications/medication_history_screen.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/shell/shell_tab.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_empty_card.dart';
@@ -63,14 +64,21 @@ class _AppHomeState extends ConsumerState<AppHome> {
   Widget build(BuildContext context) {
     Localizations.localeOf(context);
     ref.listen(appSettingsProvider, (previous, next) {
-      if (previous?.bloodPressureEnabled == true &&
-          !next.bloodPressureEnabled) {
+      if ((previous?.bloodPressureEnabled == true &&
+              !next.bloodPressureEnabled) ||
+          previous?.medicationHistoryDisplay != next.medicationHistoryDisplay) {
         _selection.clear();
       }
     });
     final settings = ref.watch(appSettingsProvider);
+    final separateHistory = settings.medicationHistoryDisplay != 'combined';
+    final recentTable =
+        settings.medicineFeatureEnabled &&
+        settings.medicationHistoryDisplay == 'recentTable';
     final filter =
-        settings.bloodPressureEnabled && settings.medicineFeatureEnabled
+        settings.bloodPressureEnabled &&
+            settings.medicineFeatureEnabled &&
+            !separateHistory
         ? (_filter?.value ?? MeasurementListFilter.all)
         : MeasurementListFilter.all;
     final showBloodPressureChart =
@@ -100,7 +108,9 @@ class _AppHomeState extends ConsumerState<AppHome> {
                     const DashboardEmptyCard(),
                   if (showMedicineChart)
                     _graphCard(showBloodPressure: false, showMedicine: true),
-                  if (medicineEntries.isNotEmpty)
+                  if (recentTable)
+                    RecentMedicationTable(entries: medicineEntries),
+                  if (medicineEntries.isNotEmpty && !separateHistory)
                     DashboardSection(
                       padding: EdgeInsets.zero,
                       child: MeasurementList(
@@ -145,17 +155,24 @@ class _AppHomeState extends ConsumerState<AppHome> {
                             final showChart =
                                 (entries.isNotEmpty || showMedicineChart) &&
                                 (showBloodPressureChart || showMedicineChart);
-                            final measurementListFilter =
-                                settings.medicineFeatureEnabled
+                            final measurementListFilter = separateHistory
+                                ? MeasurementListFilter.bloodPressure
+                                : settings.medicineFeatureEnabled
                                 ? filter
                                 : MeasurementListFilter.all;
+
+                            final tableEntries = separateHistory
+                                ? CombinedEntryList.forBloodPressureList(
+                                    entries,
+                                  )
+                                : entries;
 
                             Widget measurementTable({
                               required bool shrinkWrap,
                             }) => DashboardSection(
                               padding: EdgeInsets.zero,
                               child: MeasurementList(
-                                entries: entries,
+                                entries: tableEntries,
                                 filter: measurementListFilter,
                                 shrinkWrap: shrinkWrap,
                               ),
@@ -189,11 +206,22 @@ class _AppHomeState extends ConsumerState<AppHome> {
                                       flex: 5,
                                       child: Card(
                                         clipBehavior: Clip.antiAlias,
-                                        child: MeasurementList(
-                                          entries: entries,
-                                          filter: measurementListFilter,
-                                          shrinkWrap: false,
-                                        ),
+                                        child: recentTable
+                                            ? DashboardPageBody(
+                                                children: [
+                                                  measurementTable(
+                                                    shrinkWrap: true,
+                                                  ),
+                                                  RecentMedicationTable(
+                                                    entries: entries,
+                                                  ),
+                                                ],
+                                              )
+                                            : MeasurementList(
+                                                entries: tableEntries,
+                                                filter: measurementListFilter,
+                                                shrinkWrap: false,
+                                              ),
                                       ),
                                     ),
                                   ],
@@ -214,6 +242,8 @@ class _AppHomeState extends ConsumerState<AppHome> {
                                   ),
                                 if (entries.isNotEmpty)
                                   measurementTable(shrinkWrap: true),
+                                if (recentTable)
+                                  RecentMedicationTable(entries: entries),
                               ],
                             );
                           },

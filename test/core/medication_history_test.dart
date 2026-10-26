@@ -131,6 +131,57 @@ void main() {
     expect(await intakes.get(DateRange.all()), isEmpty);
   });
 
+  test(
+    'a backfilled taken dose keeps its original day and recording time on retry',
+    () async {
+      await plan(a);
+      final now = DateTime.now();
+      final originalDate = DateTime(now.year, now.month, now.day - 2);
+      final occurrence = (await schedules.getOccurrences(originalDate)).single;
+      final recordedAt = occurrence.scheduledAt.add(const Duration(hours: 1));
+      await schedules.setOccurrenceStatus(
+        occurrence,
+        'taken',
+        takenAt: recordedAt,
+      );
+      // A retry must neither move the intake to now nor overwrite the chosen time.
+      await schedules.setOccurrenceStatus(
+        occurrence,
+        'taken',
+        takenAt: recordedAt.add(const Duration(hours: 2)),
+      );
+      final originalDay = DateRange(
+        start: originalDate,
+        end: DateTime(
+          originalDate.year,
+          originalDate.month,
+          originalDate.day + 1,
+        ).subtract(const Duration(seconds: 1)),
+      );
+      final saved = (await intakes.get(originalDay)).single;
+      expect(saved.time, recordedAt);
+      expect(saved.occurrenceId, occurrence.id);
+      expect(
+        await intakes.get(
+          DateRange(
+            start: DateTime(now.year, now.month, now.day),
+            end: DateTime(
+              now.year,
+              now.month,
+              now.day + 1,
+            ).subtract(const Duration(seconds: 1)),
+          ),
+        ),
+        isEmpty,
+      );
+      final history = (await schedules.getTakenOccurrences(originalDay)).single;
+      expect(history.id, occurrence.id);
+      expect(history.scheduledAt, occurrence.scheduledAt);
+      expect(history.takenAt, recordedAt);
+      expect(await intakes.get(DateRange.all()), hasLength(1));
+    },
+  );
+
   test('changing taken to skipped removes its linked intake', () async {
     await plan(a);
     final occurrence = (await schedules.getOccurrences(day)).single;

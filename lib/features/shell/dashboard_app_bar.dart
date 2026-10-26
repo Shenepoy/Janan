@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
 import 'package:blood_pressure_app/features/data_picker/interval_picker.dart';
 import 'package:blood_pressure_app/features/home/ble_home_sync_indicator.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_filter_scope.dart';
@@ -60,11 +61,13 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
     final showFilter =
-        settings.medicineFeatureEnabled && settings.bloodPressureEnabled;
+        settings.medicineFeatureEnabled &&
+        settings.bloodPressureEnabled &&
+        settings.medicationHistoryDisplay == 'combined';
     final slot = showFilter
         ? BleHomeSyncIndicator.slotWidth + 48
         : BleHomeSyncIndicator.slotWidth;
-    return SafaehMorphingAppBar(
+    final appBar = SafaehMorphingAppBar(
       page: page,
       titles: [
         for (final key in titleKeys)
@@ -105,6 +108,13 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 type: IntervalStoreManagerLocation.mainPage,
               ),
             ),
+    );
+    final syncView = BleLaunchSyncScope.maybeOf(context);
+    if (syncView == null) return appBar;
+    return CompositedTransformTarget(
+      key: syncView.appBarKey,
+      link: syncView.appBarLink,
+      child: appBar,
     );
   }
 }
@@ -219,6 +229,7 @@ class _MeasurementFilterAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Localizations.localeOf(context);
     final filter = MeasurementFilterScope.maybeOf(context);
     if (filter == null) return const SizedBox.shrink();
     final selected = filter.value;

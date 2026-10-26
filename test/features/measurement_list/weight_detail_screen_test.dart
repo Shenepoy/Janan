@@ -116,7 +116,7 @@ void main() {
     expect(find.text(hero), findsWidgets);
     expect(find.text('High'), findsWidgets);
     expect(find.text('> 20 %'), findsOneWidget);
-    expect(find.text('The warn values are a pure suggestions and no medical advice.'), findsNothing);
+    expect(find.text('These values highlight readings in the app. They are not medical advice.'), findsNothing);
     expect(
       tester.widgetList<Text>(find.text('High'))
           .any((text) => text.style?.fontWeight == FontWeight.w600),

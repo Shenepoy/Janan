@@ -100,6 +100,7 @@ class _AddMedicationDialogState extends ConsumerState<AddMedicationDialog> {
                         labelText: 'name'.tr(),
                         hintText: 'medicationNameHint'.tr(),
                         helperText: 'medicationNameHelper'.tr(),
+                        helperMaxLines: 3,
                       ),
                       initialValue: _designation,
                       textCapitalization: TextCapitalization.sentences,
@@ -130,6 +131,7 @@ class _AddMedicationDialogState extends ConsumerState<AddMedicationDialog> {
                         labelText: 'defaultDosis'.tr(),
                         hintText: formatDoseAmount(1),
                         helperText: 'defaultDosisHint'.tr(),
+                        helperMaxLines: 3,
                         suffixIconConstraints: const BoxConstraints(
                           minWidth: 92,
                         ),

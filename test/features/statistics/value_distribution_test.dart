@@ -16,7 +16,7 @@ void main() {
     ),),);
     expect(find.byType(ValueDistribution), findsOneWidget);
     expect(find.byType(SafaehStatusBody), findsOneWidget);
-    expect(find.text('no data'), findsOneWidget);
+    expect(find.text('No data'), findsOneWidget);
 
     final errorCenter = tester.getCenter(find.byType(SafaehStatusBody));
     final canvasCenter = tester.getCenter(find.byType(MaterialApp));

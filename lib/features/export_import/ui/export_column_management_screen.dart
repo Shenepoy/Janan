@@ -17,6 +17,7 @@ class ExportColumnsManagementScreen extends ConsumerWidget {
     final columnsManager = ref.watch(exportColumnsManagerProvider);
     return Scaffold(
       appBar: AppBar(
+        title: Text('manageExportColumns'.tr()),
         forceMaterialTransparency: true,
       ),
       body: ListenableBuilder(
@@ -47,6 +48,7 @@ class ExportColumnsManagementScreen extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
+                          tooltip: 'edit'.tr(),
                           icon: const Icon(Icons.edit),
                           onPressed: () async {
                             final editedColumn = await showAddExportColumnDialog(context, column);
@@ -56,6 +58,7 @@ class ExportColumnsManagementScreen extends ConsumerWidget {
                           },
                         ),
                         IconButton(
+                          tooltip: 'delete'.tr(),
                           onPressed: () async {
                             final confirmed = await showConfirmDeletionDialog(context);
                             if (confirmed) {

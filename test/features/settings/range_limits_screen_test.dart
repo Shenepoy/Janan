@@ -40,7 +40,7 @@ void main() {
       18.5,
     );
 
-    await tester.tap(find.text('Reset to standard'));
+    await tester.tap(find.text('Reset to defaults'));
     await tester.pumpAndSettle();
     expect(
       AppSettings.fromController(testSettingsController!).rangeLimits.bmiObeseMin,

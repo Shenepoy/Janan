@@ -11,7 +11,9 @@ import 'package:blood_pressure_app/features/settings/initialize_app_settings.dar
 import 'package:blood_pressure_app/l10n/app_locales.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 
@@ -19,6 +21,11 @@ Future<void> main() async {
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      LicenseRegistry.addLicense(() async* {
+        yield LicenseEntryWithLineBreaks([
+          'Noto Sans JP',
+        ], await rootBundle.loadString('assets/fonts/NotoSansJP-OFL.txt'));
+      });
       try {
         await MedicationReminderRuntime.instance.initialize();
       } catch (e, stack) {

@@ -6,9 +6,11 @@ import 'package:blood_pressure_app/model/blood_pressure/pressure_unit.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:blood_pressure_app/model/storage/export_columns_store.dart';
 import 'package:blood_pressure_app/model/weight_unit.dart';
+import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 
 import '../../util.dart';
 import 'record_formatter_test.dart';
@@ -35,6 +37,49 @@ void main() {
     weightUnit: weightUnit,
     columns: columns,
   );
+
+  test(
+    'table dates follow the report locale after another language was used',
+    () {
+      final entry = mockEntry(time: DateTime(2024, 9, 2, 8, 15));
+      final oldLocale = Intl.defaultLocale;
+      Intl.defaultLocale = 'en';
+      addTearDown(() => Intl.defaultLocale = oldLocale);
+      // Prime the reusable export column's English formatter first.
+      expect(columns.first.encode(entry), '02 Sep 2024, 08:15');
+      for (final locale in ['fr', 'ja', 'ar']) {
+        final content = PdfExportContent.from(
+          entries: [entry],
+          dateFormatString: 'yyyy-MM-dd',
+          locale: locale,
+          pressureUnit: PressureUnit.mmHg,
+          weightUnit: WeightUnit.kg,
+          columns: columns,
+        );
+        final expected = DateFormat(
+          'dd MMM yyyy, HH:mm',
+          locale,
+        ).format(entry.time);
+        // Arabic reports intentionally keep Western digits.
+        expect(content.rows.single.first, toWesternDigits(expected));
+      }
+    },
+  );
+
+  test('report grids include each date once across clock changes', () {
+    for (final month in [3, 10]) {
+      final start = DateTime(2024, month, month == 3 ? 30 : 26);
+      final end = DateTime(2024, month + 1, 1);
+      final content = contentOf([mockEntry(time: start), mockEntry(time: end)]);
+      final expected = [
+        for (var number = start.day; number <= 31; number++)
+          DateTime(2024, month, number),
+        end,
+      ];
+      expect(content.reportDays, expected);
+    }
+    expect(contentOf([]).reportDays, isEmpty);
+  });
 
   test('builds table rows newest first without changing input order', () {
     final early = mockEntry(
@@ -240,10 +285,7 @@ void main() {
     expect(content.statistics.lowest!.dia, '70');
     expect(content.statistics.latest!.sysBand, 'High');
     expect(content.statistics.latest!.diaBand, 'High');
-    expect(
-      contentOf([low]).statistics.latest!.sysBand,
-      'Normal',
-    );
+    expect(contentOf([low]).statistics.latest!.sysBand, 'Normal');
   });
 
   test('charts weight in the preferred unit and keeps doses once', () {
@@ -283,23 +325,24 @@ void main() {
         weight: Weight.kg(71),
       ),
     );
-    final nextDay = CombinedEntry(
-      time: DateTime(2024, 7, 2, 8),
-      intake: later,
-    );
-    final content = contentOf(
-      [morning, evening, nextDay],
-      weightUnit: WeightUnit.lbs,
-    );
+    final nextDay = CombinedEntry(time: DateTime(2024, 7, 2, 8), intake: later);
+    final content = contentOf([
+      morning,
+      evening,
+      nextDay,
+    ], weightUnit: WeightUnit.lbs);
 
     expect(content.weightSeries!.points, hasLength(2));
     expect(
       content.weightSeries!.points.first.value,
       closeTo(WeightUnit.lbs.extract(Weight.kg(70)), 0.001),
     );
-    expect(content.weightSeries!.points.first.time.isBefore(
-      content.weightSeries!.points.last.time,
-    ), isTrue);
+    expect(
+      content.weightSeries!.points.first.time.isBefore(
+        content.weightSeries!.points.last.time,
+      ),
+      isTrue,
+    );
     expect(content.medicineSeries, hasLength(1));
     expect(content.medicineSeries.single.doses, hasLength(2));
     expect(content.medicineSeries.single.doses.first.time, dose.time);

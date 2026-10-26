@@ -48,7 +48,7 @@ void main() {
       expect(find.text('Please enter a value'), findsOneWidget);
 
       expect(find.byType(EnterTimeFormatDialog), findsOneWidget);
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       expect(find.byType(EnterTimeFormatDialog), findsOneWidget);
     });
   });
@@ -69,8 +69,8 @@ void main() {
       await loadDialog(tester,
               (context) async => result = await showTimeFormatPickerDialog(context, 'yyyy-MM-dd HH:mm', false),);
 
-      await tester.ensureVisible(find.text('SAVE'));
-      await tester.tap(find.text('SAVE'));
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(result, 'yyyy-MM-dd HH:mm');
@@ -83,8 +83,8 @@ void main() {
       await tester.enterText(find.byType(TextField), 'test text!');
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('SAVE'));
-      await tester.tap(find.text('SAVE'));
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(result, 'test text!');

@@ -190,7 +190,7 @@ void main() {
     ));
     expect(find.text('TIME'), findsOneWidget);
     expect(find.text('SYS'), findsOneWidget);
-    expect(find.text('no data'), findsOneWidget);
+    expect(find.text('No data'), findsOneWidget);
   });
 
   testWidgets('long-press enters selection and tap toggles', (tester) async {

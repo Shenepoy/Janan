@@ -13,7 +13,10 @@ class SliderListTile extends StatelessWidget {
     required this.max,
     this.stepSize = 1,
     this.leading,
-    this.trailing,});
+    this.trailing,
+    this.semanticLabel,
+    this.semanticFormatterCallback,
+  });
 
   /// The primary content of the list tile.
   final Widget title;
@@ -44,30 +47,43 @@ class SliderListTile extends StatelessWidget {
   /// Called during a drag when the user is selecting a new value for the slider by dragging.
   final void Function(double newValue) onChanged;
 
+  /// Name announced with the adjustable control.
+  final String? semanticLabel;
+
+  /// Announces the actual value and units instead of a percentage.
+  final SemanticFormatterCallback? semanticFormatterCallback;
+
   @override
   Widget build(BuildContext context) => ListTile(
-      title: title,
-      leading: leading,
-      trailing: trailing,
-      subtitle: (subtitle == null) ? _buildSlider() : Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          subtitle!,
-          _buildSlider(),
-        ],
-      ),
-    );
+    title: title,
+    leading: leading,
+    trailing: trailing,
+    subtitle: (subtitle == null)
+        ? _buildSlider()
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [subtitle!, _buildSlider()],
+          ),
+  );
 
-  Widget _buildSlider() => SizedBox(
-      height: 30,
-      child: Slider(
-        value: value,
-        min: min,
-        max: max,
-        divisions: (max - min) ~/ stepSize,
-        onChanged: onChanged,
-        label: value.toString(),
+  Widget _buildSlider() => MergeSemantics(
+    child: Semantics(
+      label: semanticLabel,
+      child: SizedBox(
+        height: kMinInteractiveDimension,
+        child: Slider(
+          value: value,
+          min: min,
+          max: max,
+          divisions: (max - min) ~/ stepSize,
+          onChanged: onChanged,
+          // The current value is already visible in the tile and announced as
+          // the semantics value. Avoid adding it again to the control name.
+          label: semanticLabel == null ? value.toString() : null,
+          semanticFormatterCallback:
+              semanticFormatterCallback ?? (value) => value.toString(),
+        ),
       ),
-    );
-
+    ),
+  );
 }

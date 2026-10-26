@@ -77,7 +77,22 @@ class CsvConverter with Loggable {
     final codec = _buildCodec(
       lineDelimiter: csvString.contains('\r\n') ? '\r\n' : '\n',
     );
-    return codec.decode(csvString);
+    final lines = codec.decode(csvString);
+    // v1.0/v1.1 wrote spaces before the quotes, so CSV decoders treat those
+    // quotes as literal text. Restrict that compatibility repair to their
+    // exact header; current exports can contain intentional quoted notes.
+    if (lines.isNotEmpty &&
+        lines.first.join(',') ==
+            'timestampUnixMs, systolic, diastolic, pulse, notes') {
+      for (final row in lines.skip(1)) {
+        if (row.length < 5) continue;
+        final note = row[4].toString().trim();
+        if (note.length >= 2 && note.startsWith('"') && note.endsWith('"')) {
+          row[4] = note.substring(1, note.length - 1);
+        }
+      }
+    }
+    return lines;
   }
 
   Csv _buildCodec({
@@ -159,14 +174,8 @@ class CsvConverter with Loggable {
         (piece) => piece.$1 == RowDataFieldType.arm,
       )?.$2 as BloodPressureArm?;
 
-      // manually trim quotes after https://pub.dev/packages/csv/changelog#600
-      noteText = noteText.trim();
-      if (noteText.endsWith('"')) {
-        noteText = noteText.substring(0, noteText.length - 1);
-      }
-      if (noteText.startsWith('"')) {
-        noteText = noteText.substring(1, noteText.length);
-      }
+      // The CSV codec already removes CSV escaping. Any quotes left here
+      // belong to the user's note and must survive export/import.
       noteText = noteText.trim();
 
       BloodPressureRecord? record;

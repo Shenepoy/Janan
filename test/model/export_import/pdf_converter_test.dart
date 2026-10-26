@@ -121,7 +121,7 @@ void main() {
     final diagnostics = <String>[];
 
     final pdf = await runZoned(
-      () => converter.create([mockEntry(note: 'العربية தமிழ் 中文')]),
+      () => converter.create([mockEntry(note: 'العربية தமிழ் 中文 日本語のメモ')]),
       zoneSpecification: ZoneSpecification(
         print: (self, parent, zone, message) => diagnostics.add(message),
       ),
@@ -140,6 +140,54 @@ void main() {
       ),
     );
   });
+
+  test(
+    'renders Japanese reports with kanji and kana without missing fonts',
+    () async {
+      loadTestTranslations(const Locale('ja'));
+      final converter = PdfConverter(
+        PdfExportSettings(),
+        AppSettings.fromController(testSettingsController!),
+        ExportColumnsManager(),
+        ExportSettings(),
+        locale: 'ja',
+      );
+      final diagnostics = <String>[];
+      final pdf = await runZoned(
+        () => converter.create([
+          mockEntry(
+            time: DateTime(2024, 1, 1, 8),
+            sys: 120,
+            dia: 80,
+            pul: 70,
+            note: '朝の測定。アムロジピンを服用。',
+          ),
+          mockEntry(
+            time: DateTime(2024, 1, 3, 20),
+            sys: 135,
+            dia: 85,
+            pul: 74,
+            note: '夕方の測定',
+          ),
+        ]),
+        zoneSpecification: ZoneSpecification(
+          print: (self, parent, zone, message) => diagnostics.add(message),
+        ),
+      );
+      expect(pdf.take(5), orderedEquals('%PDF-'.codeUnits));
+      expect(
+        diagnostics,
+        isNot(
+          anyElement(
+            anyOf(
+              contains('has no Unicode support'),
+              contains('Unable to find a font'),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 
   test('keeps Arabic medicine dose parentheses in logical order', () {
     final parts = splitPdfMedicineIntakeCell('دواء(10.0)');

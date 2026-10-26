@@ -36,6 +36,7 @@ class GraphMarkingsScreen extends ConsumerWidget {
                 ),
                 title: Text(lines[i].height.toString()),
                 trailing: IconButton(
+                  tooltip: 'delete'.tr(),
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () async {
                     final next = [...lines]..removeAt(i);

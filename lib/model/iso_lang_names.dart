@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
 /// Selects the correct display name for a specific language code.
-String getDisplayLanguage(Locale l) => switch(l.toLanguageTag()) {
+String getDisplayLanguage(Locale l) => switch (l.toLanguageTag()) {
   'en' => 'English',
   'en-US' => 'English (US)',
   'de' => 'Deutsch',
   'es' => 'Español',
   'fr' => 'Française',
   'it' => 'Italiano',
+  'ja' => '日本語',
   'nb' => 'Norsk bokmål',
   'nl' => 'Nederlands',
   'pl' => 'Polski',
@@ -32,11 +33,14 @@ String getDisplayLanguage(Locale l) => switch(l.toLanguageTag()) {
   //
   // Names should be modified so they start with an upper case letter.
   //
-  (_) => (){
+  (_) => () {
     debugPrint('Unlocalized language tag: $l');
     debugPrintStack();
-    assert(false, 'Should only be called for localized strings and all '
-        'localized strings are tested.');
+    assert(
+      false,
+      'Should only be called for localized strings and all '
+      'localized strings are tested.',
+    );
     return l.languageCode;
-  }()
+  }(),
 };

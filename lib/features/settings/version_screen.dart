@@ -36,7 +36,7 @@ class _VersionScreenState extends State<VersionScreen> with Loggable {
                       '${packageInfo.version} - ${packageInfo.buildNumber}',
               ),);
             },
-            tooltip: 'export'.tr(),
+            tooltip: 'copyVersion'.tr(),
             icon: const Icon(Icons.copy),
           ),
         ],
@@ -66,7 +66,7 @@ class _VersionScreenState extends State<VersionScreen> with Loggable {
                   builder: (_) => LogViewer(
                     labels: LogViewerLabels(
                       title: 'logs'.tr(),
-                      filterHint: 'searchSettings'.tr(),
+                      filterHint: 'searchLogs'.tr(),
                     ),
                   ),
                 ));
@@ -92,11 +92,11 @@ class _VersionScreenState extends State<VersionScreen> with Loggable {
                     context.showError('ERR: $e');
                   }
                 },
-                title: const Text('rescue legacy db'),
+                title: Text('rescueLegacyDatabase'.tr()),
               );
             }),
             ListTile(
-              title: Text('Test log messages'),
+              title: Text('testLogMessages'.tr()),
               trailing: Icon(safaehChevronEnd(context)),
               onTap: () {
                 logDebug('test finest');

@@ -14,6 +14,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'record_formatter_test.dart';
 
 void main() {
+  test('CSV round trips preserve literal quotes in notes', () {
+    for (final note in [
+      '"After dinner"',
+      'Only an ending "',
+      '"Only a beginning',
+      'Comma, line\n"quoted"',
+    ]) {
+      final original = mockEntry(note: note);
+      final csv = _defaultConverter.create([original]);
+      final restored = _defaultConverter.parse(csv).getOr(failParse);
+      expect(restored.single.note?.note, note);
+    }
+  });
+
   test('should create csv string bigger than 0', () {
     final csv = _defaultConverter.create(createRecords());
     expect(csv.length, isNonZero);

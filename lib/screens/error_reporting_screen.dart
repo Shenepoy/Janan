@@ -3,11 +3,14 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:blood_pressure_app/core/database/health_database.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
+import 'package:blood_pressure_app/l10n/app_locales.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/storage/file_settings_loader.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart';
 import 'package:safaeh/safaeh.dart';
@@ -61,16 +64,29 @@ class ErrorScreen extends StatelessWidget {
   final String text;
   final PackageInfo debugInfo;
 
+  // This screen can replace the app before localization has initialized.
+  String _label(String key, String fallback) {
+    try {
+      final value = key.tr();
+      return value == key ? fallback : value;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   @override
   Widget build(BuildContext context) => MaterialApp(
-      title: 'Critical error',
+      title: _label('criticalError', 'Unable to continue'),
+      locale: localeFromLanguageKey(Intl.getCurrentLocale().replaceAll('_', '-')) ?? const Locale('en'),
+      supportedLocales: appSupportedLocales,
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       builder: (context, child) => SafaehFeedbackHost(
         itemWidthBuilder: toastItemWidth,
         child: child ?? const SizedBox.shrink(),
       ),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Critical error'),
+          title: Text(_label('criticalError', 'Unable to continue')),
           backgroundColor: Colors.red,
         ),
         body: Builder(
@@ -80,8 +96,10 @@ class ErrorScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(height: 20,),
-                  Text('App version: ${debugInfo.version}'),
-                  Text('Build number: ${debugInfo.buildNumber}'),
+                  Text(_label('criticalErrorHelp', 'Copy the error details to report the problem, or save a copy of your data below.')),
+                  const SizedBox(height: 20),
+                  Text(_label('versionOf', 'Version: {version}').replaceAll('{version}', debugInfo.version)),
+                  Text(_label('buildNumberOf', 'Build number: {buildNumber}').replaceAll('{buildNumber}', debugInfo.buildNumber)),
                   const Divider(),
                   Text(title, style: const TextStyle(fontSize: 20, ), ),
                   Text(text),
@@ -91,24 +109,24 @@ class ErrorScreen extends StatelessWidget {
                       Clipboard.setData(ClipboardData(
                         text: 'Error:\nBuild number:${debugInfo.buildNumber}\n-----\n$title:\n---\n$text\n',
                       ),);
-                      context.showSuccess('Copied to clipboard');
+                      context.showSuccess(_label('copiedToClipboard', 'Copied to clipboard'));
                     },
-                    child: const Text('copy error message'),
+                    child: Text(_label('copyError', 'Copy error details')),
                   ),
                   TextButton(
                     onPressed: () async {
                       try {
-                        final url = Uri.parse('https://github.com/derdilla/blood-pressure-monitor-fl/issues');
+                        final url = Uri.parse('https://github.com/Zyzto/blood-pressure-monitor-fl/issues');
                         if (await canLaunchUrl(url)) {
                           await launchUrl(url, mode: LaunchMode.externalApplication);
                         } else if (context.mounted) {
-                          context.showError('ERR: Please open this website: https://github.com/derdilla/blood-pressure-monitor-fl/issues');
+                          context.showError(_label('errCantOpenURL', 'Cannot open: {url}').replaceAll('{url}', url.toString()));
                         }
                       } catch (e) {
                         if (context.mounted) context.showError('ERR: $e');
                       }
                     },
-                    child: const Text('open issue reporting website'),
+                    child: Text(_label('reportIssue', 'Report a problem')),
                   ),
                   TextButton(
                     onPressed: () async {
@@ -125,7 +143,7 @@ class ErrorScreen extends StatelessWidget {
                         if (context.mounted) context.showError('ERR: $e');
                       }
                     },
-                    child: const Text('rescue settings'),
+                    child: Text(_label('rescueSettings', 'Save settings backup')),
                   ),
                   TextButton(
                     onPressed: () async {
@@ -142,7 +160,7 @@ class ErrorScreen extends StatelessWidget {
                             .firstOrNull;
                         if (path == null) {
                           if (context.mounted) {
-                            context.showError('ERR: no database file');
+                            context.showError(_label('noDatabaseFile', 'No database file found.'));
                           }
                           return;
                         }
@@ -155,7 +173,7 @@ class ErrorScreen extends StatelessWidget {
                         if (context.mounted) context.showError('ERR: $e');
                       }
                     },
-                    child: const Text('rescue db'),
+                    child: Text(_label('rescueDatabase', 'Save database backup')),
                   ),
                 ],
               ),

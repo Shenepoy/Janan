@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_change.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_change_chip.dart';
@@ -173,8 +175,9 @@ class _MetricColumn extends StatelessWidget {
               style: AppText.label(context, color: color),
             ),
             const SizedBox(height: 6),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
               children: [
                 Text(
                   formatted,
@@ -183,9 +186,7 @@ class _MetricColumn extends StatelessWidget {
                     height: 1.1,
                   ),
                 ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Column(
+                Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -203,10 +204,10 @@ class _MetricColumn extends StatelessWidget {
                           'min': minText,
                           'max': maxText,
                         }),
+                        textDirection: ui.TextDirection.ltr,
               style: AppText.subtitle(context),
                       ),
                     ],
-                  ),
                 ),
               ],
             ),

@@ -48,7 +48,9 @@ class _DayLogCard extends StatelessWidget {
               movedAhead ? shifted : occurrence.scheduledAt,
             ),
           );
-    final movedFrom = dueNow || movedAhead ? _movedFromLabel(originalTime) : null;
+    final movedFrom = dueNow || movedAhead
+        ? _movedFromLabel(originalTime)
+        : null;
     final minute =
         occurrence.scheduledAt.hour * 60 + occurrence.scheduledAt.minute;
     final timing = schedule.timingForMinute(minute);
@@ -173,6 +175,7 @@ class _DayLogCard extends StatelessWidget {
               if (!recorded) ...[
                 const SizedBox(height: 16),
                 _DoseActionButtons(
+                  historical: doseIsDayOverdue(occurrence, now),
                   onTaken: onTaken,
                   onSnooze: onSnooze,
                   onSkip: onSkip,

@@ -29,7 +29,12 @@ class MedicineManagerScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildMedicine(BuildContext context, WidgetRef ref, Medicine med) {
+  Widget _buildMedicine(
+    BuildContext context,
+    WidgetRef ref,
+    Medicine med, {
+    required bool canAddReminder,
+  }) {
     final theme = Theme.of(context);
     final raw = med.color;
     final color =
@@ -45,7 +50,7 @@ class MedicineManagerScreen extends ConsumerWidget {
           border: Border.all(color: color.withValues(alpha: 0.18)),
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+          padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 4, 8),
           child: Row(
             children: [
               Container(
@@ -84,20 +89,21 @@ class MedicineManagerScreen extends ConsumerWidget {
                         ),
                       ),
                     ],
-                    TextButton.icon(
-                      onPressed: () => Navigator.push<void>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              MedicationScheduleEditorScreen(medicine: med),
+                    if (canAddReminder)
+                      TextButton.icon(
+                        onPressed: () => Navigator.push<void>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                MedicationScheduleEditorScreen(medicine: med),
+                          ),
                         ),
+                        icon: const Icon(
+                          Icons.notification_add_outlined,
+                          size: 18,
+                        ),
+                        label: Text('reminderAddSchedule'.tr()),
                       ),
-                      icon: const Icon(
-                        Icons.notification_add_outlined,
-                        size: 18,
-                      ),
-                      label: Text('reminderAddSchedule'.tr()),
-                    ),
                   ],
                 ),
               ),
@@ -148,6 +154,7 @@ class MedicineManagerScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cache = context.medCache;
+    final schedules = ref.watch(medicationSchedulesProvider);
     return ListenableBuilder(
       listenable: cache,
       builder: (context, _) {
@@ -192,8 +199,18 @@ class MedicineManagerScreen extends ConsumerWidget {
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(0, 12, 0, 88),
                   itemCount: meds.length,
-                  itemBuilder: (context, i) =>
-                      _buildMedicine(context, ref, meds[i]),
+                  itemBuilder: (context, i) => _buildMedicine(
+                    context,
+                    ref,
+                    meds[i],
+                    canAddReminder:
+                        schedules.hasValue &&
+                        !schedules.value!.any(
+                          (schedule) => meds[i].id != null
+                              ? schedule.medicineId == meds[i].id
+                              : schedule.medicine == meds[i],
+                        ),
+                  ),
                 ),
         );
       },

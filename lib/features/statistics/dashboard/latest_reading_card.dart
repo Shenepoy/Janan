@@ -195,8 +195,9 @@ class _HeroMetric extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 52),
           child: Align(
             alignment: AlignmentDirectional.centerStart,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
               children: [
                 DefaultTextStyle.merge(
                   style: theme.textTheme.headlineMedium?.copyWith(
@@ -207,12 +208,9 @@ class _HeroMetric extends StatelessWidget {
                   child: value,
                 ),
                 if (info?.currentBand != null) ...[
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: _BandChip(
+                  _BandChip(
                       info: info!,
                       onTap: () => showMetricInfoDialog(context, info!),
-                    ),
                   ),
                 ],
               ],
@@ -244,7 +242,7 @@ class _BandChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           child: Text(
             band.label,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: color,

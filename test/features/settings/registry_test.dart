@@ -73,6 +73,7 @@ void main() {
       'due_indicator_divisor',
       'show_all_reminder_rings',
       'rounded_reminder_button',
+      'medication_history_display',
     ]);
     expect(main('bluetooth'), [
       'bluetooth_measurements_enabled',

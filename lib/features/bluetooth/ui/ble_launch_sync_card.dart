@@ -9,7 +9,6 @@ class BleLaunchSyncCard extends StatelessWidget {
     super.key,
     required this.progress,
     this.paused = false,
-    this.onClosed,
     this.onPause,
     this.onResume,
   });
@@ -19,9 +18,6 @@ class BleLaunchSyncCard extends StatelessWidget {
 
   /// Whether the user paused launch sync.
   final bool paused;
-
-  /// Hides the card without cancelling an in-flight sync.
-  final VoidCallback? onClosed;
 
   /// Stops the in-flight sync until [onResume].
   final VoidCallback? onPause;
@@ -42,7 +38,7 @@ class BleLaunchSyncCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(top: 8),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -91,12 +87,6 @@ class BleLaunchSyncCard extends StatelessWidget {
                     tooltip: 'pauseMeterSync'.tr(),
                     onPressed: onPause,
                     icon: const Icon(Icons.pause),
-                  ),
-                if (onClosed != null)
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: onClosed,
-                    icon: const Icon(Icons.close),
                   ),
               ],
             ),

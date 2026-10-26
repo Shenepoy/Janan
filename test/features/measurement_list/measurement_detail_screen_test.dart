@@ -27,13 +27,13 @@ void main() {
     expect(find.text('Date'), findsOneWidget);
     expect(find.text('Time'), findsOneWidget);
     final dateTitle = tester.widget<Text>(find.text('Date'));
-    expect(dateTitle.style?.fontSize, 18);
+    expect(dateTitle.style?.fontSize, 13);
     expect(dateTitle.style?.fontWeight, FontWeight.w600);
     expect(
       dateTitle.style?.color,
-      Theme.of(tester.element(find.text('Date'))).colorScheme.onSurface,
+      Theme.of(tester.element(find.text('Date'))).colorScheme.primary,
     );
-    expect(tester.widget<Text>(find.text('Time')).style?.fontSize, 18);
+    expect(tester.widget<Text>(find.text('Time')).style?.fontSize, 13);
     expect(find.text('Blood pressure'), findsWidgets);
     expect(find.text('Systolic'), findsOneWidget);
     expect(find.text('Diastolic'), findsOneWidget);
@@ -131,7 +131,7 @@ void main() {
     expect(find.text('120'), findsWidgets);
     expect(find.text('Elevated'), findsWidgets);
     expect(find.text('Warn at 135'), findsOneWidget);
-    expect(find.text('The warn values are a pure suggestions and no medical advice.'), findsOneWidget);
+    expect(find.text('These values highlight readings in the app. They are not medical advice.'), findsOneWidget);
     expect(
       tester.widgetList<Text>(find.text('Elevated'))
           .any((text) => text.style?.fontWeight == FontWeight.w600),

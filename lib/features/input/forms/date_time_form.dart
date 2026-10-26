@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:blood_pressure_app/features/input/forms/entry_form_section.dart';
 import 'package:blood_pressure_app/features/input/forms/form_base.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
@@ -93,8 +95,7 @@ class DateTimeFormState extends FormStateBase<DateTime, DateTimeForm> {
     String? error,
   }) {
     final theme = Theme.of(context);
-    return Expanded(
-      child: InkWell(
+    return InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Column(
@@ -107,6 +108,7 @@ class DateTimeFormState extends FormStateBase<DateTime, DateTimeForm> {
             const SizedBox(height: 4),
             Text(
               value,
+              textDirection: ui.TextDirection.ltr,
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 fontFeatures: const [FontFeature.tabularFigures()],
@@ -124,7 +126,6 @@ class DateTimeFormState extends FormStateBase<DateTime, DateTimeForm> {
             ],
           ],
         ),
-      ),
     );
   }
 
@@ -133,23 +134,44 @@ class DateTimeFormState extends FormStateBase<DateTime, DateTimeForm> {
     final date = DateFormat('yyyy-MM-dd', 'en').format(_time);
     final timeOfDay = DateFormat('HH:mm', 'en').format(_time);
     return EntryFormSection(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildChip(
+      child: LayoutBuilder(builder: (context, constraints) {
+        final style = Theme.of(context).textTheme.headlineMedium;
+        double width(String value) {
+          final painter = TextPainter(
+            text: TextSpan(text: value, style: style),
+            textDirection: ui.TextDirection.ltr,
+            textScaler: MediaQuery.textScalerOf(context),
+          )..layout();
+          final result = painter.width;
+          painter.dispose();
+          return result;
+        }
+        final dateChip = _buildChip(
             label: 'date'.tr(),
             value: date,
             onTap: _openDatePicker,
-          ),
-          const SizedBox(width: 12),
-          _buildChip(
+          );
+        final timeChip = _buildChip(
             label: 'time'.tr(),
             value: timeOfDay,
             onTap: _openTimePicker,
             error: _error,
-          ),
-        ],
-      ),
+          );
+        if (width(date) + width(timeOfDay) + 24 > constraints.maxWidth) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [dateChip, const SizedBox(height: 16), timeChip],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 2, child: dateChip),
+            const SizedBox(width: 12),
+            Expanded(child: timeChip),
+          ],
+        );
+      }),
     );
   }
 

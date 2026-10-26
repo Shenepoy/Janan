@@ -8,17 +8,17 @@ void main() {
   test('matches advertised blood pressure services', () {
     expect(isLikelyBloodPressureDevice(
       deviceId: '1',
-      name: 'Unknown',
+      name: 'Not specified',
       serviceUUIDs: [UUID.fromString(BleReadCubit.defaultServiceUUID)],
     ), isTrue);
     expect(isLikelyBloodPressureDevice(
       deviceId: '1',
-      name: 'Unknown',
+      name: 'Not specified',
       serviceUUIDs: [UUID.fromString(BleReadCubit.yonkerServiceUUID)],
     ), isTrue);
     expect(isLikelyBloodPressureDevice(
       deviceId: '1',
-      name: 'Unknown',
+      name: 'Not specified',
       serviceUUIDs: [UUID.fromString(BleReadCubit.microlifeServiceUUID)],
     ), isTrue);
   });

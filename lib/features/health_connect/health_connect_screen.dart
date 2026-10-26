@@ -266,9 +266,11 @@ class _HealthConnectScreenState extends ConsumerState<HealthConnectScreen> {
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          reason,
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        Expanded(
+          child: Text(
+            reason,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
         ),
         TextButton(
           onPressed: _requestPermissions,

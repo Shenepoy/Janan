@@ -59,7 +59,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(CustomBanner), findsOneWidget);
-    expect(find.text('There is no column that allows restoring a timestamp.'), findsOneWidget);
+    expect(find.text('Choose a supported time column so each entry has a date and time.'), findsOneWidget);
     expect(find.text('OK'), findsOneWidget);
   });
   testWidgets('should have multiple lines', (tester) async {
@@ -107,8 +107,8 @@ void main() {
     expect(find.text('note1'), findsOneWidget);
     expect(find.byType(CustomBanner), findsNothing, reason: 'no error');
 
-    expect(find.text('IMPORT'), findsOneWidget);
-    await tester.tap(find.text('IMPORT'));
+    expect(find.text('Import'), findsOneWidget);
+    await tester.tap(find.text('Import'));
     await tester.pumpAndSettle();
     expect(find.byType(ImportPreviewDialog), findsNothing);
 
@@ -148,8 +148,8 @@ void main() {
     expect(find.textContaining('testMed2'), findsOneWidget);
     expect(find.byType(CustomBanner), findsNothing, reason: 'no error');
 
-    expect(find.text('IMPORT'), findsOneWidget);
-    await tester.tap(find.text('IMPORT'));
+    expect(find.text('Import'), findsOneWidget);
+    await tester.tap(find.text('Import'));
     await tester.pumpAndSettle();
     expect(find.byType(ImportPreviewDialog), findsNothing);
 
@@ -190,8 +190,8 @@ void main() {
     expect(find.byType(DropdownButton<ExportColumn?>), findsNWidgets(2), reason: '2 columns');
     expect(find.byType(CustomBanner), findsNothing, reason: 'no error');
 
-    expect(find.text('IMPORT'), findsOneWidget);
-    await tester.tap(find.text('IMPORT'));
+    expect(find.text('Import'), findsOneWidget);
+    await tester.tap(find.text('Import'));
     await tester.pumpAndSettle();
     expect(find.byType(ImportPreviewDialog), findsNothing);
 

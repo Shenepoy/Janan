@@ -33,8 +33,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AddEntryDialog), findsNothing);
 
-    await tester.pumpUntil(() => !find.text('loading…').hasFound);
-    expect(find.text('loading…'), findsNothing);
+    await tester.pumpUntil(() => !find.text('Loading…').hasFound);
+    expect(find.text('Loading…'), findsNothing);
 
     expect(find.byType(MeasurementListRow), findsOneWidget);
     expect(find.descendant(
@@ -75,8 +75,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AddEntryDialog), findsNothing);
 
-    await tester.pumpUntil(() => !find.text('loading…').hasFound);
-    expect(find.text('loading…'), findsNothing);
+    await tester.pumpUntil(() => !find.text('Loading…').hasFound);
+    expect(find.text('Loading…'), findsNothing);
 
     expect(find.byType(MeasurementListRow), findsOneWidget);
     final submittedRecord = tester.widget<MeasurementListRow>(find.byType(MeasurementListRow)).data;

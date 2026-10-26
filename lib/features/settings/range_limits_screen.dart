@@ -104,7 +104,7 @@ class RangeLimitsScreen extends ConsumerWidget {
     );
     if (info.bands.isEmpty) return null;
     return info.bands
-        .map((band) => '${band.label}: ${band.interval}')
+        .map((band) => '${band.label}: \u2066${band.interval}\u2069')
         .join('\n');
   }
 }

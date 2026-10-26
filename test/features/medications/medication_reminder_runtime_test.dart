@@ -24,11 +24,11 @@ void main() {
       'Amlodipine · 5 مغ · قبل الطعام',
     );
     expect(medicationReminderWidgetLabels(), {
-      'statusAllSet': 'تم',
+      'statusAllSet': 'السجل مكتمل',
       'statusOverdue': 'متأخرة',
       'statusSnoozed': 'مؤجل',
       'statusSoon': 'قريباً',
-      'statusNextDose': 'التالي',
+      'statusNextDose': 'الجرعة التالية',
       'noDoseDue': 'لا توجد جرعة مستحقة',
       'noMedicineDoseDue': 'لا توجد جرعة دواء مستحقة',
       'showsAll': 'كل الأدوية',

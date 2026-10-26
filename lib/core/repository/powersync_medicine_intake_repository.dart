@@ -21,7 +21,10 @@ class PowerSyncMedicineIntakeRepository extends MedicineIntakeRepository {
   }
 
   @override
-  Future<void> recordScheduledDose(DoseOccurrence occurrence) async {
+  Future<void> recordScheduledDose(
+    DoseOccurrence occurrence, {
+    DateTime? takenAt,
+  }) async {
     final stored = await _db.writeTransaction((tx) async {
       final current = await storedOccurrence(tx, occurrence.id);
       final medicine = medicineFromStorageRow(current);
@@ -40,7 +43,7 @@ class PowerSyncMedicineIntakeRepository extends MedicineIntakeRepository {
               ? DateTimeS.fromSecondsSinceEpoch(
                   (current['taken_at_unix_s'] as num).toInt(),
                 )
-              : DateTime.now(),
+              : takenAt ?? DateTime.now(),
           medicine: recordedMedicine,
           dosis: Weight.mg((current['dose_amount'] as num).toDouble()),
           occurrenceId: occurrence.id,

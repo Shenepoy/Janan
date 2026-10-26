@@ -98,9 +98,9 @@ void main() {
 
     expect(find.byType(AddEntryDialog), findsOneWidget);
     expect(find.text('Please enter a number'), findsNothing);
-    expect(find.text('Number <= 30? Turn off validation in settings!'), findsNothing);
-    expect(find.text('Unrealistic value? Turn off validation in settings!'), findsNothing);
-    expect(find.text('dia >= sys? Turn off validation in settings!'), findsNothing);
+    expect(find.text('Enter a value greater than 30. Check the reading and unit.'), findsNothing);
+    expect(find.text('Check this value and the selected unit.'), findsNothing);
+    expect(find.text('Diastolic pressure must be lower than systolic pressure.'), findsNothing);
 
     await tester.enterText(measurementValueField('Systolic'), '123');
     await tester.enterText(measurementValueField('Diastolic'), '67');
@@ -109,18 +109,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AddEntryDialog), findsOneWidget);
     expect(find.text('Please enter a number'), findsOneWidget);
-    expect(find.text('Number <= 30? Turn off validation in settings!'), findsNothing);
-    expect(find.text('Unrealistic value? Turn off validation in settings!'), findsNothing);
-    expect(find.text('dia >= sys? Turn off validation in settings!'), findsNothing);
+    expect(find.text('Enter a value greater than 30. Check the reading and unit.'), findsNothing);
+    expect(find.text('Check this value and the selected unit.'), findsNothing);
+    expect(find.text('Diastolic pressure must be lower than systolic pressure.'), findsNothing);
 
     await tester.enterText(measurementValueField('Pulse'), '20');
     await tester.tap(find.byIcon(Icons.check));
     await tester.pumpAndSettle();
     expect(find.byType(AddEntryDialog), findsOneWidget);
     expect(find.text('Please enter a number'), findsNothing);
-    expect(find.text('Number <= 30? Turn off validation in settings!'), findsOneWidget);
-    expect(find.text('Unrealistic value? Turn off validation in settings!'), findsNothing);
-    expect(find.text('dia >= sys? Turn off validation in settings!'), findsNothing);
+    expect(find.text('Enter a value greater than 30. Check the reading and unit.'), findsOneWidget);
+    expect(find.text('Check this value and the selected unit.'), findsNothing);
+    expect(find.text('Diastolic pressure must be lower than systolic pressure.'), findsNothing);
 
     await tester.enterText(measurementValueField('Pulse'), '60');
     await tester.enterText(measurementValueField('Diastolic'), '500');
@@ -128,9 +128,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AddEntryDialog), findsOneWidget);
     expect(find.text('Please enter a number'), findsNothing);
-    expect(find.text('Number <= 30? Turn off validation in settings!'), findsNothing);
-    expect(find.text('Unrealistic value? Turn off validation in settings!'), findsOneWidget);
-    expect(find.text('dia >= sys? Turn off validation in settings!'), findsNothing);
+    expect(find.text('Enter a value greater than 30. Check the reading and unit.'), findsNothing);
+    expect(find.text('Check this value and the selected unit.'), findsOneWidget);
+    expect(find.text('Diastolic pressure must be lower than systolic pressure.'), findsNothing);
 
     await tester.enterText(measurementValueField('Diastolic'), '100');
     await tester.enterText(measurementValueField('Systolic'), '90');
@@ -138,9 +138,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AddEntryDialog), findsOneWidget);
     expect(find.text('Please enter a number'), findsNothing);
-    expect(find.text('Number <= 30? Turn off validation in settings!'), findsNothing);
-    expect(find.text('Unrealistic value? Turn off validation in settings!'), findsNothing);
-    expect(find.text('dia >= sys? Turn off validation in settings!'), findsOneWidget);
+    expect(find.text('Enter a value greater than 30. Check the reading and unit.'), findsNothing);
+    expect(find.text('Check this value and the selected unit.'), findsNothing);
+    expect(find.text('Diastolic pressure must be lower than systolic pressure.'), findsOneWidget);
 
 
     await tester.enterText(measurementValueField('Diastolic'), '78');
@@ -149,9 +149,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AddEntryDialog), findsNothing);
     expect(find.text('Please enter a number'), findsNothing);
-    expect(find.text('Number <= 30? Turn off validation in settings!'), findsNothing);
-    expect(find.text('Unrealistic value? Turn off validation in settings!'), findsNothing);
-    expect(find.text('dia >= sys? Turn off validation in settings!'), findsNothing);
+    expect(find.text('Enter a value greater than 30. Check the reading and unit.'), findsNothing);
+    expect(find.text('Check this value and the selected unit.'), findsNothing);
+    expect(find.text('Diastolic pressure must be lower than systolic pressure.'), findsNothing);
   });
   testWidgets('should allow invalid values when setting is set', (tester) async {
     await loadDialog(tester, (context) => showAddEntryDialog(context),

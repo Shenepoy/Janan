@@ -33,7 +33,7 @@ void main() {
     await tester.tap(find.byElementPredicate(_colored(Colors.teal)));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('SAVE'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     // medication manager
     await tester.tap(find.byIcon(Icons.arrow_back));

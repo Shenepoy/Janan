@@ -206,6 +206,10 @@ class BleLaunchSyncView extends ChangeNotifier {
   /// when a trailing control, such as the measurement filter, insets it.
   final GlobalKey indicatorKey = GlobalKey();
 
+  /// Floating app bar bounds and anchor for the landscape detail panel.
+  final GlobalKey appBarKey = GlobalKey();
+  final LayerLink appBarLink = LayerLink();
+
   /// Current sync stage.
   BleLaunchSyncProgress get progress => _progress;
 
@@ -634,20 +638,26 @@ class _BleLaunchSyncOverlayHostState extends State<_BleLaunchSyncOverlayHost> {
   }
 
   Future<void> _open(BleLaunchSyncView view, Rect? sourceRect) async {
+    final appBarRect =
+        MediaQuery.orientationOf(context) == Orientation.landscape
+        ? _indicatorRect(view.appBarKey)
+        : null;
     await showSafaehAnchored<void>(
       context: context,
       motion: SafaehAnchoredMotion.fadeScale,
-      link: view.indicatorLink,
-      sourceRect: sourceRect,
-      maxCardWidth: MediaQuery.sizeOf(context).width,
-      child: ListenableBuilder(
-        listenable: view,
-        builder: (context, _) => BleLaunchSyncCard(
-          progress: view.progress,
-          paused: view.paused,
-          onClosed: view.closeDetails,
-          onPause: view.onPause,
-          onResume: view.onResume,
+      link: appBarRect == null ? view.indicatorLink : view.appBarLink,
+      sourceRect: appBarRect ?? sourceRect,
+      maxCardWidth: appBarRect?.width ?? MediaQuery.sizeOf(context).width,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: appBarRect == null ? 12 : 0),
+        child: ListenableBuilder(
+          listenable: view,
+          builder: (context, _) => BleLaunchSyncCard(
+            progress: view.progress,
+            paused: view.paused,
+            onPause: view.onPause,
+            onResume: view.onResume,
+          ),
         ),
       ),
     );

@@ -167,7 +167,7 @@ class PdfConverter with Loggable {
       widgets.add(_buildPdfTrendChart(content, pageDirection, fonts));
     }
     final weight = content.weightSeries;
-    final reportDays = _reportDays(content);
+    final reportDays = content.reportDays;
     final medicineBlocks = <pw.Widget>[];
     for (var i = 0; i < content.medicineSeries.length; i++) {
       final blocks = _letterMedicineBlocks(
@@ -293,18 +293,27 @@ class PdfConverter with Loggable {
             children: [
               pw.Text(
                 '${'dashboardLatest'.tr()} · ${latest.time}',
-                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                style: const pw.TextStyle(
+                  fontSize: 8,
+                  color: PdfColors.grey700,
+                ),
                 textDirection: pageDirection,
               ),
               pw.SizedBox(height: 1),
               pw.Text(
                 reading,
-                style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(
+                  fontSize: 22,
+                  fontWeight: pw.FontWeight.bold,
+                ),
                 textDirection: pw.TextDirection.ltr,
               ),
               pw.Text(
                 pulse,
-                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                style: const pw.TextStyle(
+                  fontSize: 9,
+                  color: PdfColors.grey700,
+                ),
                 textDirection: _textDirectionFor(pulse, pageDirection),
               ),
             ],
@@ -532,11 +541,7 @@ class PdfConverter with Loggable {
         mainAxisSize: pw.MainAxisSize.min,
         crossAxisAlignment: pw.CrossAxisAlignment.end,
         children: [
-          pw.Text(
-            amount,
-            style: style,
-            textDirection: pw.TextDirection.ltr,
-          ),
+          pw.Text(amount, style: style, textDirection: pw.TextDirection.ltr),
           pw.SizedBox(width: 3),
           unitText,
         ],
@@ -644,9 +649,7 @@ class PdfConverter with Loggable {
     final takenDays = <DateTime>{
       for (final dose in series.doses) _calendarDay(dose.time),
     };
-    final days = reportDays.isEmpty
-        ? (takenDays.toList()..sort())
-        : reportDays;
+    final days = reportDays.isEmpty ? (takenDays.toList()..sort()) : reportDays;
     final taken = days.where(takenDays.contains).length;
     final totalLabel = '${days.length}';
     final ofDays = 'pdfMedicineOfDays'.tr(namedArgs: {'total': totalLabel});
@@ -669,12 +672,7 @@ class PdfConverter with Loggable {
           child: pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
-              ..._pdfRuns(
-                ofDays,
-                totalLabel,
-                captionStyle,
-                pageDirection,
-              ),
+              ..._pdfRuns(ofDays, totalLabel, captionStyle, pageDirection),
               pw.Text(
                 ' · ',
                 style: captionStyle,
@@ -705,10 +703,7 @@ class PdfConverter with Loggable {
     final blocks = <pw.Widget>[];
     if (squareRows.isEmpty) {
       blocks.add(
-        pw.Padding(
-          padding: const pw.EdgeInsets.only(bottom: 6),
-          child: header,
-        ),
+        pw.Padding(padding: const pw.EdgeInsets.only(bottom: 6), child: header),
       );
       return blocks;
     }
@@ -953,7 +948,7 @@ class PdfConverter with Loggable {
         pw.Text(
           label,
           style: pw.TextStyle(
-            font: fonts.fontFor(label),
+            font: fonts.fontFor(label, locale: locale),
             fontSize: 8,
             color: PdfColors.grey700,
           ),
@@ -984,8 +979,7 @@ class PdfConverter with Loggable {
     final readings = _projectLog(
       content,
       (type) =>
-          type != RowDataFieldType.weightKg &&
-          type != RowDataFieldType.intakes,
+          type != RowDataFieldType.weightKg && type != RowDataFieldType.intakes,
     );
     if (readings.rows.isNotEmpty) {
       widgets.add(
@@ -1033,6 +1027,11 @@ class PdfConverter with Loggable {
     if (!table.columnTypes.contains(metric) || table.rows.isEmpty) return;
     widgets
       ..add(pw.SizedBox(height: 12))
+      ..add(
+        pw.NewPage(
+          freeSpace: pdfSettings.headerHeight + pdfSettings.cellHeight + 40,
+        ),
+      )
       ..add(_letterSectionLabel(label, pageDirection))
       ..add(
         _buildPdfTable(
@@ -1073,7 +1072,20 @@ class PdfConverter with Loggable {
                     ? const pw.FixedColumnWidth(160)
                     : const pw.FlexColumnWidth(),
             }
-          : null,
+          : {
+              for (var i = 0; i < columnTypes.length; i++)
+                i: pw.FlexColumnWidth(switch (columnTypes[i]) {
+                  RowDataFieldType.timestamp => 2.4,
+                  RowDataFieldType.sys ||
+                  RowDataFieldType.dia ||
+                  RowDataFieldType.pul => 1.4,
+                  RowDataFieldType.arm => 1.3,
+                  RowDataFieldType.weightKg => 1.8,
+                  RowDataFieldType.intakes => 3.2,
+                  RowDataFieldType.notes => 4.2,
+                  _ => 2,
+                }),
+            },
       cellAlignment: cellAlignment,
       headerDecoration: const pw.BoxDecoration(
         border: pw.Border(bottom: pw.BorderSide()),
@@ -1119,7 +1131,9 @@ class PdfConverter with Loggable {
                   parts.medicine,
                   style: pw.TextStyle(
                     fontSize: pdfSettings.cellFontSize,
-                    font: fonts.fontFor(parts.medicine) ?? fonts.arabic,
+                    font:
+                        fonts.fontFor(parts.medicine, locale: locale) ??
+                        fonts.arabic,
                   ),
                   textDirection: pw.TextDirection.rtl,
                 ),
@@ -1131,7 +1145,7 @@ class PdfConverter with Loggable {
           text,
           style: pw.TextStyle(
             fontSize: pdfSettings.cellFontSize,
-            font: fonts.fontFor(text),
+            font: fonts.fontFor(text, locale: locale),
           ),
           textDirection: _textDirectionFor(text, pageDirection),
         );
@@ -1147,17 +1161,32 @@ class PdfConverter with Loggable {
         ),
       ),
       headers: [
-        for (final text in headers)
-          pw.Text(
-            text,
-            style: headerStyle.copyWith(font: fonts.fontFor(text)),
-            textDirection: _textDirectionFor(text, pageDirection),
+        for (var i = 0; i < headers.length; i++)
+          pw.FittedBox(
+            fit: pw.BoxFit.scaleDown,
+            alignment: cellAlignment,
+            child: pw.Text(
+              _tableHeader(headers[i], columnTypes[i]),
+              style: headerStyle.copyWith(
+                font: fonts.fontFor(headers[i], locale: locale),
+              ),
+              textDirection: _textDirectionFor(headers[i], pageDirection),
+            ),
           ),
       ],
       data: rows,
     );
   }
 }
+
+String _tableHeader(String label, RowDataFieldType? type) => switch (type) {
+  RowDataFieldType.sys when label == 'sysLong'.tr() => 'sysShort'.tr(),
+  RowDataFieldType.dia when label == 'diaLong'.tr() => 'diaShort'.tr(),
+  RowDataFieldType.pul when label == 'pulLong'.tr() => 'pulShort'.tr(),
+  // Explicit breaks at word boundaries let long headings use two lines
+  // without breaking an individual word into tiny fragments.
+  _ => label.replaceFirst(' ', '\n'),
+};
 
 List<int> _chartAxisIndexes(int pointCount) {
   final last = pointCount - 1;
@@ -1167,11 +1196,9 @@ List<int> _chartAxisIndexes(int pointCount) {
   }.toList()..sort();
 }
 
-List<double> _chartPressureAxis(List<PdfExportChartPoint> points) => _niceAxis(
-  [
-    for (final point in points) ...[?point.systolic, ?point.diastolic],
-  ],
-);
+List<double> _chartPressureAxis(List<PdfExportChartPoint> points) => _niceAxis([
+  for (final point in points) ...[?point.systolic, ?point.diastolic],
+]);
 
 List<double> _niceAxis(List<double> values) {
   if (values.isEmpty) return const [0, 1];
@@ -1207,10 +1234,8 @@ String _chartPressureLabel(double value, PressureUnit unit) =>
 const _pdfLogoAsset = 'janan-logo-monochrome.svg';
 
 /// Drops the adaptive-icon margin so the heart fills the header box.
-String _logoWithoutMargin(String svg) => svg.replaceFirst(
-  'viewBox="0 0 1024 1024"',
-  'viewBox="166 286 649 542"',
-);
+String _logoWithoutMargin(String svg) =>
+    svg.replaceFirst('viewBox="0 0 1024 1024"', 'viewBox="166 286 649 542"');
 
 /// Split a formatted medicine intake into an Arabic medicine name and an
 /// LTR parenthesized dose so bidi mirroring cannot reverse the punctuation.
@@ -1318,35 +1343,13 @@ List<pw.Widget> _pdfRuns(
 List<String> _orderedTableRow(List<String> row, pw.TextDirection direction) =>
     direction == pw.TextDirection.rtl ? row.reversed.toList() : row;
 
-DateTime _calendarDay(DateTime time) => DateTime(time.year, time.month, time.day);
-
-/// Every day from the first exported reading to the last, including gaps.
-List<DateTime> _reportDays(PdfExportContent content) {
-  final times = <DateTime>[
-    for (final point in content.chartPoints) point.time,
-    for (final point in content.weightSeries?.points ?? const <PdfWeightPoint>[])
-      point.time,
-    for (final series in content.medicineSeries)
-      for (final dose in series.doses) dose.time,
-    ...content.rowDays,
-  ];
-  if (times.isEmpty) return const [];
-  var start = _calendarDay(times.first);
-  var end = start;
-  for (final time in times) {
-    final day = _calendarDay(time);
-    if (day.isBefore(start)) start = day;
-    if (day.isAfter(end)) end = day;
-  }
-  return [
-    for (var day = start; !day.isAfter(end); day = day.add(const Duration(days: 1)))
-      day,
-  ];
-}
+DateTime _calendarDay(DateTime time) =>
+    DateTime(time.year, time.month, time.day);
 
 final _arabicText = RegExp(r'[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]');
 final _tamilText = RegExp(r'[\u0b80-\u0bff]');
 final _chineseText = RegExp(r'[\u3400-\u4dbf\u4e00-\u9fff]');
+final _japaneseText = RegExp(r'[\u3040-\u30ff\u31f0-\u31ff\uff66-\uff9f]');
 
 String _rtlUnitLabel(String value) => switch (value) {
   'mmHg' => 'مم زئبق',
@@ -1391,6 +1394,7 @@ Future<_PdfFonts> _readPdfFonts() async => _PdfFonts(
     await rootBundle.load('assets/fonts/NotoSansTamil-Bold.ttf'),
   ),
   chinese: pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSansSC.ttf')),
+  japanese: pw.Font.ttf(await rootBundle.load('assets/fonts/NotoSansJP.ttf')),
 );
 
 class _PdfFonts {
@@ -1402,6 +1406,7 @@ class _PdfFonts {
     required this.tamil,
     required this.tamilBold,
     required this.chinese,
+    required this.japanese,
   });
 
   final pw.Font latin;
@@ -1411,13 +1416,19 @@ class _PdfFonts {
   final pw.Font tamil;
   final pw.Font tamilBold;
   final pw.Font chinese;
+  final pw.Font japanese;
 
   /// Pick a complex-script font as the primary font for user-entered cells.
   /// This preserves shaping even when a note's script differs from the app
   /// locale. A null result inherits the locale-aware theme font.
-  pw.Font? fontFor(String text) {
+  pw.Font? fontFor(String text, {required String locale}) {
     if (_arabicText.hasMatch(text)) return arabic;
     if (_tamilText.hasMatch(text)) return tamil;
+    if (_japaneseText.hasMatch(text) ||
+        (locale.split(RegExp('[-_]')).first == 'ja' &&
+            _chineseText.hasMatch(text))) {
+      return japanese;
+    }
     if (_chineseText.hasMatch(text)) return chinese;
     return null;
   }
@@ -1430,22 +1441,27 @@ class _PdfFonts {
       'ar' => pw.ThemeData.withFont(
         base: arabic,
         bold: arabicBold,
-        fontFallback: [latin, tamil, chinese],
+        fontFallback: [latin, tamil, chinese, japanese],
       ),
       'ta' => pw.ThemeData.withFont(
         base: tamil,
         bold: tamilBold,
-        fontFallback: [latin, arabic, chinese],
+        fontFallback: [latin, arabic, chinese, japanese],
       ),
       'zh' => pw.ThemeData.withFont(
         base: chinese,
         bold: chinese,
-        fontFallback: [latin, arabic, tamil],
+        fontFallback: [latin, arabic, tamil, japanese],
+      ),
+      'ja' => pw.ThemeData.withFont(
+        base: japanese,
+        bold: japanese,
+        fontFallback: [latin, arabic, tamil, chinese],
       ),
       _ => pw.ThemeData.withFont(
         base: latin,
         bold: latinBold,
-        fontFallback: [arabic, tamil, chinese],
+        fontFallback: [arabic, tamil, chinese, japanese],
       ),
     };
   }

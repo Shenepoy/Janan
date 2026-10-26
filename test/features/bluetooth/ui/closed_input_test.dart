@@ -37,7 +37,7 @@ void main() {
 
     states.sink.add(BluetoothStateUnauthorized());
     await tester.pump();
-    expect(find.text('No bluetooth permissions'), findsOneWidget);
+    expect(find.text('Bluetooth permission is required.'), findsOneWidget);
     expect(find.text('Tap to grant Bluetooth permission'), findsOneWidget);
 
     await tester.tap(find.byType(ClosedBluetoothInput));
@@ -53,7 +53,7 @@ void main() {
 
     states.sink.add(BluetoothStateReady());
     await tester.pump();
-    expect(find.text('Bluetooth input'), findsOneWidget);
+    expect(find.text('Import via Bluetooth'), findsOneWidget);
     expect(find.text('Tap to connect'), findsOneWidget);
     expect(find.text('Connect'), findsOneWidget);
 
@@ -79,6 +79,6 @@ void main() {
 
     expect(find.text('Read from X4 Smart'), findsOneWidget);
     expect(find.text('Tap to connect'), findsOneWidget);
-    expect(find.text('Bluetooth input'), findsNothing);
+    expect(find.text('Import via Bluetooth'), findsNothing);
   });
 }

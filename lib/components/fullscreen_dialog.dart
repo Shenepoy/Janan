@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 class FullscreenDialog extends StatelessWidget {
   /// Create a dialog that has a close control and a primary action.
   const FullscreenDialog({super.key,
+    this.title,
     this.body,
     required this.actionButtonText,
     this.onActionButtonPressed,
@@ -21,6 +22,9 @@ class FullscreenDialog extends StatelessWidget {
 
   /// The primary content of the dialog.
   final Widget? body;
+
+  /// Heading for editors that need a page title.
+  final Widget? title;
 
   /// Icon of button leading in the app bar.
   ///
@@ -117,12 +121,14 @@ class FullscreenDialog extends StatelessWidget {
         }
       },
       icon: Icon(closeIcon),
+      tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
     ),
-    title: Row(
+    title: title ?? Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: actions,
     ),
     actions: [
+      if (title != null) ...actions,
       if (actionButtonText != null && !actionAsFab)
         TextButton(
           onPressed: onActionButtonPressed,

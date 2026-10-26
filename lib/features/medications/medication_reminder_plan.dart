@@ -1,5 +1,16 @@
 import 'package:blood_pressure_app/domain/medication_schedule.dart';
 
+/// Old unrecorded doses are resolved against their saved slot, without snoozing.
+bool doseIsDayOverdue(DoseOccurrence dose, DateTime now) =>
+    now.difference(dose.scheduledAt) >= const Duration(days: 1);
+
+/// A retrospective Taken action records one hour after the saved dose time.
+/// Current doses keep the repository's normal recording time.
+DateTime? historicalDoseTakenAt(DoseOccurrence dose, DateTime now) =>
+    doseIsDayOverdue(dose, now)
+    ? dose.scheduledAt.add(const Duration(hours: 1))
+    : null;
+
 /// One open dose the countdown surfaces can draw.
 class PlannedDose {
   const PlannedDose({
@@ -454,6 +465,8 @@ String formatCompactCountdown(
   Duration remaining, {
   required bool overdue,
   String dueNow = 'now',
+  String hourUnit = 'h',
+  String minuteUnit = 'm',
 }) {
   final seconds = remaining.inSeconds.abs();
   if (seconds == 0) return dueNow;
@@ -462,7 +475,7 @@ String formatCompactCountdown(
       ? (elapsedMinutes == 0 ? 1 : elapsedMinutes)
       : (seconds + 59) ~/ 60;
   final hours = overdue ? minutes ~/ 60 : (minutes + 59) ~/ 60;
-  return minutes >= 60 ? '${hours}h' : '${minutes}m';
+  return minutes >= 60 ? '$hours$hourUnit' : '$minutes$minuteUnit';
 }
 
 /// How long an overdue dose keeps the red flashing due mark.

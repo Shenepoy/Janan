@@ -326,7 +326,7 @@ void main() {
 
     expect(
       find.text(
-        'The time between measurements is greater than the maximum distance displayed without interruptions. You can change that in the settings.',
+        'There is a gap here because the readings are far apart. Change the gap limit in Chart settings.',
       ),
       findsOneWidget,
     );
@@ -355,7 +355,7 @@ void main() {
     );
     expect(
       find.text(
-        'The time between measurements is greater than the maximum distance displayed without interruptions. You can change that in the settings.',
+        'There is a gap here because the readings are far apart. Change the gap limit in Chart settings.',
       ),
       findsNothing,
     );

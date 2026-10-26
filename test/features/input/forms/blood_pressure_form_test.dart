@@ -34,7 +34,7 @@ void main() {
 
     expect(find.text('Please enter a number'), findsNothing);
     expect(
-      find.text('Number <= 30? Turn off validation in settings!'),
+      find.text('Enter a value greater than 30. Check the reading and unit.'),
       findsNothing,
     );
 
@@ -44,11 +44,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Number <= 30? Turn off validation in settings!'),
+      find.text('Enter a value greater than 30. Check the reading and unit.'),
       findsOneWidget,
     );
     expect(
-      find.text('Unrealistic value? Turn off validation in settings!'),
+      find.text('Check this value and the selected unit.'),
       findsNothing,
     );
 
@@ -58,11 +58,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Number <= 30? Turn off validation in settings!'),
+      find.text('Enter a value greater than 30. Check the reading and unit.'),
       findsNothing,
     );
     expect(
-      find.text('Unrealistic value? Turn off validation in settings!'),
+      find.text('Check this value and the selected unit.'),
       findsOneWidget,
     );
 
@@ -74,7 +74,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Unrealistic value? Turn off validation in settings!'),
+      find.text('Check this value and the selected unit.'),
       findsNothing,
     );
     expect(
@@ -91,11 +91,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Unrealistic value? Turn off validation in settings!'),
+      find.text('Check this value and the selected unit.'),
       findsNothing,
     );
     expect(
-      find.text('dia >= sys? Turn off validation in settings!'),
+      find.text('Diastolic pressure must be lower than systolic pressure.'),
       findsOneWidget,
     );
   });

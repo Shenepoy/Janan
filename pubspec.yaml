@@ -5,7 +5,7 @@ repository: https://github.com/Zyzto/blood-pressure-monitor-fl
 issue_tracker: https://github.com/Zyzto/blood-pressure-monitor-fl/issues
 
 # CalVer YY.0M.MICRO+BUILD (docs/release-process.md)
-version: 26.10.9+82
+version: 26.10.10+83
 
 environment:
   sdk: ^3.12.0
@@ -79,6 +79,8 @@ flutter:
     - assets/fonts/NotoSansTamil-Regular.ttf
     - assets/fonts/NotoSansTamil-Bold.ttf
     - assets/fonts/NotoSansSC.ttf
+    - assets/fonts/NotoSansJP.ttf
+    - assets/fonts/NotoSansJP-OFL.txt
     - icon.svg
     - janan-logo-monochrome.svg
 

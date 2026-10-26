@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:blood_pressure_app/components/fullscreen_dialog.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/export_import/model/column.dart';
@@ -6,7 +8,7 @@ import 'package:blood_pressure_app/features/export_import/ui/export_field_format
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
-import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -79,6 +81,7 @@ class _AddExportColumnDialogState extends ConsumerState<AddExportColumnDialog>
   Widget build(BuildContext context) {
     final settings = ref.watch(appSettingsProvider);
     return FullscreenDialog(
+      title: Text((widget.initialColumn == null ? 'addExportformat' : 'edit').tr()),
       actionButtonText: 'btnSave'.tr(),
       onActionButtonPressed: _saveForm,
       bottomAppBar: settings.bottomAppBars,
@@ -167,7 +170,7 @@ class _AddExportColumnDialogState extends ConsumerState<AddExportColumnDialog>
                     );
                     final note = Note(
                       time: record.time,
-                      note: 'test note',
+                      note: 'exportPreviewNote'.tr(),
                       color: Colors.red.toARGB32(),
                     );
                     final formatter = (type == _FormatterType.record)
@@ -177,12 +180,14 @@ class _AddExportColumnDialogState extends ConsumerState<AddExportColumnDialog>
                     final decoded = formatter.decode(text);
                     return Column(
                       children: [
+                        Text('exportPreview'.tr(), style: Theme.of(context).textTheme.titleMedium),
+                        const SizedBox(height: 8),
                         if (type == _FormatterType.record)
                           Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('${'time'.tr()}: ${record.time}'),
+                              Text('${'time'.tr()}: \u2066${WesternDateFormat('yyyy-MM-dd HH:mm:ss', context.locale.toString()).format(record.time)}\u2069'),
                               Text('${'sysLong'.tr()}: ${record.sys}'),
                               Text('${'diaLong'.tr()}: ${record.dia}'),
                               Text('${'pulLong'.tr()}: ${record.pul}'),
@@ -203,7 +208,11 @@ class _AddExportColumnDialogState extends ConsumerState<AddExportColumnDialog>
                         const SizedBox(height: 8,),
                         const Icon(Icons.arrow_downward),
                         const SizedBox(height: 8,),
-                        Text(decoded.toString()),
+                        Text('exportRestorePreview'.tr()),
+                        const SizedBox(height: 4),
+                        Text(decoded == null
+                            ? 'exportNotRestorable'.tr()
+                            : '${decoded.$1.localize()}: ${decoded.$2 is DateTime ? WesternDateFormat.yMd(context.locale.toString()).add_Hms().format(decoded.$2 as DateTime) : decoded.$2}'),
                       ],
                     );
                   }(),
@@ -225,6 +234,7 @@ class _AddExportColumnDialogState extends ConsumerState<AddExportColumnDialog>
       ) => Column(
       children: [
         TextFormField(
+          textDirection: ui.TextDirection.ltr,
           initialValue: initialValue,
           onChanged: onChanged,
           decoration: InputDecoration(
@@ -233,6 +243,7 @@ class _AddExportColumnDialogState extends ConsumerState<AddExportColumnDialog>
                 onPressed: () {
                   Navigator.push(context, MaterialPageRoute<void>(
                     builder: (context) => InformationScreen(
+                        title: labelText,
                         text: inputDocumentation,
                     ),
                   ),);
