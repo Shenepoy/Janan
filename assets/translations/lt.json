@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Sekite savo svorį",
   "onboardingWeightBody": "Atverkite Svoris ir palieskite +.\nĮveskite svarstyklių rodmenį. Patikrinkite vienetą, datą ir laiką, tada palieskite Išsaugoti.\nPalieskite išsaugotą svorį, kad jį peržiūrėtumėte ar pakeistumėte. Vienetą pasirinkite Nustatymuose.",
   "onboardingMinutesValue": "{value} min.",
-  "onboardingSaveFailed": "Nepavyko išsaugoti nustatymų. Bandykite dar kartą."
+  "onboardingSaveFailed": "Nepavyko išsaugoti nustatymų. Bandykite dar kartą.",
+  "healthTools": "Sveikatos įrankiai"
 }

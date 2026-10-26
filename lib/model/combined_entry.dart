@@ -171,12 +171,20 @@ extension CombinedEntryList on List<CombinedEntry> {
 
     for (final r in records) {
       entries.putIfAbsent(r.time, () => CombinedEntry(time: r.time));
-      entries[r.time]!.record = r;
+      if (entries[r.time]!.record == null) {
+        entries[r.time]!.record = r;
+      } else {
+        simultaneousIntakes.add(CombinedEntry(time: r.time, record: r));
+      }
     }
     for (final n in notes) {
       if ((n.note?.isEmpty ?? true) && n.color == null) continue;
       entries.putIfAbsent(n.time, () => CombinedEntry(time: n.time));
-      entries[n.time]!.note = n;
+      if (entries[n.time]!.note == null) {
+        entries[n.time]!.note = n;
+      } else {
+        simultaneousIntakes.add(CombinedEntry(time: n.time, note: n));
+      }
     }
     for (final i in intakes) {
       entries.putIfAbsent(i.time, () => CombinedEntry(time: i.time));
@@ -192,7 +200,11 @@ extension CombinedEntryList on List<CombinedEntry> {
     if (weights != null) {
       for (final w in weights) {
         entries.putIfAbsent(w.time, () => CombinedEntry(time: w.time));
-        entries[w.time]!.weight = w;
+        if (entries[w.time]!.weight == null) {
+          entries[w.time]!.weight = w;
+        } else {
+          simultaneousIntakes.add(CombinedEntry(time: w.time, weight: w));
+        }
       }
     }
 

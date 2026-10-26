@@ -48,3 +48,8 @@ micro version and build number.
 Obtainium follows that GitHub Release.
 
 Do not upload this APK to Play or F-Droid. Those listings are not ours.
+
+The public build defaults to the `foss` flavor (`com.shenepoy.janan.foss`).
+The private overlay explicitly builds `prod` (`com.shenepoy.janan`). Debug builds
+add `.debug`. Native tests use `:app:testFossDebugUnitTest`; debug output is
+`app-foss-debug.apk`. The release script accepts `JANAN_FLAVOR` (default `foss`).

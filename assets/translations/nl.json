@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Houd je gewicht bij",
   "onboardingWeightBody": "Open Gewicht en tik op +.\nVoer de waarde van je weegschaal in. Controleer de eenheid, datum en tijd en tik op Opslaan.\nTik op een opgeslagen gewicht om het te bekijken of te wijzigen. Kies de eenheid in Instellingen.",
   "onboardingMinutesValue": "{value} minuten",
-  "onboardingSaveFailed": "Je instellingen konden niet worden opgeslagen. Probeer het opnieuw."
+  "onboardingSaveFailed": "Je instellingen konden niet worden opgeslagen. Probeer het opnieuw.",
+  "healthTools": "Gezondheidshulpmiddelen"
 }

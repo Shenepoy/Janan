@@ -37,6 +37,7 @@ void main() {
 
     expect(main('general'), [
       'language',
+      'health_tools',
       'date_format_string',
       'allow_manual_time_input',
       'confirm_deletion',

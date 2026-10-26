@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Acompanhe o seu peso",
   "onboardingWeightBody": "Abra Peso e toque em +.\nIntroduza a leitura da balança. Verifique a unidade, a data e a hora e toque em Guardar.\nToque num peso guardado para o consultar ou editar. Escolha a unidade nas Definições.",
   "onboardingMinutesValue": "{value} minutos",
-  "onboardingSaveFailed": "Não foi possível guardar a configuração. Tente novamente."
+  "onboardingSaveFailed": "Não foi possível guardar a configuração. Tente novamente.",
+  "healthTools": "Ferramentas de saúde"
 }

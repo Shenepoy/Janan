@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Kilonuzu takip edin",
   "onboardingWeightBody": "Kilo bölümünü açıp + işaretine dokunun.\nTartıdaki değeri girin. Birimi, tarihi ve saati kontrol edip Kaydet’e dokunun.\nKaydedilmiş bir kiloyu görüntülemek veya düzenlemek için ona dokunun. Birimi Ayarlar’dan seçin.",
   "onboardingMinutesValue": "{value} dakika",
-  "onboardingSaveFailed": "Kurulumunuz kaydedilemedi. Lütfen tekrar deneyin."
+  "onboardingSaveFailed": "Kurulumunuz kaydedilemedi. Lütfen tekrar deneyin.",
+  "healthTools": "Sağlık araçları"
 }

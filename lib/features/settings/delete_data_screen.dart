@@ -1,8 +1,12 @@
 import 'package:blood_pressure_app/components/confirm_deletion_dialog.dart';
 import 'package:blood_pressure_app/core/database/database_providers.dart';
+import 'package:blood_pressure_app/core/database/health_write.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:blood_pressure_app/features/health_tools/health_tool_kind.dart';
+import 'package:blood_pressure_app/features/health_tools/health_tools_repository.dart';
+import 'package:blood_pressure_app/features/health_tools/health_tools_strings.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_providers.dart';
 import 'package:blood_pressure_app/features/settings/edadat_prefs.dart';
 import 'package:blood_pressure_app/model/storage/file_settings_loader.dart';
@@ -32,6 +36,33 @@ class _DeleteDataScreenState extends State<DeleteDataScreen> {
     ),
     body: ListView(
       children: [
+        for (final kind in HealthToolKind.values)
+          ListTile(
+            leading: const Icon(Icons.health_and_safety_outlined),
+            title: Text('tools.${kind.name}'.toolTr(context)),
+            trailing: const Icon(Icons.delete_forever),
+            onTap: () async {
+              if (!await showConfirmDeletionDialog(
+                    context,
+                    'warnDeletionUnrecoverable'.tr(),
+                  ) ||
+                  !context.mounted) {
+                return;
+              }
+              final database = ProviderScope.containerOf(
+                context,
+                listen: false,
+              ).read(healthDatabaseProvider);
+              final repository = HealthToolsRepository(database);
+              for (final row in await repository.list(kind)) {
+                await repository.remove(kind, row['id'] as String);
+              }
+              if (context.mounted) {
+                context.showSuccess('deletionConfirmed'.tr());
+              }
+            },
+          ),
+
         ListTile(
           leading: const Icon(Icons.settings),
           title: Text('deleteAllSettings'.tr()),
@@ -172,8 +203,10 @@ class _DeleteDataScreenState extends State<DeleteDataScreen> {
             if (!context.mounted) return;
             final container = ProviderScope.containerOf(context, listen: false);
             final database = container.read(healthDatabaseProvider);
-            await database.execute('DELETE FROM dose_occurrences');
-            await database.execute('DELETE FROM medication_schedules');
+            await writeHealthTransaction(database, (tx) async {
+              await tx.execute('DELETE FROM dose_occurrences');
+              await tx.execute('DELETE FROM medication_schedules');
+            });
             container.invalidate(medicationSchedulesProvider);
             container.invalidate(todayMedicationOccurrencesProvider);
             container.invalidate(medicationDayProvider);

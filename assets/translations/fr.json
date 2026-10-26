@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Suivez votre poids",
   "onboardingWeightBody": "Ouvrez Poids et touchez +.\nSaisissez la valeur de votre balance. Vérifiez l’unité, la date et l’heure, puis touchez Enregistrer.\nTouchez un poids enregistré pour le consulter ou le modifier. Choisissez l’unité dans les réglages.",
   "onboardingMinutesValue": "{value} minutes",
-  "onboardingSaveFailed": "Impossible d’enregistrer votre configuration. Veuillez réessayer."
+  "onboardingSaveFailed": "Impossible d’enregistrer votre configuration. Veuillez réessayer.",
+  "healthTools": "Outils de santé"
 }

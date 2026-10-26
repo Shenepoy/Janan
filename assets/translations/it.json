@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Tieni traccia del peso",
   "onboardingWeightBody": "Apri Peso e tocca +.\nInserisci il valore della bilancia. Controlla unità, data e ora, poi tocca Salva.\nTocca un peso salvato per visualizzarlo o modificarlo. Scegli l’unità nelle Impostazioni.",
   "onboardingMinutesValue": "{value} minuti",
-  "onboardingSaveFailed": "Impossibile salvare la configurazione. Riprova."
+  "onboardingSaveFailed": "Impossibile salvare la configurazione. Riprova.",
+  "healthTools": "Strumenti per la salute"
 }

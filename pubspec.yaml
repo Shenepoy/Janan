@@ -69,6 +69,7 @@ dev_dependencies:
   test: any
 
 flutter:
+  default-flavor: foss
   uses-material-design: true
   assets:
     - assets/translations/

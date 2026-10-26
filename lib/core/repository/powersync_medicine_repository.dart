@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:blood_pressure_app/core/database/health_write.dart';
 import 'package:blood_pressure_app/core/repository/medication_snapshots.dart';
+import 'package:blood_pressure_app/core/repository/observe_repository.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:powersync/powersync.dart';
 import 'package:sqlite_async/sqlite_async.dart';
@@ -19,7 +21,7 @@ class PowerSyncMedicineRepository extends MedicineRepository {
 
   @override
   Future<void> update(Medicine original, Medicine replacement) async {
-    await _db.writeTransaction((tx) async {
+    await writeHealthTransaction(_db, (tx) async {
       final id = await medicineIdFor(tx, original);
       if (id == null) throw StateError('Medicine is not in the catalog');
       await freezeMedicationHistory(tx, medicineId: id);
@@ -55,7 +57,7 @@ class PowerSyncMedicineRepository extends MedicineRepository {
 
   /// Insert or revive a medicine. Re-import / re-migrate must not create dupes.
   Future<void> upsert(Medicine medicine, {bool removed = false}) async {
-    await _db.writeTransaction((tx) async {
+    await writeHealthTransaction(_db, (tx) async {
       final existingId = await medicineIdFor(
         tx,
         medicine,
@@ -125,7 +127,9 @@ class PowerSyncMedicineRepository extends MedicineRepository {
   Future<void> remove(Medicine value) async {
     final id = await idFor(value);
     if (id == null) return;
-    await _db.execute('UPDATE medicines SET removed = 1 WHERE id = ?', [id]);
+    await writeHealthTransaction(_db, (tx) async {
+      await tx.execute('UPDATE medicines SET removed = 1 WHERE id = ?', [id]);
+    });
     _controller.add(null);
   }
 
@@ -137,7 +141,8 @@ class PowerSyncMedicineRepository extends MedicineRepository {
   Future<List<Medicine>> get(DateRange _) => getAll();
 
   @override
-  Stream<Medicine?> subscribe() => _controller.stream;
+  Stream<Medicine?> subscribe() =>
+      observeRepository(_db, 'medicines', _controller.stream);
 
   Weight? _decodeMg(Object? value) {
     if (value is! num) return null;

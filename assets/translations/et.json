@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Jälgi oma kaalu",
   "onboardingWeightBody": "Ava Kaal ja puuduta +.\nSisesta kaalu näit. Kontrolli ühikut, kuupäeva ja kellaaega ning puuduta Salvesta.\nPuuduta salvestatud kaalu, et seda vaadata või muuta. Ühiku saad valida Seadetes.",
   "onboardingMinutesValue": "{value} minutit",
-  "onboardingSaveFailed": "Seadistust ei saanud salvestada. Palun proovi uuesti."
+  "onboardingSaveFailed": "Seadistust ei saanud salvestada. Palun proovi uuesti.",
+  "healthTools": "Tervisetööriistad"
 }

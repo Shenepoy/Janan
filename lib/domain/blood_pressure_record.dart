@@ -5,6 +5,7 @@ import 'package:blood_pressure_app/domain/units/pressure.dart';
 class BloodPressureRecord {
   /// Create a immutable representation of a blood pressure measurement.
   const BloodPressureRecord({
+    this.id,
     required this.time,
     this.sys,
     this.dia,
@@ -14,6 +15,9 @@ class BloodPressureRecord {
   });
 
   static const Object _unset = Object();
+
+  /// Stable storage identity; absent only for new or legacy imported records.
+  final String? id;
 
   /// Timestamp when the measurement was taken.
   final DateTime time;
@@ -35,6 +39,7 @@ class BloodPressureRecord {
   final BloodPressureRecordSource source;
 
   BloodPressureRecord copyWith({
+    String? id,
     DateTime? time,
     Pressure? sys,
     Pressure? dia,
@@ -42,6 +47,7 @@ class BloodPressureRecord {
     Object? arm = _unset,
     BloodPressureRecordSource? source,
   }) => BloodPressureRecord(
+    id: id ?? this.id,
     time: time ?? this.time,
     sys: sys ?? this.sys,
     dia: dia ?? this.dia,

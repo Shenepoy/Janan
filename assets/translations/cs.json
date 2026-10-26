@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Sledujte svou hmotnost",
   "onboardingWeightBody": "Otevřete Hmotnost a klepněte na +.\nZadejte údaj z váhy. Zkontrolujte jednotku, datum a čas a klepněte na Uložit.\nKlepnutím na uloženou hmotnost ji zobrazíte nebo upravíte. Jednotku zvolíte v Nastavení.",
   "onboardingMinutesValue": "{value} min",
-  "onboardingSaveFailed": "Nastavení se nepodařilo uložit. Zkuste to prosím znovu."
+  "onboardingSaveFailed": "Nastavení se nepodařilo uložit. Zkuste to prosím znovu.",
+  "healthTools": "Zdravotní nástroje"
 }

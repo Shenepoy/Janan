@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Track your weight",
   "onboardingWeightBody": "Open Weight and tap +.\nEnter your scale reading. Check the unit, date, and time, then tap Save.\nTap a saved weight to review or edit it. Choose your unit in Settings.",
   "onboardingMinutesValue": "{value} minutes",
-  "onboardingSaveFailed": "Couldn’t save your setup. Please try again."
+  "onboardingSaveFailed": "Couldn’t save your setup. Please try again.",
+  "healthTools": "Health tools"
 }

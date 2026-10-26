@@ -1,7 +1,9 @@
+import 'package:blood_pressure_app/features/health_tools/health_tools_schema.dart';
 import 'package:powersync/powersync.dart';
 
 /// Local-only PowerSync schema. Never synced; no `ps_crud` growth.
-const schema = Schema([
+final schema = Schema([
+  ...healthToolTables,
   Table.localOnly('blood_pressure', [
     Column.integer('timestamp_unix_s'),
     Column.real('sys_kpa'),

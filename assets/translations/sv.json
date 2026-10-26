@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Följ din vikt",
   "onboardingWeightBody": "Öppna Vikt och tryck på +.\nAnge vågens värde. Kontrollera enhet, datum och tid och tryck på Spara.\nTryck på en sparad vikt för att visa eller ändra den. Välj enhet i Inställningar.",
   "onboardingMinutesValue": "{value} minuter",
-  "onboardingSaveFailed": "Det gick inte att spara dina inställningar. Försök igen."
+  "onboardingSaveFailed": "Det gick inte att spara dina inställningar. Försök igen.",
+  "healthTools": "Hälsoverktyg"
 }

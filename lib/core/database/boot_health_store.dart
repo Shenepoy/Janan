@@ -34,19 +34,19 @@ class BootHealthStore {
   final BodyweightRepository weightRepo;
   final MedCache medCache;
 
-  static Future<BootHealthStore> open() async {
+  static Future<BootHealthStore> open({PowerSyncDatabase? database}) async {
     if (!Platform.isAndroid && !Platform.isIOS) {
       databaseFactory = databaseFactoryFfi;
     }
-    final database = await HealthDatabase.open();
-    final medRepo = PowerSyncMedicineRepository(database);
+    final openedDatabase = database ?? await HealthDatabase.open();
+    final medRepo = PowerSyncMedicineRepository(openedDatabase);
     return BootHealthStore(
-      database: database,
-      bpRepo: PowerSyncBloodPressureRepository(database),
-      noteRepo: PowerSyncNoteRepository(database),
+      database: openedDatabase,
+      bpRepo: PowerSyncBloodPressureRepository(openedDatabase),
+      noteRepo: PowerSyncNoteRepository(openedDatabase),
       medRepo: medRepo,
-      intakeRepo: PowerSyncMedicineIntakeRepository(database),
-      weightRepo: PowerSyncBodyweightRepository(database),
+      intakeRepo: PowerSyncMedicineIntakeRepository(openedDatabase),
+      weightRepo: PowerSyncBodyweightRepository(openedDatabase),
       medCache: MedCache(medRepo, await medRepo.getAll()),
     );
   }

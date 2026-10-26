@@ -17,7 +17,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 
-Future<void> main() async {
+Future<void> main() => runJanan();
+
+/// Optional composition hook; the public build supplies no integrations.
+Future<void> runJanan({Widget Function(Widget)? wrapApplication}) async {
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
@@ -128,7 +131,7 @@ Future<void> main() async {
                 medCacheProvider.overrideWithValue(healthStore.medCache),
               ],
             ],
-            child: const App(),
+            child: wrapApplication?.call(const App()) ?? const App(),
           ),
         ),
       );

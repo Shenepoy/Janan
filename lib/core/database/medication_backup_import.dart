@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:blood_pressure_app/core/database/health_write.dart';
 import 'package:blood_pressure_app/core/repository/medication_snapshots.dart';
 import 'package:blood_pressure_app/core/repository/powersync_medicine_repository.dart';
 import 'package:powersync/powersync.dart';
@@ -27,7 +28,7 @@ Future<int> importMedicationBackup(
   final occurrences = await rows('dose_occurrences');
   final intakes = await rows('intakes');
   final blacklist = await rows('ble_blacklist');
-  return target.writeTransaction((tx) async {
+  return writeHealthTransaction(target, (tx) async {
     final medicineIds = <String, String>{};
     final medicineRows = <String, Map<String, Object?>>{};
     for (final row in medicines) {
