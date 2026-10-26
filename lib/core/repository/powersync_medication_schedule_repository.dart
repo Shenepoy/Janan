@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:blood_pressure_app/core/database/health_write.dart';
 import 'package:blood_pressure_app/core/repository/medication_snapshots.dart';
 import 'package:blood_pressure_app/core/repository/powersync_medicine_repository.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
@@ -68,7 +69,7 @@ class PowerSyncMedicationScheduleRepository
       },
       schedule.dueIndicatorDivisor,
     ];
-    await _db.writeTransaction((tx) async {
+    await writeHealthTransaction(_db, (tx) async {
       final existing = await tx.getAll(
         'SELECT id FROM medication_schedules WHERE id = ?',
         [id],
@@ -150,18 +151,20 @@ class PowerSyncMedicationScheduleRepository
           [occurrenceId],
         );
         if (existing.isNotEmpty) continue;
-        await _db.execute(
-          'INSERT INTO dose_occurrences '
-          '(id, schedule_id, local_key, scheduled_unix_s, status) '
-          'VALUES (?, ?, ?, ?, ?)',
-          [
-            occurrenceId,
-            schedule.id,
-            localKey,
-            scheduledAt.millisecondsSinceEpoch ~/ 1000,
-            'pending',
-          ],
-        );
+        await writeHealthTransaction(_db, (tx) async {
+          await tx.execute(
+            'INSERT INTO dose_occurrences '
+            '(id, schedule_id, local_key, scheduled_unix_s, status) '
+            'VALUES (?, ?, ?, ?, ?)',
+            [
+              occurrenceId,
+              schedule.id,
+              localKey,
+              scheduledAt.millisecondsSinceEpoch ~/ 1000,
+              'pending',
+            ],
+          );
+        });
       }
     }
 
@@ -264,7 +267,7 @@ class PowerSyncMedicationScheduleRepository
 
   @override
   Future<void> delete(String id) async {
-    await _db.writeTransaction((tx) async {
+    await writeHealthTransaction(_db, (tx) async {
       await tx.execute(
         'UPDATE intakes SET occurrence_id = NULL WHERE occurrence_id IN '
         '(SELECT id FROM dose_occurrences WHERE schedule_id = ?)',
@@ -288,7 +291,7 @@ class PowerSyncMedicationScheduleRepository
       await _intakes.recordScheduledDose(occurrence, takenAt: takenAt);
       return;
     }
-    await _db.writeTransaction((tx) async {
+    await writeHealthTransaction(_db, (tx) async {
       final current = await storedOccurrence(tx, occurrence.id);
       await tx.execute('DELETE FROM intakes WHERE occurrence_id = ?', [
         occurrence.id,

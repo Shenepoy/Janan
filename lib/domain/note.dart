@@ -1,11 +1,10 @@
 /// Supporting information left by the enduser.
 class Note {
   /// Create supporting information from the enduser.
-  const Note({
-    required this.time,
-    this.note,
-    this.color,
-  });
+  const Note({this.id, required this.time, this.note, this.color});
+
+  /// Stable storage identity; absent only for new or legacy imported records.
+  final String? id;
 
   /// Timestamp when the note was taken.
   final DateTime time;

@@ -17,10 +17,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 
-Future<void> main() async {
+Future<void> main() => runJanan();
+
+/// Optional composition hook; the public build supplies no integrations.
+Future<void> runJanan({
+  Widget Function(Widget)? wrapApplication,
+  Future<void> Function()? initializeIntegrations,
+}) async {
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      await initializeIntegrations?.call();
       LicenseRegistry.addLicense(() async* {
         yield LicenseEntryWithLineBreaks([
           'Noto Sans JP',
@@ -128,7 +135,7 @@ Future<void> main() async {
                 medCacheProvider.overrideWithValue(healthStore.medCache),
               ],
             ],
-            child: const App(),
+            child: wrapApplication?.call(const App()) ?? const App(),
           ),
         ),
       );

@@ -54,6 +54,14 @@ android {
                 "hu", "it", "lt", "nb", "nl", "pl", "pt", "pt-rBR",
                 "ru", "sl", "sv", "ta", "tr", "uk", "zh", "zh-rTW"
     }
+    flavorDimensions "distribution"
+    productFlavors {
+        prod { dimension "distribution" }
+        foss {
+            dimension "distribution"
+            applicationIdSuffix = ".foss"
+        }
+    }
     signingConfigs {
        release {
            keyAlias = keystoreProperties.get('keyAlias')

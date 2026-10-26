@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/core/database/health_write.dart';
 import 'package:blood_pressure_app/core/repository/powersync_blood_pressure_repository.dart';
 import 'package:blood_pressure_app/core/repository/powersync_bodyweight_repository.dart';
 import 'package:blood_pressure_app/core/repository/powersync_medicine_intake_repository.dart';
@@ -27,7 +28,7 @@ class PowerSyncEntryStore {
     CombinedEntry? original,
     List<CombinedEntry> entries,
   ) async {
-    await _db.writeTransaction((tx) async {
+    await writeHealthTransaction(_db, (tx) async {
       final pressure = PowerSyncBloodPressureRepository(tx);
       final notes = PowerSyncNoteRepository(tx);
       final intakes = PowerSyncMedicineIntakeRepository(tx);
@@ -50,6 +51,7 @@ class PowerSyncEntryStore {
           });
           final previous = index < 0 ? null : removed.removeAt(index);
           final retained = MedicineIntake(
+            id: intake.id ?? previous?.id,
             time: intake.time,
             medicine: intake.medicine,
             dosis: intake.dosis,

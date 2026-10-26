@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Registra tu peso",
   "onboardingWeightBody": "Abre Peso y toca +.\nIntroduce la lectura de la báscula. Comprueba la unidad, la fecha y la hora y toca Guardar.\nToca un peso guardado para verlo o editarlo. Elige la unidad en Ajustes.",
   "onboardingMinutesValue": "{value} minutos",
-  "onboardingSaveFailed": "No se pudo guardar la configuración. Inténtalo de nuevo."
+  "onboardingSaveFailed": "No se pudo guardar la configuración. Inténtalo de nuevo.",
+  "healthTools": "Herramientas de salud"
 }

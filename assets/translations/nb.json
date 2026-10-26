@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Følg vekten din",
   "onboardingWeightBody": "Åpne Vekt og trykk på +.\nSkriv inn tallet fra vekten. Sjekk enhet, dato og klokkeslett, og trykk på Lagre.\nTrykk på en lagret vekt for å se eller endre den. Velg enhet i Innstillinger.",
   "onboardingMinutesValue": "{value} minutter",
-  "onboardingSaveFailed": "Kunne ikke lagre oppsettet ditt. Prøv igjen."
+  "onboardingSaveFailed": "Kunne ikke lagre oppsettet ditt. Prøv igjen.",
+  "healthTools": "Helseverktøy"
 }

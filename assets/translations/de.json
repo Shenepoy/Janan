@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Gewicht erfassen",
   "onboardingWeightBody": "Öffnen Sie Gewicht und tippen Sie auf +.\nGeben Sie den Wert Ihrer Waage ein. Prüfen Sie Einheit, Datum und Uhrzeit und tippen Sie auf Speichern.\nTippen Sie auf einen gespeicherten Gewichtswert, um ihn anzusehen oder zu bearbeiten. Die Einheit wählen Sie in den Einstellungen.",
   "onboardingMinutesValue": "{value} Minuten",
-  "onboardingSaveFailed": "Deine Einrichtung konnte nicht gespeichert werden. Bitte versuche es erneut."
+  "onboardingSaveFailed": "Deine Einrichtung konnte nicht gespeichert werden. Bitte versuche es erneut.",
+  "healthTools": "Gesundheitswerkzeuge"
 }

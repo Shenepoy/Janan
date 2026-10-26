@@ -967,6 +967,11 @@ const replayOnboardingAction = ActionSetting(
   order: 3,
 );
 
+const healthToolsAction = ActionSetting(
+  'health_tools', titleKey: 'healthTools', icon: Icons.health_and_safety_outlined,
+  section: 'general', order: 0,
+);
+
 const versionAction = ActionSetting(
   'version',
   titleKey: 'version',
@@ -1109,6 +1114,7 @@ SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
     onboardingCompletedSetting,
     replayOnboardingAction,
     versionAction,
+    healthToolsAction,
     sourceCodeAction,
     licensesAction,
     exportSettingsAction,

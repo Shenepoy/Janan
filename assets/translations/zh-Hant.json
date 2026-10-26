@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "記錄體重",
   "onboardingWeightBody": "開啟「體重」，點選＋。\n輸入體重計的讀數。檢查單位、日期和時間，然後點選「儲存」。\n點選已儲存的體重可檢視或編輯。可在設定中選擇單位。",
   "onboardingMinutesValue": "{value}分鐘",
-  "onboardingSaveFailed": "無法儲存您的設定，請再試一次。"
+  "onboardingSaveFailed": "無法儲存您的設定，請再試一次。",
+  "healthTools": "健康工具"
 }

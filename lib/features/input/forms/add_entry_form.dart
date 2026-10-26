@@ -18,6 +18,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:safaeh/safaeh.dart';
+import 'package:uuid/uuid.dart';
 
 /// Which measurement this entry screen edits.
 enum AddEntryKind {
@@ -64,6 +65,10 @@ class AddEntryForm extends FormBase<CombinedEntry> with Loggable {
 /// State of primary form to enter all types of entries.
 class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
     with Loggable {
+  final _newRecordId = const Uuid().v4();
+  final _newNoteId = const Uuid().v4();
+  final _newWeightId = const Uuid().v4();
+
   final _timeForm = GlobalKey<DateTimeFormState>();
   final _noteForm = GlobalKey<NoteFormState>();
   final _bpForm = GlobalKey<BloodPressureFormState>();
@@ -204,6 +209,7 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
     final noteFormValue = _noteForm.currentState?.save();
     if (noteFormValue != null) {
       note = Note(
+        id: widget.initialValue?.note?.id ?? _newNoteId,
         time: time,
         note: noteFormValue.$1,
         color: noteFormValue.$2?.toARGB32(),
@@ -212,6 +218,7 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
     final recordFormValue = _bpForm.currentState?.save();
     if (recordFormValue != null) {
       record = BloodPressureRecord(
+        id: _lastSavedPressure?.id ?? _newRecordId,
         time: time,
         sys: recordFormValue.sys == null
             ? null
@@ -232,6 +239,7 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
           (previous.weight.kg * 100).round() ==
               (weightFormValue.kg * 100).round();
       weight = BodyweightRecord(
+        id: previous?.id ?? _newWeightId,
         time: time,
         weight: weightFormValue,
         impedanceOhm: sameKg ? previous.impedanceOhm : null,

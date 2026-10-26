@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "体重を記録しましょう",
   "onboardingWeightBody": "「体重」を開き、＋をタップします。\n体重計の値を入力します。単位、日付、時刻を確認し、「保存」をタップします。\n保存した体重をタップすると、確認や編集ができます。単位は設定で選べます。",
   "onboardingMinutesValue": "{value}分",
-  "onboardingSaveFailed": "設定を保存できませんでした。もう一度お試しください。"
+  "onboardingSaveFailed": "設定を保存できませんでした。もう一度お試しください。",
+  "healthTools": "健康ツール"
 }

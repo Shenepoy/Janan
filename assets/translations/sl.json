@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Spremljajte svojo težo",
   "onboardingWeightBody": "Odprite Teža in tapnite +.\nVnesite odčitek tehtnice. Preverite enoto, datum in uro, nato tapnite Shrani.\nTapnite shranjeno težo za ogled ali urejanje. Enoto izberite v Nastavitvah.",
   "onboardingMinutesValue": "{value} min",
-  "onboardingSaveFailed": "Nastavitev ni bilo mogoče shraniti. Poskusite znova."
+  "onboardingSaveFailed": "Nastavitev ni bilo mogoče shraniti. Poskusite znova.",
+  "healthTools": "Zdravstvena orodja"
 }

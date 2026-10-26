@@ -14,8 +14,9 @@ fi
 if [[ "$SYMBOLS_DIR" != /* ]]; then
   SYMBOLS_DIR="$ROOT_DIR/$SYMBOLS_DIR"
 fi
+JANAN_FLAVOR="${JANAN_FLAVOR:-foss}"
 APK_DIR="$ROOT_DIR/build/app/outputs/flutter-apk"
-MAPPING_FILE="$ROOT_DIR/build/app/outputs/mapping/release/mapping.txt"
+MAPPING_FILE="$ROOT_DIR/build/app/outputs/mapping/${JANAN_FLAVOR}Release/mapping.txt"
 TARGET_PLATFORMS="android-arm,android-arm64,android-x64"
 
 if ! command -v zip >/dev/null 2>&1; then
@@ -29,7 +30,7 @@ find "$DIST_DIR" -mindepth 1 -maxdepth 1 -type f -delete
 mkdir -p "$SYMBOLS_DIR/split" "$SYMBOLS_DIR/universal"
 find "$SYMBOLS_DIR" -type f -delete
 
-"$FLUTTER_BIN" build apk --release \
+"$FLUTTER_BIN" build apk --release --flavor "$JANAN_FLAVOR" \
   --split-per-abi \
   --obfuscate \
   --split-debug-info="$SYMBOLS_DIR/split" \
@@ -37,7 +38,7 @@ find "$SYMBOLS_DIR" -type f -delete
 
 eval "$(bash ./scripts/ci/app_version.sh)"
 for abi in armeabi-v7a arm64-v8a x86_64; do
-  input="$APK_DIR/app-${abi}-release.apk"
+  input="$APK_DIR/app-${abi}-${JANAN_FLAVOR}-release.apk"
   output="$DIST_DIR/janan-${name}-${abi}.apk"
   if [[ ! -s "$input" ]]; then
     echo "Missing split APK: $input" >&2
@@ -46,12 +47,12 @@ for abi in armeabi-v7a arm64-v8a x86_64; do
   cp "$input" "$output"
 done
 
-"$FLUTTER_BIN" build apk --release \
+"$FLUTTER_BIN" build apk --release --flavor "$JANAN_FLAVOR" \
   --obfuscate \
   --split-debug-info="$SYMBOLS_DIR/universal" \
   --target-platform "$TARGET_PLATFORMS"
 
-universal="$APK_DIR/app-release.apk"
+universal="$APK_DIR/app-${JANAN_FLAVOR}-release.apk"
 if [[ ! -s "$universal" ]]; then
   echo "Missing universal APK: $universal" >&2
   exit 1

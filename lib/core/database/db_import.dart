@@ -1,7 +1,12 @@
+import 'dart:convert';
+
 import 'package:blood_pressure_app/core/database/legacy_bp_db.dart';
 import 'package:blood_pressure_app/core/database/medication_backup_import.dart';
+import 'package:blood_pressure_app/core/repository/medication_snapshots.dart';
 import 'package:blood_pressure_app/core/repository/powersync_medicine_repository.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:blood_pressure_app/features/health_tools/health_tool_kind.dart';
+import 'package:blood_pressure_app/features/health_tools/health_tools_repository.dart';
 import 'package:powersync/powersync.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -93,6 +98,7 @@ Future<int> _importHealth(
     final timeS = r['timestamp_unix_s'] as int?;
     if (timeS == null) continue;
     final rec = BloodPressureRecord(
+      id: r['id'] as String?,
       time: DateTimeS.fromSecondsSinceEpoch(timeS),
       sys: _decodePressure(r['sys_kpa']),
       dia: _decodePressure(r['dia_kpa']),
@@ -106,11 +112,12 @@ Future<int> _importHealth(
   }
   for (final row in await _query(
     sqlite,
-    'SELECT timestamp_unix_s, note, color FROM notes',
+    'SELECT id, timestamp_unix_s, note, color FROM notes',
   )) {
     final timeS = row['timestamp_unix_s'] as int?;
     if (timeS == null) continue;
     final note = Note(
+      id: row['id'] as String?,
       time: DateTimeS.fromSecondsSinceEpoch(timeS),
       note: row['note'] as String?,
       color: row['color'] as int?,
@@ -121,19 +128,51 @@ Future<int> _importHealth(
   }
   for (final r in await _query(
     sqlite,
-    'SELECT timestamp_unix_s, weight_kg, impedance_ohm FROM weights',
+    'SELECT id, timestamp_unix_s, weight_kg, impedance_ohm FROM weights',
   )) {
     final timeS = r['timestamp_unix_s'] as int?;
     final kg = r['weight_kg'] as num?;
     if (timeS == null || kg == null) continue;
     await weightRepo.add(
       BodyweightRecord(
+        id: r['id'] as String?,
         time: DateTimeS.fromSecondsSinceEpoch(timeS),
         weight: Weight.kg(kg.toDouble()),
         impedanceOhm: (r['impedance_ohm'] as num?)?.toDouble(),
       ),
     );
     count++;
+  }
+  final tools = HealthToolsRepository(targetDatabase);
+  final medicineIds = <String, String>{};
+  for (final row in await _query(sqlite, 'SELECT * FROM medicines')) {
+    final medicine = medicineFromStorageRow({
+      ...row,
+      'med_id': null,
+    }, unitKey: 'dose_unit');
+    final targetId = await medicineIdFor(
+      targetDatabase,
+      medicine,
+      includeRemoved: true,
+    );
+    if (targetId != null) medicineIds[row['id'] as String] = targetId;
+  }
+  for (final kind in HealthToolKind.values) {
+    for (final row in await _query(sqlite, 'SELECT * FROM ${kind.table}')) {
+      final values = Map<String, Object?>.from(row)..remove('id');
+      if (values['med_id'] is String) {
+        values['med_id'] = medicineIds[values['med_id']];
+      }
+      if (values['medicine_ids_json'] is String) {
+        final ids = (jsonDecode(values['medicine_ids_json'] as String) as List)
+            .cast<String>();
+        values['medicine_ids_json'] = jsonEncode(
+          ids.map((id) => medicineIds[id]).whereType<String>().toList(),
+        );
+      }
+      await tools.save(kind, values, id: row['id'] as String);
+      count++;
+    }
   }
   return count;
 }

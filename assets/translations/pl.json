@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Śledź swoją wagę",
   "onboardingWeightBody": "Otwórz Waga i dotknij +.\nWpisz odczyt z wagi. Sprawdź jednostkę, datę i godzinę, a następnie dotknij Zapisz.\nDotknij zapisanego pomiaru wagi, aby go przejrzeć lub zmienić. Jednostkę wybierzesz w Ustawieniach.",
   "onboardingMinutesValue": "{value} min",
-  "onboardingSaveFailed": "Nie udało się zapisać konfiguracji. Spróbuj ponownie."
+  "onboardingSaveFailed": "Nie udało się zapisać konfiguracji. Spróbuj ponownie.",
+  "healthTools": "Narzędzia zdrowotne"
 }

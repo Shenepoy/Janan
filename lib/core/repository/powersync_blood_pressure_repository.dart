@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:blood_pressure_app/core/database/health_write.dart';
+import 'package:blood_pressure_app/core/repository/observe_repository.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:sqlite_async/sqlite_async.dart';
 import 'package:uuid/uuid.dart';
@@ -19,11 +21,13 @@ class PowerSyncBloodPressureRepository extends BloodPressureRepository {
       "Adding records that don't contain values(sys,dia,pul) can't be accessed "
       'and should therefore not be added to the repository.',
     );
-    await _db.writeTransaction((tx) async {
+    await writeHealthTransaction(_db, (tx) async {
       final timeSec = record.time.secondsSinceEpoch;
       final existing = await tx.getAll(
-        'SELECT id FROM blood_pressure WHERE timestamp_unix_s = ?',
-        [timeSec],
+        record.id == null
+            ? 'SELECT id FROM blood_pressure WHERE timestamp_unix_s = ?'
+            : 'SELECT id FROM blood_pressure WHERE id = ?',
+        [record.id ?? timeSec],
       );
       if (existing.isEmpty) {
         await tx.execute(
@@ -31,7 +35,7 @@ class PowerSyncBloodPressureRepository extends BloodPressureRepository {
           '(id, timestamp_unix_s, sys_kpa, dia_kpa, pul, arm, source) '
           'VALUES (?, ?, ?, ?, ?, ?, ?)',
           [
-            _uuid.v4(),
+            record.id ?? _uuid.v4(),
             timeSec,
             record.sys?.kPa,
             record.dia?.kPa,
@@ -43,13 +47,14 @@ class PowerSyncBloodPressureRepository extends BloodPressureRepository {
       } else {
         await tx.execute(
           'UPDATE blood_pressure SET sys_kpa = ?, dia_kpa = ?, pul = ?, '
-          'arm = ?, source = ? WHERE id = ?',
+          'arm = ?, source = ?, timestamp_unix_s = ? WHERE id = ?',
           [
             record.sys?.kPa,
             record.dia?.kPa,
             record.pul,
             record.arm?.name,
             record.source.name,
+            timeSec,
             existing.first['id'],
           ],
         );
@@ -61,13 +66,14 @@ class PowerSyncBloodPressureRepository extends BloodPressureRepository {
   @override
   Future<List<BloodPressureRecord>> get(DateRange range) async {
     final results = await _db.getAll(
-      'SELECT timestamp_unix_s, sys_kpa, dia_kpa, pul, arm, source FROM blood_pressure '
+      'SELECT id, timestamp_unix_s, sys_kpa, dia_kpa, pul, arm, source FROM blood_pressure '
       'WHERE timestamp_unix_s BETWEEN ? AND ?',
       [range.startStamp, range.endStamp],
     );
     final records = <BloodPressureRecord>[];
     for (final r in results) {
       final rec = BloodPressureRecord(
+        id: r['id'] as String,
         time: DateTimeS.fromSecondsSinceEpoch(r['timestamp_unix_s'] as int),
         sys: _decodePressure(r['sys_kpa']),
         dia: _decodePressure(r['dia_kpa']),
@@ -84,9 +90,14 @@ class PowerSyncBloodPressureRepository extends BloodPressureRepository {
 
   @override
   Future<void> remove(BloodPressureRecord value) async {
-    await _db.execute('DELETE FROM blood_pressure WHERE timestamp_unix_s = ?', [
-      value.time.secondsSinceEpoch,
-    ]);
+    await writeHealthTransaction(_db, (tx) async {
+      await tx.execute(
+        value.id == null
+            ? 'DELETE FROM blood_pressure WHERE timestamp_unix_s = ?'
+            : 'DELETE FROM blood_pressure WHERE id = ?',
+        [value.id ?? value.time.secondsSinceEpoch],
+      );
+    });
     _controller.add(null);
   }
 
@@ -94,7 +105,8 @@ class PowerSyncBloodPressureRepository extends BloodPressureRepository {
   void notifyExternalWrite() => _controller.add(null);
 
   @override
-  Stream<BloodPressureRecord?> subscribe() => _controller.stream;
+  Stream<BloodPressureRecord?> subscribe() =>
+      observeRepository(_db, 'blood_pressure', _controller.stream);
 
   Pressure? _decodePressure(Object? value) {
     if (value is! num) return null;

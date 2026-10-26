@@ -9,11 +9,13 @@ import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/core/widgets/defer_until_sheet_settled.dart';
 import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
+import 'package:blood_pressure_app/features/health_tools/health_tools_screen.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/bluetooth_devices_screen.dart';
 import 'package:blood_pressure_app/features/settings/body_profile_screen.dart';
 import 'package:blood_pressure_app/features/settings/delete_data_screen.dart';
 import 'package:blood_pressure_app/features/settings/edadat_prefs.dart';
+import 'package:blood_pressure_app/features/settings/extra_settings_provider.dart';
 import 'package:blood_pressure_app/features/settings/graph_markings_screen.dart';
 import 'package:blood_pressure_app/features/settings/range_limits_screen.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
@@ -242,6 +244,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   ) {
     final bySub = _registry.getSettingsGroupedBySubSection(sectionKey);
     final result = <Widget>[];
+    final extra = ref.watch(extraSettingsProvider);
+    if (sectionKey == 'general' && extra != null) result.add(extra(context));
     final keys = bySub.keys.toList()
       ..sort((a, b) => (a ?? '').compareTo(b ?? ''));
 
@@ -691,6 +695,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _handleAction(BuildContext context, String key) async {
     switch (key) {
+      case 'health_tools':
+        await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const HealthToolsScreen()));
       case 'graph_settings':
         await Navigator.pushNamed(context, AppRoute.settingsGraph.path);
       case 'graph_markings':

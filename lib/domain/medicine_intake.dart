@@ -5,11 +5,15 @@ import 'package:blood_pressure_app/domain/units/weight.dart';
 class MedicineIntake {
   /// Create a instance of a medicine intake.
   const MedicineIntake({
+    this.id,
     required this.time,
     required this.medicine,
     required this.dosis,
     this.occurrenceId,
   });
+
+  /// Stable storage identity; absent only for new or legacy imported records.
+  final String? id;
 
   /// Timestamp when the medicine was taken.
   final DateTime time;

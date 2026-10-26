@@ -719,5 +719,6 @@
   "onboardingWeightTitle": "Kövesse testsúlyát",
   "onboardingWeightBody": "Nyissa meg a Testsúly lapot, és koppintson a + jelre.\nAdja meg a mérleg értékét. Ellenőrizze a mértékegységet, dátumot és időt, majd koppintson a Mentés gombra.\nKoppintson egy mentett testsúlyra a megtekintéshez vagy szerkesztéshez. A mértékegységet a Beállításokban választhatja ki.",
   "onboardingMinutesValue": "{value} perc",
-  "onboardingSaveFailed": "Nem sikerült menteni a beállításokat. Kérjük, próbáld újra."
+  "onboardingSaveFailed": "Nem sikerült menteni a beállításokat. Kérjük, próbáld újra.",
+  "healthTools": "Egészségügyi eszközök"
 }
