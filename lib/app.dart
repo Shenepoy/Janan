@@ -67,6 +67,7 @@ class App extends ConsumerStatefulWidget {
 
 class _AppState extends ConsumerState<App> with Loggable {
   PowerSyncDatabase? _entryDB;
+  final _healthSubscriptions = <StreamSubscription<dynamic>>[];
   final HomePresenceObserver _homePresence = HomePresenceObserver();
   final GlobalKey _launchSyncHostKey = GlobalKey();
   final GlobalKey _bootScopeKey = GlobalKey();
@@ -93,6 +94,9 @@ class _AppState extends ConsumerState<App> with Loggable {
 
   @override
   void dispose() {
+    for (final subscription in _healthSubscriptions) {
+      unawaited(subscription.cancel());
+    }
     if (_ownsDb) {
       _entryDB?.close();
     }
@@ -110,6 +114,7 @@ class _AppState extends ConsumerState<App> with Loggable {
   }
 
   Future<void> _loadApp() async {
+    if (!mounted) return;
     if (!Platform.isAndroid && !Platform.isIOS) {
       databaseFactory = databaseFactoryFfi;
     }
@@ -172,6 +177,7 @@ class _AppState extends ConsumerState<App> with Loggable {
       }
     }
 
+    if (!mounted) return;
     try {
       // Prefer the root boot overrides. [Ref.exists] is false until the
       // provider is first read, so using it here opened a second PowerSync
@@ -205,12 +211,14 @@ class _AppState extends ConsumerState<App> with Loggable {
       );
     }
 
+    if (!mounted) return;
     final settings = ref.read(appSettingsProvider);
     try {
       if (settings.allowMissingValues && settings.validateInputs) {
         await ref.updateSetting(validateInputsSetting, false);
       }
 
+      if (!mounted) return;
       if (settings.lastVersion <= 55 &&
           settings.bleInput == BluetoothInputMode.oldBluetoothInput) {
         await ref.updateSetting(
@@ -218,6 +226,7 @@ class _AppState extends ConsumerState<App> with Loggable {
           BluetoothInputMode.newBluetoothInputCrossPlatform.name,
         );
       }
+      if (!mounted) return;
       if (settings.bleInput != BluetoothInputMode.disabled) {
         await ref.updateSetting(bluetoothMeasurementsEnabledSetting, true);
       }
@@ -225,11 +234,13 @@ class _AppState extends ConsumerState<App> with Loggable {
       final buildNumber = int.parse(
         (await PackageInfo.fromPlatform()).buildNumber,
       );
+      if (!mounted) return;
       if (settings.lastVersion <= 57 &&
           settings.knownBleDev.isNotEmpty &&
           settings.bleInput != BluetoothInputMode.disabled) {
         await ref.updateSetting(syncBluetoothOnLaunchSetting, true);
       }
+      if (!mounted) return;
       await ref.updateSetting(
         lastVersionSetting,
         buildNumber < 58 ? 58 : buildNumber,
@@ -251,12 +262,14 @@ class _AppState extends ConsumerState<App> with Loggable {
       File(join(dbPath, 'config.db-journal')).deleteSync();
     }
 
+    if (!mounted) return;
     final hc = ref.read(appSettingsProvider);
     if (hc.useHealthConnect && hc.syncOnAppStart) {
       if (hc.bloodPressureEnabled && hc.syncPressureMeasurements) {
         logInfo('Syncing blood pressure measurements');
         await BPSyncModel(bpRepo: _bpRepo!, health: Health()).sync();
       }
+      if (!mounted) return;
       if (hc.weightInput && hc.syncWeightMeasurements) {
         logInfo('Syncing weight measurements');
         await WeightSyncModel(
@@ -266,52 +279,63 @@ class _AppState extends ConsumerState<App> with Loggable {
       }
     }
 
+    if (!mounted) return;
     if (hc.useHealthConnect) {
       final health = Health();
       if (hc.weightInput && hc.syncWeightMeasurements) {
-        _weightRepo!.subscribe().listen((record) async {
-          final current = ref.read(appSettingsProvider);
-          if (record != null &&
-              current.useHealthConnect &&
-              current.weightInput &&
-              current.syncWeightMeasurements) {
-            final canWrite = await health.requestPermissionsIfMissing([
-              HealthDataType.WEIGHT,
-            ], HealthDataAccess.WRITE);
-            if (!canWrite) {
-              logWarning('Health Connect weight write permissions not granted');
+        _healthSubscriptions.add(
+          _weightRepo!.subscribe().listen((record) async {
+            if (!mounted) return;
+            final current = ref.read(appSettingsProvider);
+            if (record != null &&
+                current.useHealthConnect &&
+                current.weightInput &&
+                current.syncWeightMeasurements) {
+              final canWrite = await health.requestPermissionsIfMissing([
+                HealthDataType.WEIGHT,
+              ], HealthDataAccess.WRITE);
+              if (!mounted) return;
+              if (!canWrite) {
+                logWarning(
+                  'Health Connect weight write permissions not granted',
+                );
+              }
+              await health.writeHealthData(
+                type: HealthDataType.WEIGHT,
+                value: record.weight.kg,
+                startTime: record.time,
+                recordingMethod: RecordingMethod.manual,
+              );
             }
-            await health.writeHealthData(
-              type: HealthDataType.WEIGHT,
-              value: record.weight.kg,
-              startTime: record.time,
-              recordingMethod: RecordingMethod.manual,
-            );
-          }
-        });
+          }),
+        );
       }
       if (hc.bloodPressureEnabled && hc.syncPressureMeasurements) {
-        _bpRepo!.subscribe().listen((record) async {
-          final current = ref.read(appSettingsProvider);
-          if (record?.sys != null &&
-              record?.dia != null &&
-              current.useHealthConnect &&
-              current.bloodPressureEnabled &&
-              current.syncPressureMeasurements) {
-            final canWrite = await health.requestPermissionsIfMissing([
-              HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
-              HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
-            ], HealthDataAccess.WRITE);
-            if (!canWrite) {
-              logWarning('Health Connect BP write permissions not granted');
+        _healthSubscriptions.add(
+          _bpRepo!.subscribe().listen((record) async {
+            if (!mounted) return;
+            final current = ref.read(appSettingsProvider);
+            if (record?.sys != null &&
+                record?.dia != null &&
+                current.useHealthConnect &&
+                current.bloodPressureEnabled &&
+                current.syncPressureMeasurements) {
+              final canWrite = await health.requestPermissionsIfMissing([
+                HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+                HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
+              ], HealthDataAccess.WRITE);
+              if (!mounted) return;
+              if (!canWrite) {
+                logWarning('Health Connect BP write permissions not granted');
+              }
+              await health.writeBloodPressure(
+                systolic: record!.sys!.mmHg,
+                diastolic: record.dia!.mmHg,
+                startTime: record.time,
+              );
             }
-            await health.writeBloodPressure(
-              systolic: record!.sys!.mmHg,
-              diastolic: record.dia!.mmHg,
-              startTime: record.time,
-            );
-          }
-        });
+          }),
+        );
       }
     }
 
@@ -351,6 +375,7 @@ class _AppState extends ConsumerState<App> with Loggable {
       initialRoute = AppRoute.medicationToday;
     }
 
+    if (!mounted) return;
     try {
       _medCache = ref.read(medCacheProvider);
     } on UnimplementedError {
@@ -452,6 +477,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
         .read(medicineIntakeRepositoryProvider)
         .subscribe()
         .listen((intake) {
+          if (!mounted) return;
           final settings = ref.read(appSettingsProvider);
           final occurrenceId = intake?.occurrenceId;
           if (!settings.shiftMissedDoseTimes) {
