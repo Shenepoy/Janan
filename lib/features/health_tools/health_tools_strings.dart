@@ -9,6 +9,12 @@ extension HealthToolsStrings on String {
 }
 
 const _english = <String, String>{
+  'tools.labObservation': 'Lab observations',
+  'tools.hints.labObservation':
+      'Copy the result, units and reference range from your report. This is a record, not an interpretation.',
+  'tools.fields.value': 'Result',
+  'tools.fields.reference_range': 'Reference range',
+  'tools.fields.source_hash': 'Source reference',
   'tools.title': 'Health tools',
   'tools.local': 'Stored on this device. No account or subscription required.',
   'tools.diaryContext': 'Symptoms and context',
@@ -85,6 +91,12 @@ const _english = <String, String>{
   'tools.options.clinician': 'Clinician-provided',
 };
 const _arabic = <String, String>{
+  'tools.labObservation': 'نتائج المختبر',
+  'tools.hints.labObservation':
+      'انسخ النتيجة والوحدة والمدى المرجعي من تقريرك. هذا سجل وليس تفسيراً طبياً.',
+  'tools.fields.value': 'النتيجة',
+  'tools.fields.reference_range': 'المدى المرجعي',
+  'tools.fields.source_hash': 'مرجع المصدر',
   'tools.title': 'أدوات الصحة',
   'tools.local': 'محفوظة على هذا الجهاز. لا تحتاج إلى حساب أو اشتراك.',
   'tools.diaryContext': 'الأعراض والسياق',

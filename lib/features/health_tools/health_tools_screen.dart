@@ -17,6 +17,7 @@ class HealthToolsScreen extends StatelessWidget {
         for (final kind in HealthToolKind.values)
           ListTile(
             leading: Icon(switch (kind) {
+              HealthToolKind.labObservation => Icons.science_outlined,
               HealthToolKind.diaryContext => Icons.edit_note,
               HealthToolKind.refillAdjustment => Icons.medication_outlined,
               HealthToolKind.personalTarget => Icons.track_changes,

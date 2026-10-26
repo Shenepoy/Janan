@@ -44,6 +44,14 @@ enum HealthToolKind {
     ToolField('contact'),
     ToolField('medicine_ids_json'),
   ]),
+  labObservation('lab_observations', [
+    ToolField('name', required: true),
+    ToolField('value', required: true),
+    ToolField('unit'),
+    ToolField('reference_range'),
+    ToolField('source_hash'),
+    ToolField('note'),
+  ]),
   measurementSession('measurement_sessions', [
     ToolField('deadline_unix_s', numeric: true),
     ToolField('reading_ids_json'),
