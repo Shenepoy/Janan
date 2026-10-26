@@ -9,6 +9,7 @@ extension HealthToolsStrings on String {
 }
 
 const _english = <String, String>{
+  'tools.add': 'Add entry',
   'tools.labObservation': 'Lab observations',
   'tools.hints.labObservation':
       'Copy the result, units and reference range from your report. This is a record, not an interpretation.',
@@ -91,6 +92,7 @@ const _english = <String, String>{
   'tools.options.clinician': 'Clinician-provided',
 };
 const _arabic = <String, String>{
+  'tools.add': 'إضافة إدخال',
   'tools.labObservation': 'نتائج المختبر',
   'tools.hints.labObservation':
       'انسخ النتيجة والوحدة والمدى المرجعي من تقريرك. هذا سجل وليس تفسيراً طبياً.',

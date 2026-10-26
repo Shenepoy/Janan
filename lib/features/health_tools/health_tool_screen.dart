@@ -57,6 +57,7 @@ class _HealthToolScreenState extends ConsumerState<HealthToolScreen> {
     appBar: AppBar(title: Text('tools.${widget.kind.name}'.toolTr(context))),
     floatingActionButton: FloatingActionButton(
       onPressed: _edit,
+      tooltip: 'tools.add'.toolTr(context),
       child: const Icon(Icons.add),
     ),
     body: StreamBuilder(
