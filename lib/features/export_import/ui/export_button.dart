@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:blood_pressure_app/core/database/health_database.dart';
+import 'package:blood_pressure_app/core/database/db_export.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/features/export_import/model/csv_converter.dart';
@@ -17,10 +17,8 @@ import 'package:blood_pressure_app/model/storage/types/export_format_setting.dar
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 import 'package:persistent_user_dir_access_android/persistent_user_dir_access_android.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:sqflite/sqflite.dart';
 
 /// Text button to export entries like configured in the context.
 class ExportButton extends StatelessWidget {
@@ -64,17 +62,7 @@ Future<void> performExport(
     bool completed;
     switch (exportSettings.exportFormat) {
       case ExportFormat.db:
-        try {
-          await context.healthDatabase.execute('PRAGMA wal_checkpoint(FULL)');
-        } catch (error, stackTrace) {
-          Log.warning(
-            'health.db checkpoint before export failed',
-            error: error,
-            stackTrace: stackTrace,
-          );
-        }
-        final path = join(await getDatabasesPath(), HealthDatabase.fileName);
-        final data = await File(path).readAsBytes();
+        final data = await exportHealthDatabase(context.healthDatabase);
 
         // https://mimetype.io/application/vnd.sqlite3
         if (!context.mounted) return;
