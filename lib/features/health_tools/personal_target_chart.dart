@@ -254,6 +254,15 @@ class _PersonalTargetChartState extends State<PersonalTargetChart> {
                     minY: low - pad,
                     maxY: high + pad,
                     lineBarsData: bars,
+                    gridData: FlGridData(
+                      drawVerticalLine: false,
+                      getDrawingHorizontalLine: (_) => FlLine(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: .12),
+                        strokeWidth: .5,
+                      ),
+                    ),
                     borderData: FlBorderData(show: false),
                     titlesData: FlTitlesData(
                       topTitles: const AxisTitles(),
@@ -267,6 +276,8 @@ class _PersonalTargetChartState extends State<PersonalTargetChart> {
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
+                          minIncluded: false,
+                          maxIncluded: false,
                           reservedSize: 30,
                           interval: (end - start) / 3,
                           getTitlesWidget: (v, meta) => Text(
