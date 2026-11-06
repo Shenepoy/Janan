@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:blood_pressure_app/features/health_tools/context_reading_link.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tool_kind.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_repository.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_strings.dart';
@@ -230,6 +231,12 @@ class _HealthToolEditorState extends State<HealthToolEditor> {
                             },
                           ),
                   ),
+              if (widget.kind == HealthToolKind.diaryContext)
+                ContextReadingLink(
+                  database: widget.repository.database,
+                  readingId: _values['reading_id'] as String?,
+                  onChanged: (id) => setState(() => _values['reading_id'] = id),
+                ),
               if (_error != null)
                 Text(
                   _error!,

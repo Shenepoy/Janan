@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:blood_pressure_app/core/database/database_providers.dart';
+import 'package:blood_pressure_app/features/health_tools/context_reading_link.dart';
 import 'package:blood_pressure_app/features/health_tools/emergency_card_export.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tool_editor.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tool_kind.dart';
@@ -136,6 +137,15 @@ class _HealthToolScreenState extends ConsumerState<HealthToolScreen> {
                         Text(
                           '${'tools.fields.${field.name}'.toolTr(context)}: ${row[field.name]}',
                         ),
+                    if (widget.kind == HealthToolKind.diaryContext &&
+                        row['reading_id'] != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: ContextReadingLink(
+                          database: _repository.database,
+                          readingId: row['reading_id'] as String,
+                        ),
+                      ),
                     if (widget.kind == HealthToolKind.refillAdjustment)
                       FutureBuilder(
                         future: _repository.stock(
