@@ -46,6 +46,24 @@ const _english = <String, String>{
       'Check your monitor instructions, cuff placement and posture. Remain still during the measurement. This tool does not diagnose or recommend treatment.',
   'tools.loadError': 'Could not load these records.',
   'tools.empty': 'No entries yet. Use + to add one.',
+  'tools.targetChart': 'Readings and saved targets',
+  'tools.targetChartHint':
+      'Dots show recorded values. Dashed lines show your saved target boundaries for each period, not treatment advice.',
+  'tools.days': 'days',
+  'tools.supply.shortage': 'First saved reminder beyond estimated supply',
+  'tools.supply.unknown':
+      'A reliable stock estimate is unavailable. Check units and recorded doses.',
+  'tools.supply.empty': 'No estimated supply remaining.',
+  'tools.supply.futureEntries':
+      'No forecast while future-dated stock or intake entries need review.',
+  'tools.supply.noSchedule':
+      'No date estimate without an upcoming saved schedule. As-needed use is not predicted.',
+  'tools.supply.unknownSchedule':
+      'No date estimate: check reminder amounts, units and dates.',
+  'tools.supply.covered':
+      'Estimated supply covers saved reminders within the next year or until they end.',
+  'tools.supply.basis':
+      'Based on saved reminder times and recorded stock, not a dosing recommendation. Unrecorded doses are not deducted. Changes in timing or as-needed use can change the estimate.',
   'tools.stock': 'Estimated remaining supply',
   'tools.linkReading': 'Link a reading',
   'tools.changeLinkedReading': 'Change linked reading',
@@ -135,6 +153,24 @@ const _arabic = <String, String>{
       'راجع تعليمات جهازك وموضع الكُم ووضعية الجسم. ابق ساكناً أثناء القياس. هذه الأداة لا تشخّص ولا تقترح علاجاً.',
   'tools.loadError': 'تعذر تحميل السجلات.',
   'tools.empty': 'لا توجد سجلات. اضغط + للإضافة.',
+  'tools.targetChart': 'القراءات والأهداف المحفوظة',
+  'tools.targetChartHint':
+      'النقاط هي القيم المسجلة. الخطوط المتقطعة هي حدود أهدافك المحفوظة لكل فترة وليست نصيحة علاجية.',
+  'tools.days': 'أيام',
+  'tools.supply.shortage': 'أول تذكير محفوظ يتجاوز المخزون التقديري',
+  'tools.supply.unknown':
+      'لا يتوفر تقدير موثوق للمخزون. راجع الوحدات والجرعات المسجلة.',
+  'tools.supply.empty': 'لا يوجد مخزون متبقٍ حسب التقدير.',
+  'tools.supply.futureEntries':
+      'لا يتوفر توقع قبل مراجعة إدخالات المخزون أو الجرعات ذات التاريخ المستقبلي.',
+  'tools.supply.noSchedule':
+      'لا يُقدّر تاريخ دون جدول قادم محفوظ. لا نتوقع الاستخدام عند الحاجة.',
+  'tools.supply.unknownSchedule':
+      'لا يتوفر تقدير للتاريخ: راجع كميات التذكيرات ووحداتها وتواريخها.',
+  'tools.supply.covered':
+      'يكفي المخزون التقديري للتذكيرات المحفوظة خلال السنة القادمة أو حتى انتهائها.',
+  'tools.supply.basis':
+      'يعتمد على أوقات التذكيرات والمخزون المسجل، وليس توصية بالجرعات. لا تُخصم الجرعات غير المسجلة. قد يتغير التقدير بتغيير الأوقات أو الاستخدام عند الحاجة.',
   'tools.stock': 'المخزون المتبقي التقديري',
   'tools.linkReading': 'ربط قراءة',
   'tools.changeLinkedReading': 'تغيير القراءة المرتبطة',

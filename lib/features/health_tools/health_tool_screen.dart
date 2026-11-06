@@ -9,6 +9,8 @@ import 'package:blood_pressure_app/features/health_tools/health_tool_editor.dart
 import 'package:blood_pressure_app/features/health_tools/health_tool_kind.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_repository.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_strings.dart';
+import 'package:blood_pressure_app/features/health_tools/medicine_supply_summary.dart';
+import 'package:blood_pressure_app/features/health_tools/personal_target_chart.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,6 +69,8 @@ class _HealthToolScreenState extends ConsumerState<HealthToolScreen> {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: [
           Text('tools.hints.${widget.kind.name}'.toolTr(context)),
+          if (widget.kind == HealthToolKind.personalTarget)
+            PersonalTargetChart(repository: _repository),
           if (widget.kind == HealthToolKind.measurementSession) ...[
             const SizedBox(height: 12),
             Text('tools.preparation'.toolTr(context)),
@@ -147,14 +151,10 @@ class _HealthToolScreenState extends ConsumerState<HealthToolScreen> {
                         ),
                       ),
                     if (widget.kind == HealthToolKind.refillAdjustment)
-                      FutureBuilder(
-                        future: _repository.stock(
-                          row['med_id'] as String,
-                          row['unit'] as String,
-                        ),
-                        builder: (context, stock) => Text(
-                          '${'tools.stock'.toolTr(context)}: ${stock.data?.toStringAsFixed(2) ?? 'tools.unknown'.toolTr(context)} ${row['unit']}',
-                        ),
+                      MedicineSupplySummary(
+                        repository: _repository,
+                        medicineId: row['med_id'] as String,
+                        unit: row['unit'] as String,
                       ),
                     if (widget.kind == HealthToolKind.measurementSession) ...[
                       if (row['deadline_unix_s'] is num)

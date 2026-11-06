@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:blood_pressure_app/core/database/health_write.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tool_kind.dart';
+import 'package:blood_pressure_app/features/health_tools/medicine_supply.dart';
 import 'package:powersync/powersync.dart';
 import 'package:uuid/uuid.dart';
 
@@ -93,30 +94,42 @@ class HealthToolsRepository {
         await tx.execute('DELETE FROM ${kind.table} WHERE id=?', [id]);
       });
 
-  /// Inventory is recomputed from the ledger and recorded intakes, so editing,
-  /// retrying or deleting an intake never accumulates duplicate deductions.
-  /// Units must match explicitly; there is no assumed mg-to-tablet conversion.
-  Future<double?> stock(String medicineId, String unit) async {
-    final adjustments = await database.getAll(
-      'SELECT quantity,timestamp_unix_s FROM refill_adjustments WHERE med_id=? AND unit=? ORDER BY timestamp_unix_s',
-      [medicineId, unit],
+  /// One watched query covers ledger, logs, schedules and completed occurrences.
+  Stream<List<Map<String, Object?>>> watchSupply(
+    String medicineId,
+  ) => database.watch(
+    "SELECT 'adjustment' kind,json_object('quantity',quantity,'unit',unit,'timestamp_unix_s',timestamp_unix_s) data FROM refill_adjustments WHERE med_id=? "
+    "UNION ALL SELECT 'intake',json_object('dosis_mg',dosis_mg,'medicine_snapshot_json',medicine_snapshot_json,'timestamp_unix_s',timestamp_unix_s) FROM intakes WHERE med_id=? "
+    "UNION ALL SELECT 'schedule',json_object('id',id,'active',active,'ended',ended,'dose_amount',dose_amount,'dose_unit',dose_unit,'time_minutes_json',time_minutes_json,'weekdays_mask',weekdays_mask,'start_date',start_date,'end_date',end_date) FROM medication_schedules WHERE med_id=? "
+    "UNION ALL SELECT 'occurrence',json_object('id',o.id,'status',o.status) FROM dose_occurrences o JOIN medication_schedules s ON s.id=o.schedule_id WHERE s.med_id=?",
+    parameters: [medicineId, medicineId, medicineId, medicineId],
+  );
+
+  MedicineSupply supplyFromRows(
+    List<Map<String, Object?>> rows,
+    String unit,
+    DateTime now,
+  ) {
+    List<Map<String, Object?>> of(String kind) => rows
+        .where((r) => r['kind'] == kind)
+        .map(
+          (r) =>
+              Map<String, Object?>.from(jsonDecode(r['data'] as String) as Map),
+        )
+        .toList();
+    return estimateMedicineSupply(
+      adjustments: of('adjustment'),
+      intakes: of('intake'),
+      schedules: of('schedule'),
+      occurrences: of('occurrence'),
+      unit: unit,
+      now: now,
     );
-    if (adjustments.isEmpty) return null;
-    var remaining = adjustments.fold<double>(
-      0,
-      (sum, row) => sum + (row['quantity'] as num).toDouble(),
-    );
-    final intakes = await database.getAll(
-      'SELECT dosis_mg,medicine_snapshot_json FROM intakes WHERE med_id=? AND timestamp_unix_s>=?',
-      [medicineId, adjustments.first['timestamp_unix_s']],
-    );
-    for (final intake in intakes) {
-      final snapshot = intake['medicine_snapshot_json'];
-      if (snapshot is! String) return null;
-      final data = jsonDecode(snapshot) as Map<String, dynamic>;
-      if (data['medicine_unit'] != unit) return null;
-      remaining -= (intake['dosis_mg'] as num).toDouble();
-    }
-    return remaining;
   }
+
+  Future<double?> stock(String medicineId, String unit) async => supplyFromRows(
+    await watchSupply(medicineId).first,
+    unit,
+    DateTime.now(),
+  ).remaining;
 }
