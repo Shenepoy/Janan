@@ -16,6 +16,7 @@ import 'package:blood_pressure_app/screens/settings_screen.dart';
 import 'package:camera_cutout/camera_cutout.dart';
 import 'package:camera_cutout/camera_cutout_platform_interface.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
@@ -54,10 +55,287 @@ Future<void> _reveal(WidgetTester tester, Finder list, Finder target) async {
 }
 
 void main() {
-  for (final direction in [ui.TextDirection.ltr, ui.TextDirection.rtl]) {
-    testWidgets('floating titles keep their start anchor in $direction', (
+  testWidgets('desktop direct navigation never visits unrelated pages', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpApp(
       tester,
-    ) async {
+      await _minimalShell(
+        pages: const [
+          Text('home-page'),
+          Text('weight-page'),
+          Text('stats-page'),
+          Text('settings-page'),
+        ],
+      ),
+    );
+    await tester.tap(find.byKey(AppShell.navSettingsKey));
+    await tester.pump();
+    final visited = <ShellTab>{};
+    for (var frame = 0; frame < 30; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      visited.add(
+        tester.widget<ShellTabScope>(find.byType(ShellTabScope)).activeTab,
+      );
+    }
+    expect(
+      visited.difference({ShellTab.home, ShellTab.settings}),
+      isEmpty,
+      reason: 'A direct Settings click must not flash intervening pages',
+    );
+    expect(visited, contains(ShellTab.settings));
+  }, variant: const TargetPlatformVariant({TargetPlatform.linux}));
+  for (final delay in [50, 150]) {
+    testWidgets(
+      'desktop navigation retargets after $delay ms and keeps scroll',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1280, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final scroll = ScrollController();
+        addTearDown(scroll.dispose);
+        await pumpApp(
+          tester,
+          await _minimalShell(
+            pages: [
+              ListView.builder(
+                controller: scroll,
+                itemCount: 100,
+                itemExtent: 60,
+                itemBuilder: (_, i) => Text('Reading $i'),
+              ),
+              const Text('weight-page'),
+              const Text('stats-page'),
+              const Text('settings-page'),
+            ],
+          ),
+        );
+        scroll.jumpTo(240);
+        await tester.pump();
+        await tester.tap(find.byKey(AppShell.navSettingsKey));
+        await tester.pump();
+        await tester.pump(Duration(milliseconds: delay));
+        final fade = find
+            .ancestor(of: find.byType(PageView), matching: find.byType(Opacity))
+            .first;
+        final beforeRetarget = tester.widget<Opacity>(fade).opacity;
+        await tester.tap(find.byKey(AppShell.navStatisticsKey));
+        await tester.pump();
+        expect(
+          tester.widget<Opacity>(fade).opacity,
+          closeTo(beforeRetarget, 0.001),
+        );
+        await tester.pump(const Duration(milliseconds: 32));
+        await tester.tap(find.byKey(AppShell.navHomeKey));
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<ShellTabScope>(find.byType(ShellTabScope)).activeTab,
+          ShellTab.home,
+        );
+        expect(scroll.offset, 240);
+        expect(find.text('Reading 5').hitTestable(), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+      variant: const TargetPlatformVariant({TargetPlatform.linux}),
+    );
+  }
+  testWidgets('desktop navigation respects reduced motion', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        pages: const [
+          Text('home-page'),
+          Text('weight-page'),
+          Text('stats-page'),
+          Text('settings-page'),
+        ],
+      ),
+    );
+    await tester.tap(find.byKey(AppShell.navSettingsKey));
+    await tester.pump();
+    expect(
+      tester.widget<ShellTabScope>(find.byType(ShellTabScope)).activeTab,
+      ShellTab.settings,
+    );
+    expect(find.text('settings-page').hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  }, variant: const TargetPlatformVariant({TargetPlatform.linux}));
+  for (final direction in [ui.TextDirection.ltr, ui.TextDirection.rtl]) {
+    testWidgets(
+      'settings column and header align in desktop shell $direction',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await pumpApp(
+          tester,
+          await _minimalShell(
+            textDirection: direction,
+            pages: const [
+              Text('home'),
+              Text('weight'),
+              Text('stats'),
+              SettingsPage(showAppBar: false),
+            ],
+          ),
+        );
+        final homeHeader = tester.getRect(find.byType(DashboardAppBar));
+        final range = tester.getRect(
+          find.byKey(const ValueKey('landscape_range_button')),
+        );
+        expect(homeHeader.overlaps(range), isFalse);
+        expect(homeHeader.width, 688);
+        expect(homeHeader.center.dx, 640);
+        await tester.tap(find.byKey(AppShell.navSettingsKey));
+        await tester.pumpAndSettle();
+        final content = tester.getRect(find.byType(SettingsSectionList));
+        final header = tester.getRect(find.byType(DashboardAppBar));
+        expect(header, homeHeader);
+        expect(content.center.dx, closeTo(640, 1));
+        expect(content.width, 720);
+        if (direction == ui.TextDirection.ltr) {
+          expect(header.left, closeTo(content.left + 16, 1));
+        } else {
+          expect(header.right, closeTo(content.right - 16, 1));
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+  for (final platform in [
+    TargetPlatform.linux,
+    TargetPlatform.macOS,
+    TargetPlatform.windows,
+  ]) {
+    for (final direction in [ui.TextDirection.ltr, ui.TextDirection.rtl]) {
+      testWidgets(
+        'desktop navigation is vertical and wheel-safe $platform $direction',
+        (tester) async {
+          await tester.binding.setSurfaceSize(const Size(1400, 900));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          final listController = ScrollController();
+          addTearDown(listController.dispose);
+          const homeKey = ValueKey('desktop-home');
+          const listKey = ValueKey('desktop-weight-list');
+          await pumpApp(
+            tester,
+            await _minimalShell(
+              textDirection: direction,
+              pages: [
+                const SizedBox.expand(key: homeKey, child: Text('home-page')),
+                ListView.builder(
+                  key: listKey,
+                  controller: listController,
+                  itemExtent: 60,
+                  itemCount: 100,
+                  itemBuilder: (_, index) => Text('Row $index'),
+                ),
+                const Text('stats-page'),
+                const Text('settings-page'),
+              ],
+            ),
+          );
+          await tester.pump();
+          final pages = find.byType(PageView).first;
+          final controller = tester.widget<PageView>(pages).controller!;
+          expect(tester.widget<PageView>(pages).scrollDirection, Axis.vertical);
+
+          Future<void> wheel(Offset delta, Offset position) async {
+            await tester.sendEventToBinding(
+              PointerScrollEvent(
+                kind: PointerDeviceKind.mouse,
+                position: position,
+                scrollDelta: delta,
+              ),
+            );
+            await tester.pumpAndSettle();
+          }
+
+          for (final delta in [const Offset(0, 1000), const Offset(1000, 0)]) {
+            await wheel(delta, tester.getCenter(find.byKey(homeKey)));
+            expect(controller.page, 0);
+          }
+          final homeBefore = tester.getTopLeft(find.byKey(homeKey));
+          await tester.tap(find.byKey(AppShell.navWeightKey));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 50));
+          // The outgoing page moves vertically and fades before a direct swap.
+          expect(controller.page, 0);
+          final header = find.byType(DashboardAppBar);
+          expect(tester.widget<DashboardAppBar>(header).page, greaterThan(0));
+          expect(tester.widget<DashboardAppBar>(header).page, lessThan(1));
+          // The title morphs continuously; the app bar and FAB do not share
+          // the body's fade-through transition.
+          for (final chrome in [header, find.byType(NavigationActionButtons)]) {
+            final opacity = tester
+                .widgetList<Opacity>(
+                  find.ancestor(of: chrome, matching: find.byType(Opacity)),
+                )
+                .fold(1.0, (value, widget) => value * widget.opacity);
+            expect(opacity, 1);
+          }
+          final homeDuring = tester.getTopLeft(find.byKey(homeKey));
+          expect(homeDuring.dx, closeTo(homeBefore.dx, 0.01));
+          expect(homeDuring.dy, lessThan(homeBefore.dy));
+          await tester.pumpAndSettle();
+          expect(controller.page, 1);
+
+          await wheel(
+            const Offset(0, 300),
+            tester.getCenter(find.byKey(listKey)),
+          );
+          expect(listController.offset, greaterThan(0));
+          expect(controller.page, 1);
+          listController.jumpTo(listController.position.maxScrollExtent);
+          await tester.pump();
+          await wheel(
+            const Offset(0, 1000),
+            tester.getCenter(find.byKey(listKey)),
+          );
+          expect(controller.page, 1);
+          listController.jumpTo(0);
+          await tester.pump();
+          await wheel(
+            const Offset(0, -1000),
+            tester.getCenter(find.byKey(listKey)),
+          );
+          expect(controller.page, 1);
+
+          await tester.binding.setSurfaceSize(const Size(400, 800));
+          await tester.pumpAndSettle();
+          expect(
+            tester.widget<PageView>(pages).scrollDirection,
+            Axis.horizontal,
+          );
+          expect(controller.page, 1);
+          await wheel(
+            const Offset(1000, 0),
+            tester.getCenter(find.byKey(listKey)),
+          );
+          expect(controller.page, 1);
+          await tester.binding.setSurfaceSize(const Size(1400, 900));
+          await tester.pumpAndSettle();
+          expect(tester.widget<PageView>(pages).scrollDirection, Axis.vertical);
+          expect(controller.page, 1);
+
+          await tester.tap(find.byKey(AppShell.navHomeKey));
+          await tester.pumpAndSettle();
+          expect(controller.page, 0);
+          expect(tester.takeException(), isNull);
+        },
+        variant: TargetPlatformVariant({platform}),
+      );
+    }
+  }
+  for (final direction in [ui.TextDirection.ltr, ui.TextDirection.rtl]) {
+    testWidgets('floating titles stay centered in $direction', (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final page = ValueNotifier<double>(0);
@@ -89,17 +367,17 @@ void main() {
           ),
         ),
       );
-      double startOf(String title) {
+      double centerOf(String title) {
         final rect = tester.getRect(
           find.descendant(
             of: find.byType(DashboardAppBar),
             matching: find.text(title),
           ),
         );
-        return direction == ui.TextDirection.ltr ? rect.left : rect.right;
+        return rect.center.dx;
       }
 
-      final anchor = startOf('Measurements');
+      final anchor = tester.getCenter(find.byType(DashboardAppBar)).dx;
       for (final value in [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 3.0]) {
         page.value = value;
         await tester.pump();
@@ -116,7 +394,7 @@ void main() {
               )
               .evaluate()
               .isNotEmpty) {
-            expect(startOf(title), closeTo(anchor, 0.01));
+            expect(centerOf(title), closeTo(anchor, 0.01));
           }
         }
         expect(tester.takeException(), isNull);

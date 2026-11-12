@@ -4,6 +4,7 @@ import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_info.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
+import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:blood_pressure_app/model/blood_pressure/pressure_unit.dart';
 import 'package:blood_pressure_app/model/range_limits.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -26,68 +27,76 @@ class RangeLimitsScreen extends ConsumerWidget {
       color: theme.colorScheme.onSurfaceVariant,
     );
     final weightPreview = _weightPreview(settings);
-    return Scaffold(
-      appBar: AppBar(title: Text('rangeLimits'.tr())),
-      body: ListView(
-        children: [
-          _SectionTitle('bmi'.tr()),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text('rangeLimitsBmiHint'.tr(), style: hintStyle),
-          ),
-          _LimitTile(
-            label: 'rangeLimitNormalFrom'.tr(),
-            value: limits.bmiNormalMin,
-            onSubmit: (value) => _editBmi(context, ref, limits, normal: value),
-          ),
-          _LimitTile(
-            label: 'rangeLimitOverweightFrom'.tr(),
-            value: limits.bmiOverweightMin,
-            onSubmit: (value) =>
-                _editBmi(context, ref, limits, overweight: value),
-          ),
-          _LimitTile(
-            label: 'rangeLimitObesityFrom'.tr(),
-            value: limits.bmiObeseMin,
-            onSubmit: (value) => _editBmi(context, ref, limits, obese: value),
-          ),
-          if (weightPreview != null)
+    return SettingsSubpage(
+      title: Text('rangeLimits'.tr()),
+      children: [
+        SettingsPageCard(
+          sectionId: 'range-bmi',
+          title: 'bmi'.tr(),
+          icon: Icons.monitor_weight_outlined,
+          children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: Text(weightPreview, style: hintStyle),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text('rangeLimitsBmiHint'.tr(), style: hintStyle),
             ),
-          _SectionTitle(
-            'rangeLimitsBpSection'.tr(namedArgs: {'unit': unit.name}),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text('rangeLimitsBpHint'.tr(), style: hintStyle),
-          ),
-          _LimitTile(
-            label: 'rangeLimitSysElevated'.tr(),
-            value: _shownPressure(limits.sysElevatedMmHg, unit),
-            onSubmit: (value) =>
-                _editSys(context, ref, limits, unit, elevated: value),
-          ),
-          _LimitTile(
-            label: 'rangeLimitSysHigh'.tr(),
-            value: _shownPressure(limits.sysHighMmHg, unit),
-            onSubmit: (value) =>
-                _editSys(context, ref, limits, unit, high: value),
-          ),
-          _LimitTile(
-            label: 'rangeLimitDiaHigh'.tr(),
-            value: _shownPressure(limits.diaHighMmHg, unit),
-            onSubmit: (value) => _editDia(context, ref, limits, unit, value),
-          ),
-          const SizedBox(height: 8),
-          ListTile(
-            leading: const Icon(Icons.restart_alt),
-            title: Text('rangeLimitsReset'.tr()),
-            onTap: () => _reset(ref),
-          ),
-        ],
-      ),
+            _LimitTile(
+              label: 'rangeLimitNormalFrom'.tr(),
+              value: limits.bmiNormalMin,
+              onSubmit: (value) =>
+                  _editBmi(context, ref, limits, normal: value),
+            ),
+            _LimitTile(
+              label: 'rangeLimitOverweightFrom'.tr(),
+              value: limits.bmiOverweightMin,
+              onSubmit: (value) =>
+                  _editBmi(context, ref, limits, overweight: value),
+            ),
+            _LimitTile(
+              label: 'rangeLimitObesityFrom'.tr(),
+              value: limits.bmiObeseMin,
+              onSubmit: (value) => _editBmi(context, ref, limits, obese: value),
+            ),
+            if (weightPreview != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Text(weightPreview, style: hintStyle),
+              ),
+          ],
+        ),
+        SettingsPageCard(
+          sectionId: 'range-bp',
+          title: 'rangeLimitsBpSection'.tr(namedArgs: {'unit': unit.name}),
+          icon: Icons.favorite_outline,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text('rangeLimitsBpHint'.tr(), style: hintStyle),
+            ),
+            _LimitTile(
+              label: 'rangeLimitSysElevated'.tr(),
+              value: _shownPressure(limits.sysElevatedMmHg, unit),
+              onSubmit: (value) =>
+                  _editSys(context, ref, limits, unit, elevated: value),
+            ),
+            _LimitTile(
+              label: 'rangeLimitSysHigh'.tr(),
+              value: _shownPressure(limits.sysHighMmHg, unit),
+              onSubmit: (value) =>
+                  _editSys(context, ref, limits, unit, high: value),
+            ),
+            _LimitTile(
+              label: 'rangeLimitDiaHigh'.tr(),
+              value: _shownPressure(limits.diaHighMmHg, unit),
+              onSubmit: (value) => _editDia(context, ref, limits, unit, value),
+            ),
+          ],
+        ),
+        ListTile(
+          leading: const Icon(Icons.restart_alt),
+          title: Text('rangeLimitsReset'.tr()),
+          onTap: () => _reset(ref),
+        ),
+      ],
     );
   }
 
@@ -107,18 +116,6 @@ class RangeLimitsScreen extends ConsumerWidget {
         .map((band) => '${band.label}: \u2066${band.interval}\u2069')
         .join('\n');
   }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-    child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-  );
 }
 
 class _LimitTile extends StatelessWidget {

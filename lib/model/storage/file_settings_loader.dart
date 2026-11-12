@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
@@ -10,6 +11,7 @@ import 'package:blood_pressure_app/model/storage/export_settings.dart';
 import 'package:blood_pressure_app/model/storage/export_xls_settings.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:blood_pressure_app/model/storage/persistable_settings.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
@@ -37,10 +39,7 @@ const persistedSettingsKeys = [
 /// files from the old settings directory on first read. Passing a directory
 /// path keeps the legacy file layout for zip import and tests.
 class FileSettingsLoader {
-  FileSettingsLoader._({
-    required this.directory,
-    this._preferences,
-  });
+  FileSettingsLoader._({required this.directory, this._preferences});
 
   /// Creates a loader from [path] or the default settings directory.
   ///
@@ -51,6 +50,15 @@ class FileSettingsLoader {
     String? path,
     SharedPreferences? preferences,
   }) async {
+    if (kIsWeb) {
+      if (path != null) {
+        throw UnsupportedError('Browser settings have no native directory');
+      }
+      return FileSettingsLoader._(
+        directory: '',
+        preferences: preferences ?? await SharedPreferences.getInstance(),
+      );
+    }
     if (preferences != null) {
       final dir = path ?? join(await getDatabasesPath(), 'settings');
       Directory(dir).createSync(recursive: true);
@@ -72,6 +80,17 @@ class FileSettingsLoader {
   final String directory;
 
   final SharedPreferences? _preferences;
+  Map<String, String>? _archiveValues;
+
+  static FileSettingsLoader fromArchive(Archive archive) {
+    final loader = FileSettingsLoader._(directory: '');
+    loader._archiveValues = {
+      for (final entry in archive.files)
+        if (entry.isFile && persistedSettingsKeys.contains(entry.name))
+          entry.name: utf8.decode(entry.content as List<int>),
+    };
+    return loader;
+  }
 
   /// Serializes SharedPreferences writes so a later change cannot be overwritten
   /// by an earlier in-flight `setString`.
@@ -109,8 +128,10 @@ class FileSettingsLoader {
   }
 
   String? _read(String fileName) {
+    if (_archiveValues != null) return _archiveValues![fileName];
     final fromPrefs = _preferences?.getString(fileName);
     if (fromPrefs != null) return fromPrefs;
+    if (kIsWeb) return null;
     final file = File(join(directory, fileName));
     try {
       return file.readAsStringSync();
@@ -120,6 +141,10 @@ class FileSettingsLoader {
   }
 
   Future<void> _write(String fileName, String json) async {
+    if (_archiveValues != null) {
+      _archiveValues![fileName] = json;
+      return;
+    }
     final prefs = _preferences;
     if (prefs != null) {
       try {
@@ -138,6 +163,7 @@ class FileSettingsLoader {
   }
 
   void _deleteLeftoverFile(String fileName) {
+    if (kIsWeb) return;
     final leftover = File(join(directory, fileName));
     if (leftover.existsSync()) leftover.deleteSync();
   }
@@ -160,11 +186,8 @@ class FileSettingsLoader {
     ExportColumnsManager.new,
   );
 
-  Future<ExportSettings> loadExportSettings() async => _load(
-    exportSettingsKey,
-    ExportSettings.fromJson,
-    ExportSettings.new,
-  );
+  Future<ExportSettings> loadExportSettings() async =>
+      _load(exportSettingsKey, ExportSettings.fromJson, ExportSettings.new);
 
   Future<IntervalStoreManager> loadIntervalStorageManager() async => _load(
     intervalStoreKey,
@@ -210,6 +233,7 @@ class FileSettingsLoader {
   }
 
   void _backupFile(Archive archive, String fileName) {
+    if (kIsWeb) return;
     final file = File(join(directory, fileName));
     if (!file.existsSync()) return;
     archive.addFile(ArchiveFile.string(fileName, file.readAsStringSync()));

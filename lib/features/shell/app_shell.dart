@@ -79,19 +79,18 @@ class AppShell extends ConsumerWidget {
       showBloodPressure: showBloodPressure,
       showMedicationHistory: showMedicationHistory,
     );
-    return SafaehDeviceCutoutScope(
-      child: _AppShellView(
-        pages: pages,
-        homePresence: homePresence,
-        initialTab: tabs.contains(initialTab) ? initialTab : ShellTab.home,
-        showWeight: enabled,
-        showBloodPressure: showBloodPressure,
-        showMedicine: showMedicine,
-        showMedicationHistory: showMedicationHistory,
-        settingsSearchOpen: settingsSearchOpen,
-        onSettingsSearch: onSettingsSearch,
-      ),
+    final shell = _AppShellView(
+      pages: pages,
+      homePresence: homePresence,
+      initialTab: tabs.contains(initialTab) ? initialTab : ShellTab.home,
+      showWeight: enabled,
+      showBloodPressure: showBloodPressure,
+      showMedicine: showMedicine,
+      showMedicationHistory: showMedicationHistory,
+      settingsSearchOpen: settingsSearchOpen,
+      onSettingsSearch: onSettingsSearch,
     );
+    return kIsWeb ? shell : SafaehDeviceCutoutScope(child: shell);
   }
 }
 
@@ -122,17 +121,35 @@ class _AppShellView extends StatefulWidget {
   State<_AppShellView> createState() => _AppShellViewState();
 }
 
-class _AppShellViewState extends State<_AppShellView> {
+class _AppShellViewState extends State<_AppShellView>
+    with SingleTickerProviderStateMixin {
   static const _systemUiChannel = MethodChannel('com.shenepoy.janan/system_ui');
 
   late int _index;
   late double _page;
   late final PageController _pageController;
+  late final AnimationController _desktopMotion;
+  late final Listenable _chromeAnimation;
+  double _desktopChromeFrom = 0;
+  double _desktopChromeTo = 0;
+  Curve _desktopChromeCurve = Curves.easeInOutCubic;
+  int? _desktopTarget;
+  bool _desktopSwitched = false;
+  double _desktopDirection = 1;
+  double _desktopFadeFrom = 1;
+
   final _pagesKey = GlobalKey(debugLabel: 'shell_pages');
   late final MeasurementFilterController _measurementFilter;
   bool _landscapeNavCollapsed = true;
   bool _isLandscape = false;
   bool _compactLandscapeStatusBarHidden = false;
+
+  bool get _desktopNavigation => switch (defaultTargetPlatform) {
+    TargetPlatform.linux ||
+    TargetPlatform.macOS ||
+    TargetPlatform.windows => true,
+    _ => false,
+  };
 
   List<ShellTab> get _tabs => visibleShellTabs(
     showWeight: widget.showWeight,
@@ -158,7 +175,10 @@ class _AppShellViewState extends State<_AppShellView> {
     _index = _tabs.indexOf(widget.initialTab).clamp(0, _tabs.length - 1);
     _page = _index.toDouble();
     _measurementFilter = MeasurementFilterController();
+    _desktopMotion = AnimationController(vsync: this, value: 1)
+      ..addListener(_advanceDesktopTransition);
     _pageController = PageController(initialPage: _index);
+    _chromeAnimation = Listenable.merge([_pageController, _desktopMotion]);
     _pageController.addListener(_syncPage);
     _updatePresence();
   }
@@ -171,6 +191,9 @@ class _AppShellViewState extends State<_AppShellView> {
         oldWidget.showMedicationHistory == widget.showMedicationHistory) {
       return;
     }
+    _desktopMotion.stop();
+    _desktopTarget = null;
+    _desktopMotion.value = 1;
     final oldTabs = visibleShellTabs(
       showWeight: oldWidget.showWeight,
       showBloodPressure: oldWidget.showBloodPressure,
@@ -191,10 +214,12 @@ class _AppShellViewState extends State<_AppShellView> {
 
   @override
   void dispose() {
-    if (_compactLandscapeStatusBarHidden &&
+    if (!kIsWeb &&
+        _compactLandscapeStatusBarHidden &&
         defaultTargetPlatform == TargetPlatform.android) {
       _setStatusBarVisible(true);
     }
+    _desktopMotion.dispose();
     _pageController.removeListener(_syncPage);
     _pageController.dispose();
     _measurementFilter.dispose();
@@ -210,7 +235,7 @@ class _AppShellViewState extends State<_AppShellView> {
   void _syncCompactLandscapeStatusBar(bool shouldHide) {
     if (_compactLandscapeStatusBarHidden == shouldHide) return;
     _compactLandscapeStatusBarHidden = shouldHide;
-    if (defaultTargetPlatform != TargetPlatform.android) return;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _compactLandscapeStatusBarHidden != shouldHide) return;
       _setStatusBarVisible(!shouldHide);
@@ -249,15 +274,75 @@ class _AppShellViewState extends State<_AppShellView> {
     );
   }
 
+  // Swap pages only while faded out. A rail click must never activate every
+  // intermediate page (and its title/actions) on the way to the destination.
+  void _advanceDesktopTransition() {
+    final target = _desktopTarget;
+    if (target == null) return;
+    if (!_desktopSwitched && _desktopMotion.value >= 0.4) {
+      _desktopSwitched = true;
+      _pageController.jumpToPage(target);
+    }
+    if (_desktopMotion.isCompleted) _desktopTarget = null;
+  }
+
+  double get _desktopOpacity {
+    final value = _desktopMotion.value;
+    return value < 0.4
+        ? _desktopFadeFrom * (1 - Curves.easeOutCubic.transform(value / 0.4))
+        : Curves.easeOutCubic.transform((value - 0.4) / 0.6);
+  }
+
+  Widget _desktopTransition(Widget child, {bool slide = false}) =>
+      AnimatedBuilder(
+        animation: _desktopMotion,
+        child: child,
+        builder: (context, child) {
+          final opacity = _desktopOpacity;
+          final distance = _desktopMotion.value < 0.4 ? -8.0 : 16.0;
+          return IgnorePointer(
+            ignoring: _desktopTarget != null,
+            child: Opacity(
+              opacity: opacity,
+              child: Transform.translate(
+                offset: Offset(
+                  0,
+                  slide ? _desktopDirection * distance * (1 - opacity) : 0,
+                ),
+                child: child,
+              ),
+            ),
+          );
+        },
+      );
+
   void _go(int index) {
-    if (index == _index) return;
+    if (index == (_desktopTarget ?? _index)) return;
     if (index != _tabs.length - 1 && widget.settingsSearchOpen?.value == true) {
       widget.settingsSearchOpen!.value = false;
     }
     final tokens = SafaehTheme.of(context);
     final motion = safaehResolvedMotion(context, tokens.motion);
     if (motion == Duration.zero || !_pageController.hasClients) {
+      _desktopTarget = null;
+      _desktopMotion.stop();
+      _desktopMotion.value = 1;
       _pageController.jumpToPage(index);
+    } else if (_desktopNavigation && _isLandscape) {
+      // Short vertical fade-through, independent of how far apart the tabs are.
+      // Retarget from the current opacity if a second navigation click arrives.
+      final opacity = _desktopOpacity;
+      _desktopChromeFrom = _chromePage;
+      _desktopChromeTo = index.toDouble();
+      _desktopChromeCurve = tokens.enterCurve;
+      _desktopTarget = index;
+      _desktopSwitched = false;
+      _desktopDirection = index >= _index ? 1 : -1;
+      _desktopMotion.duration = Duration(
+        microseconds: math.min(motion.inMicroseconds, 240000),
+      );
+      _desktopFadeFrom = opacity;
+      _desktopMotion.forward(from: 0);
     } else {
       _pageController.animateToPage(
         index,
@@ -322,7 +407,17 @@ class _AppShellViewState extends State<_AppShellView> {
     return position.pixels / position.viewportDimension;
   }
 
-  double get _rangeFactor => (_tabs.length - 1 - _page).clamp(0.0, 1.0);
+  // Chrome retains the original continuous title/action morph while the body
+  // swaps directly at the fade midpoint.
+  double get _chromePage => _desktopTarget == null
+      ? _currentPage
+      : ui.lerpDouble(
+          _desktopChromeFrom,
+          _desktopChromeTo,
+          _desktopChromeCurve.transform(_desktopMotion.value),
+        )!;
+
+  double get _rangeFactor => (_tabs.length - 1 - _chromePage).clamp(0.0, 1.0);
 
   @override
   Widget build(BuildContext context) {
@@ -425,18 +520,26 @@ class _AppShellViewState extends State<_AppShellView> {
                                   bottom: false,
                                   child: LayoutBuilder(
                                     builder: (context, constraints) {
-                                      final rangeWidth =
-                                          (constraints.maxWidth * 0.30).clamp(
-                                            220.0,
-                                            340.0,
-                                          );
-                                      final appBarWidth =
-                                          (constraints.maxWidth -
-                                                  railWidth -
-                                                  rangeWidth -
-                                                  headerEndInset -
-                                                  48)
-                                              .clamp(0.0, 400.0);
+                                      // Use one centered width on every tab, leaving room
+                                      // for the rail and the separate date control.
+                                      final headerReserve = math.max(
+                                        railWidth + 20,
+                                        math.max(12, headerEndInset) +
+                                            DashboardRangeButton
+                                                .collapsedWidth +
+                                            16,
+                                      );
+                                      final appBarWidth = math.min(
+                                        tokens.contentMaxWidthFor(context) - 32,
+                                        math.max(
+                                          0.0,
+                                          constraints.maxWidth -
+                                              headerReserve * 2,
+                                        ),
+                                      );
+                                      final appBarStart =
+                                          (constraints.maxWidth - appBarWidth) /
+                                          2;
                                       // Scrollable pages keep this clearance in
                                       // their content rather than their viewport.
                                       const contentTop = 80.0;
@@ -445,7 +548,9 @@ class _AppShellViewState extends State<_AppShellView> {
                                         children: [
                                           Positioned.fill(
                                             child: AnimatedPadding(
-                                              duration: tokens.navMotion,
+                                              duration: _desktopNavigation
+                                                  ? Duration.zero
+                                                  : tokens.navMotion,
                                               curve: Curves.fastOutSlowIn,
                                               padding: EdgeInsetsDirectional.fromSTEB(
                                                 math.max(
@@ -458,7 +563,10 @@ class _AppShellViewState extends State<_AppShellView> {
                                                 math.max(
                                                   // Keep the floating actions clear of
                                                   // charts and table cells in either rotation.
-                                                  72,
+                                                  _tabs[_index] ==
+                                                          ShellTab.settings
+                                                      ? 0
+                                                      : 72,
                                                   contentEndInset,
                                                 ),
                                                 0,
@@ -484,13 +592,13 @@ class _AppShellViewState extends State<_AppShellView> {
                                               tokens.navMotion,
                                             ),
                                             curve: Curves.easeInOutCubic,
-                                            start: railWidth + 20,
+                                            start: appBarStart,
                                             top: shellPadding.top + 12,
                                             width: appBarWidth,
                                             height: kToolbarHeight,
                                             child: _LandscapeFloatingChrome(
                                               child: AnimatedBuilder(
-                                                animation: _pageController,
+                                                animation: _chromeAnimation,
                                                 builder: (context, _) => Theme(
                                                   data: Theme.of(context).copyWith(
                                                     appBarTheme:
@@ -511,7 +619,7 @@ class _AppShellViewState extends State<_AppShellView> {
                                                         ),
                                                   ),
                                                   child: DashboardAppBar(
-                                                    page: _currentPage,
+                                                    page: _chromePage,
                                                     titleKeys: titleKeys,
                                                     settingsSearchOpen: widget
                                                         .settingsSearchOpen,
@@ -527,7 +635,7 @@ class _AppShellViewState extends State<_AppShellView> {
                                             end: math.max(12, headerEndInset),
                                             top: shellPadding.top + 12,
                                             child: AnimatedBuilder(
-                                              animation: _pageController,
+                                              animation: _chromeAnimation,
                                               child: DashboardRangeButton(
                                                 type:
                                                     IntervalStoreManagerLocation
@@ -702,38 +810,50 @@ class _AppShellViewState extends State<_AppShellView> {
     EdgeInsets landscapeInsets = EdgeInsets.zero,
   }) => ShellTabScope(
     activeTab: _tabs[_index],
-    child: PageView(
-      key: _pagesKey,
-      controller: _pageController,
-      onPageChanged: _select,
-      children: [
-        for (var i = 0; i < pages.length; i++)
-          _KeepAlivePage(
-            // Keep identity tied to each tab as settings change.
-            key: ValueKey<String>('shell-page-${_tabs[i].name}-$localeTag'),
-            child: ShellScrollInsets(
-              insets:
-                  _tabs[i] == ShellTab.weight || _tabs[i] == ShellTab.statistics
-                  ? landscapeInsets
-                  : EdgeInsets.zero,
-              child: Padding(
-                padding:
+    child: _desktopTransition(
+      PageView(
+        key: _pagesKey,
+        controller: _pageController,
+        scrollDirection: _desktopNavigation && _isLandscape
+            ? Axis.vertical
+            : Axis.horizontal,
+        // Navigation buttons animate the viewport. Desktop wheel/trackpad input
+        // belongs to the page's own scrollables, including at their boundaries.
+        physics: _desktopNavigation
+            ? const NeverScrollableScrollPhysics()
+            : null,
+        onPageChanged: _select,
+        children: [
+          for (var i = 0; i < pages.length; i++)
+            _KeepAlivePage(
+              // Keep identity tied to each tab as settings change.
+              key: ValueKey<String>('shell-page-${_tabs[i].name}-$localeTag'),
+              child: ShellScrollInsets(
+                insets:
                     _tabs[i] == ShellTab.weight ||
                         _tabs[i] == ShellTab.statistics
-                    ? EdgeInsets.zero
-                    : landscapeInsets,
-                child: Builder(
-                  builder: (context) => MediaQuery.removePadding(
-                    context: context,
-                    removeTop: landscapeInsets.top > 0,
-                    removeBottom: landscapeInsets.bottom > 0,
-                    child: pages[i],
+                    ? landscapeInsets
+                    : EdgeInsets.zero,
+                child: Padding(
+                  padding:
+                      _tabs[i] == ShellTab.weight ||
+                          _tabs[i] == ShellTab.statistics
+                      ? EdgeInsets.zero
+                      : landscapeInsets,
+                  child: Builder(
+                    builder: (context) => MediaQuery.removePadding(
+                      context: context,
+                      removeTop: landscapeInsets.top > 0,
+                      removeBottom: landscapeInsets.bottom > 0,
+                      child: pages[i],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
+      slide: true,
     ),
   );
 }

@@ -4,6 +4,7 @@ import 'package:blood_pressure_app/features/home/home_bp_chart.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_table.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/screens/home_screen.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:safaeh/safaeh.dart';
@@ -76,7 +77,7 @@ void main() {
   testWidgets('shows graph and measurement table in landscape mode', (
     tester,
   ) async {
-    await binding.setSurfaceSize(const Size(800, 280));
+    await binding.setSurfaceSize(const Size(800, 480));
 
     await pumpApp(
       tester,
@@ -115,7 +116,7 @@ void main() {
         findsNothing,
       );
     }
-    expect(secondCard.bottom, lessThanOrEqualTo(280));
+    expect(secondCard.bottom, lessThanOrEqualTo(480));
     expect(
       find.descendant(
         of: find.byType(HomeBpChart),
@@ -130,7 +131,7 @@ void main() {
   testWidgets('landscape cycle buttons skip charts used by the other slot', (
     tester,
   ) async {
-    await binding.setSurfaceSize(const Size(800, 280));
+    await binding.setSurfaceSize(const Size(800, 480));
     final app = await appBaseWithData(
       const AppHome(),
       records: [mockRecord(sys: 123)],
@@ -141,7 +142,7 @@ void main() {
     final second = find.byKey(const ValueKey('home_chart_cycle_1'));
     expect(first, findsOneWidget);
     expect(second, findsOneWidget);
-    expect(tester.getRect(second).bottom, lessThan(280));
+    expect(tester.getRect(second).bottom, lessThan(480));
     expect(find.text('Daily range'), findsOneWidget);
     expect(find.text('This period'), findsOneWidget);
     await tester.tap(first);
@@ -156,7 +157,7 @@ void main() {
     await tester.tap(second);
     await tester.pumpAndSettle();
     expect(find.byType(CheckedPopupMenuItem<HomeBpChartKind>), findsNothing);
-    expect(find.text('Daily range'), findsOneWidget);
+    expect(find.text('Pulse'), findsOneWidget);
     expect(find.text('Pulse pressure'), findsOneWidget);
     expect(tester.takeException(), isNull);
     // Recreating the dashboard restores both slots independently.
@@ -164,11 +165,11 @@ void main() {
     await pumpApp(tester, app);
     await _pumpHome(tester);
     expect(find.text('Pulse pressure'), findsOneWidget);
-    expect(find.text('Daily range'), findsOneWidget);
+    expect(find.text('Pulse'), findsOneWidget);
   });
 
   testWidgets('rapid alternating cycles remain unique', (tester) async {
-    await binding.setSurfaceSize(const Size(800, 320));
+    await binding.setSurfaceSize(const Size(800, 480));
     await pumpApp(
       tester,
       await appBaseWithData(const AppHome(), records: [mockRecord(sys: 123)]),
@@ -179,6 +180,7 @@ void main() {
       'This period',
       'Pulse pressure',
       'Medicine timing',
+      'Pulse',
     ];
     for (var tap = 0; tap < 24; tap++) {
       final button = find.byKey(ValueKey('home_chart_cycle_${tap % 2}'));
@@ -277,11 +279,114 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.byIcon(Icons.change_circle),
-        configuration.pressure ? findsNWidgets(2) : findsNothing,
+        configuration.pressure && configuration.name != 'wide chart pane'
+            ? findsNWidgets(configuration.name == 'large text RTL' ? 1 : 2)
+            : findsNothing,
       );
       expect(tester.takeException(), isNull);
     });
   }
+
+  for (final scenario in [
+    (size: Size(1000, 800), count: 5),
+    (size: Size(600, 700), count: 3),
+    (size: Size(600, 300), count: 1),
+  ]) {
+    testWidgets('fits at most five unique graphs in ${scenario.size}', (
+      tester,
+    ) async {
+      await binding.setSurfaceSize(scenario.size);
+      await pumpApp(
+        tester,
+        await appBaseWithData(
+          const HomeBpChart(compact: true, showMedicine: true),
+          records: [
+            mockRecord(sys: 120, dia: 80, pul: 70),
+            mockRecord(
+              sys: 125,
+              dia: 82,
+              pul: 75,
+              time: DateTime.now().subtract(const Duration(days: 1)),
+            ),
+          ],
+        ),
+      );
+      await _pumpHome(tester);
+      for (var slot = 0; slot < scenario.count; slot++) {
+        final card = find.byKey(ValueKey('home_chart_card_$slot'));
+        expect(card, findsOneWidget);
+        final bounds = tester.getRect(card);
+        expect(bounds.left, greaterThanOrEqualTo(0));
+        expect(bounds.right, lessThanOrEqualTo(scenario.size.width + 0.01));
+        expect(bounds.bottom, lessThanOrEqualTo(scenario.size.height + 0.01));
+      }
+      expect(
+        find.byKey(ValueKey('home_chart_card_${scenario.count}')),
+        findsNothing,
+      );
+      if (scenario.count == 5) {
+        final pulse = tester.widget<LineChart>(
+          find.descendant(
+            of: find.byKey(const ValueKey('home_chart_card_4')),
+            matching: find.byType(LineChart),
+          ),
+        );
+        final values = pulse.data.lineBarsData.single.spots
+            .map((spot) => spot.y)
+            .where((value) => value.isFinite);
+        expect(values, containsAll([70.0, 75.0]));
+        expect(
+          values,
+          isNot(contains(40.0)),
+        ); // Never use sys minus dia as pulse.
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets(
+    'maximum setting retains chart order and selection across resize',
+    (tester) async {
+      await binding.setSurfaceSize(const Size(1000, 800));
+      final app = await appBaseWithData(
+        const HomeBpChart(compact: true, showMedicine: true),
+        records: [mockRecord(sys: 123)],
+      );
+      await pumpApp(tester, app);
+      await _pumpHome(tester);
+      expect(find.byKey(const ValueKey('home_chart_card_4')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('home_chart_select_0')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.widgetWithText(CheckedPopupMenuItem<HomeBpChartKind>, 'Pulse'),
+      );
+      await tester.pumpAndSettle();
+      expect(testSettingsController!.get(homeBpChartSetting), 'pulse');
+      expect(find.text('Daily range'), findsOneWidget);
+      expect(find.text('Pulse'), findsOneWidget);
+      await testSettingsController!.set(homeChartCountSetting, 1);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('home_chart_card_1')), findsNothing);
+      expect(find.text('Pulse'), findsOneWidget);
+      await testSettingsController!.set(homeChartCountSetting, 5);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('home_chart_card_4')), findsOneWidget);
+      await binding.setSurfaceSize(const Size(600, 300));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('home_chart_card_1')), findsNothing);
+      expect(testSettingsController!.get(homeChartCountSetting), 5);
+      await binding.setSurfaceSize(const Size(1000, 800));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('home_chart_card_4')), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpApp(tester, app);
+      await _pumpHome(tester);
+      expect(testSettingsController!.get(homeBpChartSetting), 'pulse');
+      expect(find.text('Pulse'), findsOneWidget);
+      expect(find.text('Daily range'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('always uses the unified measurement list', (tester) async {
     await binding.setSurfaceSize(const Size(400, 800));

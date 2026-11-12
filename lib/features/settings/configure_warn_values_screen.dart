@@ -1,9 +1,10 @@
 import 'package:blood_pressure_app/components/custom_banner.dart';
+import 'package:blood_pressure_app/components/form_bottom_action.dart';
 import 'package:blood_pressure_app/components/input_dialog.dart';
-import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
+import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:blood_pressure_app/features/settings/tiles/number_input_list_tile.dart';
 import 'package:blood_pressure_app/model/blood_pressure/warn_values.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -20,16 +21,14 @@ class ConfigureWarnValuesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('warnValues'.tr()),
-        forceMaterialTransparency: true,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: null,
-        label: Text('determineWarnValues'.tr()),
-        onPressed:() async {
-          final age = (await showNumberInputDialog(context,
+    return SettingsSubpage(
+      title: Text('warnValues'.tr()),
+      bottom: FormBottomAction(
+        icon: const Icon(Icons.calculate_outlined),
+        label: 'determineWarnValues'.tr(),
+        onPressed: () async {
+          final age = (await showNumberInputDialog(
+            context,
             hintText: 'age'.tr(),
           ))?.round();
           if (age != null) {
@@ -44,67 +43,71 @@ class ConfigureWarnValuesScreen extends ConsumerWidget {
           }
         },
       ),
-      floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation,
-      floatingActionButtonLocation: const SnackBarStableFabLocation(
-        base: FloatingActionButtonLocation.endFloat,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 104),
-        children: [
-          CustomBanner(
-            content: Column(children: [
-              Text('warnAboutTxt1'.tr()),
-              const SizedBox(
-                height: 5,
-              ),
-              InkWell(
-                onTap: () async {
-                  final url = Uri.parse(BloodPressureWarnValues.source);
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                  } else if (context.mounted) {
-                    context.showError('errCantOpenURL'.tr(namedArgs: {
-                      'url': BloodPressureWarnValues.source,
-                    }));
-                  }
-                },
-                child: ConstrainedBox(
-                  // Allow the translated link to wrap at larger text sizes.
-                  constraints: const BoxConstraints(minHeight: 48),
-                  child: Center(
-                    child: Text(
-                      'warnAboutTxt2'.tr(),
-                      style: const TextStyle(color: Colors.blue),
+      children: [
+        SettingsPageCard(
+          sectionId: 'warning-values',
+          title: 'warnValues'.tr(),
+          icon: Icons.warning_amber_outlined,
+          children: [
+            CustomBanner(
+              content: Column(
+                children: [
+                  Text('warnAboutTxt1'.tr()),
+                  const SizedBox(height: 5),
+                  InkWell(
+                    onTap: () async {
+                      final url = Uri.parse(BloodPressureWarnValues.source);
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(
+                          url,
+                          mode: LaunchMode.externalApplication,
+                        );
+                      } else if (context.mounted) {
+                        context.showError(
+                          'errCantOpenURL'.tr(
+                            namedArgs: {'url': BloodPressureWarnValues.source},
+                          ),
+                        );
+                      }
+                    },
+                    child: ConstrainedBox(
+                      // Allow the translated link to wrap at larger text sizes.
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: Center(
+                        child: Text(
+                          'warnAboutTxt2'.tr(),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 5),
+                  Text('warnAboutTxt3'.tr()),
+                  const SizedBox(height: 10.0),
+                ],
               ),
-              const SizedBox(
-                height: 5,
-              ),
-              Text('warnAboutTxt3'.tr()),
-              const SizedBox(height: 10.0),
-            ],),
-          ),
-          NumberInputListTile(
-            label: 'sysWarn'.tr(),
-            leading: const Icon(Icons.warning_amber_outlined),
-            value: settings.sysWarn,
-            onParsableSubmit: (double value) {
-              ref.updateSetting(sysWarnSetting, value.round());
-            },
-          ),
-          NumberInputListTile(
-            label: 'diaWarn'.tr(),
-            leading: const Icon(Icons.warning_amber_outlined),
-            value: settings.diaWarn,
-            onParsableSubmit: (double value) {
-              ref.updateSetting(diaWarnSetting, value.round());
-            },
-          ),
-        ],
-      ) ,
+            ),
+            NumberInputListTile(
+              label: 'sysWarn'.tr(),
+              leading: const Icon(Icons.warning_amber_outlined),
+              value: settings.sysWarn,
+              onParsableSubmit: (double value) {
+                ref.updateSetting(sysWarnSetting, value.round());
+              },
+            ),
+            NumberInputListTile(
+              label: 'diaWarn'.tr(),
+              leading: const Icon(Icons.warning_amber_outlined),
+              value: settings.diaWarn,
+              onParsableSubmit: (double value) {
+                ref.updateSetting(diaWarnSetting, value.round());
+              },
+            ),
+          ],
+        ),
+      ],
     );
   }
-
 }

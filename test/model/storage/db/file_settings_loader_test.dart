@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:blood_pressure_app/features/export_import/model/column.dart';
 import 'package:blood_pressure_app/model/storage/file_settings_loader.dart';
 import 'package:blood_pressure_app/model/storage/types/export_format_setting.dart';
@@ -9,6 +10,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  test(
+    'reads a settings zip without extracting files or accepting paths',
+    () async {
+      final archive = Archive()
+        ..addFile(ArchiveFile.string('export', '{"exportFormat":2}'))
+        ..addFile(ArchiveFile.string('../export', '{"exportFormat":0}'));
+      await IOOverrides.runZoned(() async {
+        final loader = FileSettingsLoader.fromArchive(archive);
+        final settings = await loader.loadExportSettings();
+        expect(settings.exportFormat, ExportFormat.db);
+        settings.exportFormat = ExportFormat.csv;
+        expect(
+          (await loader.loadExportSettings()).exportFormat,
+          ExportFormat.csv,
+        );
+      }, createFile: (_) => throw StateError('Must not touch the filesystem'));
+    },
+  );
+
   test('constructs new objects', () async {
     await _loader((loader) async {
       await expectLater(loader.loadExportSettings, returnsNormally);
@@ -31,22 +51,33 @@ void main() {
       final csvExportSettings1 = await loader1.loadCsvExportSettings();
       csvExportSettings1.fieldDelimiter = 'asdsf.",';
       final csvExportSettings2 = await loader2.loadCsvExportSettings();
-      expect(csvExportSettings2.fieldDelimiter, csvExportSettings1.fieldDelimiter);
+      expect(
+        csvExportSettings2.fieldDelimiter,
+        csvExportSettings1.fieldDelimiter,
+      );
 
       final pdfExportSettings1 = await loader1.loadPdfExportSettings();
       pdfExportSettings1.cellHeight = 3.1415926;
       final pdfExportSettings2 = await loader2.loadPdfExportSettings();
       expect(pdfExportSettings2.cellHeight, pdfExportSettings1.cellHeight);
 
-      final intervalStorageManager1 = await loader1.loadIntervalStorageManager();
+      final intervalStorageManager1 = await loader1
+          .loadIntervalStorageManager();
       intervalStorageManager1.mainPage.changeStepSize(TimeStep.lifetime);
-      final intervalStorageManager2 = await loader2.loadIntervalStorageManager();
-      expect(intervalStorageManager2.mainPage.stepSize, intervalStorageManager1.mainPage.stepSize);
+      final intervalStorageManager2 = await loader2
+          .loadIntervalStorageManager();
+      expect(
+        intervalStorageManager2.mainPage.stepSize,
+        intervalStorageManager1.mainPage.stepSize,
+      );
 
       final exportColumnsManager1 = await loader1.loadExportColumnsManager();
       exportColumnsManager1.addOrUpdate(TimeColumn('tsttime', 'tst-YYYY'));
       final exportColumnsManager2 = await loader2.loadExportColumnsManager();
-      expect(exportColumnsManager2.userColumns.keys, exportColumnsManager1.userColumns.keys);
+      expect(
+        exportColumnsManager2.userColumns.keys,
+        exportColumnsManager1.userColumns.keys,
+      );
     });
   });
 
@@ -69,35 +100,47 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     await _loader((_) async {
-      final loader1 = await FileSettingsLoader.load(path: 'tmp', preferences: prefs);
+      final loader1 = await FileSettingsLoader.load(
+        path: 'tmp',
+        preferences: prefs,
+      );
       final exportSettings1 = await loader1.loadExportSettings();
       exportSettings1.exportFormat = ExportFormat.db;
       await FileSettingsLoader.flushWrites();
 
-      final loader2 = await FileSettingsLoader.load(path: 'tmp', preferences: prefs);
+      final loader2 = await FileSettingsLoader.load(
+        path: 'tmp',
+        preferences: prefs,
+      );
       final exportSettings2 = await loader2.loadExportSettings();
       expect(exportSettings2.exportFormat, ExportFormat.db);
       expect(prefs.getString('export'), isNotNull);
     });
   });
 
-  test('migrates leftover files into SharedPreferences then deletes them', () async {
-    SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance();
-    await _loader((fileLoader) async {
-      final fromFile = await fileLoader.loadExportSettings();
-      fromFile.exportFormat = ExportFormat.db;
+  test(
+    'migrates leftover files into SharedPreferences then deletes them',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await _loader((fileLoader) async {
+        final fromFile = await fileLoader.loadExportSettings();
+        fromFile.exportFormat = ExportFormat.db;
 
-      final prefsLoader = await FileSettingsLoader.load(
-        path: 'tmp',
-        preferences: prefs,
-      );
-      final migrated = await prefsLoader.loadExportSettings();
-      expect(migrated.exportFormat, ExportFormat.db);
-      expect(prefs.getString(exportSettingsKey), contains('"exportFormat":2'));
-      expect(File('tmp/export').existsSync(), isFalse);
-    });
-  });
+        final prefsLoader = await FileSettingsLoader.load(
+          path: 'tmp',
+          preferences: prefs,
+        );
+        final migrated = await prefsLoader.loadExportSettings();
+        expect(migrated.exportFormat, ExportFormat.db);
+        expect(
+          prefs.getString(exportSettingsKey),
+          contains('"exportFormat":2'),
+        );
+        expect(File('tmp/export').existsSync(), isFalse);
+      });
+    },
+  );
 }
 
 Future<void> _loader(void Function(FileSettingsLoader) body) async {
@@ -138,7 +181,8 @@ class _MockFile implements File {
   }
 
   @override
-  void writeAsStringSync(String contents, {
+  void writeAsStringSync(
+    String contents, {
     FileMode mode = FileMode.write,
     Encoding encoding = utf8,
     bool flush = false,

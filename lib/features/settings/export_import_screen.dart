@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:blood_pressure_app/core/platform/app_platform.dart';
 import 'package:blood_pressure_app/core/settings/storage_providers.dart';
 import 'package:blood_pressure_app/features/data_picker/interval_picker.dart';
 import 'package:blood_pressure_app/features/export_import/ui/columns_config/active_column_customizer.dart';
@@ -80,7 +79,7 @@ class ExportImportScreen extends ConsumerWidget {
               title: 'exportOptions'.tr(),
               icon: Icons.folder_outlined,
               children: [
-                if (Platform.isAndroid)
+                if (AppPlatform.isAndroid)
                   ListTile(
                     leading: const Icon(Icons.folder_open),
                     title: Text('exportDir'.tr()),
@@ -102,7 +101,7 @@ class ExportImportScreen extends ConsumerWidget {
                       }
                     },
                   ),
-                if (Platform.isAndroid)
+                if (AppPlatform.isAndroid)
                   SwitchSettingsTile(
                     leading: const Icon(Icons.schedule_outlined),
                     title: Text('exportAddTimestamp'.tr()),

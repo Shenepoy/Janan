@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:blood_pressure_app/core/settings/storage_providers.dart';
@@ -35,7 +36,10 @@ enum HomeBpChartKind {
   pulsePressure,
 
   /// Share of recorded medicine doses taken early, on time, or late.
-  medicineTiming;
+  medicineTiming,
+
+  /// Average recorded pulse over time, with its own bpm scale.
+  pulse;
 
   /// Decode a stored preference, falling back to [dailyRange].
   static HomeBpChartKind parse(String? raw) =>
@@ -108,6 +112,7 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
   late Animation<double> _height;
   late HomeBpChartKind _kind;
   HomeBpChartKind? _secondKind;
+  List<HomeBpChartKind> _extraKinds = [];
   var _armFilter = _ArmChartFilter.all;
 
   List<HomeBpChartKind> get _availableKinds => [
@@ -117,6 +122,7 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
       HomeBpChartKind.pulsePressure,
     ],
     if (widget.showMedicine) HomeBpChartKind.medicineTiming,
+    if (widget.showBloodPressure) HomeBpChartKind.pulse,
   ];
 
   double _heightFor(HomeBpChartKind kind) => switch (kind) {
@@ -130,6 +136,7 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
     HomeBpChartKind.classification => 'chartClassification'.tr(),
     HomeBpChartKind.pulsePressure => 'pulsePressure'.tr(),
     HomeBpChartKind.medicineTiming => 'homeMedicineTiming'.tr(),
+    HomeBpChartKind.pulse => 'pulLong'.tr(),
   };
 
   String _subtitleOf(HomeBpChartKind kind) => switch (kind) {
@@ -137,6 +144,7 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
     HomeBpChartKind.classification => 'chartClassificationSubtitle'.tr(),
     HomeBpChartKind.pulsePressure => 'chartPulsePressureSubtitle'.tr(),
     HomeBpChartKind.medicineTiming => 'homeMedicineTimingSubtitle'.tr(),
+    HomeBpChartKind.pulse => 'bpm'.tr(),
   };
 
   IconData _iconOf(HomeBpChartKind kind) => switch (kind) {
@@ -144,6 +152,7 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
     HomeBpChartKind.classification => Icons.donut_large,
     HomeBpChartKind.pulsePressure => Icons.show_chart,
     HomeBpChartKind.medicineTiming => Icons.medication_outlined,
+    HomeBpChartKind.pulse => Icons.monitor_heart_outlined,
   };
 
   HomeBpChartKind _availableKind(String? raw) {
@@ -160,6 +169,18 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
     _secondKind = HomeBpChartKind.parse(
       ref.readSetting<String>(homeSecondaryChartSetting),
     );
+    try {
+      final stored = jsonDecode(
+        ref.readSetting<String>(homeExtraChartsSetting),
+      );
+      if (stored is List) {
+        _extraKinds = [
+          for (final name in stored) ?HomeBpChartKind.values.asNameMap()[name],
+        ];
+      }
+    } on FormatException {
+      // A damaged/imported preference must never prevent the diary from opening.
+    }
     _size = AnimationController(vsync: this, duration: _swap);
     _height = AlwaysStoppedAnimation(_heightFor(_kind));
   }
@@ -197,21 +218,15 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
     unawaited(ref.updateSetting<String>(homeBpChartSetting, next.name));
   }
 
-  List<HomeBpChartKind> get _visibleKinds {
-    final available = _availableKinds;
-    if (available.length < 2) return [_kind];
-    final second = _secondKind;
-    return [
-      _kind,
-      if (second != null && second != _kind && available.contains(second))
-        second
-      else
-        available.firstWhere((kind) => kind != _kind),
-    ];
-  }
+  List<HomeBpChartKind> get _visibleKinds => {
+    _kind,
+    if (_secondKind != null && _availableKinds.contains(_secondKind))
+      _secondKind!,
+    ..._extraKinds.where(_availableKinds.contains),
+    ..._availableKinds,
+  }.toList();
 
-  void _cycleCompactChart(int slot) {
-    final visible = _visibleKinds;
+  void _cycleCompactChart(int slot, List<HomeBpChartKind> visible) {
     final choices = _availableKinds
         .where((kind) => kind == visible[slot] || !visible.contains(kind))
         .toList();
@@ -224,33 +239,30 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
 
   void _selectCompactChart(int slot, HomeBpChartKind kind) {
     if (!_availableKinds.contains(kind)) return;
-    final visible = _visibleKinds;
-    if (visible.asMap().entries.any(
-      (entry) => entry.key != slot && entry.value == kind,
-    )) {
-      return;
-    }
+    final ordered = _visibleKinds;
+    final previous = ordered.indexOf(kind);
+    if (previous == slot) return;
+    // Swap, rather than duplicate, a chart already displayed in another slot.
+    if (previous >= 0) ordered[previous] = ordered[slot];
+    ordered[slot] = kind;
     setState(() {
-      if (slot == 0) {
-        // Preserve the second slot when changing the primary chart.
-        _secondKind = visible.length > 1 ? visible[1] : null;
-        _kind = kind;
-        _height = AlwaysStoppedAnimation(_heightFor(kind));
-      } else {
-        _secondKind = kind;
-      }
+      _kind = ordered.first;
+      _secondKind = ordered.length > 1 ? ordered[1] : null;
+      _extraKinds = ordered.skip(2).toList();
+      _height = AlwaysStoppedAnimation(_heightFor(_kind));
     });
-    if (slot == 0) {
-      unawaited(ref.updateSetting<String>(homeBpChartSetting, kind.name));
-    }
-    if (_visibleKinds.length > 1) {
+    unawaited(ref.updateSetting(homeBpChartSetting, _kind.name));
+    if (_secondKind != null) {
       unawaited(
-        ref.updateSetting<String>(
-          homeSecondaryChartSetting,
-          _visibleKinds[1].name,
-        ),
+        ref.updateSetting(homeSecondaryChartSetting, _secondKind!.name),
       );
     }
+    unawaited(
+      ref.updateSetting(
+        homeExtraChartsSetting,
+        jsonEncode(_extraKinds.map((kind) => kind.name).toList()),
+      ),
+    );
   }
 
   Widget _buildCompactCharts({
@@ -259,27 +271,31 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
     required _ChartPeriod period,
     required RangeLimits limits,
     required bool showArmFilter,
+    required int maximumCharts,
   }) => LayoutBuilder(
     builder: (context, constraints) {
-      final kinds = _visibleKinds;
-      final available = math.max(
-        0.0,
-        (constraints.hasBoundedHeight ? constraints.maxHeight : 320.0) -
-            kinds.length * 48 -
-            (kinds.length - 1) * 4,
+      final scale = math.max(1.0, MediaQuery.textScalerOf(context).scale(1));
+      final height = constraints.hasBoundedHeight
+          ? constraints.maxHeight
+          : 320.0;
+      // Respect the actual pane dimensions and text scale, not the device name.
+      const gap = 12.0;
+      final capacityColumns = math.max(
+        1,
+        ((constraints.maxWidth + gap) / (320 * scale + gap)).floor(),
       );
-      bool summary(HomeBpChartKind kind) =>
-          kind == HomeBpChartKind.classification ||
-          kind == HomeBpChartKind.medicineTiming;
-      final mixed = kinds.length == 2 && summary(kinds[0]) != summary(kinds[1]);
-      final summaryHeight = math.min(
-        64.0 * math.max(1.0, MediaQuery.textScalerOf(context).scale(1)),
-        available / kinds.length,
+      final capacityRows = math.max(
+        1,
+        ((height + gap) / (220 * scale + gap)).floor(),
       );
-      double bodyHeight(int slot) {
-        if (summary(kinds[slot])) return summaryHeight;
-        return mixed ? available - summaryHeight : available / kinds.length;
-      }
+      final kinds = _visibleKinds
+          .take(
+            math.min(maximumCharts.clamp(1, 5), capacityColumns * capacityRows),
+          )
+          .toList();
+      final columns = math.min(capacityColumns, kinds.length);
+      final rows = (kinds.length / columns).ceil();
+      final rowHeight = math.max(0.0, (height - (rows - 1) * gap) / rows);
 
       Widget card(int slot) {
         final kind = kinds[slot];
@@ -305,8 +321,22 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
                     SafaehCycleButton(
                       key: ValueKey('home_chart_cycle_$slot'),
                       tooltip: 'chartNext'.tr(),
-                      onPressed: () => _cycleCompactChart(slot),
+                      onPressed: () => _cycleCompactChart(slot, kinds),
                     ),
+                  PopupMenuButton<HomeBpChartKind>(
+                    key: ValueKey('home_chart_select_$slot'),
+                    tooltip: _titleOf(kind),
+                    icon: const Icon(Icons.more_vert, size: 18),
+                    onSelected: (value) => _selectCompactChart(slot, value),
+                    itemBuilder: (_) => [
+                      for (final choice in _availableKinds)
+                        CheckedPopupMenuItem(
+                          value: choice,
+                          checked: choice == kind,
+                          child: Text(_titleOf(choice)),
+                        ),
+                    ],
+                  ),
                   if (showArmFilter && kind != HomeBpChartKind.medicineTiming)
                     PopupMenuButton<_ArmChartFilter>(
                       tooltip: switch (_armFilter) {
@@ -369,7 +399,13 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
                           limits: limits,
                           compact: true,
                         ),
-                        HomeBpChartKind.pulsePressure => _PulsePressureChart(
+                        HomeBpChartKind.pulse => _HomeTrendChart(
+                          records: records,
+                          range: range,
+                          period: period,
+                          pulse: true,
+                        ),
+                        HomeBpChartKind.pulsePressure => _HomeTrendChart(
                           records: records,
                           range: range,
                           period: period,
@@ -386,13 +422,28 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
         );
       }
 
-      return Flex(
-        direction: Axis.vertical,
+      return Column(
+        key: const ValueKey('home_charts_grid'),
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (var slot = 0; slot < kinds.length; slot++) ...[
-            if (slot > 0) const SizedBox(height: 4),
-            SizedBox(height: 48 + bodyHeight(slot), child: card(slot)),
+          for (var row = 0; row < rows; row++) ...[
+            if (row > 0) const SizedBox(height: gap),
+            SizedBox(
+              height: rowHeight,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (
+                    var column = 0;
+                    column < columns && row * columns + column < kinds.length;
+                    column++
+                  ) ...[
+                    if (column > 0) const SizedBox(width: gap),
+                    Expanded(child: card(row * columns + column)),
+                  ],
+                ],
+              ),
+            ),
           ],
         ],
       );
@@ -465,6 +516,7 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
         period: period,
         limits: limits,
         showArmFilter: settings.trackArmSide,
+        maximumCharts: ref.watch(ref.settings.provider(homeChartCountSetting)),
       );
     }
     return DashboardSection(
@@ -567,7 +619,13 @@ class _HomeBpChartViewState extends ConsumerState<_HomeBpChartView>
                         limits: limits,
                       ),
                     ),
-                    HomeBpChartKind.pulsePressure => _PulsePressureChart(
+                    HomeBpChartKind.pulse => _HomeTrendChart(
+                      records: chartRecords,
+                      range: selectedRange,
+                      period: period,
+                      pulse: true,
+                    ),
+                    HomeBpChartKind.pulsePressure => _HomeTrendChart(
                       records: chartRecords,
                       range: selectedRange,
                       period: period,
@@ -1140,23 +1198,29 @@ class _PulsePoint {
   final double? value;
 }
 
-class _PulsePressureChart extends StatelessWidget {
-  const _PulsePressureChart({
+class _HomeTrendChart extends StatelessWidget {
+  const _HomeTrendChart({
     required this.records,
     required this.range,
     required this.period,
+    this.pulse = false,
   });
 
   final List<BloodPressureRecord> records;
   final DateRange range;
   final _ChartPeriod period;
+  final bool pulse;
 
   @override
   Widget build(BuildContext context) {
     final byBucket = <DateTime, List<double>>{};
     final dated =
         records
-            .where((record) => record.sys != null && record.dia != null)
+            .where(
+              (record) => pulse
+                  ? record.pul != null
+                  : record.sys != null && record.dia != null,
+            )
             .toList()
           ..sort((a, b) => a.time.compareTo(b.time));
     if (dated.isEmpty) return const _EmptyChart();
@@ -1164,7 +1228,11 @@ class _PulsePressureChart extends StatelessWidget {
       final start = _bucketStart(record.time, period.dataBucket);
       byBucket
           .putIfAbsent(start, () => [])
-          .add((record.sys!.mmHg - record.dia!.mmHg).toDouble());
+          .add(
+            pulse
+                ? record.pul!.toDouble()
+                : (record.sys!.mmHg - record.dia!.mmHg).toDouble(),
+          );
     }
     final points =
         _bucketStarts(
@@ -1385,7 +1453,7 @@ class _PulsePressureChart extends StatelessWidget {
                 for (final spot in touched)
                   LineTooltipItem(
                     '${dateFormat.format(points[spot.x.round()].start)}\n'
-                    '${spot.y.round()}',
+                    '${spot.y.round()} ${pulse ? 'bpm'.tr() : 'mmHg'}',
                     chartTooltipValueStyle(context, color),
                   ),
               ];

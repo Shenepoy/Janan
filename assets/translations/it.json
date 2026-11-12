@@ -490,7 +490,7 @@
   "bodySexMale": "Uomo",
   "bodySexFemale": "Donna",
   "athleteMode": "Modalità atleta",
-  "athleteModeDesc": "Usa i coefficienti atleta Eufy per una massa muscolare più alta",
+  "athleteModeDesc": "Adatta le stime a una maggiore massa muscolare",
   "bodyFat": "Grasso corporeo",
   "muscleMass": "Muscoli",
   "boneMass": "Ossa",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "Il numero più alto della pressione. La pressione quando il cuore si contrae.",
   "metricInfoDiaDesc": "Il numero più basso della pressione. La pressione quando il cuore riposa.",
   "metricInfoPulDesc": "Frequenza cardiaca a riposo in battiti al minuto.",
-  "bodyCompositionEstimated": "Stimato tramite impedenza. I valori possono differire dall’app Eufy.",
+  "bodyCompositionEstimated": "Stima basata sull’impedenza. I valori possono differire da quelli dell’app della bilancia.",
   "bodyCompositionSubtitle": "{fat}% grasso · {muscle} kg muscoli",
   "exportImportDocumentationTooltip": "Come usare esportazione e importazione",
   "exportImportDocumentation": "## Esporta e importa\n- Esporta un database SQLite per eseguire il backup o trasferire i tuoi record.\n- Scegli CSV per aprire i dati in un foglio di calcolo o importarli nuovamente in Janan.\n- Mantieni abilitate le intestazioni delle colonne e includi una colonna di data e ora supportata.\n- Utilizzare colonne separate per pressione sistolica, pressione diastolica, polso, note e dosi di medicinali registrate.\n\n## Utilizzando un foglio di calcolo\n1. Esporta come CSV con intestazioni di colonna.\n2. Apri il file in LibreOffice, Excel o un'altra app per fogli di calcolo.\n3. Controlla il delimitatore di campo e il delimitatore di testo se le colonne non sono allineate.\n4. Assicurati che la colonna dell'ora venga riconosciuta come data e ora.\n5. Mantieni le stesse intestazioni di colonna e formato ora se desideri importare nuovamente il file.\n\n## Nota i colori\n- La colonna `color` memorizza il colore della nota come numero.\n- La colonna legacy `needlePin` memorizza JSON per compatibilità con i file precedenti.\n- Utilizzare `color` per una semplice colonna del foglio di calcolo.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Apri Peso e tocca +.\nInserisci il valore della bilancia. Controlla unità, data e ora, poi tocca Salva.\nTocca un peso salvato per visualizzarlo o modificarlo. Scegli l’unità nelle Impostazioni.",
   "onboardingMinutesValue": "{value} minuti",
   "onboardingSaveFailed": "Impossibile salvare la configurazione. Riprova.",
-  "healthTools": "Strumenti per la salute"
+  "healthTools": "Strumenti per la salute",
+  "webNativeFeatureUnavailable": "Questa funzione è disponibile nell’app mobile.",
+  "homeChartCount": "Numero massimo di grafici su schermi larghi",
+  "homeChartCountDesc": "Mostra fino a questo numero di grafici se c’è spazio. Gli schermi stretti ne mostrano uno.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

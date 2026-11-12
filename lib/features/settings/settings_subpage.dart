@@ -1,5 +1,35 @@
+import 'package:blood_pressure_app/components/form_bottom_action.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+
+/// Shared frame for settings pages that own a scrollable or an async body.
+class SettingsPageFrame extends StatelessWidget {
+  const SettingsPageFrame({
+    super.key,
+    required this.title,
+    required this.child,
+    this.actions,
+  });
+
+  final Widget title;
+  final Widget child;
+  final List<Widget>? actions;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: title, centerTitle: true, actions: actions),
+    body: SafeArea(
+      top: false,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: SizedBox.expand(child: child),
+        ),
+      ),
+    ),
+  );
+}
 
 /// Pushed settings page that uses the same width and app bar as Settings.
 class SettingsSubpage extends StatelessWidget {
@@ -17,23 +47,32 @@ class SettingsSubpage extends StatelessWidget {
   final Widget? bottom;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(title: title, actions: actions),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: children,
-            ),
+  Widget build(BuildContext context) => SettingsPageFrame(
+    title: title,
+    actions: actions,
+    child: Stack(
+      fit: StackFit.expand,
+      children: [
+        SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            0,
+            8,
+            0,
+            bottom == null
+                ? 16
+                : FormBottomAction.clearance +
+                      MediaQuery.paddingOf(context).bottom,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children,
           ),
         ),
-      ),
-      bottomNavigationBar: bottom,
-    );
+        if (bottom != null)
+          Positioned(left: 0, right: 0, bottom: 8, child: bottom!),
+      ],
+    ),
+  );
 }
 
 /// One settings card, expanded by default, collapsible like the settings home.
@@ -62,13 +101,13 @@ class _SettingsPageCardState extends State<SettingsPageCard> {
 
   @override
   Widget build(BuildContext context) => CardSettingsSection(
-      sectionId: widget.sectionId,
-      title: widget.title,
-      icon: widget.icon,
-      isExpanded: _expanded,
-      onExpansionChanged: (expanded) => setState(() => _expanded = expanded),
-      children: widget.children,
-    );
+    sectionId: widget.sectionId,
+    title: widget.title,
+    icon: widget.icon,
+    isExpanded: _expanded,
+    onExpansionChanged: (expanded) => setState(() => _expanded = expanded),
+    children: widget.children,
+  );
 }
 
 /// Share / export / import row pinned to the bottom of a settings subpage.
@@ -78,24 +117,6 @@ class SettingsActionBar extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      color: theme.scaffoldBackgroundColor,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5)),
-          ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(children: children),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      FormBottomActionSurface(child: Row(children: children));
 }

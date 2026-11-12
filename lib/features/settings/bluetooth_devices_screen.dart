@@ -1,12 +1,10 @@
-// ignore_for_file: strict_raw_type
-
 import 'package:blood_pressure_app/components/confirm_deletion_dialog.dart';
 import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:blood_pressure_app/features/bluetooth/backend/bluetooth_manager.dart';
 import 'package:blood_pressure_app/features/settings/add_bluetooth_device_page.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
-import 'package:blood_pressure_app/features/settings/tiles/titled_column.dart';
+import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:blood_pressure_app/model/bluetooth_measurement_import_mode.dart';
 import 'package:blood_pressure_app/model/known_ble_device.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -14,6 +12,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:material_symbols_icons/symbols.dart';
+// ignore_for_file: strict_raw_type
+
 
 /// Screen to view, add, and forget remembered bluetooth devices.
 class BluetoothDevicesScreen extends ConsumerWidget {
@@ -35,35 +35,46 @@ class BluetoothDevicesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
     final devices = settings.knownBleDev;
-    return Scaffold(
-      appBar: AppBar(title: Text('bluetoothDevices'.tr())),
-      body: ListView(
+    return SettingsPageFrame(
+      title: Text('bluetoothDevices'.tr()),
+      child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
-          if (devices.isEmpty) ListTile(title: Text('noBluetoothDevices'.tr())),
-          for (final device in devices)
-            _DeviceTile(
-              device: device,
-              onForget: () => _forget(context, ref, settings, device),
-              onAutoSyncChanged: (value) =>
-                  _setAutoSync(ref, settings, device, value),
-            ),
-          ListTile(
-            leading: const Icon(Icons.add),
-            title: Text('addBluetoothDevice'.tr()),
-            onTap: () async {
-              await Navigator.of(context).push<void>(
-                MaterialPageRoute<void>(
-                  builder:
-                      addDevicePageBuilder ??
-                      (context) => AddBluetoothDevicePage(
-                        manager: manager ?? BluetoothManager.create(),
-                      ),
+          SettingsPageCard(
+            sectionId: 'bluetooth-devices',
+            title: 'bluetoothDevices'.tr(),
+            icon: Icons.devices_outlined,
+            children: [
+              if (devices.isEmpty)
+                ListTile(title: Text('noBluetoothDevices'.tr())),
+              for (final device in devices)
+                _DeviceTile(
+                  device: device,
+                  onForget: () => _forget(context, ref, settings, device),
+                  onAutoSyncChanged: (value) =>
+                      _setAutoSync(ref, settings, device, value),
                 ),
-              );
-            },
+              ListTile(
+                leading: const Icon(Icons.add),
+                title: Text('addBluetoothDevice'.tr()),
+                onTap: () async {
+                  await Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder:
+                          addDevicePageBuilder ??
+                          (context) => AddBluetoothDevicePage(
+                            manager: manager ?? BluetoothManager.create(),
+                          ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
-          TitledColumn(
-            title: Text('bluetoothSettings'.tr()),
+          SettingsPageCard(
+            sectionId: 'bluetooth-settings',
+            title: 'bluetoothSettings'.tr(),
+            icon: Icons.bluetooth,
             children: [
               SwitchListTile(
                 secondary: const Icon(Icons.bluetooth),

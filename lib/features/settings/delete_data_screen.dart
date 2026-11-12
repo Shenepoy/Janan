@@ -9,6 +9,7 @@ import 'package:blood_pressure_app/features/health_tools/health_tools_repository
 import 'package:blood_pressure_app/features/health_tools/health_tools_strings.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_providers.dart';
 import 'package:blood_pressure_app/features/settings/edadat_prefs.dart';
+import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:blood_pressure_app/model/storage/file_settings_loader.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -26,195 +27,204 @@ class DeleteDataScreen extends StatefulWidget {
 
 class _DeleteDataScreenState extends State<DeleteDataScreen> {
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: Text('delete'.tr()),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => Navigator.pop(context),
+  Widget build(BuildContext context) => SettingsSubpage(
+    title: Text('delete'.tr()),
+    children: [
+      Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text(
+          'warnDeletionUnrecoverable'.tr(),
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        ),
       ),
-    ),
-    body: ListView(
-      children: [
-        for (final kind in HealthToolKind.values)
+      SettingsPageCard(
+        sectionId: 'delete-data',
+        title: 'delete'.tr(),
+        icon: Icons.delete_outline,
+        children: [
+          for (final kind in HealthToolKind.values)
+            ListTile(
+              leading: const Icon(Icons.health_and_safety_outlined),
+              title: Text('tools.${kind.name}'.toolTr(context)),
+              trailing: const Icon(Icons.delete_forever),
+              onTap: () async {
+                if (!await showConfirmDeletionDialog(
+                      context,
+                      'warnDeletionUnrecoverable'.tr(),
+                    ) ||
+                    !context.mounted) {
+                  return;
+                }
+                final database = ProviderScope.containerOf(
+                  context,
+                  listen: false,
+                ).read(healthDatabaseProvider);
+                final repository = HealthToolsRepository(database);
+                for (final row in await repository.list(kind)) {
+                  await repository.remove(kind, row['id'] as String);
+                }
+                if (context.mounted) {
+                  context.showSuccess('deletionConfirmed'.tr());
+                }
+              },
+            ),
+
           ListTile(
-            leading: const Icon(Icons.health_and_safety_outlined),
-            title: Text('tools.${kind.name}'.toolTr(context)),
+            leading: const Icon(Icons.settings),
+            title: Text('deleteAllSettings'.tr()),
             trailing: const Icon(Icons.delete_forever),
             onTap: () async {
-              if (!await showConfirmDeletionDialog(
-                    context,
-                    'warnDeletionUnrecoverable'.tr(),
-                  ) ||
-                  !context.mounted) {
-                return;
-              }
-              final database = ProviderScope.containerOf(
+              if (await showConfirmDeletionDialog(
                 context,
-                listen: false,
-              ).read(healthDatabaseProvider);
-              final repository = HealthToolsRepository(database);
-              for (final row in await repository.list(kind)) {
-                await repository.remove(kind, row['id'] as String);
-              }
-              if (context.mounted) {
+                'warnDeletionUnrecoverable'.tr(),
+              )) {
+                if (!context.mounted) return;
+                final loader = context.fileSettingsLoader;
+                if (loader == null) {
+                  // Shouldn't happen in normal app use
+                  context.showError(
+                    'error'.tr(namedArgs: {'msg': 'No loader object'}),
+                  );
+                  return;
+                }
+                for (final s in loader.initializedSettings) {
+                  s.reset();
+                }
+                await FileSettingsLoader.flushWrites();
+                await FileSettingsLoader.clearPreferences();
+                if (!context.mounted) return;
+                final controller = ProviderScope.containerOf(
+                  context,
+                  listen: false,
+                ).read(settingsControllerProvider);
+                await clearEdadatPreferences(null, controller);
+                if (!context.mounted) return;
                 context.showSuccess('deletionConfirmed'.tr());
               }
             },
           ),
-
-        ListTile(
-          leading: const Icon(Icons.settings),
-          title: Text('deleteAllSettings'.tr()),
-          trailing: const Icon(Icons.delete_forever),
-          onTap: () async {
-            if (await showConfirmDeletionDialog(
-              context,
-              'warnDeletionUnrecoverable'.tr(),
-            )) {
-              if (!context.mounted) return;
-              final loader = context.fileSettingsLoader;
-              if (loader == null) {
-                // Shouldn't happen in normal app use
-                context.showError(
-                  'error'.tr(namedArgs: {'msg': 'No loader object'}),
+          ListTile(
+            leading: const Icon(Icons.timeline),
+            title: Text('deleteAllMeasurements'.tr()),
+            trailing: const Icon(Icons.delete_forever),
+            onTap: () async {
+              if (await showConfirmDeletionDialog(
+                context,
+                'warnDeletionUnrecoverable'.tr(),
+              )) {
+                if (!context.mounted) return;
+                final repo = context.bpRepo;
+                final previousRecords = await repo.get(DateRange.all());
+                for (final record in previousRecords) {
+                  await repo.remove(record);
+                }
+                if (!context.mounted) return;
+                context.showToastWithAction(
+                  'deletionConfirmed'.tr(),
+                  actionLabel: 'btnUndo'.tr(),
+                  onAction: () => Future.forEach(previousRecords, repo.add),
                 );
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.notes),
+            title: Text('deleteAllNotes'.tr()),
+            trailing: const Icon(Icons.delete_forever),
+            onTap: () async {
+              if (await showConfirmDeletionDialog(
+                context,
+                'warnDeletionUnrecoverable'.tr(),
+              )) {
+                if (!context.mounted) return;
+                final repo = context.noteRepo;
+                final previousNotes = await repo.get(DateRange.all());
+                for (final note in previousNotes) {
+                  await repo.remove(note);
+                }
+                if (!context.mounted) return;
+                context.showToastWithAction(
+                  'deletionConfirmed'.tr(),
+                  actionLabel: 'btnUndo'.tr(),
+                  onAction: () => Future.forEach(previousNotes, repo.add),
+                );
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.monitor_weight_outlined),
+            title: Text('deleteAllWeights'.tr()),
+            trailing: const Icon(Icons.delete_forever),
+            onTap: () async {
+              if (await showConfirmDeletionDialog(
+                context,
+                'warnDeletionUnrecoverable'.tr(),
+              )) {
+                if (!context.mounted) return;
+                final repo = context.weightRepo;
+                final previous = await repo.get(DateRange.all());
+                for (final record in previous) {
+                  await repo.remove(record);
+                }
+                if (!context.mounted) return;
+                context.showToastWithAction(
+                  'deletionConfirmed'.tr(),
+                  actionLabel: 'btnUndo'.tr(),
+                  onAction: () => Future.forEach(previous, repo.add),
+                );
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.medication),
+            title: Text('deleteAllMedicineIntakes'.tr()),
+            trailing: const Icon(Icons.delete_forever),
+            onTap: () async {
+              if (await showConfirmDeletionDialog(
+                context,
+                'warnDeletionUnrecoverable'.tr(),
+              )) {
+                if (!context.mounted) return;
+                final repo = context.intakeRepo;
+                final allIntakes = await repo.get(DateRange.all());
+                for (final intake in allIntakes) {
+                  await repo.remove(intake);
+                }
+                if (!context.mounted) return;
+                context.showSuccess('deletionConfirmed'.tr());
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.notifications_off_outlined),
+            title: Text('deleteAllMedicationSchedules'.tr()),
+            trailing: const Icon(Icons.delete_forever),
+            onTap: () async {
+              if (!await showConfirmDeletionDialog(
+                context,
+                'warnDeletionUnrecoverable'.tr(),
+              )) {
                 return;
               }
-              for (final s in loader.initializedSettings) {
-                s.reset();
-              }
-              await FileSettingsLoader.flushWrites();
-              await FileSettingsLoader.clearPreferences();
               if (!context.mounted) return;
-              final controller = ProviderScope.containerOf(
+              final container = ProviderScope.containerOf(
                 context,
                 listen: false,
-              ).read(settingsControllerProvider);
-              await clearEdadatPreferences(null, controller);
+              );
+              final database = container.read(healthDatabaseProvider);
+              await writeHealthTransaction(database, (tx) async {
+                await tx.execute('DELETE FROM dose_occurrences');
+                await tx.execute('DELETE FROM medication_schedules');
+              });
+              container.invalidate(medicationSchedulesProvider);
+              container.invalidate(todayMedicationOccurrencesProvider);
+              container.invalidate(medicationDayProvider);
               if (!context.mounted) return;
               context.showSuccess('deletionConfirmed'.tr());
-            }
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.timeline),
-          title: Text('deleteAllMeasurements'.tr()),
-          trailing: const Icon(Icons.delete_forever),
-          onTap: () async {
-            if (await showConfirmDeletionDialog(
-              context,
-              'warnDeletionUnrecoverable'.tr(),
-            )) {
-              if (!context.mounted) return;
-              final repo = context.bpRepo;
-              final previousRecords = await repo.get(DateRange.all());
-              for (final record in previousRecords) {
-                await repo.remove(record);
-              }
-              if (!context.mounted) return;
-              context.showToastWithAction(
-                'deletionConfirmed'.tr(),
-                actionLabel: 'btnUndo'.tr(),
-                onAction: () => Future.forEach(previousRecords, repo.add),
-              );
-            }
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.notes),
-          title: Text('deleteAllNotes'.tr()),
-          trailing: const Icon(Icons.delete_forever),
-          onTap: () async {
-            if (await showConfirmDeletionDialog(
-              context,
-              'warnDeletionUnrecoverable'.tr(),
-            )) {
-              if (!context.mounted) return;
-              final repo = context.noteRepo;
-              final previousNotes = await repo.get(DateRange.all());
-              for (final note in previousNotes) {
-                await repo.remove(note);
-              }
-              if (!context.mounted) return;
-              context.showToastWithAction(
-                'deletionConfirmed'.tr(),
-                actionLabel: 'btnUndo'.tr(),
-                onAction: () => Future.forEach(previousNotes, repo.add),
-              );
-            }
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.monitor_weight_outlined),
-          title: Text('deleteAllWeights'.tr()),
-          trailing: const Icon(Icons.delete_forever),
-          onTap: () async {
-            if (await showConfirmDeletionDialog(
-              context,
-              'warnDeletionUnrecoverable'.tr(),
-            )) {
-              if (!context.mounted) return;
-              final repo = context.weightRepo;
-              final previous = await repo.get(DateRange.all());
-              for (final record in previous) {
-                await repo.remove(record);
-              }
-              if (!context.mounted) return;
-              context.showToastWithAction(
-                'deletionConfirmed'.tr(),
-                actionLabel: 'btnUndo'.tr(),
-                onAction: () => Future.forEach(previous, repo.add),
-              );
-            }
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.medication),
-          title: Text('deleteAllMedicineIntakes'.tr()),
-          trailing: const Icon(Icons.delete_forever),
-          onTap: () async {
-            if (await showConfirmDeletionDialog(
-              context,
-              'warnDeletionUnrecoverable'.tr(),
-            )) {
-              if (!context.mounted) return;
-              final repo = context.intakeRepo;
-              final allIntakes = await repo.get(DateRange.all());
-              for (final intake in allIntakes) {
-                await repo.remove(intake);
-              }
-              if (!context.mounted) return;
-              context.showSuccess('deletionConfirmed'.tr());
-            }
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.notifications_off_outlined),
-          title: Text('deleteAllMedicationSchedules'.tr()),
-          trailing: const Icon(Icons.delete_forever),
-          onTap: () async {
-            if (!await showConfirmDeletionDialog(
-              context,
-              'warnDeletionUnrecoverable'.tr(),
-            )) {
-              return;
-            }
-            if (!context.mounted) return;
-            final container = ProviderScope.containerOf(context, listen: false);
-            final database = container.read(healthDatabaseProvider);
-            await writeHealthTransaction(database, (tx) async {
-              await tx.execute('DELETE FROM dose_occurrences');
-              await tx.execute('DELETE FROM medication_schedules');
-            });
-            container.invalidate(medicationSchedulesProvider);
-            container.invalidate(todayMedicationOccurrencesProvider);
-            container.invalidate(medicationDayProvider);
-            if (!context.mounted) return;
-            context.showSuccess('deletionConfirmed'.tr());
-          },
-        ),
-      ],
-    ),
+            },
+          ),
+        ],
+      ),
+    ],
   );
 }

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17634e">
+  <meta name="description" content="Janan — your private, local health diary.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="manifest" href="manifest.json">
+  <title>Janan · الجنان</title>
+  <style>
+    :root {color-scheme:light dark; font-family:system-ui,sans-serif; background:#f6f8f7; color:#1d302c}
+    @media(prefers-color-scheme:dark){:root{background:#101916;color:#e5eee9}}
+    body{margin:0} #janan-boot{min-height:100dvh;box-sizing:border-box;display:grid;place-content:center;text-align:center;padding:24px}
+    #janan-boot strong{font-size:28px} button{font:inherit;padding:12px;cursor:pointer}
+    #janan-offline-status{pointer-events:none;position:fixed;z-index:10000;bottom:12px;left:50%;transform:translateX(-50%);box-sizing:border-box;width:max-content;max-width:calc(100% - 24px);display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #668579;border-radius:12px;background:#f6f8f7;color:#1d302c;font-size:13px;box-shadow:0 2px 12px #0002}
+    #janan-offline-status button{pointer-events:auto;border:0;background:transparent;color:inherit;min-width:44px;min-height:44px;padding:4px;font-size:22px}
+    @media(prefers-color-scheme:dark){#janan-offline-status{background:#101916;color:#e5eee9}}
+  </style>
+</head>
+<body>
+  <div id="janan-boot" role="status"><strong>Janan · الجنان</strong><p>Opening your diary… · جارٍ فتح يومياتك…</p></div>
+  <noscript>JavaScript is required to open Janan. · يلزم تفعيل JavaScript لفتح الجنان.</noscript>
+  <script src="offline.js" defer></script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

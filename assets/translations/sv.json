@@ -490,7 +490,7 @@
   "bodySexMale": "Man",
   "bodySexFemale": "Kvinna",
   "athleteMode": "Atletläge",
-  "athleteModeDesc": "Använd Eufys atletkoefficienter för högre muskelmassa",
+  "athleteModeDesc": "Anpassa uppskattningar för högre muskelmassa",
   "bodyFat": "Kroppsfett",
   "muscleMass": "Muskler",
   "boneMass": "Ben",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "Det högre talet i blodtrycket. Trycket när hjärtat drar ihop sig.",
   "metricInfoDiaDesc": "Det lägre talet i blodtrycket. Trycket när hjärtat vilar.",
   "metricInfoPulDesc": "Vilopuls i slag per minut.",
-  "bodyCompositionEstimated": "Uppskattat från impedans. Värden kan skilja sig från Eufy-appen.",
+  "bodyCompositionEstimated": "Uppskattat från impedans. Värdena kan skilja sig från vågens app.",
   "bodyCompositionSubtitle": "{fat} % fett · {muscle} kg muskler",
   "exportImportDocumentationTooltip": "Så använder du export och import",
   "exportImportDocumentation": "## Exportera och importera\n- Exportera en SQLite-databas för att säkerhetskopiera eller överföra dina poster.\n- Välj CSV för att öppna data i ett kalkylblad eller importera det tillbaka till Janan.\n- Håll kolumnrubriker aktiverade och inkludera en kolumn för datum och tid som stöds.\n- Använd separata kolumner för systoliskt tryck, diastoliskt tryck, puls, anteckningar och registrerade medicindoser.\n\n## Använda ett kalkylblad\n1. Exportera som CSV med kolumnrubriker.\n2. Öppna filen i LibreOffice, Excel eller en annan kalkylarksapp.\n3. Markera fältavgränsaren och textavgränsaren om kolumnerna inte står i linje.\n4. Se till att tidskolumnen känns igen som ett datum och en tid.\n5. Behåll samma kolumnrubriker och tidsformat om du vill importera filen igen.\n\n## Notera färger\n- Kolumnen `color` lagrar sedelfärgen som ett nummer.\n- Den äldre kolumnen `needlePin` lagrar JSON för kompatibilitet med äldre filer.\n- Använd `color` för en enkel kalkylarkskolumn.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Öppna Vikt och tryck på +.\nAnge vågens värde. Kontrollera enhet, datum och tid och tryck på Spara.\nTryck på en sparad vikt för att visa eller ändra den. Välj enhet i Inställningar.",
   "onboardingMinutesValue": "{value} minuter",
   "onboardingSaveFailed": "Det gick inte att spara dina inställningar. Försök igen.",
-  "healthTools": "Hälsoverktyg"
+  "healthTools": "Hälsoverktyg",
+  "webNativeFeatureUnavailable": "Den här funktionen finns i mobilappen.",
+  "homeChartCount": "Maximalt antal diagram på breda skärmar",
+  "homeChartCountDesc": "Visar upp till detta antal diagram när det finns plats. Smala skärmar visar ett.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

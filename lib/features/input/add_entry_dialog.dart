@@ -12,6 +12,7 @@ import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:safaeh/safaeh.dart';
 
 /// Input mask for entering measurements.
 class AddEntryDialog extends ConsumerStatefulWidget {
@@ -117,23 +118,25 @@ class _AddEntryDialogState extends ConsumerState<AddEntryDialog> with Loggable {
                   },
           ),
         ),
-        body: FormBottomAction.overlay(
-          label: kind == AddEntryKind.bloodPressure
-              ? 'saveReading'.tr()
-              : 'btnSave'.tr(),
-          icon: const Icon(Icons.check),
-          burstKind: burstKind,
-          onPressed: _saving || _committed ? null : _onSavePressed,
-          body: AddMultipleEntriesForm(
-            key: formKey,
-            initialValue: widget.initialRecord == null
-                ? null
-                : [widget.initialRecord!],
-            showBluetooth: widget.initialRecord == null,
-            kind: kind,
-            bottomPadding:
-                FormBottomAction.clearance +
-                MediaQuery.paddingOf(context).bottom,
+        body: SafaehContentBand(
+          child: FormBottomAction.overlay(
+            label: kind == AddEntryKind.bloodPressure
+                ? 'saveReading'.tr()
+                : 'btnSave'.tr(),
+            icon: const Icon(Icons.check),
+            burstKind: burstKind,
+            onPressed: _saving || _committed ? null : _onSavePressed,
+            body: AddMultipleEntriesForm(
+              key: formKey,
+              initialValue: widget.initialRecord == null
+                  ? null
+                  : [widget.initialRecord!],
+              showBluetooth: widget.initialRecord == null,
+              kind: kind,
+              bottomPadding:
+                  FormBottomAction.clearance +
+                  MediaQuery.paddingOf(context).bottom,
+            ),
           ),
         ),
       ),

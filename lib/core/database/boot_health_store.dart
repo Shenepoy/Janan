@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:blood_pressure_app/core/database/health_database.dart';
+import 'package:blood_pressure_app/core/database/native_database_setup.dart';
 import 'package:blood_pressure_app/core/repository/powersync_blood_pressure_repository.dart';
 import 'package:blood_pressure_app/core/repository/powersync_bodyweight_repository.dart';
 import 'package:blood_pressure_app/core/repository/powersync_medicine_intake_repository.dart';
@@ -10,7 +9,6 @@ import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/model/med_cache.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:powersync/powersync.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// Local-only store opened before `runApp` so the root [ProviderScope] can
 /// override `healthDatabaseProvider` and the repos. Reading the unimplemented
@@ -35,9 +33,7 @@ class BootHealthStore {
   final MedCache medCache;
 
   static Future<BootHealthStore> open({PowerSyncDatabase? database}) async {
-    if (!Platform.isAndroid && !Platform.isIOS) {
-      databaseFactory = databaseFactoryFfi;
-    }
+    initializeNativeDatabaseFactory();
     final openedDatabase = database ?? await HealthDatabase.open();
     final medRepo = PowerSyncMedicineRepository(openedDatabase);
     return BootHealthStore(

@@ -490,7 +490,7 @@
   "bodySexMale": "Férfi",
   "bodySexFemale": "Nő",
   "athleteMode": "Sportolói mód",
-  "athleteModeDesc": "Eufy sportolói együtthatók a nagyobb izomtömeghez",
+  "athleteModeDesc": "Becslések igazítása nagyobb izomtömeghez",
   "bodyFat": "Testzsír",
   "muscleMass": "Izom",
   "boneMass": "Csont",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "A vérnyomás magasabb száma. A nyomás, amikor a szív összehúzódik.",
   "metricInfoDiaDesc": "A vérnyomás alacsonyabb száma. A nyomás, amikor a szív pihen.",
   "metricInfoPulDesc": "Nyugalmi pulzus percenkénti ütésekben.",
-  "bodyCompositionEstimated": "Impedanciából becsülve. Az értékek eltérhetnek az Eufy alkalmazástól.",
+  "bodyCompositionEstimated": "Impedanciából becsülve. Az értékek eltérhetnek a mérleg alkalmazásában láthatóktól.",
   "bodyCompositionSubtitle": "{fat}% zsír · {muscle} kg izom",
   "exportImportDocumentationTooltip": "Az export és import használata",
   "exportImportDocumentation": "## Exportálás és importálás\n- Exportáljon egy SQLite adatbázist a rekordok biztonsági mentéséhez vagy átviteléhez.\n- Válassza a CSV-fájlt az adatok táblázatban való megnyitásához, vagy visszaimportálásához a Jananba.\n- Tartsa engedélyezve az oszlopfejléceket, és tartalmazzon egy támogatott dátum- és időoszlopot.\n- Használjon külön oszlopokat a szisztolés nyomás, a diasztolés nyomás, a pulzus, a jegyzetek és a feljegyzett gyógyszeradagok számára.\n\n## Táblázat használata\n1. Exportálás CSV-ként oszlopfejlécekkel.\n2. Nyissa meg a fájlt a LibreOffice, Excel vagy más táblázatkezelő alkalmazásban.\n3. Ellenőrizze a mezőhatárolót és a szöveghatárolót, ha az oszlopok nem egy vonalban vannak.\n4. Győződjön meg arról, hogy az idő oszlopot dátumként és időként ismeri fel.\n5. Ha ismét importálni szeretné a fájlt, tartsa meg ugyanazt az oszlopfejlécet és időformátumot.\n\n## Megjegyzés színek\n- A `color` oszlop a jegyzet színét számként tárolja.\n- Az örökölt `needlePin` oszlop a JSON-t tárolja a régebbi fájlokkal való kompatibilitás érdekében.\n- Használja a `color`-t egy egyszerű táblázatoszlophoz.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Nyissa meg a Testsúly lapot, és koppintson a + jelre.\nAdja meg a mérleg értékét. Ellenőrizze a mértékegységet, dátumot és időt, majd koppintson a Mentés gombra.\nKoppintson egy mentett testsúlyra a megtekintéshez vagy szerkesztéshez. A mértékegységet a Beállításokban választhatja ki.",
   "onboardingMinutesValue": "{value} perc",
   "onboardingSaveFailed": "Nem sikerült menteni a beállításokat. Kérjük, próbáld újra.",
-  "healthTools": "Egészségügyi eszközök"
+  "healthTools": "Egészségügyi eszközök",
+  "webNativeFeatureUnavailable": "Ez a funkció a mobilalkalmazásban érhető el.",
+  "homeChartCount": "Grafikonok maximális száma széles képernyőn",
+  "homeChartCountDesc": "Legfeljebb ennyi grafikont mutat, ha van elég hely. Keskeny képernyőn egy látható.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

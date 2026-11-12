@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/config.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_palette.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
@@ -42,14 +43,15 @@ class OnboardingFeatureSetup extends ConsumerWidget {
         page: 2,
         change: (bool value) => ref.updateSetting(weightInputSetting, value),
       ),
-      (
-        key: 'bluetooth',
-        title: 'bluetoothMeasurements',
-        icon: Icons.bluetooth,
-        value: settings.bluetoothMeasurementsEnabled,
-        page: 1,
-        change: ref.setBluetoothMeasurementsEnabled,
-      ),
+      if (isPlatformSupportedBluetooth)
+        (
+          key: 'bluetooth',
+          title: 'bluetoothMeasurements',
+          icon: Icons.bluetooth,
+          value: settings.bluetoothMeasurementsEnabled,
+          page: 1,
+          change: ref.setBluetoothMeasurementsEnabled,
+        ),
     ];
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),

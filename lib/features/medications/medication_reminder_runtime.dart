@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:blood_pressure_app/core/platform/app_platform.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_plan.dart';
 import 'package:blood_pressure_app/features/medications/medication_timezone_database.dart';
@@ -263,8 +263,8 @@ class MedicationReminderRuntime {
   StreamSubscription<receive_intent.Intent?>? _widgetIntentSubscription;
 
   Future<void> initialize() async {
-    if (_initialized || (!Platform.isAndroid && !Platform.isIOS)) return;
-    if (Platform.isAndroid) {
+    if (_initialized || (!AppPlatform.isAndroid && !AppPlatform.isIOS)) return;
+    if (AppPlatform.isAndroid) {
       _widgetIntentSubscription ??= receive_intent
           .ReceiveIntent
           .receivedIntentStream
@@ -307,7 +307,7 @@ class MedicationReminderRuntime {
   /// Requests user-facing notification and exact-alarm access when available.
   Future<bool> requestPermissions() async {
     await initialize();
-    if (Platform.isAndroid) {
+    if (AppPlatform.isAndroid) {
       final android = _notifications
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
@@ -321,7 +321,7 @@ class MedicationReminderRuntime {
       }
       return notificationsEnabled;
     }
-    if (Platform.isIOS) {
+    if (AppPlatform.isIOS) {
       return await _notifications
               .resolvePlatformSpecificImplementation<
                 IOSFlutterLocalNotificationsPlugin
@@ -338,7 +338,7 @@ class MedicationReminderRuntime {
   >
   permissionState() async {
     await initialize();
-    if (Platform.isAndroid) {
+    if (AppPlatform.isAndroid) {
       final android = _notifications
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
@@ -350,7 +350,7 @@ class MedicationReminderRuntime {
             await android?.canScheduleExactNotifications() ?? false,
       );
     }
-    if (Platform.isIOS) {
+    if (AppPlatform.isIOS) {
       final ios = _notifications
           .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin
@@ -374,13 +374,13 @@ class MedicationReminderRuntime {
   /// Opens the operating system page for Janan's notification permission.
   Future<void> openNotificationSettings() async {
     await initialize();
-    if (Platform.isAndroid) {
+    if (AppPlatform.isAndroid) {
       await _notifications
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >()
           ?.openAppNotificationSettings();
-    } else if (Platform.isIOS) {
+    } else if (AppPlatform.isIOS) {
       await _notifications
           .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin
@@ -392,7 +392,7 @@ class MedicationReminderRuntime {
   /// Opens Android's exact-alarm access page when access is unavailable.
   Future<void> requestExactAlarmPermission() async {
     await initialize();
-    if (!Platform.isAndroid) return;
+    if (!AppPlatform.isAndroid) return;
     await _notifications
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -432,7 +432,7 @@ class MedicationReminderRuntime {
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >();
-    final exact = Platform.isAndroid
+    final exact = AppPlatform.isAndroid
         ? await android?.canScheduleExactNotifications() ?? false
         : true;
     final now = DateTime.now();
@@ -606,7 +606,7 @@ class MedicationReminderRuntime {
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >();
-    final exact = Platform.isAndroid
+    final exact = AppPlatform.isAndroid
         ? await android?.canScheduleExactNotifications() ?? false
         : true;
     await _notifications.zonedSchedule(
@@ -662,7 +662,7 @@ class MedicationReminderRuntime {
     Duration missedDoseShiftLimit = const Duration(minutes: 60),
     int dueIndicatorDivisor = 3,
   }) async {
-    if (!Platform.isAndroid) return;
+    if (!AppPlatform.isAndroid) return;
     final now = DateTime.now();
     final dueAnchors = <String, DateTime>{};
     final targets = shiftedDoseTargets(

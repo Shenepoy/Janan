@@ -490,7 +490,7 @@
   "bodySexMale": "Moški",
   "bodySexFemale": "Ženska",
   "athleteMode": "Športni način",
-  "athleteModeDesc": "Uporabi Eufyjeve športne koeficiente za večjo mišično maso",
+  "athleteModeDesc": "Prilagodi ocene za večjo mišično maso",
   "bodyFat": "Telesna maščoba",
   "muscleMass": "Mišice",
   "boneMass": "Kosti",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "Višja številka krvnega tlaka. Tlak, ko se srce skrči.",
   "metricInfoDiaDesc": "Nižja številka krvnega tlaka. Tlak, ko srce počiva.",
   "metricInfoPulDesc": "Srčni utrip v mirovanju v utripih na minuto.",
-  "bodyCompositionEstimated": "Ocenjeno iz impedance. Vrednosti se lahko razlikujejo od aplikacije Eufy.",
+  "bodyCompositionEstimated": "Ocenjeno iz impedance. Vrednosti se lahko razlikujejo od aplikacije vaše tehtnice.",
   "bodyCompositionSubtitle": "{fat} % maščobe · {muscle} kg mišic",
   "exportImportDocumentationTooltip": "Kako uporabljati izvoz in uvoz",
   "exportImportDocumentation": "## Izvoz in uvoz\n- Izvoz baze podatkov SQLite za varnostno kopiranje ali prenos vaših zapisov.\n- Izberite CSV, da odprete podatke v preglednici ali jih uvozite nazaj v Janan.\n- Omogočite glave stolpcev in vključite podprt stolpec z datumom in uro.\n- Uporabite ločene stolpce za sistolični tlak, diastolični tlak, pulz, opombe in zabeležene odmerke zdravil.\n\n## Uporaba preglednice\n1. Izvozi kot CSV z naslovi stolpcev.\n2. Odprite datoteko v LibreOffice, Excelu ali drugi aplikaciji za preglednice.\n3. Če se stolpci ne poravnajo, preverite ločilo polj in besedilo.\n4. Prepričajte se, da je časovni stolpec prepoznan kot datum in čas.\n5. Ohranite enake glave stolpcev in obliko časa, če želite znova uvoziti datoteko.\n\n## Barve opomb\n- Stolpec `color` shrani barvo bankovca kot številko.\n- Starejši stolpec `needlePin` shranjuje JSON za združljivost s starejšimi datotekami.\n- Uporabite `color` za preprost stolpec preglednice.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Odprite Teža in tapnite +.\nVnesite odčitek tehtnice. Preverite enoto, datum in uro, nato tapnite Shrani.\nTapnite shranjeno težo za ogled ali urejanje. Enoto izberite v Nastavitvah.",
   "onboardingMinutesValue": "{value} min",
   "onboardingSaveFailed": "Nastavitev ni bilo mogoče shraniti. Poskusite znova.",
-  "healthTools": "Zdravstvena orodja"
+  "healthTools": "Zdravstvena orodja",
+  "webNativeFeatureUnavailable": "Ta funkcija je na voljo v mobilni aplikaciji.",
+  "homeChartCount": "Največ grafov na širokih zaslonih",
+  "homeChartCountDesc": "Prikaže največ toliko grafov, če je dovolj prostora. Na ozkih zaslonih prikaže enega.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

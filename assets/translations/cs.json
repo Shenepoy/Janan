@@ -490,7 +490,7 @@
   "bodySexMale": "Muž",
   "bodySexFemale": "Žena",
   "athleteMode": "Sportovní režim",
-  "athleteModeDesc": "Použít sportovní koeficienty Eufy pro vyšší svalovou hmotu",
+  "athleteModeDesc": "Upravit odhady pro vyšší svalovou hmotu",
   "bodyFat": "Tělesný tuk",
   "muscleMass": "Svaly",
   "boneMass": "Kosti",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "Vyšší číslo tlaku. Tlak, když se srdce stahuje.",
   "metricInfoDiaDesc": "Nižší číslo tlaku. Tlak, když srdce odpočívá.",
   "metricInfoPulDesc": "Klidová tepová frekvence v úderech za minutu.",
-  "bodyCompositionEstimated": "Odhad z impedance. Hodnoty se mohou lišit od aplikace Eufy.",
+  "bodyCompositionEstimated": "Odhad z impedance. Hodnoty se mohou lišit od aplikace vaší váhy.",
   "bodyCompositionSubtitle": "{fat} % tuku · {muscle} kg svalů",
   "exportImportDocumentationTooltip": "Jak používat export a import",
   "exportImportDocumentation": "## Export a import\n- Exportujte databázi SQLite pro zálohování nebo přenos vašich záznamů.\n- Chcete-li data otevřít v tabulce nebo je importovat zpět do Jananu, zvolte CSV.\n- Ponechte povolená záhlaví sloupců a zahrňte podporovaný sloupec data a času.\n- Použijte samostatné sloupce pro systolický tlak, diastolický tlak, puls, poznámky a zaznamenané dávky léků.\n\n## Pomocí tabulky\n1. Exportujte jako CSV se záhlavími sloupců.\n2. Otevřete soubor v LibreOffice, Excelu nebo jiné tabulkové aplikaci.\n3. Pokud sloupce nejsou zarovnány, zkontrolujte oddělovač polí a oddělovač textu.\n4. Ujistěte se, že sloupec času je rozpoznán jako datum a čas.\n5. Chcete-li soubor importovat znovu, ponechte stejná záhlaví sloupců a formát času.\n\n## Všimněte si barev\n- Sloupec `color` ukládá barvu noty jako číslo.\n- Starší sloupec `needlePin` ukládá JSON pro kompatibilitu se staršími soubory.\n- Použijte `color` pro jednoduchý sloupec tabulky.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Otevřete Hmotnost a klepněte na +.\nZadejte údaj z váhy. Zkontrolujte jednotku, datum a čas a klepněte na Uložit.\nKlepnutím na uloženou hmotnost ji zobrazíte nebo upravíte. Jednotku zvolíte v Nastavení.",
   "onboardingMinutesValue": "{value} min",
   "onboardingSaveFailed": "Nastavení se nepodařilo uložit. Zkuste to prosím znovu.",
-  "healthTools": "Zdravotní nástroje"
+  "healthTools": "Zdravotní nástroje",
+  "webNativeFeatureUnavailable": "Tato funkce je dostupná v mobilní aplikaci.",
+  "homeChartCount": "Maximum grafů na široké obrazovce",
+  "homeChartCountDesc": "Zobrazí nejvýše tento počet grafů, pokud je místo. Na úzké obrazovce se zobrazí jeden.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

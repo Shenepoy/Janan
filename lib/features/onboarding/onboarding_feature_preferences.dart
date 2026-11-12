@@ -6,6 +6,7 @@ import 'package:blood_pressure_app/features/settings/body_profile_screen.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/settings/tiles/slider_list_tile.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
@@ -146,13 +147,19 @@ class OnboardingFeaturePreferences extends ConsumerWidget {
                         medicationNotificationsEnabledSetting.titleKey.tr(),
                       ),
                       subtitle: Text(
-                        medicationNotificationsEnabledSetting.subtitleKey!.tr(),
+                        (kIsWeb
+                                ? 'webNativeFeatureUnavailable'
+                                : medicationNotificationsEnabledSetting
+                                      .subtitleKey!)
+                            .tr(),
                       ),
-                      value: settings.medicationNotificationsEnabled,
-                      onChanged: (value) => ref.updateSetting(
-                        medicationNotificationsEnabledSetting,
-                        value,
-                      ),
+                      value: !kIsWeb && settings.medicationNotificationsEnabled,
+                      onChanged: kIsWeb
+                          ? null
+                          : (value) => ref.updateSetting(
+                              medicationNotificationsEnabledSetting,
+                              value,
+                            ),
                     ),
                     _enumTile(
                       context,
@@ -161,7 +168,8 @@ class OnboardingFeaturePreferences extends ConsumerWidget {
                       settings.medicationHistoryDisplay,
                     ),
                     _advanced('medicine', [
-                      if (settings.medicationNotificationsEnabled) ...[
+                      if (!kIsWeb &&
+                          settings.medicationNotificationsEnabled) ...[
                         _intTile(
                           context,
                           ref,

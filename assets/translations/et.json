@@ -490,7 +490,7 @@
   "bodySexMale": "Mees",
   "bodySexFemale": "Naine",
   "athleteMode": "Sportlase režiim",
-  "athleteModeDesc": "Kasuta Eufy sportlase koefitsiente suurema lihasmassi jaoks",
+  "athleteModeDesc": "Kohanda hinnanguid suurema lihasmassi jaoks",
   "bodyFat": "Keharasv",
   "muscleMass": "Lihased",
   "boneMass": "Luud",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "Vererõhu kõrgem arv. Rõhk, kui süda tõmbub kokku.",
   "metricInfoDiaDesc": "Vererõhu madalam arv. Rõhk, kui süda puhkab.",
   "metricInfoPulDesc": "Puhkeoleku pulss löökides minutis.",
-  "bodyCompositionEstimated": "Hinnatud impedantsist. Väärtused võivad Eufy rakendusest erineda.",
+  "bodyCompositionEstimated": "Hinnatud impedantsi põhjal. Väärtused võivad sinu kaalu rakendusest erineda.",
   "bodyCompositionSubtitle": "{fat}% rasva · {muscle} kg lihaseid",
   "exportImportDocumentationTooltip": "Kuidas eksporti ja importi kasutada",
   "exportImportDocumentation": "## Eksport ja import\n- Kirjete varundamiseks või ülekandmiseks eksportige SQLite'i andmebaas.\n- Valige CSV, et avada andmed arvutustabelis või importida need tagasi Janani.\n- Hoidke veerupäised lubatud ja lisage toetatud kuupäeva ja kellaaja veerg.\n- Kasutage süstoolse rõhu, diastoolse rõhu, pulsi, märkmete ja registreeritud ravimiannuste jaoks eraldi veerge.\n\n## Arvutustabeli kasutamine\n1. Eksportige veerupäistega CSV-vormingus.\n2. Avage fail LibreOffice'is, Excelis või mõnes muus arvutustabelirakenduses.\n3. Kontrollige väljade eraldajat ja tekstieraldajat, kui veerud ei ole rivis.\n4. Veenduge, et kellaaja veerg tuvastatakse kuupäeva ja kellaajana.\n5. Kui soovite faili uuesti importida, säilitage samad veerupäised ja ajavorming.\n\n## Märkige värvid\n- Veerg `color` salvestab märkme värvi numbrina.\n- Pärandveerg `needlePin` salvestab JSON-i, et see ühilduks vanemate failidega.\n- Kasutage lihtsa arvutustabeli veeru jaoks `color`.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Ava Kaal ja puuduta +.\nSisesta kaalu näit. Kontrolli ühikut, kuupäeva ja kellaaega ning puuduta Salvesta.\nPuuduta salvestatud kaalu, et seda vaadata või muuta. Ühiku saad valida Seadetes.",
   "onboardingMinutesValue": "{value} minutit",
   "onboardingSaveFailed": "Seadistust ei saanud salvestada. Palun proovi uuesti.",
-  "healthTools": "Tervisetööriistad"
+  "healthTools": "Tervisetööriistad",
+  "webNativeFeatureUnavailable": "See funktsioon on saadaval mobiilirakenduses.",
+  "homeChartCount": "Graafikute ülempiir laial ekraanil",
+  "homeChartCountDesc": "Näitab kuni seda arvu graafikuid, kui ruumi jätkub. Kitsal ekraanil kuvatakse üks.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

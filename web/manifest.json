@@ -1,0 +1,9 @@
+{
+  "name": "Janan",
+  "short_name": "Janan",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f6f8f7",
+  "theme_color": "#17634e",
+  "description": "Your private, local health diary"
+}

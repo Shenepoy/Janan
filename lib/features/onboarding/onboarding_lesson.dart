@@ -1,13 +1,15 @@
 import 'dart:math' as math;
 
+import 'package:blood_pressure_app/features/onboarding/onboarding_copy_provider.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_palette.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_scene.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 /// Illustrated lessons with a calm reading rhythm and an animated example.
-class OnboardingLesson extends StatelessWidget {
+class OnboardingLesson extends ConsumerWidget {
   const OnboardingLesson({super.key, required this.page, this.active = true});
 
   /// Illustration/copy ID: welcome (0), pressure (1), trends (2),
@@ -16,7 +18,7 @@ class OnboardingLesson extends StatelessWidget {
   final bool active;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final titleKey = switch (page) {
       0 => 'onboardingWelcomeTitle',
       1 => 'onboardingAddTitle',
@@ -99,7 +101,8 @@ class OnboardingLesson extends StatelessWidget {
         const SizedBox(height: 18),
         if (page == 0)
           Text(
-            bodyKey.tr(),
+            ref.watch(onboardingWelcomeBodyProvider)?.call(context.locale) ??
+                bodyKey.tr(),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyLarge?.copyWith(
               height: 1.55,

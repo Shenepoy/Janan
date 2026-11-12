@@ -71,6 +71,8 @@ void main() {
     expect(find.text('Trust time reported by bluetooth devices'), findsOneWidget);
 
     expect(AppSettings.fromController(testSettingsController!).trustBLETime, isTrue);
+    await tester.ensureVisible(find.widgetWithText(SwitchListTile, 'Trust time reported by bluetooth devices'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(SwitchListTile, 'Trust time reported by bluetooth devices'));
     await tester.pump();
     expect(AppSettings.fromController(testSettingsController!).trustBLETime, isFalse);

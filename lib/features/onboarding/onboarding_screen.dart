@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:blood_pressure_app/config.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_appearance_controls.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_backdrop.dart';
@@ -75,7 +76,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     return settings.bloodPressureEnabled ||
         settings.weightInput ||
         settings.medicineFeatureEnabled ||
-        settings.bluetoothMeasurementsEnabled;
+        isPlatformSupportedBluetooth && settings.bluetoothMeasurementsEnabled;
   }
 
   int get _pageCount => 2 + _lessonPages.length + (_hasPreferences ? 1 : 0);

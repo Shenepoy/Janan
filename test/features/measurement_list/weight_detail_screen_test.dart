@@ -1,3 +1,5 @@
+import 'package:blood_pressure_app/features/bluetooth/logic/ble_measurement_duplicates.dart';
+import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_weight_data.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/eufy_body_composition.dart';
 import 'package:blood_pressure_app/features/input/add_entry_dialog.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_info_dialog.dart';
@@ -51,7 +53,7 @@ void main() {
     await tester.scrollUntilVisible(find.text('BMR'), 200);
     expect(find.text('Lean body mass'), findsOneWidget);
     expect(find.text('BMR'), findsOneWidget);
-    expect(find.text('Estimated from impedance. Values may differ from the Eufy app.'), findsOneWidget);
+    expect(find.text('Estimated from impedance. Values may differ from your scale’s app.'), findsOneWidget);
     expect(find.byIcon(Icons.arrow_upward), findsNothing);
     expect(find.byIcon(Icons.arrow_downward), findsNothing);
   });
@@ -153,4 +155,31 @@ void main() {
 
     expect(repo.data, isEmpty);
   });
+  for (final confirm in [true, false]) {
+    testWidgets('ordinary weight deletion blocks reconnect (confirm=$confirm)', (tester) async {
+      final repo = MockBodyweightRepository();
+      final blacklist = MockBleBlacklistRepository();
+      await repo.add(current);
+      await pumpApp(tester, await appBase(
+        WeightDetailScreen(record: current),
+        weightRepo: repo,
+        blacklistRepo: blacklist,
+        settings: TestSettingsSeed(confirmDeletion: confirm),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.delete));
+      await tester.pumpAndSettle();
+      if (confirm) {
+        await tester.tap(find.byKey(const ValueKey('safaeh_confirm')));
+        await tester.pumpAndSettle();
+      }
+      expect(repo.data, isEmpty);
+      expect(newBleWeights(
+        [BleWeightData(kg: current.weight.kg, time: current.time)],
+        repo.data,
+        blacklisted: await blacklist.getKeys('weight'),
+      ), isEmpty);
+    });
+  }
+
 }

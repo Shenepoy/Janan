@@ -75,26 +75,29 @@ class NoteFormState extends FormStateBase<(String?, Color?), NoteForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
-            child: TextFormField(
-              focusNode: _focusNode,
-              controller: _controller,
-              onTapOutside: (_) => FocusScope.of(context).unfocus(),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-                hintText: '—',
-                hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.outline,
+          Semantics(
+            label: 'addNote'.tr(),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: TextFormField(
+                focusNode: _focusNode,
+                controller: _controller,
+                onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                  hintText: '—',
+                  hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
                 ),
+                minLines: 1,
+                maxLines: 4,
+                style: theme.textTheme.bodyLarge,
               ),
-              minLines: 1,
-              maxLines: 4,
-              style: theme.textTheme.bodyLarge,
             ),
           ),
           const SizedBox(height: 8),

@@ -490,7 +490,7 @@
   "bodySexMale": "Mann",
   "bodySexFemale": "Kvinne",
   "athleteMode": "Utøvermodus",
-  "athleteModeDesc": "Bruk Eufys utøverkoeffisienter for høyere muskelmasse",
+  "athleteModeDesc": "Tilpass anslagene til høyere muskelmasse",
   "bodyFat": "Kroppsfett",
   "muscleMass": "Muskler",
   "boneMass": "Ben",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "Det høyere tallet i blodtrykket. Trykket når hjertet trekker seg sammen.",
   "metricInfoDiaDesc": "Det lavere tallet i blodtrykket. Trykket når hjertet hviler.",
   "metricInfoPulDesc": "Hvilepuls i slag per minutt.",
-  "bodyCompositionEstimated": "Anslått fra impedans. Verdier kan avvike fra Eufy-appen.",
+  "bodyCompositionEstimated": "Anslått fra impedans. Verdiene kan avvike fra appen til vekten din.",
   "bodyCompositionSubtitle": "{fat} % fett · {muscle} kg muskler",
   "exportImportDocumentationTooltip": "Slik bruker du eksport og import",
   "exportImportDocumentation": "## Eksporter og importer\n- Eksporter en SQLite-database for å sikkerhetskopiere eller overføre postene dine.\n- Velg CSV for å åpne data i et regneark eller importere dem tilbake til Janan.\n- Hold kolonneoverskrifter aktivert og ta med en støttet dato- og klokkeslettkolonne.\n- Bruk separate kolonner for systolisk trykk, diastolisk trykk, puls, notater og registrerte medisindoser.\n\n## Bruke et regneark\n1. Eksporter som CSV med kolonneoverskrifter.\n2. Åpne filen i LibreOffice, Excel eller en annen regnearkapp.\n3. Merk av for feltskilletegnet og tekstskilletegnet hvis kolonnene ikke stemmer overens.\n4. Sørg for at tidskolonnen gjenkjennes som en dato og et klokkeslett.\n5. Behold samme kolonneoverskrifter og tidsformat hvis du vil importere filen på nytt.\n\n## Legg merke til farger\n- Kolonnen `color` lagrer notatfargen som et tall.\n- Den eldre kolonnen `needlePin` lagrer JSON for kompatibilitet med eldre filer.\n- Bruk `color` for en enkel regnearkkolonne.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Åpne Vekt og trykk på +.\nSkriv inn tallet fra vekten. Sjekk enhet, dato og klokkeslett, og trykk på Lagre.\nTrykk på en lagret vekt for å se eller endre den. Velg enhet i Innstillinger.",
   "onboardingMinutesValue": "{value} minutter",
   "onboardingSaveFailed": "Kunne ikke lagre oppsettet ditt. Prøv igjen.",
-  "healthTools": "Helseverktøy"
+  "healthTools": "Helseverktøy",
+  "webNativeFeatureUnavailable": "Denne funksjonen er tilgjengelig i mobilappen.",
+  "homeChartCount": "Maksimalt antall grafer på brede skjermer",
+  "homeChartCountDesc": "Viser opptil dette antallet grafer når det er plass. Smale skjermer viser én.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

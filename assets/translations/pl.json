@@ -490,7 +490,7 @@
   "bodySexMale": "Mężczyzna",
   "bodySexFemale": "Kobieta",
   "athleteMode": "Tryb sportowy",
-  "athleteModeDesc": "Użyj współczynników sportowca Eufy dla większej masy mięśniowej",
+  "athleteModeDesc": "Dostosuj szacunki do większej masy mięśniowej",
   "bodyFat": "Tłuszcz",
   "muscleMass": "Mięśnie",
   "boneMass": "Kości",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "Wyższa liczba ciśnienia. Ciśnienie, gdy serce się kurczy.",
   "metricInfoDiaDesc": "Niższa liczba ciśnienia. Ciśnienie, gdy serce odpoczywa.",
   "metricInfoPulDesc": "Tętno spoczynkowe w uderzeniach na minutę.",
-  "bodyCompositionEstimated": "Szacunek z impedancji. Wartości mogą różnić się od aplikacji Eufy.",
+  "bodyCompositionEstimated": "Oszacowano na podstawie impedancji. Wartości mogą różnić się od tych w aplikacji wagi.",
   "bodyCompositionSubtitle": "{fat}% tłuszczu · {muscle} kg mięśni",
   "exportImportDocumentationTooltip": "Jak korzystać z eksportu i importu",
   "exportImportDocumentation": "## Eksportuj i importuj\n- Eksportuj bazę danych SQLite, aby utworzyć kopię zapasową lub przenieść swoje rekordy.\n- Wybierz CSV, aby otworzyć dane w arkuszu kalkulacyjnym lub zaimportować je z powrotem do Janan.\n- Włącz nagłówki kolumn i dołącz obsługiwaną kolumnę daty i godziny.\n- Użyj oddzielnych kolumn dla ciśnienia skurczowego, rozkurczowego, tętna, notatek i zarejestrowanych dawek leków.\n\n## Korzystanie z arkusza kalkulacyjnego\n1. Eksportuj jako plik CSV z nagłówkami kolumn.\n2. Otwórz plik w programie LibreOffice, Excel lub innym arkuszu kalkulacyjnym.\n3. Sprawdź ogranicznik pól i ogranicznik tekstu, jeśli kolumny nie są wyrównane.\n4. Upewnij się, że kolumna czasu została rozpoznana jako data i godzina.\n5. Jeśli chcesz ponownie zaimportować plik, zachowaj te same nagłówki kolumn i format czasu.\n\n## Zwróć uwagę na kolory\n- Kolumna `color` przechowuje kolor nuty w postaci liczby.\n— Starsza kolumna `needlePin` przechowuje kod JSON w celu zapewnienia zgodności ze starszymi plikami.\n- Użyj `color` dla prostej kolumny arkusza kalkulacyjnego.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Otwórz Waga i dotknij +.\nWpisz odczyt z wagi. Sprawdź jednostkę, datę i godzinę, a następnie dotknij Zapisz.\nDotknij zapisanego pomiaru wagi, aby go przejrzeć lub zmienić. Jednostkę wybierzesz w Ustawieniach.",
   "onboardingMinutesValue": "{value} min",
   "onboardingSaveFailed": "Nie udało się zapisać konfiguracji. Spróbuj ponownie.",
-  "healthTools": "Narzędzia zdrowotne"
+  "healthTools": "Narzędzia zdrowotne",
+  "webNativeFeatureUnavailable": "Ta funkcja jest dostępna w aplikacji mobilnej.",
+  "homeChartCount": "Maksymalna liczba wykresów na szerokim ekranie",
+  "homeChartCountDesc": "Wyświetla najwyżej tyle wykresów, jeśli jest miejsce. Na wąskim ekranie wyświetla jeden.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

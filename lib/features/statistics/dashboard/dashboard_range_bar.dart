@@ -32,6 +32,9 @@ class DashboardRangeButton extends ConsumerStatefulWidget {
   /// Create the landscape range button.
   const DashboardRangeButton({super.key, required this.type});
 
+  /// Shared with the shell so the centered toolbar reserves the actual width.
+  static const collapsedWidth = 164.0;
+
   /// Which stored interval this control edits.
   final IntervalStoreManagerLocation type;
 
@@ -113,7 +116,7 @@ class _DashboardRangeButtonState extends ConsumerState<DashboardRangeButton> {
             key: _anchorKey,
             child: SizedBox(
               key: const ValueKey('landscape_range_button'),
-              width: 164,
+              width: DashboardRangeButton.collapsedWidth,
               height: 48,
               child: _RangeSurface(
                 child: Semantics(

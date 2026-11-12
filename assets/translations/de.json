@@ -490,7 +490,7 @@
   "bodySexMale": "Männlich",
   "bodySexFemale": "Weiblich",
   "athleteMode": "Sportlermodus",
-  "athleteModeDesc": "Eufy-Sportlerkoeffizienten für höhere Muskelmasse verwenden",
+  "athleteModeDesc": "Schätzungen an eine höhere Muskelmasse anpassen",
   "bodyFat": "Körperfett",
   "muscleMass": "Muskeln",
   "boneMass": "Knochen",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "Der höhere Wert der Blutdruckmessung. Der Druck, wenn das Herz sich zusammenzieht.",
   "metricInfoDiaDesc": "Der niedrigere Wert der Blutdruckmessung. Der Druck, wenn das Herz ruht.",
   "metricInfoPulDesc": "Ruheherzfrequenz in Schlägen pro Minute.",
-  "bodyCompositionEstimated": "Über Impedanz geschätzt. Werte können von der Eufy-App abweichen.",
+  "bodyCompositionEstimated": "Anhand der Impedanz geschätzt. Werte können von der App deiner Waage abweichen.",
   "bodyCompositionSubtitle": "{fat} % Fett · {muscle} kg Muskeln",
   "exportImportDocumentationTooltip": "So funktionieren Export und Import",
   "exportImportDocumentation": "## Exportieren und Importieren\n- Exportieren Sie eine SQLite-Datenbank, um Ihre Datensätze zu sichern oder zu übertragen.\n- Wählen Sie CSV, um Daten in einer Tabelle zu öffnen oder sie wieder in Janan zu importieren.\n- Lassen Sie die Spaltenüberschriften aktiviert und fügen Sie eine unterstützte Datums- und Uhrzeitspalte hinzu.\n- Verwenden Sie separate Spalten für systolischen Druck, diastolischen Druck, Puls, Notizen und aufgezeichnete Arzneimitteldosen.\n\n## Verwenden einer Tabellenkalkulation\n1. Als CSV mit Spaltenüberschriften exportieren.\n2. Öffnen Sie die Datei in LibreOffice, Excel oder einer anderen Tabellenkalkulations-App.\n3. Überprüfen Sie das Feldtrennzeichen und das Texttrennzeichen, wenn die Spalten nicht ausgerichtet sind.\n4. Stellen Sie sicher, dass die Zeitspalte als Datum und Uhrzeit erkannt wird.\n5. Behalten Sie die gleichen Spaltenüberschriften und das gleiche Zeitformat bei, wenn Sie die Datei erneut importieren möchten.\n\n## Farben beachten\n- In der Spalte `color` wird die Notenfarbe als Zahl gespeichert.\n– Die Legacy-Spalte `needlePin` speichert JSON aus Kompatibilitätsgründen mit älteren Dateien.\n- Verwenden Sie `color` für eine einfache Tabellenspalte.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Öffnen Sie Gewicht und tippen Sie auf +.\nGeben Sie den Wert Ihrer Waage ein. Prüfen Sie Einheit, Datum und Uhrzeit und tippen Sie auf Speichern.\nTippen Sie auf einen gespeicherten Gewichtswert, um ihn anzusehen oder zu bearbeiten. Die Einheit wählen Sie in den Einstellungen.",
   "onboardingMinutesValue": "{value} Minuten",
   "onboardingSaveFailed": "Deine Einrichtung konnte nicht gespeichert werden. Bitte versuche es erneut.",
-  "healthTools": "Gesundheitswerkzeuge"
+  "healthTools": "Gesundheitswerkzeuge",
+  "webNativeFeatureUnavailable": "Diese Funktion ist in der mobilen App verfügbar.",
+  "homeChartCount": "Maximale Diagrammzahl auf breiten Bildschirmen",
+  "homeChartCountDesc": "Zeigt bis zu so viele Diagramme, wenn genug Platz ist. Schmale Bildschirme zeigen eines.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

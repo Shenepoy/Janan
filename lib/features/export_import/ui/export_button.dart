@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:blood_pressure_app/components/form_bottom_action.dart';
 import 'package:blood_pressure_app/core/database/db_export.dart';
+import 'package:blood_pressure_app/core/platform/app_platform.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/features/export_import/model/csv_converter.dart';
@@ -37,8 +38,9 @@ class ExportButton extends StatelessWidget {
   final IntervalStoreManagerLocation rangeLocation;
 
   @override
-  Widget build(BuildContext context) => TextButton.icon(
-    label: Text(share ? 'btnShare'.tr() : 'export'.tr()),
+  Widget build(BuildContext context) => FormBottomAction(
+    grouped: true,
+    label: share ? 'btnShare'.tr() : 'export'.tr(),
     icon: Icon(share ? Icons.share : Icons.file_download_outlined),
     onPressed: () =>
         performExport(context, share, rangeLocation: rangeLocation),
@@ -190,7 +192,7 @@ Future<bool> _exportData(
   }
 
   final settings = context.exportSettings;
-  if (settings.defaultExportDir.isEmpty || !Platform.isAndroid) {
+  if (settings.defaultExportDir.isEmpty || !AppPlatform.isAndroid) {
     Log.debug('_exportData - Saving file using FilePicker');
     final path = await FilePicker.saveFile(
       type: FileType.any, // mimeType

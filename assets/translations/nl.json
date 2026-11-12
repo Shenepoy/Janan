@@ -490,7 +490,7 @@
   "bodySexMale": "Man",
   "bodySexFemale": "Vrouw",
   "athleteMode": "Sportersmodus",
-  "athleteModeDesc": "Eufy-sportercoëfficiënten gebruiken voor hogere spiermassa",
+  "athleteModeDesc": "Schattingen aanpassen voor een hogere spiermassa",
   "bodyFat": "Lichaamsvet",
   "muscleMass": "Spieren",
   "boneMass": "Bot",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "Het hogere getal van de bloeddruk. De druk wanneer het hart samentrekt.",
   "metricInfoDiaDesc": "Het lagere getal van de bloeddruk. De druk wanneer het hart rust.",
   "metricInfoPulDesc": "Rusthartslag in slagen per minuut.",
-  "bodyCompositionEstimated": "Geschat via impedantie. Waarden kunnen afwijken van de Eufy-app.",
+  "bodyCompositionEstimated": "Geschat op basis van impedantie. Waarden kunnen afwijken van de app van je weegschaal.",
   "bodyCompositionSubtitle": "{fat}% vet · {muscle} kg spieren",
   "exportImportDocumentationTooltip": "Zo gebruik je exporteren en importeren",
   "exportImportDocumentation": "## Exporteren en importeren\n- Exporteer een SQLite-database om een back-up te maken van uw records of deze over te dragen.\n- Kies CSV om gegevens in een spreadsheet te openen of importeer deze weer in Janan.\n- Houd kolomkoppen ingeschakeld en voeg een ondersteunde datum- en tijdkolom toe.\n- Gebruik aparte kolommen voor systolische druk, diastolische druk, hartslag, notities en geregistreerde medicijndoses.\n\n## Een spreadsheet gebruiken\n1. Exporteer als CSV met kolomkoppen.\n2. Open het bestand in LibreOffice, Excel of een andere spreadsheet-app.\n3. Controleer het veldscheidingsteken en het tekstscheidingsteken als de kolommen niet op één lijn staan.\n4. Zorg ervoor dat de tijdkolom wordt herkend als datum en tijd.\n5. Bewaar dezelfde kolomkoppen en tijdnotatie als u het bestand opnieuw wilt importeren.\n\n## Let op kleuren\n- De kolom `color` slaat de nootkleur op als een getal.\n- In de oude `needlePin`-kolom wordt JSON opgeslagen voor compatibiliteit met oudere bestanden.\n- Gebruik `color` voor een eenvoudige spreadsheetkolom.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Open Gewicht en tik op +.\nVoer de waarde van je weegschaal in. Controleer de eenheid, datum en tijd en tik op Opslaan.\nTik op een opgeslagen gewicht om het te bekijken of te wijzigen. Kies de eenheid in Instellingen.",
   "onboardingMinutesValue": "{value} minuten",
   "onboardingSaveFailed": "Je instellingen konden niet worden opgeslagen. Probeer het opnieuw.",
-  "healthTools": "Gezondheidshulpmiddelen"
+  "healthTools": "Gezondheidshulpmiddelen",
+  "webNativeFeatureUnavailable": "Deze functie is beschikbaar in de mobiele app.",
+  "homeChartCount": "Maximumaantal grafieken op brede schermen",
+  "homeChartCountDesc": "Toont maximaal dit aantal grafieken als er ruimte is. Smalle schermen tonen er één.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

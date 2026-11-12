@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:blood_pressure_app/core/platform/app_platform.dart';
 import 'package:blood_pressure_app/features/bluetooth/backend/bluetooth_low_energy/ble_device.dart';
 import 'package:blood_pressure_app/features/bluetooth/backend/bluetooth_low_energy/ble_discovery.dart';
 import 'package:blood_pressure_app/features/bluetooth/backend/bluetooth_low_energy/ble_state.dart';
@@ -21,7 +21,7 @@ final class BluetoothLowEnergyManager extends BluetoothManager<DiscoveredEventAr
 
   @override
   Future<bool?> requestPermission() async {
-    if (!Platform.isAndroid) {
+    if (!AppPlatform.isAndroid) {
       return null;
     }
 
@@ -30,7 +30,7 @@ final class BluetoothLowEnergyManager extends BluetoothManager<DiscoveredEventAr
 
   @override
   Future<bool?> turnOn() async {
-    if (!Platform.isAndroid) {
+    if (!AppPlatform.isAndroid) {
       return null;
     }
 

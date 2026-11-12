@@ -490,7 +490,7 @@
   "bodySexMale": "Erkek",
   "bodySexFemale": "Kadın",
   "athleteMode": "Sporcu modu",
-  "athleteModeDesc": "Daha yüksek kas kütlesi için Eufy sporcu katsayılarını kullan",
+  "athleteModeDesc": "Tahminleri daha yüksek kas kütlesine göre ayarla",
   "bodyFat": "Vücut yağı",
   "muscleMass": "Kas",
   "boneMass": "Kemik",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "Tansiyonun yüksek sayısı. Kalp kasıldığında oluşan basınç.",
   "metricInfoDiaDesc": "Tansiyonun düşük sayısı. Kalp dinlenirken oluşan basınç.",
   "metricInfoPulDesc": "Dakikadaki atış olarak dinlenme kalp hızı.",
-  "bodyCompositionEstimated": "Empedanstan tahmin. Değerler Eufy uygulamasından farklı olabilir.",
+  "bodyCompositionEstimated": "Empedanstan tahmin edilmiştir. Değerler tartınızın uygulamasından farklı olabilir.",
   "bodyCompositionSubtitle": "%{fat} yağ · {muscle} kg kas",
   "exportImportDocumentationTooltip": "Dışa ve içe aktarma nasıl kullanılır",
   "exportImportDocumentation": "## Dışa aktarma ve içe aktarma\n- Kayıtlarınızı yedeklemek veya aktarmak için bir SQLite veritabanını dışa aktarın.\n- Verileri bir e-tabloda açmak veya Janan'a geri aktarmak için CSV'yi seçin.\n- Sütun başlıklarını etkin tutun ve desteklenen bir tarih ve saat sütunu ekleyin.\n- Sistolik basınç, diyastolik basınç, nabız, notlar ve kaydedilen ilaç dozları için ayrı sütunlar kullanın.\n\n## Elektronik tablo kullanma\n1. Sütun başlıklarıyla birlikte CSV olarak dışa aktarın.\n2. Dosyayı LibreOffice, Excel veya başka bir elektronik tablo uygulamasında açın.\n3. Sütunlar aynı hizada değilse alan sınırlayıcıyı ve metin sınırlayıcıyı kontrol edin.\n4. Saat sütununun tarih ve saat olarak tanındığından emin olun.\n5. Dosyayı tekrar içe aktarmak istiyorsanız aynı sütun başlıklarını ve zaman biçimini koruyun.\n\n## Not renkleri\n- `color` sütunu not rengini bir sayı olarak saklar.\n- Eski `needlePin` sütunu, eski dosyalarla uyumluluk için JSON'u depolar.\n- Basit bir elektronik tablo sütunu için `color` kullanın.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Kilo bölümünü açıp + işaretine dokunun.\nTartıdaki değeri girin. Birimi, tarihi ve saati kontrol edip Kaydet’e dokunun.\nKaydedilmiş bir kiloyu görüntülemek veya düzenlemek için ona dokunun. Birimi Ayarlar’dan seçin.",
   "onboardingMinutesValue": "{value} dakika",
   "onboardingSaveFailed": "Kurulumunuz kaydedilemedi. Lütfen tekrar deneyin.",
-  "healthTools": "Sağlık araçları"
+  "healthTools": "Sağlık araçları",
+  "webNativeFeatureUnavailable": "Bu özellik mobil uygulamada kullanılabilir.",
+  "homeChartCount": "Geniş ekranlarda en fazla grafik sayısı",
+  "homeChartCountDesc": "Yer varsa en fazla bu sayıda grafik gösterilir. Dar ekranlarda bir grafik gösterilir.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

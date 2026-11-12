@@ -10,13 +10,13 @@ class EufyP2UnsupportedProfile extends BleDeviceProfile {
   const EufyP2UnsupportedProfile();
 
   static const failureReason =
-      'This Eufy scale uses an encrypted protocol that is not supported yet';
+      'This scale uses an encrypted protocol that is not supported yet';
 
   @override
   String get id => 'eufy-p2';
 
   @override
-  String get displayFamily => 'Eufy P2 scale';
+  String get displayFamily => 'P2 scale';
 
   @override
   BleDeviceKind get kind => BleDeviceKind.weight;

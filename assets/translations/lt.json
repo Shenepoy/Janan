@@ -490,7 +490,7 @@
   "bodySexMale": "Vyras",
   "bodySexFemale": "Moteris",
   "athleteMode": "Sportininko veiksena",
-  "athleteModeDesc": "Naudoti Eufy sportininko koeficientus didesnei raumenų masei",
+  "athleteModeDesc": "Koreguoti įverčius didesnei raumenų masei",
   "bodyFat": "Kūno riebalai",
   "muscleMass": "Raumenys",
   "boneMass": "Kaulai",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "Didesnis kraujospūdžio skaičius. Slėgis, kai širdis susitraukia.",
   "metricInfoDiaDesc": "Mažesnis kraujospūdžio skaičius. Slėgis, kai širdis ilsisi.",
   "metricInfoPulDesc": "Ramybės pulsas dūžiais per minutę.",
-  "bodyCompositionEstimated": "Įvertinta pagal varžą. Reikšmės gali skirtis nuo Eufy programos.",
+  "bodyCompositionEstimated": "Įvertinta pagal impedansą. Reikšmės gali skirtis nuo svarstyklių programėlės.",
   "bodyCompositionSubtitle": "{fat} % riebalų · {muscle} kg raumenų",
   "exportImportDocumentationTooltip": "Kaip naudoti eksportą ir importą",
   "exportImportDocumentation": "## Eksportuoti ir importuoti\n- Eksportuokite SQLite duomenų bazę, kad sukurtumėte atsargines kopijas arba perkeltumėte įrašus.\n- Pasirinkite CSV, kad atidarytumėte duomenis skaičiuoklėje arba importuotumėte juos atgal į Janan.\n– Įgalinkite stulpelių antraštes ir įtraukite palaikomą datos ir laiko stulpelį.\n- Naudokite atskirus stulpelius sistoliniam, diastoliniam spaudimui, pulsui, užrašams ir įrašytoms vaistų dozėms.\n\n## Skaičiuoklės naudojimas\n1. Eksportuokite kaip CSV su stulpelių antraštėmis.\n2. Atidarykite failą „LibreOffice“, „Excel“ ar kitoje skaičiuoklės programoje.\n3. Jei stulpeliai nesutampa, patikrinkite lauko skyriklį ir teksto skyriklį.\n4. Įsitikinkite, kad laiko stulpelis atpažįstamas kaip data ir laikas.\n5. Jei norite dar kartą importuoti failą, palikite tas pačias stulpelių antraštes ir laiko formatą.\n\n## Atkreipkite dėmesį į spalvas\n- Stulpelyje `color` užrašo spalva saugoma kaip skaičius.\n- Pasenęs stulpelis `needlePin` saugo JSON, kad būtų suderinamas su senesniais failais.\n- Paprastam skaičiuoklės stulpeliui naudokite `color`.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Atverkite Svoris ir palieskite +.\nĮveskite svarstyklių rodmenį. Patikrinkite vienetą, datą ir laiką, tada palieskite Išsaugoti.\nPalieskite išsaugotą svorį, kad jį peržiūrėtumėte ar pakeistumėte. Vienetą pasirinkite Nustatymuose.",
   "onboardingMinutesValue": "{value} min.",
   "onboardingSaveFailed": "Nepavyko išsaugoti nustatymų. Bandykite dar kartą.",
-  "healthTools": "Sveikatos įrankiai"
+  "healthTools": "Sveikatos įrankiai",
+  "webNativeFeatureUnavailable": "Ši funkcija pasiekiama mobiliojoje programėlėje.",
+  "homeChartCount": "Didžiausias grafikų skaičius plačiame ekrane",
+  "homeChartCountDesc": "Jei pakanka vietos, rodoma ne daugiau kaip tiek grafikų. Siaurame ekrane rodomas vienas.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

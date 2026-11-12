@@ -490,7 +490,7 @@
   "bodySexMale": "Hombre",
   "bodySexFemale": "Mujer",
   "athleteMode": "Modo atleta",
-  "athleteModeDesc": "Usar los coeficientes de atleta de Eufy para mayor masa muscular",
+  "athleteModeDesc": "Ajustar las estimaciones para una mayor masa muscular",
   "bodyFat": "Grasa corporal",
   "muscleMass": "Músculo",
   "boneMass": "Hueso",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "El número más alto de la tensión. La presión cuando el corazón se contrae.",
   "metricInfoDiaDesc": "El número más bajo de la tensión. La presión cuando el corazón descansa.",
   "metricInfoPulDesc": "Frecuencia cardíaca en reposo en latidos por minuto.",
-  "bodyCompositionEstimated": "Estimado por impedancia. Los valores pueden diferir de la app Eufy.",
+  "bodyCompositionEstimated": "Estimado por impedancia. Los valores pueden diferir de la aplicación de tu báscula.",
   "bodyCompositionSubtitle": "{fat} % de grasa · {muscle} kg de músculo",
   "exportImportDocumentationTooltip": "Cómo usar la exportación e importación",
   "exportImportDocumentation": "## Exportar e importar\n- Exporte una base de datos SQLite para realizar copias de seguridad o transferir sus registros.\n- Elija CSV para abrir datos en una hoja de cálculo o importarlos nuevamente a Janan.\n- Mantenga los encabezados de columna habilitados e incluya una columna de fecha y hora admitida.\n- Utilice columnas separadas para la presión sistólica, la presión diastólica, el pulso, las notas y las dosis de medicamentos registradas.\n\n## Usando una hoja de cálculo\n1. Exporte como CSV con encabezados de columna.\n2. Abra el archivo en LibreOffice, Excel u otra aplicación de hoja de cálculo.\n3. Verifique el delimitador de campo y el delimitador de texto si las columnas no están alineadas.\n4. Asegúrese de que la columna de hora se reconozca como fecha y hora.\n5. Mantenga los mismos encabezados de columna y formato de hora si desea importar el archivo nuevamente.\n\n## Colores de notas\n- La columna `color` almacena el color de la nota como un número.\n- La columna heredada `needlePin` almacena JSON para compatibilidad con archivos más antiguos.\n- Utilice `color` para una columna de hoja de cálculo sencilla.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Abre Peso y toca +.\nIntroduce la lectura de la báscula. Comprueba la unidad, la fecha y la hora y toca Guardar.\nToca un peso guardado para verlo o editarlo. Elige la unidad en Ajustes.",
   "onboardingMinutesValue": "{value} minutos",
   "onboardingSaveFailed": "No se pudo guardar la configuración. Inténtalo de nuevo.",
-  "healthTools": "Herramientas de salud"
+  "healthTools": "Herramientas de salud",
+  "webNativeFeatureUnavailable": "Esta función está disponible en la aplicación móvil.",
+  "homeChartCount": "Máximo de gráficos en pantallas anchas",
+  "homeChartCountDesc": "Muestra hasta esta cantidad de gráficos si hay espacio. Las pantallas estrechas muestran uno.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

@@ -27,7 +27,7 @@ void main() {
     expect(find.text('Water'), findsOneWidget);
     expect(find.text('Lean body mass'), findsOneWidget);
     expect(find.text('BMR'), findsOneWidget);
-    expect(find.text('Estimated from impedance. Values may differ from the Eufy app.'), findsOneWidget);
+    expect(find.text('Estimated from impedance. Values may differ from your scale’s app.'), findsOneWidget);
     expect(find.text('Add height, birth year, and sex to estimate body composition'), findsNothing);
   });
 

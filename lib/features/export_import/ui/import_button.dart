@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:blood_pressure_app/components/form_bottom_action.dart';
 import 'package:blood_pressure_app/core/database/db_import.dart';
 import 'package:blood_pressure_app/core/repository/powersync_medicine_intake_repository.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
@@ -14,6 +15,7 @@ import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,8 +25,9 @@ class ImportButton extends ConsumerWidget {
   const ImportButton({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => TextButton.icon(
-    label: Text('import'.tr()),
+  Widget build(BuildContext context, WidgetRef ref) => FormBottomAction(
+    grouped: true,
+    label: 'import'.tr(),
     icon: Icon(Icons.file_upload_outlined),
     onPressed: () async {
       final exportSettings = context.exportSettings;
@@ -79,11 +82,13 @@ class ImportButton extends ConsumerWidget {
           );
           break;
         case 'db':
-          if (file.path == null) return;
+          final bytes = kIsWeb ? await file.readAsBytes() : null;
+          if (!context.mounted) return;
           var count = 0;
           try {
             count = await importMeasurementDatabase(
-              path: file.path!,
+              path: kIsWeb ? null : file.path,
+              bytes: bytes,
               targetDatabase: context.healthDatabase,
               bpRepo: context.bpRepo,
               noteRepo: context.noteRepo,

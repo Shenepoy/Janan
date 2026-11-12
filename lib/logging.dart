@@ -8,6 +8,7 @@ export 'package:flutter_logging_service/flutter_logging_service.dart';
 /// [memoryOnly] is for tests: no file isolate and no 100ms aggregation timer
 /// (those leave pending FakeAsync timers and hang `pumpAndSettle`).
 Future<void> initAppLogging({bool memoryOnly = false}) async {
+  memoryOnly = memoryOnly || kIsWeb;
   await LoggingService.init(
     LoggingConfig(
       appName: 'Janan',

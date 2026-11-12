@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:blood_pressure_app/core/platform/app_platform.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -70,7 +70,7 @@ class BluetoothForegroundService {
     String method, [
     Map<String, Object?>? arguments,
   ]) async {
-    if (!Platform.isAndroid) return;
+    if (!AppPlatform.isAndroid) return;
     try {
       await _channel.invokeMethod<void>(method, arguments);
     } on MissingPluginException {

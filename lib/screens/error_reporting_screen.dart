@@ -17,6 +17,7 @@ import 'package:safaeh/safaeh.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+
 /// A static location to report errors to and disrupt the program flow in case
 /// there is the risk of data loss when continuing.
 class ErrorReporting {
@@ -116,7 +117,7 @@ class ErrorScreen extends StatelessWidget {
                   TextButton(
                     onPressed: () async {
                       try {
-                        final url = Uri.parse('https://github.com/Zyzto/blood-pressure-monitor-fl/issues');
+                        final url = Uri.parse('https://github.com/Shenepoy/Janan/issues');
                         if (await canLaunchUrl(url)) {
                           await launchUrl(url, mode: LaunchMode.externalApplication);
                         } else if (context.mounted) {

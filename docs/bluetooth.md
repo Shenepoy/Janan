@@ -51,22 +51,26 @@ In **Settings → Bluetooth devices** you can import the last reading or all sto
 
 ## Scales
 
-Scales are optional. Enable weight features, save the scale, then weigh and sync (or add from the Weight tab). Stay on the scale until the reading settles so impedance can arrive; an early disconnect can save weight only.
+Scales are optional. Enable weight features, save the scale, then weigh and sync (or add from the Weight tab). Stay on the scale until weighing finishes. Unfinished readings are discarded even if the scale repeats the same value or disconnects. A settled reading can still be saved without impedance.
+
+Deleting a weight also blocks Bluetooth re-import of that reading, including when deletion confirmation is off. Undo restores it and removes the block. Stored readings retain the scale's timestamp; live readings use reception time and the existing five-minute duplicate window. A genuinely new weigh-in at the same weight remains allowed.
 
 Fill **Settings → Features → Body profile** (height, birth year, sex) if you want estimated body composition. Numbers are calculated in the app and can differ from the vendor’s app.
 
 | Device | Bluetooth name | Protocol | Tested | Notes |
 |--------|----------------|:--------:|:------:|-------|
-| Eufy Smart Scale P1 / C1 / A1 | eufy T9147, T9146, T9120 | Eufy P1 | ✅ T9147 | Weight plus optional impedance. Body composition when a profile is set. |
-| Eufy Smart Scale P2 / P2 Pro / P3 | T9130, T9140, T9148, T9149, T9150 | Encrypted | ❌ | Not supported. The app recognizes them and stops with an error. |
+| Smart scale P1 / C1 / A1 | T9147, T9146, T9120 | P1 scale | ✅ T9147 | Weight plus optional impedance. Body composition when a profile is set. |
+| Smart scale P2 / P2 Pro / P3 | T9130, T9140, T9148, T9149, T9150 | Encrypted | ❌ | Not supported. The app recognizes them and stops with an error. |
 
-### Eufy P1
+### P1 scale
 
 The P1 family (C1 / P1 / A1, model numbers T9146, T9147, T9120) talks over an unencrypted `fff0` service. This fork reads the settled weight and, when the scale sends it, foot-to-foot impedance.
 
 Open the weight detail screen to see BMI and, with a body profile, fat %, muscle, bone, water, lean mass, and BMR. Athlete mode on the profile changes the estimate.
 
 P2, P2 Pro, and P3 use an encrypted handshake that is not implemented.
+
+The history timestamp layout and coalesced live-frame distinction are cross-checked against [openScale's OneByone handler](https://github.com/oliexdev/openScale/blob/master/android_app/app/src/main/java/com/health/openscale/core/bluetooth/scales/OneByoneHandler.kt). Invalid history dates are rejected instead of being imported with the current time.
 
 ---
 
@@ -84,5 +88,5 @@ Useful if you are adding a device.
 | GATT blood pressure | Service `1810`, characteristic `2A35` |
 | Yonker / Yongrow / METIKO | Vendor service `cdeacd80-…` |
 | Microlife | Service `fff0` (`fff1` notify, `fff2` write) |
-| Eufy P1 | Service `fff0`, notify `fff4`, no `fff2` |
-| Eufy P2 (unsupported) | `fff4` plus `fff2` |
+| P1 scale | Service `fff0`, notify `fff4`, no `fff2` |
+| P2 scale (unsupported) | `fff4` plus `fff2` |

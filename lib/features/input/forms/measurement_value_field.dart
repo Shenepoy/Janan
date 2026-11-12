@@ -93,9 +93,7 @@ class _MeasurementValueFieldState extends State<MeasurementValueField> {
       isDense: true,
       contentPadding: EdgeInsets.zero,
       hintText: '—',
-      hintStyle: valueStyle?.copyWith(
-        color: theme.colorScheme.outline,
-      ),
+      hintStyle: valueStyle?.copyWith(color: theme.colorScheme.outline),
       errorText: widget.errorText,
       errorMaxLines: 4,
       errorStyle: theme.textTheme.labelSmall?.copyWith(
@@ -142,23 +140,27 @@ class _MeasurementValueFieldState extends State<MeasurementValueField> {
             ? CrossAxisAlignment.center
             : CrossAxisAlignment.start,
         children: [
-          Text(
-            widget.label,
-            style: AppText.label(context, color: ring),
+          ExcludeSemantics(
+            child: Text(
+              widget.label,
+              style: AppText.label(context, color: ring),
+            ),
           ),
           const SizedBox(height: 4),
           SizedBox(
             width: double.infinity,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 52),
-              child: field,
+              child: Semantics(
+                label: [widget.label, ?widget.unit].join(', '),
+                child: field,
+              ),
             ),
           ),
           if (widget.unit != null) ...[
             const SizedBox(height: 2),
-            Text(
-              widget.unit!,
-              style: AppText.subtitle(context),
+            ExcludeSemantics(
+              child: Text(widget.unit!, style: AppText.subtitle(context)),
             ),
           ],
         ],

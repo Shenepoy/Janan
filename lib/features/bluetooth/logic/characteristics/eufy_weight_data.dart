@@ -21,7 +21,7 @@ class EufyWeightData {
   /// Weight in kilograms.
   final double kg;
 
-  /// When the frame was received, used as the diary timestamp.
+  /// Device time for stored readings, or reception time for live readings.
   final DateTime time;
 
   /// Optional bio-impedance in ohms, when the scale sent a valid value.
@@ -43,12 +43,20 @@ class EufyWeightData {
   /// would persist a weight-only record and skip body composition.
   bool get isCompleteReading => hasImpedance && (isFinal || stable);
 
-  /// Last frame that includes impedance, or [frames].last if none do.
-  static EufyWeightData preferred(List<EufyWeightData> frames) {
+  /// A usable settled reading, never an unfinished step-on/step-off value.
+  /// Repeated live weights alone do not mean the scale finished measuring.
+  bool get isSettled => isFinal || isCompleteReading;
+
+  /// Prefer settled impedance data, falling back only to settled weight.
+  /// A disconnect or timeout is not evidence that the last weight was valid.
+  static EufyWeightData? preferred(List<EufyWeightData> frames) {
     for (var i = frames.length - 1; i >= 0; i--) {
-      if (frames[i].hasImpedance) return frames[i];
+      if (frames[i].isSettled && frames[i].hasImpedance) return frames[i];
     }
-    return frames.last;
+    for (var i = frames.length - 1; i >= 0; i--) {
+      if (frames[i].isSettled) return frames[i];
+    }
+    return null;
   }
 
   /// Convert to a diary record.
@@ -66,10 +74,41 @@ class EufyWeightData {
     DateTime? time,
     int? previousRawWeight,
   }) {
-    if (data.length < 5 || data[0] != 0xCF) return null;
+    if (data.length < 10 || data[0] != 0xCF) return null;
 
     final rawWeight = data[3] | (data[4] << 8);
     if (rawWeight == 0) return null;
+
+    var measurementTime = time ?? DateTime.now();
+    if (data.length >= 18) {
+      // A live frame and the beginning of its duplicate can share a packet.
+      // Only genuine history has a local device timestamp at bytes 11..17.
+      final checksum = data.take(10).fold(0, (sum, byte) => sum ^ byte);
+      final coalescedLive = data[10] == checksum && data[11] == 0xCF;
+      if (!coalescedLive) {
+        final year = (data[11] << 8) | data[12];
+        if (year < 2000 || year > 2099) return null;
+        final parsed = DateTime(
+          year,
+          data[13],
+          data[14],
+          data[15],
+          data[16],
+          data[17],
+        );
+        // Dart normalizes invalid dates; do not turn corrupt history into a
+        // different measurement (or a fresh reading on every reconnect).
+        if (parsed.year != year ||
+            parsed.month != data[13] ||
+            parsed.day != data[14] ||
+            parsed.hour != data[15] ||
+            parsed.minute != data[16] ||
+            parsed.second != data[17]) {
+          return null;
+        }
+        measurementTime = parsed;
+      }
+    }
 
     double? impedance;
     var isFinal = false;
@@ -83,7 +122,7 @@ class EufyWeightData {
 
     return EufyWeightData(
       kg: rawWeight / 100,
-      time: time ?? DateTime.now(),
+      time: measurementTime,
       impedance: impedance,
       stable: previousRawWeight == rawWeight,
       isFinal: isFinal,

@@ -12,10 +12,10 @@ import 'package:sqflite/sqflite.dart';
 Future<SettingsProviders> initializeAppSettings({
   SettingsStorage? storage,
 }) async {
-  if (storage != null) {
+  if (storage != null || kIsWeb) {
     final settings = await initializeSettings(
       registry: createAppSettingsRegistry(),
-      storage: storage,
+      storage: storage ?? CoercingSettingsStorage(SharedPreferencesStorage()),
       localizationProvider: await loadSettingsLocalizationProvider(),
     );
     await _completeLegacyOnboarding(settings);

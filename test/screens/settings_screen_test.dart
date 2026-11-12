@@ -1,12 +1,66 @@
+import 'package:blood_pressure_app/features/shell/app_shell.dart';
+import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
+import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/core/widgets/defer_until_sheet_settled.dart';
 import 'package:blood_pressure_app/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_settings_framework/safaeh.dart';
+import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../util.dart';
 
 void main() {
+  testWidgets('desktop shell and settings switch locale together', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1280, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpApp(
+      tester,
+      await materialApp(
+        const AppShell(
+          showWeight: false,
+          pages: [
+            Text('home-page'),
+            Text('weight-page'),
+            Text('statistics-page'),
+            SettingsPage(showAppBar: false),
+          ],
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(AppShell.navSettingsKey));
+    await tester.pumpAndSettle();
+    await testSettingsController!.set(languageSetting, 'ar');
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byType(DashboardAppBar),
+        matching: find.text('الإعدادات'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('اللغة'), findsWidgets);
+    expect(find.text('Language'), findsNothing);
+  }, variant: const TargetPlatformVariant({TargetPlatform.linux}));
+
+  testWidgets('open settings updates translated labels without reload', (
+    tester,
+  ) async {
+    usePhoneTestSurface(tester);
+    await pumpApp(tester, await materialApp(const SettingsPage()));
+    expect(find.text('Language'), findsWidgets);
+    await testSettingsController!.set(languageSetting, 'fr');
+    await tester.pumpAndSettle();
+    expect(find.text('Langue'), findsWidgets);
+    expect(find.text('Language'), findsNothing);
+    await testSettingsController!.set(languageSetting, 'en');
+    await tester.pumpAndSettle();
+    expect(find.text('Language'), findsWidgets);
+    expect(find.text('Langue'), findsNothing);
+  });
+
   testWidgets('phone settings show the Safaeh page index and search', (
     tester,
   ) async {
@@ -34,8 +88,54 @@ void main() {
     expect(find.text('Theme'), findsWidgets);
   });
 
+  for (final direction in [TextDirection.ltr, TextDirection.rtl]) {
+    for (final layout in [
+      (1000.0, 64.0),
+      (1280.0, 64.0),
+      (1280.0, 240.0),
+      (1920.0, 240.0),
+    ]) {
+      testWidgets(
+        'settings centered with rail ${layout.$2} at ${layout.$1} $direction',
+        (tester) async {
+          tester.view.physicalSize = Size(layout.$1, 800);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          await pumpApp(
+            tester,
+            await materialApp(
+              Directionality(
+                textDirection: direction,
+                child: Row(
+                  children: [
+                    SizedBox(width: layout.$2),
+                    const Expanded(child: SettingsPage(showAppBar: false)),
+                  ],
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          final rect = tester.getRect(find.byType(SettingsSectionList));
+          expect(rect.width, 720);
+          expect(rect.center.dx, closeTo(layout.$1 / 2, 1));
+          expect(
+            find.byType(SafaehSettingsPageIndex),
+            layout.$1 >= 1280 ? findsOneWidget : findsNothing,
+          );
+          expect(
+            find.byType(SafaehSettingsPageIndexOverlay),
+            layout.$1 < 1280 ? findsOneWidget : findsNothing,
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
+
   testWidgets('wide settings show the Safaeh page index rail', (tester) async {
-    tester.view.physicalSize = const Size(1000, 700);
+    tester.view.physicalSize = const Size(1280, 700);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -50,7 +150,7 @@ void main() {
   testWidgets(
     'page index scrolls to a distant section without jumps or reversals',
     (tester) async {
-      tester.view.physicalSize = const Size(1000, 400);
+      tester.view.physicalSize = const Size(1280, 400);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -95,7 +195,7 @@ void main() {
   testWidgets(
     'latest index selection wins while another section is expanding',
     (tester) async {
-      tester.view.physicalSize = const Size(1000, 400);
+      tester.view.physicalSize = const Size(1280, 400);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);

@@ -142,7 +142,7 @@ extension BulkEntryUtils on BuildContext {
         choice = await showConfirmDeletionChoice(
           this,
           allowBlacklist: list.any(
-            (entry) => entry.record != null || entry.weight != null,
+            (entry) => entry.record != null,
           ),
         );
         if (!mounted || choice == DeleteChoice.cancel) return false;
@@ -152,6 +152,7 @@ extension BulkEntryUtils on BuildContext {
         await _removeEntry(
           entry,
           blacklist: blacklist,
+          blockWeight: true,
           health: settings.useHealthConnect && settings.syncPressureMeasurements
               ? Health()
               : null,
@@ -176,20 +177,16 @@ extension BulkEntryUtils on BuildContext {
       if (settings.confirmDeletion) {
         choice = await showConfirmDeletionChoice(
           this,
-          allowBlacklist: true,
         );
         if (!mounted || choice == DeleteChoice.cancel) return false;
       }
-      final blacklist = choice == DeleteChoice.deleteAndBlacklist;
       final repo = weightRepo;
       final blocked = <String>[];
       for (final record in list) {
+        final key = bodyweightRecordKey(record);
+        await blacklistRepo.add('weight', key);
+        blocked.add(key);
         await repo.remove(record);
-        if (blacklist) {
-          final key = bodyweightRecordKey(record);
-          await blacklistRepo.add('weight', key);
-          blocked.add(key);
-        }
         if (settings.useHealthConnect && settings.syncWeightMeasurements) {
           await Health().delete(
             type: HealthDataType.WEIGHT,
@@ -247,8 +244,12 @@ extension BulkEntryUtils on BuildContext {
   Future<void> _removeEntry(
     CombinedEntry entry, {
     required bool blacklist,
+    bool blockWeight = false,
     Health? health,
   }) async {
+    if ((blockWeight || blacklist) && entry.weight != null) {
+      await blacklistRepo.add('weight', bodyweightRecordKey(entry.weight!));
+    }
     if (entry.record != null) await bpRepo.remove(entry.record!);
     if (entry.note != null) await noteRepo.remove(entry.note!);
     for (final intake in entry.allIntakes) {
@@ -259,12 +260,6 @@ extension BulkEntryUtils on BuildContext {
     if (blacklist) {
       if (entry.record != null) {
         await blacklistRepo.add('bp', bloodPressureRecordKey(entry.record!));
-      }
-      if (entry.weight != null) {
-        await blacklistRepo.add(
-          'weight',
-          bodyweightRecordKey(entry.weight!),
-        );
       }
     }
     if (health != null) {
@@ -299,17 +294,14 @@ extension BulkEntryUtils on BuildContext {
             await intakeRepo.add(intake);
           }
           if (entry.weight != null) await weightRepo.add(entry.weight!);
+          if (entry.weight != null) {
+            await blacklistRepo.remove('weight', bodyweightRecordKey(entry.weight!));
+          }
           if (blacklist) {
             if (entry.record != null) {
               await blacklistRepo.remove(
                 'bp',
                 bloodPressureRecordKey(entry.record!),
-              );
-            }
-            if (entry.weight != null) {
-              await blacklistRepo.remove(
-                'weight',
-                bodyweightRecordKey(entry.weight!),
               );
             }
           }

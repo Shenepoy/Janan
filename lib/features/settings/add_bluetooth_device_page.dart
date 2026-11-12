@@ -7,6 +7,7 @@ import 'package:blood_pressure_app/features/bluetooth/ui/closed_bluetooth_input.
 import 'package:blood_pressure_app/features/bluetooth/ui/device_scan_placeholder.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/device_selection.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
+import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,10 +34,12 @@ class AddBluetoothDevicePage extends ConsumerStatefulWidget {
   final DeviceScanCubit Function()? deviceScanCubit;
 
   @override
-  ConsumerState<AddBluetoothDevicePage> createState() => _AddBluetoothDevicePageState();
+  ConsumerState<AddBluetoothDevicePage> createState() =>
+      _AddBluetoothDevicePageState();
 }
 
-class _AddBluetoothDevicePageState extends ConsumerState<AddBluetoothDevicePage> {
+class _AddBluetoothDevicePageState
+    extends ConsumerState<AddBluetoothDevicePage> {
   late final BluetoothCubit _bluetoothCubit;
   DeviceScanCubit? _deviceScanCubit;
   bool _scanning = false;
@@ -44,8 +47,9 @@ class _AddBluetoothDevicePageState extends ConsumerState<AddBluetoothDevicePage>
   @override
   void initState() {
     super.initState();
-    _bluetoothCubit = widget.bluetoothCubit?.call()
-        ?? BluetoothCubit(manager: widget.manager);
+    _bluetoothCubit =
+        widget.bluetoothCubit?.call() ??
+        BluetoothCubit(manager: widget.manager);
     if (_bluetoothCubit.state is BluetoothStateReady) {
       _scanning = true;
     }
@@ -58,14 +62,14 @@ class _AddBluetoothDevicePageState extends ConsumerState<AddBluetoothDevicePage>
     super.dispose();
   }
 
-  DeviceScanCubit _scanCubit() =>
-      _deviceScanCubit ??= widget.deviceScanCubit?.call()
-          ?? DeviceScanCubit(
-            manager: widget.manager,
-            knownBleDev: ref.read(appSettingsProvider).knownBleDev,
-            writeKnownBle: (list) => ref.writeKnownBleDevices(list),
-            autoRead: false,
-          );
+  DeviceScanCubit _scanCubit() => _deviceScanCubit ??=
+      widget.deviceScanCubit?.call() ??
+      DeviceScanCubit(
+        manager: widget.manager,
+        knownBleDev: ref.read(appSettingsProvider).knownBleDev,
+        writeKnownBle: (list) => ref.writeKnownBleDevices(list),
+        autoRead: false,
+      );
 
   Future<void> _accept(BuildContext context, BluetoothDevice device) async {
     await _scanCubit().acceptDevice(device);
@@ -73,18 +77,18 @@ class _AddBluetoothDevicePageState extends ConsumerState<AddBluetoothDevicePage>
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(
-        title: Text('addBluetoothDevice'.tr()),
-      ),
-      body: _scanning
-          ? StreamBuilder<DeviceScanState>(
-              stream: _scanCubit().stream,
-              initialData: _scanCubit().state,
-              builder: (context, snap) {
-                final state = snap.data!;
-                return switch (state) {
-                DeviceListLoading() => const DeviceScanPlaceholder(expand: true),
+  Widget build(BuildContext context) => SettingsPageFrame(
+    title: Text('addBluetoothDevice'.tr()),
+    child: _scanning
+        ? StreamBuilder<DeviceScanState>(
+            stream: _scanCubit().stream,
+            initialData: _scanCubit().state,
+            builder: (context, snap) {
+              final state = snap.data!;
+              return switch (state) {
+                DeviceListLoading() => const DeviceScanPlaceholder(
+                  expand: true,
+                ),
                 DeviceListAvailable() => DeviceSelection(
                   expand: true,
                   scanResults: state.devices,
@@ -109,19 +113,19 @@ class _AddBluetoothDevicePageState extends ConsumerState<AddBluetoothDevicePage>
                     ],
                   ),
                 ),
-                };
+              };
+            },
+          )
+        : Padding(
+            padding: const EdgeInsets.all(16),
+            child: ClosedBluetoothInput(
+              bluetoothCubit: _bluetoothCubit,
+              onStarted: () {
+                if (_bluetoothCubit.state is BluetoothStateReady) {
+                  setState(() => _scanning = true);
+                }
               },
-            )
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: ClosedBluetoothInput(
-                bluetoothCubit: _bluetoothCubit,
-                onStarted: () {
-                  if (_bluetoothCubit.state is BluetoothStateReady) {
-                    setState(() => _scanning = true);
-                  }
-                },
-              ),
             ),
-    );
+          ),
+  );
 }

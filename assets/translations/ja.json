@@ -522,7 +522,7 @@
   "bodySexMale": "男性",
   "bodySexFemale": "女性",
   "athleteMode": "アスリートモード",
-  "athleteModeDesc": "筋肉量が多い場合に、Eufy のアスリート向け係数を使います",
+  "athleteModeDesc": "筋肉量が多い場合に合わせて推定値を調整します",
   "bodyFat": "体脂肪",
   "muscleMass": "筋肉量",
   "boneMass": "骨量",
@@ -572,7 +572,7 @@
   "metricInfoSysDesc": "血圧の測定値のうち、高いほうの数値です。心臓が収縮するときの圧力を表します。",
   "metricInfoDiaDesc": "血圧の測定値のうち、低いほうの数値です。心臓が拡張しているときの圧力を表します。",
   "metricInfoPulDesc": "安静時の 1 分あたりの脈拍数です。",
-  "bodyCompositionEstimated": "電気抵抗からの推定値です。Eufy アプリの値とは異なる場合があります。",
+  "bodyCompositionEstimated": "インピーダンスに基づく推定値です。体重計のアプリに表示される値とは異なる場合があります。",
   "bodyCompositionSubtitle": "体脂肪 {fat}%・筋肉量 {muscle} kg",
   "exportImportDocumentationTooltip": "エクスポートとインポートの使い方",
   "exportImportDocumentation": "## エクスポートとインポートの基本\n\n- データを別の端末に移す場合や、SQLite の操作に慣れている場合は、データベース形式を使います。\n- 表計算アプリで扱う場合や、アプリに再インポートする場合は、CSV を選びます。\n- 確実に復元できるよう、列名を含め、日時の列も追加してください。\n- 項目の書式ダイアログで、収縮期血圧・拡張期血圧・脈拍・メモ・服薬記録などのカスタム列を追加できます。\n\n## LibreOffice などで CSV を開く\n\n- CSV 形式で、列名を含めてエクスポートします。\n- 標準的な CSV ファイルでは、項目の区切り文字とテキストの囲み文字は初期設定を使います。\n- LibreOffice や Excel などでファイルを開き、日時の列が日付・時刻として認識されていることを確認します。\n- 後で再インポートする場合は、同じ CSV 設定を使い、有効な日時の列を残してください。\n\n## 色の列\n\n- 通常の `color` 列は、メモの色を単純な値で書き出します。\n- 旧形式の `needlePin` 列は、従来の処理との互換性のために JSON データを保存します。\n- 表計算アプリで扱いやすい形式にするには、通常の `color` 列を使ってください。\n\n## 操作の例\n\n1. 測定値と必要なメモを入力します。\n2. 「エクスポート／インポート」を開き、CSV に切り替えます。\n3. 必要に応じてカスタム項目や日時の列を追加します。\n4. エクスポートして、LibreOffice などの表計算アプリで開きます。\n5. 後でデータを復元したり確認したりするときに、同じファイルを再インポートします。",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "「体重」を開き、＋をタップします。\n体重計の値を入力します。単位、日付、時刻を確認し、「保存」をタップします。\n保存した体重をタップすると、確認や編集ができます。単位は設定で選べます。",
   "onboardingMinutesValue": "{value}分",
   "onboardingSaveFailed": "設定を保存できませんでした。もう一度お試しください。",
-  "healthTools": "健康ツール"
+  "healthTools": "健康ツール",
+  "webNativeFeatureUnavailable": "この機能はモバイルアプリで利用できます。",
+  "homeChartCount": "広い画面で表示するグラフの最大数",
+  "homeChartCountDesc": "空きスペースに応じて、この数までグラフを表示します。狭い画面では1つ表示します。",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

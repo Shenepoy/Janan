@@ -35,6 +35,18 @@ class GraphScreen extends ConsumerWidget {
           title: 'bloodPressure'.tr(),
           icon: Icons.show_chart_outlined,
           children: [
+            _GraphSlider(
+              icon: Icons.grid_view_outlined,
+              title: 'homeChartCount'.tr(),
+              subtitle: 'homeChartCountDesc'.tr(),
+              value: ref
+                  .watch(ref.settings.provider(homeChartCountSetting))
+                  .toDouble(),
+              min: 1,
+              max: 5,
+              onChanged: (value) =>
+                  ref.updateSetting(homeChartCountSetting, value.round()),
+            ),
             ActionSettingsTile(
               leading: const Icon(Icons.legend_toggle_outlined),
               title: Text('customGraphMarkings'.tr()),
@@ -77,7 +89,10 @@ class GraphScreen extends ConsumerWidget {
               min: 0,
               max: 30,
               onChanged: (value) {
-                ref.updateSetting(interruptGraphAfterNDaysSetting, value.toInt());
+                ref.updateSetting(
+                  interruptGraphAfterNDaysSetting,
+                  value.toInt(),
+                );
               },
             ),
           ],

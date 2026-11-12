@@ -1,10 +1,15 @@
-import 'dart:io';
+import 'package:blood_pressure_app/core/platform/app_platform.dart';
 
 /// Whether bluetooth is supported on this platform by this app
-final isPlatformSupportedBluetooth = Platform.isAndroid || Platform.isIOS || Platform.isMacOS || Platform.isLinux;
+final isPlatformSupportedBluetooth =
+    AppPlatform.isAndroid ||
+    AppPlatform.isIOS ||
+    AppPlatform.isMacOS ||
+    AppPlatform.isLinux;
 
 /// Whether we are running in a test environment
-final isTestingEnvironment = Platform.environment['FLUTTER_TEST'] == 'true';
+final isTestingEnvironment = AppPlatform.isTesting;
 
 /// Whether the value graph should be shown as home screen in landscape mode
-final showValueGraphAsHomeScreenInLandscapeMode = isTestingEnvironment || !Platform.isLinux;
+final showValueGraphAsHomeScreenInLandscapeMode =
+    isTestingEnvironment || !AppPlatform.isLinux;

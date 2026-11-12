@@ -86,7 +86,7 @@ class DebugDataServer {
   var _closed = false;
 
   Future<void> start() {
-    if (!kDebugMode || _server != null) return Future<void>.value();
+    if (kIsWeb || !kDebugMode || _server != null) return Future<void>.value();
     _closed = false;
     return _starting ??= _bind();
   }

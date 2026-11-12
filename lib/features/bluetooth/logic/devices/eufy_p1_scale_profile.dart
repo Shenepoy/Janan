@@ -19,7 +19,7 @@ class EufyP1ScaleProfile extends BleDeviceProfile with Loggable {
   String get id => 'eufy-p1';
 
   @override
-  String get displayFamily => 'Eufy P1 scale';
+  String get displayFamily => 'P1 scale';
 
   @override
   BleDeviceKind get kind => BleDeviceKind.weight;
@@ -52,7 +52,7 @@ class EufyP1ScaleProfile extends BleDeviceProfile with Loggable {
         : session.characteristic(gattService, notifyCharacteristicUUID);
     if (notifyCharacteristic == null) {
       return BleDeviceReadFailure(
-        'Device ${session.device.uuid} does not provide the Eufy scale characteristic',
+        'Device ${session.device.uuid} does not provide the supported scale characteristic',
       );
     }
 
@@ -84,8 +84,13 @@ class EufyP1ScaleProfile extends BleDeviceProfile with Loggable {
           ? null
           : () => _sendSetup(session, writeCharacteristic),
     );
-    if (frames.isEmpty) return const BleDeviceReadFailure('No data received');
-    return BleWeightRead(EufyWeightData.preferred(frames).asBleWeight);
+    final reading = EufyWeightData.preferred(frames);
+    if (reading == null) {
+      return const BleDeviceReadFailure(
+        'No settled weight received. Stay on the scale until weighing finishes, then try again.',
+      );
+    }
+    return BleWeightRead(reading.asBleWeight);
   }
 
   Future<void> _sendSetup(
@@ -96,7 +101,7 @@ class EufyP1ScaleProfile extends BleDeviceProfile with Loggable {
       try {
         await session.write(writeCharacteristic, command);
       } catch (error) {
-        logDebug('Eufy scale setup write failed: $error');
+        logDebug('Scale setup write failed: $error');
       }
     }
   }
@@ -109,7 +114,7 @@ class EufyP1ScaleProfile extends BleDeviceProfile with Loggable {
     try {
       await session.write(writeCharacteristic, _clockCommand());
     } catch (error) {
-      logDebug('Eufy scale keep-alive write failed: $error');
+      logDebug('Scale keep-alive write failed: $error');
     }
   }
 

@@ -64,3 +64,7 @@ app.*.map.json
 # Release tool
 target/
 /dist/
+
+# Generated from the pinned PowerSync dependency for web builds.
+/web/sqlite3.wasm
+/web/powersync_db.worker.js*

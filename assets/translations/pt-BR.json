@@ -490,7 +490,7 @@
   "bodySexMale": "Homem",
   "bodySexFemale": "Mulher",
   "athleteMode": "Modo atleta",
-  "athleteModeDesc": "Usar os coeficientes de atleta Eufy para maior massa muscular",
+  "athleteModeDesc": "Ajustar as estimativas para uma maior massa muscular",
   "bodyFat": "Gordura corporal",
   "muscleMass": "Músculo",
   "boneMass": "Osso",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "O número mais alto da pressão. A pressão quando o coração se contrai.",
   "metricInfoDiaDesc": "O número mais baixo da pressão. A pressão quando o coração descansa.",
   "metricInfoPulDesc": "Frequência cardíaca em repouso em batimentos por minuto.",
-  "bodyCompositionEstimated": "Estimado por impedância. Os valores podem diferir do app Eufy.",
+  "bodyCompositionEstimated": "Estimado por impedância. Os valores podem diferir dos do aplicativo da sua balança.",
   "bodyCompositionSubtitle": "{fat}% de gordura · {muscle} kg de músculo",
   "exportImportDocumentationTooltip": "Como usar exportação e importação",
   "exportImportDocumentation": "## Exportar e importar\n- Exporte um banco de dados SQLite para fazer backup ou transferir seus registros.\n- Escolha CSV para abrir dados em uma planilha ou importá-los de volta para o Janan.\n- Mantenha os cabeçalhos das colunas ativados e inclua uma coluna de data e hora compatível.\n- Use colunas separadas para pressão sistólica, pressão diastólica, pulso, anotações e doses registradas de medicamentos.\n\n## Usando uma planilha\n1. Exporte como CSV com cabeçalhos de coluna.\n2. Abra o arquivo no LibreOffice, Excel ou outro aplicativo de planilha.\n3. Verifique o delimitador de campo e o delimitador de texto se as colunas não estiverem alinhadas.\n4. Certifique-se de que a coluna de hora seja reconhecida como data e hora.\n5. Mantenha os mesmos cabeçalhos de coluna e formato de hora se desejar importar o arquivo novamente.\n\n## Observe as cores\n- A coluna `color` armazena a cor da nota como um número.\n- A coluna herdada `needlePin` armazena JSON para compatibilidade com arquivos mais antigos.\n- Use `color` para uma coluna simples de planilha.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Abra Peso e toque em +.\nInsira a leitura da balança. Confira a unidade, a data e a hora e toque em Salvar.\nToque em um peso salvo para consultar ou editar. Escolha a unidade nas Configurações.",
   "onboardingMinutesValue": "{value} minutos",
   "onboardingSaveFailed": "Não foi possível salvar sua configuração. Tente novamente.",
-  "healthTools": "Ferramentas de saúde"
+  "healthTools": "Ferramentas de saúde",
+  "webNativeFeatureUnavailable": "Este recurso está disponível no aplicativo móvel.",
+  "homeChartCount": "Máximo de gráficos em telas largas",
+  "homeChartCountDesc": "Mostra até esta quantidade de gráficos quando há espaço. Telas estreitas mostram um.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

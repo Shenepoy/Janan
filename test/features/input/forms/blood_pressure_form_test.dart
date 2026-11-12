@@ -5,6 +5,26 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../util.dart';
 
 void main() {
+  testWidgets('each measurement input announces its own label and unit', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await pumpApp(tester, await materialApp(const BloodPressureForm()));
+    await tester.pumpAndSettle();
+    for (final (index, label, unit) in [
+      (0, 'Systolic', 'mmHg'),
+      (1, 'Diastolic', 'mmHg'),
+      (2, 'Pulse', 'bpm'),
+    ]) {
+      final data = tester
+          .getSemantics(find.byType(EditableText).at(index))
+          .getSemanticsData();
+      expect(data.label, contains(label));
+      expect(data.label, contains(unit));
+    }
+    semantics.dispose();
+  });
+
   testWidgets('saves entered values', (WidgetTester tester) async {
     final key = GlobalKey<BloodPressureFormState>();
     await pumpApp(tester, await materialApp(BloodPressureForm(key: key)));
@@ -47,10 +67,7 @@ void main() {
       find.text('Enter a value greater than 30. Check the reading and unit.'),
       findsOneWidget,
     );
-    expect(
-      find.text('Check this value and the selected unit.'),
-      findsNothing,
-    );
+    expect(find.text('Check this value and the selected unit.'), findsNothing);
 
     await tester.enterText(find.byType(TextField).first, '500');
     await tester.pump();
@@ -73,10 +90,7 @@ void main() {
     expect(key.currentState!.validate(), isFalse);
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Check this value and the selected unit.'),
-      findsNothing,
-    );
+    expect(find.text('Check this value and the selected unit.'), findsNothing);
     expect(
       find.text('Please enter a number'),
       findsOneWidget,
@@ -90,10 +104,7 @@ void main() {
     expect(key.currentState!.validate(), isFalse);
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Check this value and the selected unit.'),
-      findsNothing,
-    );
+    expect(find.text('Check this value and the selected unit.'), findsNothing);
     expect(
       find.text('Diastolic pressure must be lower than systolic pressure.'),
       findsOneWidget,

@@ -117,17 +117,13 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
     if (settings.confirmDeletion) {
       choice = await showConfirmDeletionChoice(
         context,
-        allowBlacklist: true,
       );
       if (!mounted || choice == DeleteChoice.cancel) return;
     }
     final blacklistRepo = context.blacklistRepo;
+    final blockedKey = bodyweightRecordKey(_record);
+    await blacklistRepo.add('weight', blockedKey);
     await weightRepo.remove(_record);
-    String? blockedKey;
-    if (choice == DeleteChoice.deleteAndBlacklist) {
-      blockedKey = bodyweightRecordKey(_record);
-      await blacklistRepo.add('weight', blockedKey);
-    }
     if (settings.useHealthConnect && settings.syncWeightMeasurements) {
       await Health().delete(
         type: HealthDataType.WEIGHT,
@@ -142,9 +138,7 @@ class _WeightDetailScreenState extends ConsumerState<WeightDetailScreen> {
       actionLabel: 'btnUndo'.tr(),
       onAction: () async {
         await weightRepo.add(_record);
-        if (blockedKey != null) {
-          await blacklistRepo.remove('weight', blockedKey);
-        }
+        await blacklistRepo.remove('weight', blockedKey);
       },
     );
     if (mounted) Navigator.of(context).pop();

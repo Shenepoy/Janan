@@ -73,6 +73,32 @@ jobs:
       - name: Golden tests
         run: flutter test --tags gold --run-skipped
 
+  web-build:
+    name: Shared Flutter Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Read Flutter version
+        id: flutter
+        run: echo "version=$(bash ./scripts/ci/flutter_version.sh)" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter.outputs.version }}
+          channel: stable
+          cache: true
+      - name: Generate code
+        run: bash ./scripts/ci/codegen.sh
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Test offline shell and update isolation
+        run: |
+          node --test scripts/ci/tests/offline_worker.test.mjs
+          python3 -m unittest discover -s scripts/ci/tests -p 'test_*.py'
+      - name: Build shared client and browser database worker
+        run: bash ./scripts/ci/build_web.sh
+
   debug-apk:
     name: Debug APK
     runs-on: ubuntu-latest

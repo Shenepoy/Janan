@@ -185,7 +185,7 @@ Compared to [derdilla/blood-pressure-monitor-fl](https://github.com/derdilla/blo
 | **BLE profiles** | Per-device routes for standard GATT, Yonker, and Microlife meters. |
 | **Saved meters** | Remember a device as an id and a name (Settings → Bluetooth devices). |
 | **Automatic sync** | Import readings from saved Bluetooth monitors and supported scales when the app opens; status in the AppBar. |
-| **Eufy P1** | Weight plus optional impedance. Body composition when a body profile is set. P2 is unsupported. |
+| **P1 scale** | Weight plus optional impedance. Body composition when a body profile is set. P2 is unsupported. |
 | **Details** | A screen per blood-pressure or weight record (composition when ohms and a profile are present). |
 | **Home** | First-run onboarding, a latest-reading dashboard, and a bottom-nav shell (measurements / weight / stats / settings). |
 | **Medicine reminders** | Schedules, a countdown on the home button, and today's doses. The plan stays on the device. |

@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:blood_pressure_app/core/database/backup_reader.dart';
 import 'package:blood_pressure_app/core/database/legacy_bp_db.dart';
 import 'package:blood_pressure_app/core/database/medication_backup_import.dart';
 import 'package:blood_pressure_app/core/repository/medication_snapshots.dart';
@@ -8,14 +10,14 @@ import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tool_kind.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_repository.dart';
 import 'package:powersync/powersync.dart';
-import 'package:sqflite/sqflite.dart';
 
 /// Import a `.db` file that is either legacy `bp.db` or a PowerSync `health.db`.
 ///
 /// Sniffs tables with read-only sqflite. Unknown files return 0 and are not
 /// opened with PowerSync, so a random pick cannot get schema written onto it.
 Future<int> importMeasurementDatabase({
-  required String path,
+  String? path,
+  Uint8List? bytes,
   required PowerSyncDatabase targetDatabase,
   required BloodPressureRepository bpRepo,
   required NoteRepository noteRepo,
@@ -23,9 +25,9 @@ Future<int> importMeasurementDatabase({
   required MedicineRepository medRepo,
   required BodyweightRepository weightRepo,
 }) async {
-  final sqlite = await openReadOnlyDatabase(path);
+  final sqlite = await openBackupReader(path: path, bytes: bytes);
   try {
-    if (await LegacyBpDb.looksLikeLegacy(sqlite)) {
+    if (await LegacyBpDb.looksLikeLegacyQuery(sqlite.rawQuery)) {
       return await _importLegacy(
         sqlite,
         bpRepo: bpRepo,
@@ -35,7 +37,7 @@ Future<int> importMeasurementDatabase({
         weightRepo: weightRepo,
       );
     }
-    if (await LegacyBpDb.looksLikeHealth(sqlite)) {
+    if (await LegacyBpDb.looksLikeHealthQuery(sqlite.rawQuery)) {
       return await _importHealth(
         sqlite,
         targetDatabase: targetDatabase,
@@ -53,14 +55,14 @@ Future<int> importMeasurementDatabase({
 }
 
 Future<int> _importLegacy(
-  Database sqlite, {
+  BackupReader sqlite, {
   required BloodPressureRepository bpRepo,
   required NoteRepository noteRepo,
   required MedicineIntakeRepository intakeRepo,
   required MedicineRepository medRepo,
   required BodyweightRepository weightRepo,
 }) async {
-  final source = LegacyBpDb(sqlite);
+  final source = LegacyBpDb.fromQuery(sqlite.rawQuery);
   var count = 0;
   for (final row in await source.medicineRows()) {
     await _upsertMedicine(medRepo, row.medicine, removed: row.removed);
@@ -85,7 +87,7 @@ Future<int> _importLegacy(
 }
 
 Future<int> _importHealth(
-  Database sqlite, {
+  BackupReader sqlite, {
   required PowerSyncDatabase targetDatabase,
   required BloodPressureRepository bpRepo,
   required NoteRepository noteRepo,
@@ -93,7 +95,10 @@ Future<int> _importHealth(
   required MedicineRepository medRepo,
   required BodyweightRepository weightRepo,
 }) async {
-  var count = await importMedicationBackup(sqlite, targetDatabase);
+  var count = await importMedicationBackupQuery(
+    sqlite.rawQuery,
+    targetDatabase,
+  );
   for (final r in await _query(sqlite, 'SELECT * FROM blood_pressure')) {
     final timeS = r['timestamp_unix_s'] as int?;
     if (timeS == null) continue;
@@ -189,7 +194,7 @@ Future<void> _upsertMedicine(
   if (!removed) await medRepo.add(medicine);
 }
 
-Future<List<Map<String, Object?>>> _query(Database db, String sql) async {
+Future<List<Map<String, Object?>>> _query(BackupReader db, String sql) async {
   try {
     return await db.rawQuery(sql);
   } catch (_) {

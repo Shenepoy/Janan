@@ -113,17 +113,19 @@ void main() {
       await target.execute(
         "INSERT INTO notes(id,timestamp_unix_s,note) VALUES('kept',1,'existing local edit')",
       );
-      Future<int> restore() => importMeasurementDatabase(
-        path: path,
-        targetDatabase: target,
-        bpRepo: PowerSyncBloodPressureRepository(target),
-        noteRepo: PowerSyncNoteRepository(target),
-        intakeRepo: PowerSyncMedicineIntakeRepository(target),
-        medRepo: PowerSyncMedicineRepository(target),
-        weightRepo: PowerSyncBodyweightRepository(target),
-      );
+      Future<int> restore({bool fromBytes = false}) async =>
+          importMeasurementDatabase(
+            path: fromBytes ? null : path,
+            bytes: fromBytes ? await File(path).readAsBytes() : null,
+            targetDatabase: target,
+            bpRepo: PowerSyncBloodPressureRepository(target),
+            noteRepo: PowerSyncNoteRepository(target),
+            intakeRepo: PowerSyncMedicineIntakeRepository(target),
+            medRepo: PowerSyncMedicineRepository(target),
+            weightRepo: PowerSyncBodyweightRepository(target),
+          );
       expect(await restore(), 2);
-      expect(await restore(), 2);
+      expect(await restore(fromBytes: true), 2);
       expect(await target.getAll('SELECT id FROM notes'), hasLength(2));
       expect(
         (await target.getAll(

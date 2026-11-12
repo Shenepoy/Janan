@@ -54,7 +54,7 @@ extension EntryUtils on BuildContext {
       if (settings.confirmDeletion) {
         choice = await showConfirmDeletionChoice(
           this,
-          allowBlacklist: entry.record != null || entry.weight != null,
+          allowBlacklist: entry.record != null,
         );
         if (!mounted) return false;
       }
@@ -62,6 +62,13 @@ extension EntryUtils on BuildContext {
 
       final blacklist = choice == DeleteChoice.deleteAndBlacklist;
       final blocked = <(String, String)>[];
+      // Weight deletion always remembers the reading before removing it so
+      // reconnecting the scale cannot immediately undo the user's deletion.
+      if (entry.weight != null) {
+        final key = bodyweightRecordKey(entry.weight!);
+        await blacklistRepo.add('weight', key);
+        blocked.add(('weight', key));
+      }
       if (entry.record != null) await bpRepo.remove(entry.record!);
       if (entry.note != null) await noteRepo.remove(entry.note!);
       for (final intake in entry.allIntakes) {
@@ -79,11 +86,6 @@ extension EntryUtils on BuildContext {
           final key = bloodPressureRecordKey(entry.record!);
           await blacklistRepo.add('bp', key);
           blocked.add(('bp', key));
-        }
-        if (entry.weight != null) {
-          final key = bodyweightRecordKey(entry.weight!);
-          await blacklistRepo.add('weight', key);
-          blocked.add(('weight', key));
         }
       }
 

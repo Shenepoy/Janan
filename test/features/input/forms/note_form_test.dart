@@ -6,6 +6,19 @@ import '../../../util.dart';
 import '../../settings/tiles/color_picker_list_tile_test.dart';
 
 void main() {
+  testWidgets('note input announces its purpose independently of the section', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await pumpApp(tester, await materialApp(const NoteForm()));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSemantics(find.byType(EditableText)).getSemanticsData().label,
+      contains('Note (optional)'),
+    );
+    semantics.dispose();
+  });
+
   testWidgets('saves entered text', (WidgetTester tester) async {
     final key = GlobalKey<NoteFormState>();
     await pumpApp(tester, await materialApp(NoteForm(key: key)));

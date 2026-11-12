@@ -490,7 +490,7 @@
   "bodySexMale": "男",
   "bodySexFemale": "女",
   "athleteMode": "运动员模式",
-  "athleteModeDesc": "使用 Eufy 运动员系数以对应更高的肌肉量",
+  "athleteModeDesc": "根据较高的肌肉量调整估算值",
   "bodyFat": "体脂",
   "muscleMass": "肌肉",
   "boneMass": "骨骼",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "血压读数中较高的数字。心脏收缩时的压力。",
   "metricInfoDiaDesc": "血压读数中较低的数字。心脏舒张时的压力。",
   "metricInfoPulDesc": "静息心率，单位为每分钟心跳次数。",
-  "bodyCompositionEstimated": "根据阻抗估算。数值可能与 Eufy 应用不同。",
+  "bodyCompositionEstimated": "根据阻抗估算。数值可能与体重秤应用中的数值不同。",
   "bodyCompositionSubtitle": "{fat}% 脂肪 · {muscle} 公斤肌肉",
   "exportImportDocumentationTooltip": "如何使用导出和导入",
   "exportImportDocumentation": "## 导出和导入\n- 导出 SQLite 数据库以备份或传输您的记录。\n- 选择 CSV 在电子表格中打开数据或将其导入回 Janan。\n- 保持列标题启用并包含受支持的日期和时间列。\n- 使用单独的列来记录收缩压、舒张压、脉搏、笔记和记录的药物剂量。\n\n## 使用电子表格\n1. 导出为带有列标题的 CSV。\n2. 在 LibreOffice、Excel 或其他电子表格应用程序中打开文件。\n3. 如果列未对齐，请检查字段分隔符和文本分隔符。\n4. 确保时间列被识别为日期和时间。\n5. 如果要再次导入文件，请保留相同的列标题和时间格式。\n\n## 注意颜色\n- `color` 列将注释颜色存储为数字。\n- 旧版 `needlePin` 列存储 JSON 以与旧文件兼容。\n- 使用 `color` 作为简单的电子表格列。",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "打开“体重”，点击＋。\n输入体重秤的读数。检查单位、日期和时间，然后点击“保存”。\n点击已保存的体重可查看或编辑。可在设置中选择单位。",
   "onboardingMinutesValue": "{value}分钟",
   "onboardingSaveFailed": "无法保存您的设置，请重试。",
-  "healthTools": "健康工具"
+  "healthTools": "健康工具",
+  "webNativeFeatureUnavailable": "此功能可在移动应用中使用。",
+  "homeChartCount": "宽屏上的最大图表数量",
+  "homeChartCountDesc": "空间足够时最多显示此数量的图表。窄屏显示一个。",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }

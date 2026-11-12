@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:blood_pressure_app/core/database/backup_reader.dart'
+    show BackupQuery;
 import 'package:blood_pressure_app/core/database/health_write.dart';
 import 'package:blood_pressure_app/core/repository/medication_snapshots.dart';
 import 'package:blood_pressure_app/core/repository/powersync_medicine_repository.dart';
@@ -11,16 +13,19 @@ import 'package:uuid/uuid.dart';
 /// Restores the medication graph in one transaction. Foreign identities are
 /// remapped when an equivalent catalog entry already exists at the destination.
 /// Re-importing the same backup retains the same schedule/occurrence identities.
-Future<int> importMedicationBackup(
-  Database source,
+Future<int> importMedicationBackup(Database source, PowerSyncDatabase target) =>
+    importMedicationBackupQuery(source.rawQuery, target);
+
+Future<int> importMedicationBackupQuery(
+  BackupQuery query,
   PowerSyncDatabase target,
 ) async {
   Future<List<Map<String, Object?>>> rows(String table) async {
-    final found = await source.rawQuery(
+    final found = await query(
       "SELECT name FROM sqlite_master WHERE name = ? AND type IN ('table', 'view')",
       [table],
     );
-    return found.isEmpty ? [] : source.rawQuery('SELECT * FROM $table');
+    return found.isEmpty ? [] : query('SELECT * FROM $table');
   }
 
   final medicines = await rows('medicines');

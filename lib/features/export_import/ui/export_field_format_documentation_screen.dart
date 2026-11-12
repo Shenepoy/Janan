@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:blood_pressure_app/features/settings/time_formats_reference_screen.dart';
 import 'package:blood_pressure_app/l10n/bidi.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 
 /// Screen to show long markdown text.
 class InformationScreen extends StatelessWidget {
@@ -18,24 +20,24 @@ class InformationScreen extends StatelessWidget {
   final String? title;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: title == null ? null : Text(title!),
-      forceMaterialTransparency: true,
-    ),
-    body: Container(
-      padding: const EdgeInsets.all(10),
+  Widget build(BuildContext context) => SettingsPageFrame(
+    title: title == null ? const SizedBox.shrink() : Text(title!),
+    child: Container(
+      padding: const EdgeInsets.all(16),
       child: Markdown(
         selectable: true,
         onTapLink: getLinkTapHandler(context),
-        data: context.locale.languageCode == 'ar' ? isolateMarkdownCodes(text) : text,
+        data: context.locale.languageCode == 'ar'
+            ? isolateMarkdownCodes(text)
+            : text,
       ),
     ),
   );
 }
 
 /// Definition of a function that resolves lik presses
-typedef LinkTapHandler = FutureOr<void> Function(String text, String? destination, String title)?;
+typedef LinkTapHandler =
+    FutureOr<void> Function(String text, String? destination, String title)?;
 
 /// Constructs a function that handles link presses to urls and some screens.
 ///
@@ -43,23 +45,29 @@ typedef LinkTapHandler = FutureOr<void> Function(String text, String? destinatio
 /// - `http://*`
 /// - `https://*`
 /// - `screen://TimeFormattingHelp`
-LinkTapHandler getLinkTapHandler(BuildContext context) => (String text, String? destination, String title) async {
-  if (destination == null) {
-    return;
-  }
-  if (destination.startsWith('http://') || destination.startsWith('https://')) {
-    final url = Uri.tryParse(destination);
-    if (url != null && await canLaunchUrl(url)) {
-      await launchUrl(url);
-      return;
-    }
-  } else if (destination.startsWith('screen://')) {
-    switch (destination.split('//')[1]) {
-      case 'TimeFormattingHelp':
-        Navigator.push(context, MaterialPageRoute<void>(builder:
-            (context) => const TimeFormattingReferenceScreen())).ignore();
+LinkTapHandler getLinkTapHandler(BuildContext context) =>
+    (String text, String? destination, String title) async {
+      if (destination == null) {
         return;
-    }
-  }
-  assert(false, 'Markdown contains invalid URL');
-};
+      }
+      if (destination.startsWith('http://') ||
+          destination.startsWith('https://')) {
+        final url = Uri.tryParse(destination);
+        if (url != null && await canLaunchUrl(url)) {
+          await launchUrl(url);
+          return;
+        }
+      } else if (destination.startsWith('screen://')) {
+        switch (destination.split('//')[1]) {
+          case 'TimeFormattingHelp':
+            Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (context) => const TimeFormattingReferenceScreen(),
+              ),
+            ).ignore();
+            return;
+        }
+      }
+      assert(false, 'Markdown contains invalid URL');
+    };

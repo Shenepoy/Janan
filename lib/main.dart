@@ -27,6 +27,7 @@ Future<void> runJanan({
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      if (kIsWeb) WidgetsBinding.instance.ensureSemantics();
       await initializeIntegrations?.call();
       LicenseRegistry.addLicense(() async* {
         yield LicenseEntryWithLineBreaks([

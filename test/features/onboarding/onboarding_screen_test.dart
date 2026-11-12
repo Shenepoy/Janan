@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:blood_pressure_app/features/onboarding/onboarding_screen.dart';
+import 'package:blood_pressure_app/features/onboarding/onboarding_copy_provider.dart';
 import 'package:blood_pressure_app/features/settings/bluetooth_devices_screen.dart';
 import 'package:blood_pressure_app/features/settings/body_profile_screen.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
@@ -74,6 +75,7 @@ Future<Widget> _tourApp({
   required SettingsProviders settings,
   bool firstRun = true,
   Locale locale = const Locale('en'),
+  String Function(Locale)? welcomeBody,
 }) async {
   SharedPreferences.setMockInitialValues({});
   await EasyLocalization.ensureInitialized();
@@ -86,6 +88,8 @@ Future<Widget> _tourApp({
     startLocale: locale,
     child: ProviderScope(
       overrides: [
+        if (welcomeBody != null)
+          onboardingWelcomeBodyProvider.overrideWithValue(welcomeBody),
         settingsControllerProvider.overrideWithValue(settings.controller),
         settingsSearchIndexProvider.overrideWithValue(settings.searchIndex),
         settingsProvidersProvider.overrideWithValue(settings),
@@ -157,6 +161,7 @@ void main() {
     WidgetTester tester, {
     bool firstRun = true,
     Locale locale = const Locale('en'),
+    String Function(Locale)? welcomeBody,
   }) async {
     await pumpApp(
       tester,
@@ -165,6 +170,7 @@ void main() {
         settings: settings,
         firstRun: firstRun,
         locale: locale,
+        welcomeBody: welcomeBody,
       ),
     );
     if (!firstRun) {
@@ -201,6 +207,25 @@ void main() {
     await tester.tap(option);
     await tester.pumpAndSettle();
   }
+
+  testWidgets('offline welcome stays local unless distribution overrides it', (
+    tester,
+  ) async {
+    await open(tester);
+    expect(find.textContaining('No account, no cloud.'), findsOneWidget);
+  });
+
+  testWidgets('distribution welcome receives the active locale', (
+    tester,
+  ) async {
+    await open(
+      tester,
+      locale: const Locale('ar'),
+      welcomeBody: (locale) => 'Distribution welcome: ${locale.languageCode}',
+    );
+    expect(find.text('Distribution welcome: ar'), findsOneWidget);
+    expect(find.textContaining('No account, no cloud.'), findsNothing);
+  });
 
   for (final throws in [false, true]) {
     testWidgets('completion save failure stays open and retries: $throws', (

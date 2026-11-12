@@ -1,21 +1,27 @@
+import 'package:blood_pressure_app/core/database/backup_reader.dart'
+    show BackupQuery;
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:sqflite/sqflite.dart';
 
 /// Read-only access to the old `health_data_store` `bp.db` schema.
 class LegacyBpDb {
-  LegacyBpDb(this._db);
+  LegacyBpDb(Database database) : _query = database.rawQuery;
+  LegacyBpDb.fromQuery(this._query);
 
-  final Database _db;
+  final BackupQuery _query;
 
-  static Future<bool> looksLikeLegacy(Database db) async {
-    final tables = await db.rawQuery(
+  static Future<bool> looksLikeLegacy(Database db) =>
+      looksLikeLegacyQuery(db.rawQuery);
+
+  static Future<bool> looksLikeLegacyQuery(BackupQuery query) async {
+    final tables = await query(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='Timestamps'",
     );
     return tables.isNotEmpty;
   }
 
   Future<List<BloodPressureRecord>> bloodPressure() async {
-    final results = await _db.rawQuery(
+    final results = await _query(
       'SELECT timestampUnixS, sys, dia, pul '
       'FROM Timestamps AS t '
       'LEFT JOIN Systolic AS s ON t.entryID = s.entryID '
@@ -42,7 +48,7 @@ class LegacyBpDb {
 
   Future<List<Note>> notes() async {
     try {
-      final result = await _db.rawQuery(
+      final result = await _query(
         'SELECT t.timestampUnixS AS time, note, color '
         'FROM Timestamps AS t '
         'JOIN Notes AS n ON t.entryID = n.entryID '
@@ -64,7 +70,7 @@ class LegacyBpDb {
 
   Future<List<BodyweightRecord>> weights() async {
     try {
-      final results = await _db.rawQuery(
+      final results = await _query(
         'SELECT timestampUnixS, weightKg, impedanceOhm '
         'FROM Timestamps AS t '
         'INNER JOIN Weight AS w ON t.entryID = w.entryID',
@@ -83,15 +89,14 @@ class LegacyBpDb {
   }
 
   Future<List<Medicine>> medicines({bool includeRemoved = true}) async => [
-        for (final row in await medicineRows())
-          if (includeRemoved || !row.removed) row.medicine,
-      ];
+    for (final row in await medicineRows())
+      if (includeRemoved || !row.removed) row.medicine,
+  ];
 
   Future<List<({Medicine medicine, bool removed})>> medicineRows() async {
     try {
-      final medData = await _db.query(
-        'Medicine',
-        columns: ['designation', 'defaultDose', 'color', 'removed'],
+      final medData = await _query(
+        'SELECT designation, defaultDose, color, removed FROM Medicine',
       );
       return [
         for (final m in medData)
@@ -109,8 +114,11 @@ class LegacyBpDb {
     }
   }
 
-  static Future<bool> looksLikeHealth(Database db) async {
-    final tables = await db.rawQuery(
+  static Future<bool> looksLikeHealth(Database db) =>
+      looksLikeHealthQuery(db.rawQuery);
+
+  static Future<bool> looksLikeHealthQuery(BackupQuery query) async {
+    final tables = await query(
       "SELECT name FROM sqlite_master WHERE name='blood_pressure'",
     );
     return tables.isNotEmpty;
@@ -118,7 +126,7 @@ class LegacyBpDb {
 
   Future<List<MedicineIntake>> intakes() async {
     try {
-      final results = await _db.rawQuery(
+      final results = await _query(
         'SELECT t.timestampUnixS, dosis, defaultDose, designation, color '
         'FROM Timestamps AS t '
         'JOIN Intake AS i ON t.entryID = i.entryID '
@@ -143,13 +151,13 @@ class LegacyBpDb {
   }
 
   Future<({int bp, int notes, int weights, int medicines, int intakes})>
-      counts() async => (
-      bp: (await bloodPressure()).length,
-      notes: (await notes()).length,
-      weights: (await weights()).length,
-      medicines: (await medicines()).length,
-      intakes: (await intakes()).length,
-    );
+  counts() async => (
+    bp: (await bloodPressure()).length,
+    notes: (await notes()).length,
+    weights: (await weights()).length,
+    medicines: (await medicines()).length,
+    intakes: (await intakes()).length,
+  );
 
   Pressure? _decodePressure(Object? value) {
     if (value is! num) return null;

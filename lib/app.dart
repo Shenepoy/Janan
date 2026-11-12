@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
-
 import 'package:blood_pressure_app/core/database/database_providers.dart';
 import 'package:blood_pressure_app/core/database/health_database.dart';
+import 'package:blood_pressure_app/core/database/native_database_setup.dart';
+import 'package:blood_pressure_app/core/platform/app_platform.dart';
 import 'package:blood_pressure_app/core/repository/powersync_blood_pressure_repository.dart';
 import 'package:blood_pressure_app/core/repository/powersync_bodyweight_repository.dart';
 import 'package:blood_pressure_app/core/repository/powersync_medicine_intake_repository.dart';
@@ -32,6 +33,7 @@ import 'package:blood_pressure_app/features/settings/graph_screen.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/shell/app_shell.dart';
 import 'package:blood_pressure_app/features/shell/initial_route_stack.dart';
+import 'package:blood_pressure_app/l10n/loaded_locale.dart';
 import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
@@ -55,7 +57,7 @@ import 'package:path/path.dart';
 import 'package:powersync/powersync.dart';
 import 'package:receive_intent/receive_intent.dart';
 import 'package:safaeh/safaeh.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite/sqflite.dart';
 
 /// Base class for the entire app.
 class App extends ConsumerStatefulWidget {
@@ -115,11 +117,9 @@ class _AppState extends ConsumerState<App> with Loggable {
 
   Future<void> _loadApp() async {
     if (!mounted) return;
-    if (!Platform.isAndroid && !Platform.isIOS) {
-      databaseFactory = databaseFactoryFfi;
-    }
+    initializeNativeDatabaseFactory();
 
-    if (kDebugMode && (const bool.fromEnvironment('testing_mode'))) {
+    if (!kIsWeb && kDebugMode && (const bool.fromEnvironment('testing_mode'))) {
       final dbPath = await getDatabasesPath();
       try {
         for (final name in [
@@ -254,17 +254,19 @@ class _AppState extends ConsumerState<App> with Loggable {
       );
     }
 
-    final dbPath = await getDatabasesPath();
-    if (File(join(dbPath, 'config.db')).existsSync()) {
-      File(join(dbPath, 'config.db')).deleteSync();
-    }
-    if (File(join(dbPath, 'config.db-journal')).existsSync()) {
-      File(join(dbPath, 'config.db-journal')).deleteSync();
+    if (!kIsWeb) {
+      final dbPath = await getDatabasesPath();
+      if (File(join(dbPath, 'config.db')).existsSync()) {
+        File(join(dbPath, 'config.db')).deleteSync();
+      }
+      if (File(join(dbPath, 'config.db-journal')).existsSync()) {
+        File(join(dbPath, 'config.db-journal')).deleteSync();
+      }
     }
 
     if (!mounted) return;
     final hc = ref.read(appSettingsProvider);
-    if (hc.useHealthConnect && hc.syncOnAppStart) {
+    if (!kIsWeb && hc.useHealthConnect && hc.syncOnAppStart) {
       if (hc.bloodPressureEnabled && hc.syncPressureMeasurements) {
         logInfo('Syncing blood pressure measurements');
         await BPSyncModel(bpRepo: _bpRepo!, health: Health()).sync();
@@ -280,7 +282,7 @@ class _AppState extends ConsumerState<App> with Loggable {
     }
 
     if (!mounted) return;
-    if (hc.useHealthConnect) {
+    if (!kIsWeb && hc.useHealthConnect) {
       final health = Health();
       if (hc.weightInput && hc.syncWeightMeasurements) {
         _healthSubscriptions.add(
@@ -345,7 +347,7 @@ class _AppState extends ConsumerState<App> with Loggable {
     } else if (hc.startWithAddMeasurementPage && hc.bloodPressureEnabled) {
       initialRoute = AppRoute.add;
     }
-    if (hc.onboardingCompleted && Platform.isAndroid) {
+    if (hc.onboardingCompleted && AppPlatform.isAndroid) {
       try {
         final intent = await ReceiveIntent.getInitialIntent();
         logInfo('Received intent: $intent');
@@ -370,7 +372,7 @@ class _AppState extends ConsumerState<App> with Loggable {
     }
     if (hc.medicineFeatureEnabled &&
         hc.onboardingCompleted &&
-        Platform.isAndroid &&
+        AppPlatform.isAndroid &&
         await MedicationReminderRuntime.instance.launchedFromNotification) {
       initialRoute = AppRoute.medicationToday;
     }
@@ -526,7 +528,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
   }
 
   Future<void> _syncAndroidAppNameLocale(String languageKey) async {
-    if (!Platform.isAndroid) return;
+    if (!AppPlatform.isAndroid) return;
     final tag = switch (languageKey) {
       'system' || '' => '',
       'zh' => 'zh-CN',
@@ -604,7 +606,8 @@ class _AppRootState extends ConsumerState<_AppRoot> {
       _appliedAppLocaleKey = languageKey;
       unawaited(_syncAndroidAppNameLocale(languageKey));
     }
-    final localeTag = context.locale.toLanguageTag();
+    final locale = loadedAppLocale(context);
+    final localeTag = locale.toLanguageTag();
     if (_syncedReminderLocale != localeTag) {
       final hadLocale = _syncedReminderLocale != null;
       _syncedReminderLocale = localeTag;
@@ -651,7 +654,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
           ? const MedicationsScreen()
           : _shell(ShellTab.home),
     };
-    final isRtl = context.locale.languageCode == 'ar';
+    final isRtl = locale.languageCode == 'ar';
     return SafaehTheme(
       data: const SafaehThemeData(
         tabletBreakpoint: 600,
@@ -678,7 +681,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
           context.localizationDelegates,
         ),
         supportedLocales: context.supportedLocales,
-        locale: context.locale,
+        locale: locale,
         debugShowCheckedModeBanner: false,
         navigatorObservers: [widget.homePresence],
         builder: (context, child) {

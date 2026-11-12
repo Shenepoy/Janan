@@ -7,6 +7,7 @@ import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_range_bar.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/safaeh.dart';
@@ -64,33 +65,23 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
         settings.medicineFeatureEnabled &&
         settings.bloodPressureEnabled &&
         settings.medicationHistoryDisplay == 'combined';
-    final slot = showFilter
+    // Browser has no native Bluetooth indicator; keep only one action slot.
+    final slot = kIsWeb
+        ? 48.0
+        : showFilter
         ? BleHomeSyncIndicator.slotWidth + 48
         : BleHomeSyncIndicator.slotWidth;
     final appBar = SafaehMorphingAppBar(
       page: page,
       titles: [
         for (final key in titleKeys)
-          if (floating)
-            SizedBox(
-              width: double.infinity,
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  key.tr(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            )
-          else
-            Text(key.tr()),
+          Text(key.tr(), maxLines: 1, overflow: TextOverflow.ellipsis),
       ],
       // Reserve the same leading width as the trailing action slot. This
       // keeps the title on the physical center line even when actions morph.
-      centerTitle: !floating,
-      leading: floating ? null : SizedBox(width: slot),
-      leadingWidth: floating ? 0 : slot,
+      centerTitle: true,
+      leading: SizedBox(width: slot),
+      leadingWidth: slot,
       actionSlotWidth: slot,
       actionsBuilder: (context, currentPage) => _ShellAppBarAction(
         page: currentPage,
@@ -164,7 +155,7 @@ class _ShellAppBarAction extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const _BleHomeAction(),
+                  if (!kIsWeb) const _BleHomeAction(),
                   if (showFilter)
                     ExcludeSemantics(
                       excluding: filterOpacity < 0.5,

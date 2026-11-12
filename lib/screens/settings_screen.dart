@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:archive/archive_io.dart';
 import 'package:blood_pressure_app/app.dart';
@@ -29,13 +28,14 @@ import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
 import 'package:blood_pressure_app/model/storage/storage.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_logging_service/flutter_logging_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:flutter_settings_framework/safaeh.dart';
-import 'package:path/path.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 
 /// Drop rows whose registry definition marks them invisible. The catalog page
 /// still builds every setting in a section; Health Connect internals and other
@@ -139,10 +139,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             _registry.getVisibleSettingsInSection(section.key).isNotEmpty,
       )
       .toList();
-
-  bool _isWide(BuildContext context) =>
-      MediaQuery.sizeOf(context).width >=
-      SafaehTheme.of(context).tabletBreakpoint;
 
   String _sectionTitle(String key) => key.tr();
 
@@ -315,65 +311,57 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  Widget _buildBody(BuildContext context, SettingsProviders settings) {
-    final list = Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 720),
-        child: _buildSettingsList(context, settings),
-      ),
-    );
-    final wide = _isWide(context);
-    final content = wide
-        ? Row(
-            children: [
-              Expanded(child: list),
-              SizedBox(
-                width: 236,
-                child: Material(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  child: SafaehSettingsPageIndex(
-                    title: 'settingsOnThisPage'.tr(),
-                    sections: _displayedSections,
-                    sectionKeys: _sectionKeys,
-                    labelBuilder: (section) => _sectionTitle(section.titleKey),
-                    activeId: _activeSectionId,
-                    onSelect: _selectSection,
-                  ),
-                ),
+  Widget _buildBody(
+    BuildContext context,
+    SettingsProviders settings,
+  ) => LayoutBuilder(
+    builder: (context, constraints) {
+      // Match Hisab: the index uses the end gutter and never displaces the
+      // centered settings column. Use an overlay when the gutter is too small.
+      final showSideIndex = safaehCanShowAside(context, constraints.maxWidth);
+      return SafaehContentBand(
+        railAware: true,
+        aside: showSideIndex
+            ? SafaehSettingsPageIndex(
+                title: 'settingsOnThisPage'.tr(),
+                sections: _displayedSections,
+                sectionKeys: _sectionKeys,
+                labelBuilder: (section) => _sectionTitle(section.titleKey),
+                activeId: _activeSectionId,
+                onSelect: _selectSection,
+              )
+            : null,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _buildSettingsList(context, settings),
+            if (!showSideIndex)
+              SafaehSettingsPageIndexOverlay(
+                title: 'settingsOnThisPage'.tr(),
+                sections: _displayedSections,
+                sectionKeys: _sectionKeys,
+                labelBuilder: (section) => _sectionTitle(section.titleKey),
+                activeId: _activeSectionId,
+                onSelect: _selectSection,
               ),
-            ],
-          )
-        : list;
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        content,
-        if (!wide)
-          SafaehSettingsPageIndexOverlay(
-            title: 'settingsOnThisPage'.tr(),
-            sections: _displayedSections,
-            sectionKeys: _sectionKeys,
-            labelBuilder: (section) => _sectionTitle(section.titleKey),
-            activeId: _activeSectionId,
-            onSelect: _selectSection,
-          ),
-        SafaehSettingsSearchOverlay(
-          isOpen: _isSearchOpen,
-          onClose: () => _setSearchOpen(false),
-          searchIndex: settings.searchIndex,
-          resultFilter: _isSearchResultVisible,
-          onResultSelected: _selectSearchResult,
-          hintText: 'searchSettings'.tr(),
-          sectionTitleBuilder: _sectionTitle,
-          settingTitleBuilder: _settingTitle,
-          settingSubtitleBuilder: _settingSubtitle,
-          emptyMessageBuilder: (query) =>
-              'settingsNoSearchResults'.tr(namedArgs: {'query': query}),
+            SafaehSettingsSearchOverlay(
+              isOpen: _isSearchOpen,
+              onClose: () => _setSearchOpen(false),
+              searchIndex: settings.searchIndex,
+              resultFilter: _isSearchResultVisible,
+              onResultSelected: _selectSearchResult,
+              hintText: 'searchSettings'.tr(),
+              sectionTitleBuilder: _sectionTitle,
+              settingTitleBuilder: _settingTitle,
+              settingSubtitleBuilder: _settingSubtitle,
+              emptyMessageBuilder: (query) =>
+                  'settingsNoSearchResults'.tr(namedArgs: {'query': query}),
+            ),
+          ],
         ),
-      ],
-    );
-  }
+      );
+    },
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -414,6 +402,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     SettingDefinition<Object?> setting,
   ) {
     final defaultTile = _buildDefaultTile(context, settings, setting);
+    if (kIsWeb &&
+        (setting.section == 'bluetooth' ||
+            setting.key == medicationNotificationsEnabledSetting.key ||
+            setting.key == healthConnectAction.key)) {
+      return ListTile(
+        leading: Icon(setting.icon),
+        title: Text(_settingTitle(setting)),
+        subtitle: Text('webNativeFeatureUnavailable'.tr()),
+        enabled: false,
+      );
+    }
     if (setting.key == bluetoothMeasurementsEnabledSetting.key) {
       final appSettings = ref.watch(appSettingsProvider);
       return SwitchSettingsTile.fromSetting(
@@ -696,7 +695,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Future<void> _handleAction(BuildContext context, String key) async {
     switch (key) {
       case 'health_tools':
-        await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const HealthToolsScreen()));
+        await Navigator.push(
+          context,
+          MaterialPageRoute<void>(builder: (_) => const HealthToolsScreen()),
+        );
       case 'graph_settings':
         await Navigator.pushNamed(context, AppRoute.settingsGraph.path);
       case 'graph_markings':
@@ -742,7 +744,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         );
       case 'source_code':
         final url = Uri.parse(
-          'https://github.com/Zyzto/blood-pressure-monitor-fl',
+          'https://github.com/Shenepoy/Janan',
         );
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -803,11 +805,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       context.showError('errNoFileOpened'.tr());
       return;
     }
-    final path = file.path;
-    if (path == null) {
-      context.showError('errCantReadFile'.tr());
-      return;
-    }
+    final path = file.name;
     if (path.endsWith('db')) {
       context.showError('error'.tr(namedArgs: {'msg': 'Format too old'}));
       return;
@@ -817,19 +815,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       return;
     }
     try {
-      final decoded = ZipDecoder().decodeStream(InputFileStream(path));
-      final dir = join(Directory.systemTemp.path, 'settingsBackup');
-      await extractArchiveToDisk(decoded, dir);
-      final loader = await FileSettingsLoader.load(path: dir);
+      final decoded = ZipDecoder().decodeBytes(await file.readAsBytes());
+      final loader = FileSettingsLoader.fromArchive(decoded);
       exportSettings.copyFrom(await loader.loadExportSettings());
       csvExportSettings.copyFrom(await loader.loadCsvExportSettings());
       pdfExportSettings.copyFrom(await loader.loadPdfExportSettings());
       xlsExportSettings.copyFrom(await loader.loadXlsExportSettings());
       intervalStoreManager.copyFrom(await loader.loadIntervalStorageManager());
       exportColumnsManager.copyFrom(await loader.loadExportColumnsManager());
-      final edadatFile = File(join(dir, EdadatFileStorage.fileName));
-      if (edadatFile.existsSync()) {
-        final raw = jsonDecode(edadatFile.readAsStringSync());
+      final edadatFile = decoded.findFile(EdadatFileStorage.fileName);
+      if (edadatFile != null && edadatFile.isFile) {
+        final raw = jsonDecode(utf8.decode(edadatFile.content as List<int>));
         if (raw is Map<String, dynamic>) {
           if (!context.mounted) return;
           final controller = ProviderScope.containerOf(
@@ -886,15 +882,15 @@ class _TimeFormatPickerState extends State<_TimeFormatPicker> {
 
   @override
   Widget build(BuildContext context) => SafaehTilePickerBody<String>(
-      showTitleInBody: false,
-      selected: widget.selected,
-      options: [
-        for (var i = 0; i < widget.patterns.length; i++)
-          SafaehTileOption<String>(
-            value: widget.patterns[i],
-            label: _labels[i],
-            subtitle: widget.patterns[i],
-          ),
-      ],
-    );
+    showTitleInBody: false,
+    selected: widget.selected,
+    options: [
+      for (var i = 0; i < widget.patterns.length; i++)
+        SafaehTileOption<String>(
+          value: widget.patterns[i],
+          label: _labels[i],
+          subtitle: widget.patterns[i],
+        ),
+    ],
+  );
 }

@@ -317,11 +317,37 @@ const homeBpChartSetting = EnumSetting(
   'home_bp_chart',
   defaultValue: 'dailyRange',
   titleKey: 'chartDailyRange',
-  options: ['dailyRange', 'classification', 'pulsePressure', 'medicineTiming'],
+  options: [
+    'dailyRange',
+    'classification',
+    'pulsePressure',
+    'medicineTiming',
+    'pulse',
+  ],
   useRawLabels: true,
   visible: false,
   dependsOn: 'blood_pressure_enabled',
   enabledWhen: true,
+);
+
+/// Upper limit; the dashboard reduces the count to fit its available space.
+const homeChartCountSetting = IntSetting(
+  'home_chart_count',
+  defaultValue: 5,
+  min: 1,
+  max: 5,
+  titleKey: 'homeChartCount',
+  subtitleKey: 'homeChartCountDesc',
+  section: 'graph',
+  visible: false,
+);
+
+/// Ordered chart preferences after the original two slots.
+const homeExtraChartsSetting = StringSetting(
+  'home_extra_charts',
+  defaultValue: '[]',
+  titleKey: 'homeChartCount',
+  visible: false,
 );
 
 /// The second chart shown beside the measurement table in landscape.
@@ -329,7 +355,13 @@ const homeSecondaryChartSetting = EnumSetting(
   'home_secondary_chart',
   defaultValue: 'classification',
   titleKey: 'chartClassification',
-  options: ['dailyRange', 'classification', 'pulsePressure', 'medicineTiming'],
+  options: [
+    'dailyRange',
+    'classification',
+    'pulsePressure',
+    'medicineTiming',
+    'pulse',
+  ],
   useRawLabels: true,
   visible: false,
 );
@@ -968,8 +1000,11 @@ const replayOnboardingAction = ActionSetting(
 );
 
 const healthToolsAction = ActionSetting(
-  'health_tools', titleKey: 'healthTools', icon: Icons.health_and_safety_outlined,
-  section: 'general', order: 0,
+  'health_tools',
+  titleKey: 'healthTools',
+  icon: Icons.health_and_safety_outlined,
+  section: 'general',
+  order: 0,
 );
 
 const versionAction = ActionSetting(
@@ -1066,6 +1101,8 @@ SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
     interruptGraphAfterNDaysSetting,
     homeBpChartSetting,
     homeSecondaryChartSetting,
+    homeChartCountSetting,
+    homeExtraChartsSetting,
     graphMarkingsAction,
     horizontalGraphLinesSetting,
     themeModeSetting,

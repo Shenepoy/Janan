@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:blood_pressure_app/core/platform/app_platform.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/features/health_connect/bp_sync_model.dart';
@@ -8,12 +7,13 @@ import 'package:blood_pressure_app/features/health_connect/sync_tile.dart';
 import 'package:blood_pressure_app/features/health_connect/weight_sync_model.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
-import 'package:blood_pressure_app/features/settings/tiles/titled_column.dart';
+import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:health/health.dart';
+
 
 class HealthConnectScreen extends ConsumerStatefulWidget {
   const HealthConnectScreen({super.key});
@@ -37,6 +37,7 @@ class _HealthConnectScreenState extends ConsumerState<HealthConnectScreen> {
   bool _hasBloodPressurePermission = false;
 
   Future<void> _bootstrap() async {
+    if (!(AppPlatform.isAndroid || AppPlatform.isIOS)) return;
     await _health.configure();
     await _checkPermissions();
     if (!mounted) return;
@@ -56,7 +57,7 @@ class _HealthConnectScreenState extends ConsumerState<HealthConnectScreen> {
   }
 
   Future<void> _checkPermissions() async {
-    if (!(Platform.isAndroid || Platform.isIOS)) {
+    if (!(AppPlatform.isAndroid || AppPlatform.isIOS)) {
       if (!mounted) return;
       setState(() {
         _platformSupport = false;
@@ -135,9 +136,9 @@ class _HealthConnectScreenState extends ConsumerState<HealthConnectScreen> {
     final settings = ref.watch(appSettingsProvider);
     final hasSyncableFeatures =
         settings.bloodPressureEnabled || settings.weightInput;
-    return Scaffold(
-      appBar: AppBar(title: Text('healthConnect'.tr())),
-      body: ListView(
+    return SettingsPageFrame(
+      title: Text('healthConnect'.tr()),
+      child: ListView(
         children: [
           Padding(
             padding: const EdgeInsetsDirectional.only(
@@ -159,7 +160,7 @@ class _HealthConnectScreenState extends ConsumerState<HealthConnectScreen> {
               minVerticalPadding: 22.0,
               value: settings.useHealthConnect,
               onChanged:
-                  (Platform.isAndroid || Platform.isIOS) &&
+                  (AppPlatform.isAndroid || AppPlatform.isIOS) &&
                       (hasSyncableFeatures || settings.useHealthConnect)
                   ? (newValue) async {
                       if (newValue) {
@@ -215,8 +216,10 @@ class _HealthConnectScreenState extends ConsumerState<HealthConnectScreen> {
                   : null,
             ),
           if (settings.weightInput)
-            TitledColumn(
-              title: Text('weight'.tr()),
+            SettingsPageCard(
+              sectionId: 'health-connect-weight',
+              title: 'weight'.tr(),
+              icon: Icons.scale_outlined,
               children: [
                 SwitchListTile(
                   title: Text('automaticallySyncData'.tr()),
@@ -237,8 +240,10 @@ class _HealthConnectScreenState extends ConsumerState<HealthConnectScreen> {
               ],
             ),
           if (settings.bloodPressureEnabled)
-            TitledColumn(
-              title: Text('bloodPressure'.tr()),
+            SettingsPageCard(
+              sectionId: 'health-connect-bloodPressure',
+              title: 'bloodPressure'.tr(),
+              icon: Icons.favorite_outline,
               children: [
                 SwitchListTile(
                   title: Text('automaticallySyncData'.tr()),

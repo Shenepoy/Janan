@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/features/bluetooth/logic/ble_measurement_duplicates.dart';
 import 'dart:typed_data';
 
 import 'package:blood_pressure_app/features/bluetooth/logic/characteristics/eufy_weight_data.dart';
@@ -94,7 +95,7 @@ void main() {
       time: time,
     )!;
     expect(EufyWeightData.preferred([live, withImpedance]), withImpedance);
-    expect(EufyWeightData.preferred([live]), live);
+    expect(EufyWeightData.preferred([live]), isNull);
   });
 
   test('ignores non-measurement frames', () {
@@ -102,4 +103,40 @@ void main() {
     expect(EufyWeightData.decode(frame(rawWeight: 0), time: time), isNull);
     expect(EufyWeightData.decode(Uint8List.fromList([0xCF, 0, 0]), time: time), isNull);
   });
+  test('history replay keeps its measurement time across reconnects', () {
+    final bytes = Uint8List.fromList([
+      ...frame(rawWeight: 2900, impedanceFlag: 0),
+      0, // history byte 10
+      0x07, 0xEA, 8, 24, 8, 9, 5,
+    ]);
+    final first = EufyWeightData.decode(bytes, time: time)!;
+    final later = EufyWeightData.decode(bytes, time: time.add(const Duration(days: 1)))!;
+    expect(first.time, DateTime(2026, 8, 24, 8, 9, 5));
+    expect(later.time, first.time);
+    final deletedKey = bodyweightRecordKey(first.asBodyweightRecord());
+    expect(newBleWeights([later.asBleWeight], const [], blacklisted: {deletedKey}), isEmpty);
+  });
+
+  test('truncated weight frame cannot become a diary reading', () {
+    expect(EufyWeightData.decode(Uint8List.fromList([0xCF, 0, 0, 0x54, 0x0B])), isNull);
+  });
+
+  test('invalid history date is rejected instead of given a new timestamp', () {
+    final bytes = Uint8List.fromList([
+      ...frame(impedanceFlag: 0), 0, 0x07, 0xEA, 2, 30, 8, 9, 5,
+    ]);
+    expect(EufyWeightData.decode(bytes, time: time), isNull);
+  });
+
+  test('coalesced live notifications do not look like history', () {
+    final live = frame(impedanceFlag: 0);
+    final checksum = live.fold(0, (sum, byte) => sum ^ byte);
+    final bytes = Uint8List.fromList([...live, checksum, ...live.take(9)]);
+    expect(EufyWeightData.decode(bytes, time: time)!.time, time);
+  });
+
+  test('no accepted frames has no preferred reading', () {
+    expect(EufyWeightData.preferred([]), isNull);
+  });
+
 }

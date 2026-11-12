@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:blood_pressure_app/core/platform/app_platform.dart';
 import 'package:blood_pressure_app/core/state/state_holder.dart';
 import 'package:blood_pressure_app/features/old_bluetooth/logic/flutter_blue_ultra_mockable.dart';
 import 'package:flutter/foundation.dart';
@@ -60,7 +60,7 @@ class BluetoothCubit extends StateHolder<BluetoothState> {
     assert(state is BluetoothDisabled, 'No need to enable bluetooth when '
         'already enabled or not known to be disabled.');
     try {
-      if (!Platform.isAndroid) return false;
+      if (!AppPlatform.isAndroid) return false;
       await _flutterBlueUltra.turnOn();
       return true;
     } on FlutterBlueUltraException {

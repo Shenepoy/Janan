@@ -490,7 +490,7 @@
   "bodySexMale": "Homme",
   "bodySexFemale": "Femme",
   "athleteMode": "Mode sportif",
-  "athleteModeDesc": "Utiliser les coefficients sportifs Eufy pour une masse musculaire plus élevée",
+  "athleteModeDesc": "Adapter les estimations à une masse musculaire plus élevée",
   "bodyFat": "Graisse corporelle",
   "muscleMass": "Muscle",
   "boneMass": "Os",
@@ -540,7 +540,7 @@
   "metricInfoSysDesc": "Le chiffre le plus élevé de la tension. La pression quand le cœur se contracte.",
   "metricInfoDiaDesc": "Le chiffre le plus bas de la tension. La pression quand le cœur se repose.",
   "metricInfoPulDesc": "Fréquence cardiaque au repos en battements par minute.",
-  "bodyCompositionEstimated": "Estimé par impédance. Les valeurs peuvent différer de l’app Eufy.",
+  "bodyCompositionEstimated": "Estimation par impédance. Les valeurs peuvent différer de celles de l’application de votre balance.",
   "bodyCompositionSubtitle": "{fat} % de graisse · {muscle} kg de muscle",
   "exportImportDocumentationTooltip": "Comment utiliser l’export et l’import",
   "exportImportDocumentation": "## Exporter et importer\n- Exportez une base de données SQLite pour sauvegarder ou transférer vos enregistrements.\n- Choisissez CSV pour ouvrir les données dans une feuille de calcul ou les réimporter dans Janan.\n- Gardez les en-têtes de colonnes activés et incluez une colonne de date et d'heure prise en charge.\n- Utilisez des colonnes séparées pour la pression systolique, la pression diastolique, le pouls, les notes et les doses de médicaments enregistrées.\n\n## Utiliser une feuille de calcul\n1. Exportez au format CSV avec en-têtes de colonnes.\n2. Ouvrez le fichier dans LibreOffice, Excel ou une autre application de feuille de calcul.\n3. Vérifiez le délimiteur de champ et le délimiteur de texte si les colonnes ne sont pas alignées.\n4. Assurez-vous que la colonne heure est reconnue comme date et heure.\n5. Conservez les mêmes en-têtes de colonnes et le même format d'heure si vous souhaitez réimporter le fichier.\n\n## Notez les couleurs\n- La colonne `color` stocke la couleur de la note sous forme de nombre.\n- L'ancienne colonne `needlePin` stocke JSON pour des raisons de compatibilité avec les fichiers plus anciens.\n- Utilisez `color` pour une simple colonne de feuille de calcul.",
@@ -720,5 +720,12 @@
   "onboardingWeightBody": "Ouvrez Poids et touchez +.\nSaisissez la valeur de votre balance. Vérifiez l’unité, la date et l’heure, puis touchez Enregistrer.\nTouchez un poids enregistré pour le consulter ou le modifier. Choisissez l’unité dans les réglages.",
   "onboardingMinutesValue": "{value} minutes",
   "onboardingSaveFailed": "Impossible d’enregistrer votre configuration. Veuillez réessayer.",
-  "healthTools": "Outils de santé"
+  "healthTools": "Outils de santé",
+  "webNativeFeatureUnavailable": "Cette fonctionnalité est disponible dans l’application mobile.",
+  "homeChartCount": "Nombre maximal de graphiques sur écran large",
+  "homeChartCountDesc": "Affiche au maximum ce nombre de graphiques si l’espace le permet. Les écrans étroits en affichent un.",
+  "bodyProfileIntro": "Personalize your body estimates",
+  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
+  "bodyProfileDetails": "Your details",
+  "bodyProfileEstimates": "Body composition"
 }
