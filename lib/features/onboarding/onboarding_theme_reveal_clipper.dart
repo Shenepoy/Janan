@@ -21,7 +21,7 @@ class OnboardingThemeRevealClipper extends CustomClipper<Path> {
           Offset(0, size.height),
           Offset(size.width, size.height),
         ].map((corner) => (corner - origin).distance).reduce(math.max) *
-        Curves.easeInOutCubic.transform(progress.clamp(0, 1));
+        const Cubic(0.65, 0, 0.35, 1).transform(progress.clamp(0, 1));
     final frame = Path()..addRect(Offset.zero & size);
     if (radius <= 0) return frame;
     return Path.combine(

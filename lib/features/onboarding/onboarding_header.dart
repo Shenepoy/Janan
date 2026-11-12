@@ -3,15 +3,8 @@ import 'package:material_ui/material_ui.dart';
 
 /// Compact Hisab-style chrome leaves the existing page room to breathe.
 class OnboardingHeader extends StatelessWidget {
-  const OnboardingHeader({
-    super.key,
-    required this.appearanceControls,
-    this.action,
-    this.leading,
-    this.title,
-  });
+  const OnboardingHeader({super.key, this.action, this.leading, this.title});
 
-  final Widget appearanceControls;
   final Widget? action;
   final Widget? leading;
   final String? title;
@@ -59,8 +52,6 @@ class OnboardingHeader extends StatelessWidget {
                       : const SizedBox.shrink(),
                 ),
                 if (action != null) Flexible(child: action!),
-                const SizedBox(width: 8),
-                appearanceControls,
               ],
             ),
           ),

@@ -2,10 +2,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
-/// Steady navigation dock; appearance controls live in the header.
+/// Steady navigation dock; appearance controls sit above the page indicator.
 class OnboardingFooter extends StatelessWidget {
   const OnboardingFooter({
     super.key,
+    required this.appearanceControls,
     required this.currentStep,
     required this.totalSteps,
     required this.nextLabel,
@@ -14,6 +15,7 @@ class OnboardingFooter extends StatelessWidget {
     required this.onBack,
     required this.onNext,
   });
+  final Widget appearanceControls;
   final int currentStep, totalSteps;
   final String nextLabel;
   final bool isLast, busy;
@@ -27,10 +29,12 @@ class OnboardingFooter extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              appearanceControls,
+              const SizedBox(height: 6),
               SafaehOnboardingTracker(
                 currentStep: currentStep,
                 totalSteps: totalSteps,

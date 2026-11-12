@@ -51,7 +51,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     super.initState();
     _themeReveal = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 900),
     );
   }
 
@@ -260,12 +260,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                                   tooltip: 'onboardingDone'.tr(),
                                   icon: const Icon(Icons.close_rounded),
                                 ),
-                          appearanceControls: OnboardingAppearanceControls(
-                            themeButtonKey: _themeButtonKey,
-                            onThemeChanged: _changeTheme,
-                            pendingTheme: _requestedTheme,
-                            busy: _finishing,
-                          ),
                         ),
                         Expanded(
                           child: PageView(
@@ -299,6 +293,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                           ),
                         ),
                         OnboardingFooter(
+                          appearanceControls: OnboardingAppearanceControls(
+                            themeButtonKey: _themeButtonKey,
+                            onThemeChanged: _changeTheme,
+                            pendingTheme: _requestedTheme,
+                            busy: _finishing,
+                          ),
                           currentStep: _page,
                           totalSteps: _pageCount,
                           nextLabel: nextLabel.tr(),

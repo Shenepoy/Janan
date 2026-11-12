@@ -3,11 +3,13 @@ import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/l10n/app_locales.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Hisab's 48 dp circular language picker and animated theme toggle.
+/// Compact language picker and Fukaha's tap/hold theme switcher.
 class OnboardingAppearanceControls extends ConsumerWidget {
   const OnboardingAppearanceControls({
     super.key,
@@ -65,7 +67,7 @@ class OnboardingAppearanceControls extends ConsumerWidget {
         '${'theme'.tr()}: ${mode.name.tr()}. ${'onboardingThemeSystemHint'.tr()}';
     final duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
-        : const Duration(milliseconds: 280);
+        : const Duration(milliseconds: 200);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -83,64 +85,51 @@ class OnboardingAppearanceControls extends ConsumerWidget {
           icon: const Icon(Icons.language, size: 24),
         ),
         const SizedBox(width: 8),
-        Tooltip(
-          message: themeLabel,
-          child: Semantics(
-            button: true,
-            enabled: !busy,
-            label: themeLabel,
-            child: SizedBox(
-              key: themeButtonKey,
-              width: 48,
-              height: 48,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  key: const Key('onboarding-theme'),
-                  customBorder: const CircleBorder(),
-                  onTap: busy
-                      ? null
-                      : () => onThemeChanged(
-                          mode == ThemeMode.light
-                              ? ThemeMode.dark
-                              : ThemeMode.light,
-                        ),
-                  onLongPress: busy
-                      ? null
-                      : () => onThemeChanged(ThemeMode.system),
-                  child: AnimatedContainer(
-                    duration: duration,
-                    curve: Curves.easeInOut,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: switch (mode) {
-                        ThemeMode.light => const Color(0xFFF5E6C8),
-                        ThemeMode.dark => const Color(0xFF37474F),
-                        ThemeMode.system => colors.surfaceContainerHighest,
-                      },
+        CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.enter, shift: true): () {
+              if (!busy) onThemeChanged(ThemeMode.system);
+            },
+          },
+          child: SizedBox(
+            key: themeButtonKey,
+            width: 48,
+            height: 48,
+            child: IconButton.filledTonal(
+              key: const Key('onboarding-theme'),
+              tooltip: themeLabel,
+              onLongPress: busy ? null : () => onThemeChanged(ThemeMode.system),
+              style: IconButton.styleFrom(
+                backgroundColor: colors.surfaceContainerHighest,
+                foregroundColor: colors.onSurface,
+              ),
+              onPressed: busy
+                  ? null
+                  : () => onThemeChanged(
+                      (mode == ThemeMode.system
+                              ? Theme.of(context).brightness == Brightness.dark
+                              : mode == ThemeMode.dark)
+                          ? ThemeMode.light
+                          : ThemeMode.dark,
                     ),
-                    child: AnimatedSwitcher(
-                      duration: duration,
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: ScaleTransition(scale: animation, child: child),
-                      ),
-                      child: Icon(
-                        switch (mode) {
-                          ThemeMode.light => Icons.light_mode,
-                          ThemeMode.dark => Icons.dark_mode,
-                          ThemeMode.system => Icons.motion_photos_auto,
-                        },
-                        key: ValueKey(mode),
-                        color: switch (mode) {
-                          ThemeMode.light => const Color(0xFF5D4037),
-                          ThemeMode.dark => const Color(0xFFECEFF1),
-                          ThemeMode.system => colors.onSurface,
-                        },
-                        size: 24,
-                      ),
-                    ),
-                  ),
+              icon: AnimatedSwitcher(
+                duration: duration,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                ),
+                child: Icon(
+                  switch (mode) {
+                    ThemeMode.light => Symbols.light_mode_rounded,
+                    ThemeMode.dark => Symbols.dark_mode_rounded,
+                    ThemeMode.system => Symbols.routine_rounded,
+                  },
+                  key: ValueKey(mode),
+                  size: 24,
+                  fill: 0,
+                  weight: 400,
+                  grade: 0,
+                  opticalSize: 24,
                 ),
               ),
             ),

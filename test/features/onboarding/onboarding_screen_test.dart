@@ -75,6 +75,7 @@ Future<Widget> _tourApp({
   required SettingsProviders settings,
   bool firstRun = true,
   Locale locale = const Locale('en'),
+  Brightness brightness = Brightness.light,
   String Function(Locale)? welcomeBody,
   OnboardingConnectionBuilder? connection,
 }) async {
@@ -99,6 +100,7 @@ Future<Widget> _tourApp({
       ],
       child: Builder(
         builder: (context) => MaterialApp(
+          theme: ThemeData(brightness: brightness),
           locale: context.locale,
           localizationsDelegates: [
             ...GlobalMaterialLocalizations.delegates,
@@ -170,6 +172,7 @@ void main() {
     WidgetTester tester, {
     bool firstRun = true,
     Locale locale = const Locale('en'),
+    Brightness brightness = Brightness.light,
     String Function(Locale)? welcomeBody,
     OnboardingConnectionBuilder? connection,
   }) async {
@@ -180,6 +183,7 @@ void main() {
         settings: settings,
         firstRun: firstRun,
         locale: locale,
+        brightness: brightness,
         welcomeBody: welcomeBody,
         connection: connection,
       ),
@@ -718,23 +722,33 @@ void main() {
     expect(settings.controller.get(onboardingCompletedSetting), isFalse);
   });
 
-  testWidgets('Hisab controls stay in the header above navigation', (
-    tester,
-  ) async {
-    await open(tester);
-    await _next(tester);
-    final language = tester.getRect(
-      find.byKey(const Key('onboarding-language')),
-    );
-    final theme = tester.getRect(find.byKey(const Key('onboarding-theme')));
-    final next = tester.getRect(_cta);
-    final back = tester.getRect(_back);
-    expect(language.bottom, lessThan(next.top));
-    expect(theme.bottom, lessThan(back.top));
-    expect(theme.center.dy, closeTo(language.center.dy, 1));
-    expect(language.overlaps(theme), isFalse);
-    expect(theme.right, lessThanOrEqualTo(tester.view.physicalSize.width));
-  });
+  testWidgets(
+    'Appearance controls sit directly above the bottom page indicator',
+    (tester) async {
+      await open(tester);
+      await _next(tester);
+      final language = tester.getRect(
+        find.byKey(const Key('onboarding-language')),
+      );
+      final theme = tester.getRect(find.byKey(const Key('onboarding-theme')));
+      final next = tester.getRect(_cta);
+      final back = tester.getRect(_back);
+      final indicator = tester.getRect(find.byType(SafaehOnboardingTracker));
+      expect(theme.bottom, lessThan(indicator.top));
+      expect(indicator.top - theme.bottom, lessThanOrEqualTo(12));
+      expect(
+        language.top,
+        greaterThan(
+          tester.view.physicalSize.height / tester.view.devicePixelRatio / 2,
+        ),
+      );
+      expect(language.bottom, lessThan(next.top));
+      expect(theme.bottom, lessThan(back.top));
+      expect(theme.center.dy, closeTo(language.center.dy, 1));
+      expect(language.overlaps(theme), isFalse);
+      expect(theme.right, lessThanOrEqualTo(tester.view.physicalSize.width));
+    },
+  );
 
   testWidgets('theme taps alternate light and dark, holding restores system', (
     tester,
@@ -743,13 +757,24 @@ void main() {
     final theme = find.byKey(const Key('onboarding-theme'));
     await tester.tap(theme);
     await tester.pumpAndSettle();
-    expect(settings.controller.get(themeModeSetting), 'light');
+    expect(settings.controller.get(themeModeSetting), 'dark');
     await tester.tap(theme);
     await tester.pumpAndSettle();
-    expect(settings.controller.get(themeModeSetting), 'dark');
-    await tester.longPress(theme);
+    expect(settings.controller.get(themeModeSetting), 'light');
+    final hold = await tester.startGesture(tester.getCenter(theme));
+    await tester.pump(const Duration(milliseconds: 721));
+    await hold.up();
     await tester.pumpAndSettle();
     expect(settings.controller.get(themeModeSetting), 'system');
+  });
+
+  testWidgets('system dark theme toggles to light on the first tap', (
+    tester,
+  ) async {
+    await open(tester, brightness: Brightness.dark);
+    await tester.tap(find.byKey(const Key('onboarding-theme')));
+    await tester.pumpAndSettle();
+    expect(settings.controller.get(themeModeSetting), 'light');
   });
 
   testWidgets('language opens a sheet and keeps the current lesson in Arabic', (
