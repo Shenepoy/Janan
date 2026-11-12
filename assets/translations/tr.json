@@ -439,7 +439,7 @@
   "bloodPressure": "Kan basıncı",
   "measurements": "Ölçümler",
   "bluetoothMeasurements": "Bluetooth ölçümleri",
-  "onboardingFeaturesHint": "Neyi takip edeceğinizi seçin. Sonraki adımı seçimlerinize göre uyarlayacağız.",
+  "onboardingFeaturesHint": "Günlüğünüz için araçları seçin. Bunları istediğiniz zaman Ayarlar’dan değiştirebilirsiniz.",
   "onboardingShiftMissedHint": "Bir doz geciktiğinde daha sonraki hatırlatıcıları değiştirin. Bunu her hatırlatıcı için özelleştirebilirsiniz.",
   "bloodPressureDisabledHint": "Tansiyon takibi kapalı. Ayarlar > Özellikler bölümünden açabilirsiniz.",
   "preferredWeightUnit": "Tercih edilen ağırlık birimi",
@@ -586,7 +586,7 @@
   "onboardingReplay": "Janan nasıl kullanılır",
   "onboardingReplayHint": "Hızlı turu istediğiniz zaman tekrar oynatın",
   "onboardingWelcomeTitle": "Ölçümleriniz burada kalacak",
-  "onboardingWelcomeBody": "Bu cihazda tansiyonunuzu, kilonuzu ve ilaç dozlarınızı takip edin. Hesap veya bulut gerekmez. Sonraki adımda neyi takip edeceğinizi seçin, ardından etkinleştirdiğiniz araçları öğrenin.",
+  "onboardingWelcomeBody": "Sağlık günlüğünüz bu cihazda kalır. Hesap gerektirmeden ücretsiz, sınırsız çevrimdışı kullanım.",
   "onboardingAddTitle": "Saniyeler içinde ölçüm ekleyin",
   "onboardingAddBody": "Ölçümler’de artı işaretli kalbe dokunarak ölçüm ekleyin.\nCihazınızdaki sistolik ve diyastolik basıncı ve nabzı girin. Tarih ve saati kontrol edin.\nKaydet’e dokunun. Bluetooth ile içe aktarmak için önce cihazı Ayarlar > Cihazlar bölümünde eşleştirin.",
   "onboardingTrendsTitle": "Trendlerinizi takip edin",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Vücut tahminlerinizi kişiselleştirin",
   "bodyProfileAutoSave": "Bilgilerinizi bir kez girin. Değişiklikler bu cihaza otomatik olarak kaydedilir.",
   "bodyProfileDetails": "Bilgileriniz",
-  "bodyProfileEstimates": "Vücut bileşimi"
+  "bodyProfileEstimates": "Vücut bileşimi",
+  "onboardingContinueOffline": "Çevrimdışı devam et",
+  "onboardingPlusRequirement": "Çevrimiçi özellikler etkin bir Janan Plus aboneliği gerektirir.",
+  "onboardingAddBodyWeb": "Ölçümler’de artı işaretli kalbe dokunarak ölçüm ekleyin.\nCihazınızdaki sistolik ve diyastolik basıncı ve nabzı girin. Tarih ve saati kontrol edin.\nKaydet",
+  "onboardingMedicineBodyWeb": "İlaç zamanlayıcısından veya Ayarlar’dan İlaçlar’ı açın.\nBir ilaç ekleyip normal dozunu ve saatlerini ayarlayın. Dozlarınızı uygulamada kontrol edin.\nDozu aldıktan sonra alındı olarak işaretleyin. Hatırlatıcı tek başına doz alımını kaydetmez.",
+  "onboardingConnect": "Bağlan",
+  "onboardingSignIn": "Giriş yap",
+  "onboardingCreateAccount": "Hesap oluştur"
 }

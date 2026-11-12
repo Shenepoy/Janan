@@ -439,7 +439,7 @@
   "bloodPressure": "Pressione arteriosa",
   "measurements": "Misurazioni",
   "bluetoothMeasurements": "Misurazioni Bluetooth",
-  "onboardingFeaturesHint": "Scegli cosa monitorare. Adatteremo il passaggio successivo alle tue scelte.",
+  "onboardingFeaturesHint": "Scegli gli strumenti per il tuo diario. Puoi modificarli nelle Impostazioni in qualsiasi momento.",
   "onboardingShiftMissedHint": "Sposta in seguito ricorda quando una dose è in ritardo. Puoi personalizzarlo per ciascun promemoria.",
   "bloodPressureDisabledHint": "Il monitoraggio della pressione sanguigna è disattivato. Attivalo da Impostazioni > Funzioni.",
   "preferredWeightUnit": "Unità di peso preferita",
@@ -586,7 +586,7 @@
   "onboardingReplay": "Come usare Janan",
   "onboardingReplayHint": "Riproduci il tour veloce in qualsiasi momento",
   "onboardingWelcomeTitle": "Le tue misure restano qui",
-  "onboardingWelcomeBody": "Registra pressione, peso e dosi dei medicinali su questo dispositivo. Senza account né cloud. Scegli cosa seguire nel prossimo passaggio, poi scopri gli strumenti attivati.",
+  "onboardingWelcomeBody": "Il tuo diario della salute resta su questo dispositivo. Uso offline gratuito e illimitato, senza account.",
   "onboardingAddTitle": "Aggiungi una misurazione in pochi secondi",
   "onboardingAddBody": "In Misurazioni, tocca il cuore con il più per aggiungere una lettura.\nCopia pressione sistolica, diastolica e frequenza cardiaca dal misuratore. Controlla data e ora.\nTocca Salva. Per importare via Bluetooth, associa prima il misuratore in Impostazioni > Dispositivi.",
   "onboardingTrendsTitle": "Segui le tue tendenze",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Personalizza le stime corporee",
   "bodyProfileAutoSave": "Inserisci i tuoi dati una volta. Le modifiche vengono salvate automaticamente su questo dispositivo.",
   "bodyProfileDetails": "I tuoi dati",
-  "bodyProfileEstimates": "Composizione corporea"
+  "bodyProfileEstimates": "Composizione corporea",
+  "onboardingContinueOffline": "Continua offline",
+  "onboardingPlusRequirement": "Le funzioni online richiedono un abbonamento Janan Plus attivo.",
+  "onboardingAddBodyWeb": "In Misurazioni, tocca il cuore con il più per aggiungere una lettura.\nCopia pressione sistolica, diastolica e frequenza cardiaca dal misuratore. Controlla data e ora.\nSalva",
+  "onboardingMedicineBodyWeb": "Apri Farmaci dal timer dei farmaci o dalle Impostazioni.\nAggiungi un farmaco e imposta la dose e gli orari abituali. Controlla le assunzioni nell’app.\nSegna una dose come assunta dopo averla presa. Un promemoria da solo non registra un’assunzione.",
+  "onboardingConnect": "Connessione",
+  "onboardingSignIn": "Accedi",
+  "onboardingCreateAccount": "Crea account"
 }

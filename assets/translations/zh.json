@@ -439,7 +439,7 @@
   "bloodPressure": "血压",
   "measurements": "测量",
   "bluetoothMeasurements": "蓝牙测量",
-  "onboardingFeaturesHint": "选择要记录的项目。下一步会根据你的选择显示相关设置。",
+  "onboardingFeaturesHint": "选择记录所需的功能。你可以随时在设置中更改。",
   "onboardingShiftMissedHint": "当服药延迟时，转移稍后提醒。您可以为每个提醒进行自定义。",
   "bloodPressureDisabledHint": "血压跟踪已关闭。请在“设置 > 功能”中启用。",
   "preferredWeightUnit": "首选体重单位",
@@ -586,7 +586,7 @@
   "onboardingReplay": "如何使用贾南",
   "onboardingReplayHint": "随时重播快速浏览",
   "onboardingWelcomeTitle": "您的测量结果留在这里",
-  "onboardingWelcomeBody": "在本设备上记录血压、体重和用药情况。无需账号或云端。在下一步选择要记录的项目，然后了解已启用功能的用法。",
+  "onboardingWelcomeBody": "健康记录保存在此设备上。免费、无限制地离线使用，无需账号。",
   "onboardingAddTitle": "在几秒钟内添加测量值",
   "onboardingAddBody": "在测量页面，点击带加号的心形图标添加读数。\n输入血压计上的收缩压、舒张压和脉搏，并检查日期和时间。\n点击保存。如需通过蓝牙导入，请先在设置 > 设备中配对血压计。",
   "onboardingTrendsTitle": "跟随您的趋势",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "个性化身体估算",
   "bodyProfileAutoSave": "只需输入一次个人信息。更改会自动保存在此设备上。",
   "bodyProfileDetails": "个人信息",
-  "bodyProfileEstimates": "身体成分"
+  "bodyProfileEstimates": "身体成分",
+  "onboardingContinueOffline": "离线继续",
+  "onboardingPlusRequirement": "在线功能需要有效的 Janan Plus 订阅。",
+  "onboardingAddBodyWeb": "在测量页面，点击带加号的心形图标添加读数。\n输入血压计上的收缩压、舒张压和脉搏，并检查日期和时间。\n保存",
+  "onboardingMedicineBodyWeb": "从用药计时器或设置中打开药物页面。\n添加药物，设置平时的剂量和时间。在应用中查看服药安排。\n服药后再标记为已服用。提醒本身不会记录服药。",
+  "onboardingConnect": "连接",
+  "onboardingSignIn": "登录",
+  "onboardingCreateAccount": "创建账号"
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:blood_pressure_app/config.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_palette.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
@@ -10,7 +12,9 @@ import 'package:material_ui/material_ui.dart';
 
 /// Inviting tracking choices; detailed reminder behavior belongs in Settings.
 class OnboardingFeatureSetup extends ConsumerWidget {
-  const OnboardingFeatureSetup({super.key});
+  const OnboardingFeatureSetup({super.key, this.onCustomize});
+
+  final VoidCallback? onCustomize;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,91 +57,69 @@ class OnboardingFeatureSetup extends ConsumerWidget {
           change: ref.setBluetoothMeasurementsEnabled,
         ),
     ];
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 660),
-          child: Column(
-            children: [
-              ExcludeSemantics(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 660,
+              minHeight: math.max(0, constraints.maxHeight - 16),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'featuresSetting'.tr(),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'onboardingFeaturesHint'.tr(),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    height: 1.3,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                LayoutBuilder(
+                  builder: (context, constraints) => Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
                     children: [
-                      for (final (index, choice) in choices.indexed)
-                        Transform.translate(
-                          offset: Offset(0, index.isEven ? -5 : 5),
-                          child: Transform.rotate(
-                            angle: index.isEven ? -.08 : .08,
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 5),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: onboardingPalette(
-                                  theme,
-                                  choice.page,
-                                ).primaryContainer,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Icon(
-                                choice.icon,
-                                size: 26,
-                                color: onboardingPalette(
-                                  theme,
-                                  choice.page,
-                                ).primary,
-                              ),
-                            ),
+                      for (final choice in choices)
+                        SizedBox(
+                          width: constraints.maxWidth >= 620
+                              ? (constraints.maxWidth - 12) / 2
+                              : constraints.maxWidth,
+                          child: _choice(
+                            context,
+                            palette: onboardingPalette(theme, choice.page),
+                            key: choice.key,
+                            title: choice.title.tr(),
+                            icon: choice.icon,
+                            selected: choice.value,
+                            onChanged: choice.change,
                           ),
                         ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'featuresSetting'.tr(),
-                style: theme.textTheme.headlineLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'onboardingFeaturesHint'.tr(),
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  height: 1.5,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              LayoutBuilder(
-                builder: (context, constraints) => Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    for (final choice in choices)
-                      SizedBox(
-                        width: constraints.maxWidth >= 620
-                            ? (constraints.maxWidth - 12) / 2
-                            : constraints.maxWidth,
-                        child: _choice(
-                          context,
-                          palette: onboardingPalette(theme, choice.page),
-                          key: choice.key,
-                          title: choice.title.tr(),
-                          icon: choice.icon,
-                          selected: choice.value,
-                          onChanged: choice.change,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
+                if (onCustomize != null) ...[
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    key: const Key('onboarding-customize'),
+                    onPressed: onCustomize,
+                    icon: const Icon(Icons.tune_rounded),
+                    label: Text('onboardingPreferencesTitle'.tr()),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -177,22 +159,22 @@ class OnboardingFeatureSetup extends ConsumerWidget {
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
         child: SwitchListTile(
+          visualDensity: const VisualDensity(vertical: -2),
           key: Key('onboarding-feature-$key'),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 10,
+            vertical: 0,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
           title: Text(
             title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           secondary: Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: palette.primaryContainer,
               borderRadius: BorderRadius.circular(16),

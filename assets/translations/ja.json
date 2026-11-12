@@ -471,7 +471,7 @@
   "bloodPressure": "血圧",
   "measurements": "測定記録",
   "bluetoothMeasurements": "Bluetooth の測定値",
-  "onboardingFeaturesHint": "記録する項目を選んでください。次のステップでは選択に合った設定を表示します。",
+  "onboardingFeaturesHint": "記録に使う機能を選びましょう。設定からいつでも変更できます。",
   "onboardingShiftMissedHint": "服薬が遅れたときに、以降の通知を遅らせます。リマインダーごとに設定を変更できます。",
   "bloodPressureDisabledHint": "血圧の記録機能はオフです。「設定」>「機能」で有効にできます。",
   "preferredWeightUnit": "体重の表示単位",
@@ -624,7 +624,7 @@
   "onboardingReplay": "ジャナンの使い方",
   "onboardingReplayHint": "使い方のガイドをいつでも確認できます",
   "onboardingWelcomeTitle": "測定記録はこの端末に",
-  "onboardingWelcomeBody": "血圧、体重、服薬記録をこの端末で管理できます。アカウントやクラウドは不要です。次の画面で記録する項目を選び、有効にした機能の使い方を確認しましょう。",
+  "onboardingWelcomeBody": "健康記録はこの端末に保存されます。オフラインで無料・無制限に使えます。アカウントは不要です。",
   "onboardingAddTitle": "測定値をすばやく記録",
   "onboardingAddBody": "「測定記録」でプラス付きのハートをタップして測定値を追加します。\n測定機器の収縮期血圧、拡張期血圧、脈拍を入力し、日時を確認します。\n「保存」をタップします。Bluetoothで取り込む場合は、先に「設定」>「デバイス」で測定機器をペアリングします。",
   "onboardingTrendsTitle": "変化をグラフで確認",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "体の推定値を個人に合わせて調整",
   "bodyProfileAutoSave": "情報を一度入力すると、変更はこの端末に自動保存されます。",
   "bodyProfileDetails": "個人情報",
-  "bodyProfileEstimates": "体組成"
+  "bodyProfileEstimates": "体組成",
+  "onboardingContinueOffline": "オフラインで続ける",
+  "onboardingPlusRequirement": "オンライン機能には有効なJanan Plusの契約が必要です。",
+  "onboardingAddBodyWeb": "「測定記録」でプラス付きのハートをタップして測定値を追加します。\n測定機器の収縮期血圧、拡張期血圧、脈拍を入力し、日時を確認します。\n保存",
+  "onboardingMedicineBodyWeb": "薬のタイマーまたは設定から「薬」を開きます。\n薬を追加し、いつもの用量と時刻を設定します。服薬予定はアプリで確認できます。\n服用してから「服用済み」にします。通知だけでは服用は記録されません。",
+  "onboardingConnect": "接続",
+  "onboardingSignIn": "ログイン",
+  "onboardingCreateAccount": "アカウントを作成"
 }

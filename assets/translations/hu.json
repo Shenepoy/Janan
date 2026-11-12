@@ -439,7 +439,7 @@
   "bloodPressure": "Vérnyomás",
   "measurements": "Mérések",
   "bluetoothMeasurements": "Bluetooth-mérések",
-  "onboardingFeaturesHint": "Válassza ki, mit szeretne követni. A következő lépést a választásaihoz igazítjuk.",
+  "onboardingFeaturesHint": "Válassza ki a napló eszközeit. A Beállításokban bármikor módosíthatja őket.",
   "onboardingShiftMissedHint": "Változtassa át a későbbi emlékeztetőket, ha az adag késik. Ezt minden emlékeztetőhöz személyre szabhatja.",
   "bloodPressureDisabledHint": "A vérnyomás követése ki van kapcsolva. Kapcsold be a Beállítások > Funkciók részen.",
   "preferredWeightUnit": "Preferált súlyegység",
@@ -586,7 +586,7 @@
   "onboardingReplay": "A Janan használata",
   "onboardingReplayHint": "Bármikor lejátszhatja a gyors bemutatót",
   "onboardingWelcomeTitle": "A méréseid itt maradnak",
-  "onboardingWelcomeBody": "Kövesse vérnyomását, testsúlyát és gyógyszeradagjait ezen az eszközön. Fiók és felhő nélkül. A következő lépésben válassza ki, mit szeretne követni, majd ismerje meg a bekapcsolt eszközöket.",
+  "onboardingWelcomeBody": "Egészségnaplója ezen az eszközön marad. Ingyenes, korlátlan offline használat, fiók nélkül.",
   "onboardingAddTitle": "Adjon hozzá egy mérést másodpercben",
   "onboardingAddBody": "A Mérések részen érintse meg a pluszjeles szívet új mérés hozzáadásához.\nMásolja át a mérőről a szisztolés és diasztolés nyomást és a pulzust. Ellenőrizze a dátumot és időt.\nÉrintse meg a Mentést. Bluetooth-importáláshoz először párosítsa a mérőt a Beállítások > Eszközök alatt.",
   "onboardingTrendsTitle": "Kövesse a trendjeit",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Személyre szabott testösszetétel-becslések",
   "bodyProfileAutoSave": "Add meg egyszer az adataidat. A változtatásokat az eszköz automatikusan menti.",
   "bodyProfileDetails": "Adataid",
-  "bodyProfileEstimates": "Testösszetétel"
+  "bodyProfileEstimates": "Testösszetétel",
+  "onboardingContinueOffline": "Folytatás offline",
+  "onboardingPlusRequirement": "Az online funkciókhoz aktív Janan Plus-előfizetés szükséges.",
+  "onboardingAddBodyWeb": "A Mérések részen érintse meg a pluszjeles szívet új mérés hozzáadásához.\nMásolja át a mérőről a szisztolés és diasztolés nyomást és a pulzust. Ellenőrizze a dátumot és időt.\nMentés",
+  "onboardingMedicineBodyWeb": "Nyissa meg a Gyógyszerek részt a gyógyszeridőzítőből vagy a Beállításokból.\nAdjon hozzá gyógyszert a szokásos adaggal és időpontokkal. Kövesse az adagokat az alkalmazásban.\nBevétel után jelölje az adagot bevettként. Az emlékeztető önmagában nem rögzít bevételt.",
+  "onboardingConnect": "Kapcsolódás",
+  "onboardingSignIn": "Bejelentkezés",
+  "onboardingCreateAccount": "Fiók létrehozása"
 }

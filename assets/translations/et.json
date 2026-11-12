@@ -439,7 +439,7 @@
   "bloodPressure": "Vererõhk",
   "measurements": "Mõõtmised",
   "bluetoothMeasurements": "Bluetoothi mõõtmised",
-  "onboardingFeaturesHint": "Vali, mida soovid jälgida. Järgmine samm kohandub sinu valikutega.",
+  "onboardingFeaturesHint": "Vali oma päeviku tööriistad. Saad neid igal ajal seadetes muuta.",
   "onboardingShiftMissedHint": "Kui annus hilineb, muutke hilisemaid meeldetuletusi. Saate seda iga meeldetuletuse jaoks kohandada.",
   "bloodPressureDisabledHint": "Vererõhu jälgimine on välja lülitatud. Lülita see sisse jaotises Seaded > Funktsioonid.",
   "preferredWeightUnit": "Eelistatud kaaluühik",
@@ -586,7 +586,7 @@
   "onboardingReplay": "Janani kasutamine",
   "onboardingReplayHint": "Esitage kiirringkäiku igal ajal uuesti",
   "onboardingWelcomeTitle": "Teie mõõdud jäävad siia",
-  "onboardingWelcomeBody": "Jälgi vererõhku, kaalu ja ravimiannuseid selles seadmes. Kontot ega pilve pole vaja. Vali järgmisena, mida jälgida, ja õpi kasutama lubatud tööriistu.",
+  "onboardingWelcomeBody": "Tervisepäevik jääb sellesse seadmesse. Tasuta ja piiramatu võrguühenduseta kasutus, ilma kontota.",
   "onboardingAddTitle": "Lisage mõõtmine sekundites",
   "onboardingAddBody": "Mõõtmise lisamiseks puuduta Mõõtmiste all plussmärgiga südant.\nSisesta mõõturilt süstoolne ja diastoolne rõhk ning pulss. Kontrolli kuupäeva ja kellaaega.\nPuuduta Salvesta. Bluetoothi kaudu importimiseks seo mõõtur esmalt jaotises Seaded > Seadmed.",
   "onboardingTrendsTitle": "Järgige oma suundumusi",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Kohanda oma kehakoostise hinnanguid",
   "bodyProfileAutoSave": "Sisesta oma andmed üks kord. Muudatused salvestatakse selles seadmes automaatselt.",
   "bodyProfileDetails": "Sinu andmed",
-  "bodyProfileEstimates": "Kehakoostis"
+  "bodyProfileEstimates": "Kehakoostis",
+  "onboardingContinueOffline": "Jätka võrguühenduseta",
+  "onboardingPlusRequirement": "Veebifunktsioonid nõuavad aktiivset Janan Plusi tellimust.",
+  "onboardingAddBodyWeb": "Mõõtmise lisamiseks puuduta Mõõtmiste all plussmärgiga südant.\nSisesta mõõturilt süstoolne ja diastoolne rõhk ning pulss. Kontrolli kuupäeva ja kellaaega.\nSalvesta",
+  "onboardingMedicineBodyWeb": "Ava Ravimid ravimitaimeri või Seadete kaudu.\nLisa ravim ning määra tavapärane annus ja kellaajad. Vaata annuseid rakenduses.\nMärgi annus võetuks pärast selle võtmist. Meeldetuletus üksi ei salvesta ravimi võtmist.",
+  "onboardingConnect": "Ühendamine",
+  "onboardingSignIn": "Logi sisse",
+  "onboardingCreateAccount": "Loo konto"
 }

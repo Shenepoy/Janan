@@ -471,7 +471,7 @@
   "bloodPressure": "Blood pressure",
   "measurements": "Measurements",
   "bluetoothMeasurements": "Bluetooth measurements",
-  "onboardingFeaturesHint": "Choose what you want to track. We'll tailor the next step to your choices.",
+  "onboardingFeaturesHint": "Choose the tools for your diary. You can change these in Settings any time.",
   "onboardingShiftMissedHint": "Shift later reminders when a dose is late. You can customize this for each reminder.",
   "bloodPressureDisabledHint": "Blood pressure is turned off. Enable it in Settings > Features.",
   "preferredWeightUnit": "Preferred weight unit",
@@ -624,7 +624,7 @@
   "onboardingReplay": "How to use Janan",
   "onboardingReplayHint": "Replay the quick tour any time",
   "onboardingWelcomeTitle": "Your readings stay here",
-  "onboardingWelcomeBody": "Track blood pressure, weight, and medication doses on this device. No account, no cloud. Choose what to track next, then learn the tools you enabled.",
+  "onboardingWelcomeBody": "Your health diary stays on this device. Free, unlimited offline use. No account required.",
   "onboardingAddTitle": "Add a reading in seconds",
   "onboardingAddBody": "In Measurements, tap the heart with a plus to add a reading.\nCopy the systolic, diastolic, and pulse values from your meter. Check the date and time.\nTap Save. For Bluetooth imports, first pair your meter in Settings > Devices.",
   "onboardingTrendsTitle": "Follow your trends",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Personalize your body estimates",
   "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
   "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileEstimates": "Body composition",
+  "onboardingContinueOffline": "Continue offline",
+  "onboardingPlusRequirement": "Online features require an active Janan Plus subscription.",
+  "onboardingAddBodyWeb": "In Measurements, tap the heart with a plus to add a reading.\nCopy the systolic, diastolic, and pulse values from your meter. Check the date and time.\nSave",
+  "onboardingMedicineBodyWeb": "Open Medications from the medicine timer or Settings.\nAdd a medicine and set its usual dose and times. Review your doses in the app.\nMark a dose taken after you take it. A reminder alone does not record a dose.",
+  "onboardingConnect": "Connect",
+  "onboardingSignIn": "Sign In",
+  "onboardingCreateAccount": "Create account"
 }

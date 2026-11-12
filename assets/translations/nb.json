@@ -439,7 +439,7 @@
   "bloodPressure": "Blodtrykk",
   "measurements": "Målinger",
   "bluetoothMeasurements": "Bluetooth-målinger",
-  "onboardingFeaturesHint": "Velg hva du vil følge. Vi tilpasser neste trinn til valgene dine.",
+  "onboardingFeaturesHint": "Velg verktøyene for dagboken din. Du kan endre dem i Innstillinger når som helst.",
   "onboardingShiftMissedHint": "Skift senere påminnelser når en dose er forsinket. Du kan tilpasse dette for hver påminnelse.",
   "bloodPressureDisabledHint": "Blodtrykksmåling er slått av. Slå den på under Innstillinger > Funksjoner.",
   "preferredWeightUnit": "Foretrukket vektenhet",
@@ -586,7 +586,7 @@
   "onboardingReplay": "Slik bruker du Janan",
   "onboardingReplayHint": "Spill hurtigturen på nytt når som helst",
   "onboardingWelcomeTitle": "Målingene dine blir her",
-  "onboardingWelcomeBody": "Følg blodtrykk, vekt og medisindoser på denne enheten. Uten konto eller nettsky. Velg hva du vil følge i neste trinn, og lær å bruke verktøyene du aktiverer.",
+  "onboardingWelcomeBody": "Helsedagboken din lagres på denne enheten. Gratis og ubegrenset bruk uten nett, uten konto.",
   "onboardingAddTitle": "Legg til en måling på sekunder",
   "onboardingAddBody": "I Målinger trykker du på hjertet med pluss for å legge til en måling.\nKopier systolisk og diastolisk trykk og puls fra måleren. Kontroller dato og klokkeslett.\nTrykk Lagre. For Bluetooth-import kobler du først til måleren under Innstillinger > Enheter.",
   "onboardingTrendsTitle": "Følg trendene dine",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Tilpass kroppsberegningene dine",
   "bodyProfileAutoSave": "Legg inn opplysningene dine én gang. Endringer lagres automatisk på denne enheten.",
   "bodyProfileDetails": "Dine opplysninger",
-  "bodyProfileEstimates": "Kroppssammensetning"
+  "bodyProfileEstimates": "Kroppssammensetning",
+  "onboardingContinueOffline": "Fortsett uten nett",
+  "onboardingPlusRequirement": "Nettfunksjoner krever et aktivt Janan Plus-abonnement.",
+  "onboardingAddBodyWeb": "I Målinger trykker du på hjertet med pluss for å legge til en måling.\nKopier systolisk og diastolisk trykk og puls fra måleren. Kontroller dato og klokkeslett.\nLagre",
+  "onboardingMedicineBodyWeb": "Åpne Medisiner fra medisintimeren eller Innstillinger.\nLegg til en medisin med vanlig dose og tidspunkt. Se dosene dine i appen.\nMarker dosen som tatt etter at du har tatt den. En påminnelse alene registrerer ikke en dose.",
+  "onboardingConnect": "Koble til",
+  "onboardingSignIn": "Logg inn",
+  "onboardingCreateAccount": "Opprett konto"
 }

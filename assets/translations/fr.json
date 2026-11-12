@@ -439,7 +439,7 @@
   "bloodPressure": "Pression artérielle",
   "measurements": "Mesures",
   "bluetoothMeasurements": "Mesures Bluetooth",
-  "onboardingFeaturesHint": "Choisissez ce que vous souhaitez suivre. Nous adapterons l’étape suivante à vos choix.",
+  "onboardingFeaturesHint": "Choisissez les outils de votre carnet. Vous pourrez les modifier dans les paramètres.",
   "onboardingShiftMissedHint": "Décalez les rappels plus tard lorsqu’une dose est en retard. Vous pouvez personnaliser cela pour chaque rappel.",
   "bloodPressureDisabledHint": "Le suivi de la tension artérielle est désactivé. Activez-le dans Paramètres > Fonctionnalités.",
   "preferredWeightUnit": "Unité de poids préférée",
@@ -586,7 +586,7 @@
   "onboardingReplay": "Comment utiliser Janan",
   "onboardingReplayHint": "Rejouez la visite guidée à tout moment",
   "onboardingWelcomeTitle": "Vos mesures restent ici",
-  "onboardingWelcomeBody": "Suivez votre tension, votre poids et vos prises de médicaments sur cet appareil. Sans compte ni cloud. Choisissez quoi suivre à la prochaine étape, puis découvrez les outils activés.",
+  "onboardingWelcomeBody": "Votre carnet de santé reste sur cet appareil. Utilisation hors ligne gratuite et illimitée, sans compte.",
   "onboardingAddTitle": "Ajouter une mesure en quelques secondes",
   "onboardingAddBody": "Dans Mesures, touchez le cœur avec un plus pour ajouter une mesure.\nRecopiez les pressions systolique et diastolique et le pouls de votre appareil. Vérifiez la date et l’heure.\nTouchez Enregistrer. Pour importer par Bluetooth, associez d’abord votre appareil dans Paramètres > Appareils.",
   "onboardingTrendsTitle": "Suivez vos tendances",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Personnalisez vos estimations corporelles",
   "bodyProfileAutoSave": "Saisissez vos informations une seule fois. Les modifications sont enregistrées automatiquement sur cet appareil.",
   "bodyProfileDetails": "Vos informations",
-  "bodyProfileEstimates": "Composition corporelle"
+  "bodyProfileEstimates": "Composition corporelle",
+  "onboardingContinueOffline": "Continuer hors ligne",
+  "onboardingPlusRequirement": "Les fonctions en ligne nécessitent un abonnement Janan Plus actif.",
+  "onboardingAddBodyWeb": "Dans Mesures, touchez le cœur avec un plus pour ajouter une mesure.\nRecopiez les pressions systolique et diastolique et le pouls de votre appareil. Vérifiez la date et l’heure.\nEnregistrer",
+  "onboardingMedicineBodyWeb": "Ouvrez Médicaments depuis le minuteur de médicaments ou les Paramètres.\nAjoutez un médicament et indiquez la dose et les horaires habituels. Consultez vos prises dans l’application.\nMarquez une dose comme prise après l’avoir prise. Un rappel seul n’enregistre pas une prise.",
+  "onboardingConnect": "Connexion",
+  "onboardingSignIn": "Se connecter",
+  "onboardingCreateAccount": "Créer un compte"
 }

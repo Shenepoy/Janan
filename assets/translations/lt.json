@@ -439,7 +439,7 @@
   "bloodPressure": "Kraujospūdis",
   "measurements": "Matavimai",
   "bluetoothMeasurements": "Bluetooth matavimai",
-  "onboardingFeaturesHint": "Pasirinkite, ką norite sekti. Kitą žingsnį pritaikysime pagal jūsų pasirinkimą.",
+  "onboardingFeaturesHint": "Pasirinkite dienoraščio įrankius. Juos bet kada galite pakeisti nustatymuose.",
   "onboardingShiftMissedHint": "Perkelkite vėlesnius priminimus, kai dozė vėluojama. Galite tinkinti tai kiekvienam priminimui.",
   "bloodPressureDisabledHint": "Kraujospūdžio stebėjimas išjungtas. Įjunkite jį skiltyje Nustatymai > Funkcijos.",
   "preferredWeightUnit": "Pageidaujamas svorio vienetas",
@@ -586,7 +586,7 @@
   "onboardingReplay": "Kaip naudotis Janan",
   "onboardingReplayHint": "Pakartokite greitą apžvalgą bet kuriuo metu",
   "onboardingWelcomeTitle": "Jūsų išmatavimai lieka čia",
-  "onboardingWelcomeBody": "Sekite kraujospūdį, svorį ir vaistų dozes šiame įrenginyje. Be paskyros ir debesijos. Kitame žingsnyje pasirinkite, ką stebėti, tada susipažinkite su įjungtais įrankiais.",
+  "onboardingWelcomeBody": "Sveikatos dienoraštis lieka šiame įrenginyje. Nemokamas, neribotas naudojimas neprisijungus, be paskyros.",
   "onboardingAddTitle": "Pridėkite matavimą sekundėmis",
   "onboardingAddBody": "Matavimuose bakstelėkite širdį su pliusu, kad pridėtumėte matavimą.\nNukopijuokite sistolinį ir diastolinį spaudimą bei pulsą iš matuoklio. Patikrinkite datą ir laiką.\nBakstelėkite Išsaugoti. Norėdami importuoti per Bluetooth, pirma susiekite matuoklį Nustatymai > Įrenginiai.",
   "onboardingTrendsTitle": "Sekite savo tendencijas",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Pritaikykite kūno sudėties įverčius",
   "bodyProfileAutoSave": "Įveskite savo duomenis vieną kartą. Pakeitimai automatiškai išsaugomi šiame įrenginyje.",
   "bodyProfileDetails": "Jūsų duomenys",
-  "bodyProfileEstimates": "Kūno sudėtis"
+  "bodyProfileEstimates": "Kūno sudėtis",
+  "onboardingContinueOffline": "Tęsti neprisijungus",
+  "onboardingPlusRequirement": "Internetinėms funkcijoms reikia aktyvios „Janan Plus“ prenumeratos.",
+  "onboardingAddBodyWeb": "Matavimuose bakstelėkite širdį su pliusu, kad pridėtumėte matavimą.\nNukopijuokite sistolinį ir diastolinį spaudimą bei pulsą iš matuoklio. Patikrinkite datą ir laiką.\nIšsaugoti",
+  "onboardingMedicineBodyWeb": "Atverkite Vaistus per vaistų laikmatį arba Nustatymus.\nPridėkite vaistą, nustatykite įprastą dozę ir laiką. Peržiūrėkite dozes programėlėje.\nPažymėkite dozę kaip išgertą tik ją išgėrę. Vien priminimas neužregistruoja vartojimo.",
+  "onboardingConnect": "Prisijungimas",
+  "onboardingSignIn": "Prisijungti",
+  "onboardingCreateAccount": "Sukurti paskyrą"
 }

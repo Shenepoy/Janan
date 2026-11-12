@@ -1,9 +1,9 @@
 import 'dart:ui' as ui;
 
-import 'package:blood_pressure_app/config.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_appearance_controls.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_backdrop.dart';
+import 'package:blood_pressure_app/features/onboarding/onboarding_connection_provider.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_feature_preferences.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_feature_setup.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_footer.dart';
@@ -16,8 +16,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:safaeh/safaeh.dart';
 
-const _featurePage = 1;
+const _lessons = [0, 1, 4, 2, 3];
+const _featurePage = 5;
 
 /// A replayable walkthrough of recording, reviewing, and tracking health data.
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -61,25 +63,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     super.dispose();
   }
 
-  List<int> get _lessonPages {
-    final settings = ref.read(appSettingsProvider);
-    return [
-      if (settings.bloodPressureEnabled) 1,
-      if (settings.weightInput) 4,
-      if (settings.bloodPressureEnabled) 2,
-      if (settings.medicineFeatureEnabled) 3,
-    ];
-  }
+  bool get _hasConnection =>
+      widget.firstRun && ref.read(onboardingConnectionProvider) != null;
 
-  bool get _hasPreferences {
-    final settings = ref.read(appSettingsProvider);
-    return settings.bloodPressureEnabled ||
-        settings.weightInput ||
-        settings.medicineFeatureEnabled ||
-        isPlatformSupportedBluetooth && settings.bluetoothMeasurementsEnabled;
-  }
-
-  int get _pageCount => 2 + _lessonPages.length + (_hasPreferences ? 1 : 0);
+  int get _pageCount => _featurePage + 1 + (_hasConnection ? 1 : 0);
 
   bool get _onLastPage => _page >= _pageCount - 1;
 
@@ -96,7 +83,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   }
 
   /// Complete once, leaving one diary underneath an optional first task.
-  Future<void> _finish({String destination = '/'}) async {
+  Future<void> _finish({WidgetBuilder? nextPage}) async {
     if (_finishing) return;
     final firstRun = widget.firstRun;
     setState(() => _finishing = true);
@@ -116,7 +103,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       if (!mounted) return;
       if (firstRun) {
         Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
-        if (destination != '/') Navigator.pushNamed(context, destination);
+        if (nextPage != null) {
+          Navigator.push(context, MaterialPageRoute<void>(builder: nextPage));
+        }
       } else {
         Navigator.pop(context);
       }
@@ -200,24 +189,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(appSettingsProvider);
-    final lessons = _lessonPages;
-    final lessonIndex = _page - 2;
-    final backdropPage = lessonIndex >= 0 && lessonIndex < lessons.length
-        ? lessons[lessonIndex]
-        : 0;
-    final (actionLabel, destination) = settings.bloodPressureEnabled
-        ? ('addMeasurement', '/add')
-        : settings.weightInput
-        ? ('onboardingAddWeight', '/add-weight')
-        : settings.medicineFeatureEnabled
-        ? ('reminderSetupHint', '/medications')
-        : ('onboardingHome', '/');
+    final connection = widget.firstRun
+        ? ref.watch(onboardingConnectionProvider)
+        : null;
+    final backdropPage = _page < _lessons.length ? _lessons[_page] : 0;
     final nextLabel = !_onLastPage
         ? 'onboardingNext'
-        : widget.firstRun
-        ? actionLabel
-        : 'onboardingDone';
+        : !widget.firstRun
+        ? 'onboardingDone'
+        : connection != null
+        ? 'onboardingContinueOffline'
+        : 'onboardingHome';
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -254,17 +236,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                                 vertical: 4,
                               ),
                               child: widget.firstRun
-                                  ? (_page == _featurePage || _onLastPage
+                                  ? (_page >= _featurePage
                                         ? const SizedBox(height: 48)
                                         : TextButton(
                                             key: const Key('onboarding-skip'),
                                             onPressed: _finishing
                                                 ? null
-                                                : () => _goTo(
-                                                    _page == 0
-                                                        ? _featurePage
-                                                        : _pageCount - 1,
-                                                  ),
+                                                : () => _goTo(_featurePage),
                                             child: Text('onboardingSkip'.tr()),
                                           ))
                                   : IconButton(
@@ -282,24 +260,28 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                             onPageChanged: (page) =>
                                 setState(() => _page = page),
                             children: [
-                              OnboardingLesson(page: 0, active: _page == 0),
-                              const OnboardingFeatureSetup(),
-                              for (final (index, lesson) in lessons.indexed)
+                              for (final (index, lesson) in _lessons.indexed)
                                 OnboardingLesson(
                                   key: ValueKey('onboarding-lesson-$lesson'),
                                   page: lesson,
-                                  active: _page == index + 2,
+                                  active: _page == index,
                                 ),
-                              if (_hasPreferences)
-                                OnboardingFeaturePreferences(
-                                  onAdjustFeatures: () => _goTo(_featurePage),
-                                  onGoHome:
-                                      widget.firstRun &&
-                                          destination != '/' &&
-                                          !_finishing
-                                      ? _finish
-                                      : null,
+                              OnboardingFeatureSetup(
+                                onCustomize: () => showSafaeh<void>(
+                                  context: context,
+                                  title: 'onboardingPreferencesTitle'.tr(),
+                                  maxWidth: 660,
+                                  dialogMaxWidth: 660,
+                                  maxHeight:
+                                      MediaQuery.sizeOf(context).height * .9,
+                                  child: OnboardingFeaturePreferences(
+                                    onAdjustFeatures: () =>
+                                        Navigator.pop(context),
+                                  ),
                                 ),
+                              ),
+                              if (connection != null)
+                                connection(context, _finish),
                             ],
                           ),
                         ),
@@ -312,7 +294,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                           onBack: () => _goTo(_page - 1),
                           onNext: () {
                             if (_onLastPage) {
-                              _finish(destination: destination);
+                              _finish();
                             } else {
                               _goTo(_page + 1);
                             }

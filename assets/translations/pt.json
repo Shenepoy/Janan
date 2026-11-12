@@ -439,7 +439,7 @@
   "bloodPressure": "Tensão arterial",
   "measurements": "Medições",
   "bluetoothMeasurements": "Medições por Bluetooth",
-  "onboardingFeaturesHint": "Escolha o que pretende acompanhar. Adaptaremos o próximo passo às suas escolhas.",
+  "onboardingFeaturesHint": "Escolha as ferramentas do seu diário. Pode alterá-las nas Definições a qualquer momento.",
   "onboardingShiftMissedHint": "Mude os lembretes posteriores quando uma dose estiver atrasada. Pode personalizar isso para cada lembrete.",
   "bloodPressureDisabledHint": "O acompanhamento da pressão arterial está desativado. Ative-o em Definições > Funcionalidades.",
   "preferredWeightUnit": "Medida de peso preferida",
@@ -586,7 +586,7 @@
   "onboardingReplay": "Como utilizar o Janan",
   "onboardingReplayHint": "Repita o tour rápido a qualquer momento",
   "onboardingWelcomeTitle": "As suas medidas ficam aqui",
-  "onboardingWelcomeBody": "Registe a tensão arterial, o peso e as doses de medicamentos neste dispositivo. Sem conta nem nuvem. Escolha o que pretende acompanhar no próximo passo e conheça as ferramentas ativadas.",
+  "onboardingWelcomeBody": "O seu diário de saúde fica neste dispositivo. Utilização offline gratuita e ilimitada, sem conta.",
   "onboardingAddTitle": "Adicione uma medição em segundos",
   "onboardingAddBody": "Em Medições, toque no coração com um mais para adicionar uma leitura.\nCopie a tensão sistólica, diastólica e a pulsação do aparelho. Verifique a data e a hora.\nToque em Guardar. Para importar por Bluetooth, emparelhe primeiro o aparelho em Definições > Dispositivos.",
   "onboardingTrendsTitle": "Siga as suas tendências",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Personalize as suas estimativas corporais",
   "bodyProfileAutoSave": "Introduza os seus dados uma vez. As alterações são guardadas automaticamente neste dispositivo.",
   "bodyProfileDetails": "Os seus dados",
-  "bodyProfileEstimates": "Composição corporal"
+  "bodyProfileEstimates": "Composição corporal",
+  "onboardingContinueOffline": "Continuar offline",
+  "onboardingPlusRequirement": "As funcionalidades online requerem uma subscrição Janan Plus ativa.",
+  "onboardingAddBodyWeb": "Em Medições, toque no coração com um mais para adicionar uma leitura.\nCopie a tensão sistólica, diastólica e a pulsação do aparelho. Verifique a data e a hora.\nSalvar",
+  "onboardingMedicineBodyWeb": "Abra Medicamentos a partir do temporizador de medicamentos ou das Definições.\nAdicione um medicamento e defina a dose e os horários habituais. Consulte as tomas na aplicação.\nMarque uma dose como tomada depois de a tomar. Um lembrete, por si só, não regista uma toma.",
+  "onboardingConnect": "Ligação",
+  "onboardingSignIn": "Iniciar sessão",
+  "onboardingCreateAccount": "Criar conta"
 }

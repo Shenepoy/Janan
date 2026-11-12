@@ -439,7 +439,7 @@
   "bloodPressure": "Blutdruck",
   "measurements": "Messungen",
   "bluetoothMeasurements": "Bluetooth-Messungen",
-  "onboardingFeaturesHint": "Wählen Sie, was Sie erfassen möchten. Der nächste Schritt passt sich Ihrer Auswahl an.",
+  "onboardingFeaturesHint": "Wähle die Werkzeuge für dein Tagebuch. Du kannst sie jederzeit in den Einstellungen ändern.",
   "onboardingShiftMissedHint": "Verspätete Dosen können spätere Erinnerungen verschieben. Sie können dies für jede Erinnerung festlegen.",
   "bloodPressureDisabledHint": "Die Blutdruckmessung ist ausgeschaltet. Aktivieren Sie sie unter Einstellungen > Funktionen.",
   "preferredWeightUnit": "Bevorzugte Maßeinheit für Gewicht",
@@ -586,7 +586,7 @@
   "onboardingReplay": "So funktioniert Janan",
   "onboardingReplayHint": "Spielen Sie die Kurztour jederzeit noch einmal ab",
   "onboardingWelcomeTitle": "Ihre Messungen bleiben hier",
-  "onboardingWelcomeBody": "Erfassen Sie Blutdruck, Gewicht und Medikamenteneinnahmen auf diesem Gerät. Ohne Konto oder Cloud. Wählen Sie als Nächstes, was Sie erfassen möchten, und lernen Sie die aktivierten Werkzeuge kennen.",
+  "onboardingWelcomeBody": "Dein Gesundheitstagebuch bleibt auf diesem Gerät. Kostenlos und unbegrenzt offline nutzbar, ohne Konto.",
   "onboardingAddTitle": "Fügen Sie eine Messung in Sekunden hinzu",
   "onboardingAddBody": "Tippen Sie unter Messungen auf das Herz mit Plus, um eine Messung hinzuzufügen.\nÜbertragen Sie systolischen und diastolischen Druck sowie Puls vom Messgerät. Prüfen Sie Datum und Uhrzeit.\nTippen Sie auf Speichern. Koppeln Sie Ihr Gerät für Bluetooth-Importe zuerst unter Einstellungen > Geräte.",
   "onboardingTrendsTitle": "Folgen Sie Ihren Trends",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Passe deine Körperwerte-Schätzungen an",
   "bodyProfileAutoSave": "Gib deine Angaben einmal ein. Änderungen werden automatisch auf diesem Gerät gespeichert.",
   "bodyProfileDetails": "Deine Angaben",
-  "bodyProfileEstimates": "Körperzusammensetzung"
+  "bodyProfileEstimates": "Körperzusammensetzung",
+  "onboardingContinueOffline": "Offline fortfahren",
+  "onboardingPlusRequirement": "Online-Funktionen erfordern ein aktives Janan-Plus-Abonnement.",
+  "onboardingAddBodyWeb": "Tippen Sie unter Messungen auf das Herz mit Plus, um eine Messung hinzuzufügen.\nÜbertragen Sie systolischen und diastolischen Druck sowie Puls vom Messgerät. Prüfen Sie Datum und Uhrzeit.\nSpeichern",
+  "onboardingMedicineBodyWeb": "Öffnen Sie Medikamente über den Medikamententimer oder die Einstellungen.\nFüge ein Medikament mit der üblichen Dosis und den Einnahmezeiten hinzu. Prüfe deine Einnahmen in der App.\nMarkieren Sie eine Dosis nach der Einnahme als eingenommen. Eine Erinnerung allein erfasst keine Einnahme.",
+  "onboardingConnect": "Verbinden",
+  "onboardingSignIn": "Anmelden",
+  "onboardingCreateAccount": "Konto erstellen"
 }

@@ -439,7 +439,7 @@
   "bloodPressure": "Krvni tlak",
   "measurements": "Meritve",
   "bluetoothMeasurements": "Meritve Bluetooth",
-  "onboardingFeaturesHint": "Izberite, kaj želite spremljati. Naslednji korak bomo prilagodili vašim izbiram.",
+  "onboardingFeaturesHint": "Izberite orodja za svoj dnevnik. Kadar koli jih lahko spremenite v nastavitvah.",
   "onboardingShiftMissedHint": "Prestavite poznejše opomnike, ko odmerek zamuja. To lahko prilagodite za vsak opomnik.",
   "bloodPressureDisabledHint": "Spremljanje krvnega tlaka je izklopljeno. Vklopite ga v Nastavitve > Funkcije.",
   "preferredWeightUnit": "Želena enota teže",
@@ -586,7 +586,7 @@
   "onboardingReplay": "Kako uporabljati Janan",
   "onboardingReplayHint": "Kadar koli znova predvajajte hitro predstavitev",
   "onboardingWelcomeTitle": "Vaše mere ostanejo tukaj",
-  "onboardingWelcomeBody": "Spremljajte krvni tlak, težo in odmerke zdravil v tej napravi. Brez računa in oblaka. V naslednjem koraku izberite, kaj želite spremljati, nato spoznajte vklopljena orodja.",
+  "onboardingWelcomeBody": "Zdravstveni dnevnik ostane v tej napravi. Brezplačna, neomejena uporaba brez povezave in brez računa.",
   "onboardingAddTitle": "Dodajte meritev v nekaj sekundah",
   "onboardingAddBody": "V Meritvah tapnite srce s plusom, da dodate meritev.\nPrepišite sistolični in diastolični tlak ter utrip z merilnika. Preverite datum in uro.\nTapnite Shrani. Za uvoz prek Bluetootha najprej seznanite merilnik v Nastavitve > Naprave.",
   "onboardingTrendsTitle": "Sledite svojim trendom",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Prilagodite ocene telesne sestave",
   "bodyProfileAutoSave": "Svoje podatke vnesite enkrat. Spremembe se samodejno shranijo v tej napravi.",
   "bodyProfileDetails": "Vaši podatki",
-  "bodyProfileEstimates": "Telesna sestava"
+  "bodyProfileEstimates": "Telesna sestava",
+  "onboardingContinueOffline": "Nadaljuj brez povezave",
+  "onboardingPlusRequirement": "Spletne funkcije zahtevajo aktivno naročnino Janan Plus.",
+  "onboardingAddBodyWeb": "V Meritvah tapnite srce s plusom, da dodate meritev.\nPrepišite sistolični in diastolični tlak ter utrip z merilnika. Preverite datum in uro.\nShrani",
+  "onboardingMedicineBodyWeb": "Odprite Zdravila prek časovnika za zdravila ali Nastavitev.\nDodajte zdravilo ter nastavite običajni odmerek in ure. Odmerke spremljajte v aplikaciji.\nOznačite odmerek kot zaužit po zaužitju. Sam opomnik ne zabeleži zaužitja odmerka.",
+  "onboardingConnect": "Povezava",
+  "onboardingSignIn": "Prijava",
+  "onboardingCreateAccount": "Ustvari račun"
 }

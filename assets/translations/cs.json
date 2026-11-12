@@ -439,7 +439,7 @@
   "bloodPressure": "Krevní tlak",
   "measurements": "Měření",
   "bluetoothMeasurements": "Měření přes Bluetooth",
-  "onboardingFeaturesHint": "Vyberte, co chcete sledovat. Další krok přizpůsobíme vašemu výběru.",
+  "onboardingFeaturesHint": "Vyberte nástroje pro svůj deník. Kdykoli je můžete změnit v Nastavení.",
   "onboardingShiftMissedHint": "Posunout později připomenutí, když se dávka opozdí. Toto můžete přizpůsobit pro každé připomenutí.",
   "bloodPressureDisabledHint": "Sledování krevního tlaku je vypnuté. Zapněte ho v Nastavení > Funkce.",
   "preferredWeightUnit": "Preferovaná jednotka hmotnosti",
@@ -586,7 +586,7 @@
   "onboardingReplay": "Jak používat Janan",
   "onboardingReplayHint": "Přehrajte si rychlou prohlídku kdykoli",
   "onboardingWelcomeTitle": "Vaše míry zůstanou zde",
-  "onboardingWelcomeBody": "Sledujte krevní tlak, hmotnost a dávky léků v tomto zařízení. Bez účtu a cloudu. V dalším kroku vyberte, co chcete sledovat, a pak se naučte používat zapnuté nástroje.",
+  "onboardingWelcomeBody": "Zdravotní deník zůstává v tomto zařízení. Bezplatné a neomezené použití offline, bez účtu.",
   "onboardingAddTitle": "Přidejte měření v sekundách",
   "onboardingAddBody": "V Měřeních klepněte na srdce s plusem a přidejte měření.\nOpište systolický a diastolický tlak a puls z přístroje. Zkontrolujte datum a čas.\nKlepněte na Uložit. Pro import přes Bluetooth nejprve spárujte přístroj v Nastavení > Zařízení.",
   "onboardingTrendsTitle": "Sledujte své trendy",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Přizpůsobte odhady tělesného složení",
   "bodyProfileAutoSave": "Zadejte své údaje jednou. Změny se automaticky ukládají do tohoto zařízení.",
   "bodyProfileDetails": "Vaše údaje",
-  "bodyProfileEstimates": "Tělesné složení"
+  "bodyProfileEstimates": "Tělesné složení",
+  "onboardingContinueOffline": "Pokračovat offline",
+  "onboardingPlusRequirement": "Online funkce vyžadují aktivní předplatné Janan Plus.",
+  "onboardingAddBodyWeb": "V Měřeních klepněte na srdce s plusem a přidejte měření.\nOpište systolický a diastolický tlak a puls z přístroje. Zkontrolujte datum a čas.\nUložit",
+  "onboardingMedicineBodyWeb": "Otevřete Léky přes časovač léků nebo Nastavení.\nPřidejte lék a nastavte obvyklou dávku a časy. Dávky kontrolujte v aplikaci.\nDávku označte jako užitou až po užití. Samotná připomínka užití nezaznamená.",
+  "onboardingConnect": "Připojení",
+  "onboardingSignIn": "Přihlásit se",
+  "onboardingCreateAccount": "Vytvořit účet"
 }

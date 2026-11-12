@@ -76,3 +76,20 @@ at the same vertical position. Browser screenshots returned a blank Flutter
 canvas despite working semantic controls and no reported console errors, so
 visual acceptance here relies on widget-rendered captures, not a browser-pixel
 pass. No deployment or physical-device validation was performed.
+
+
+## Onboarding refresh (2026-11-12)
+
+The required tour now runs welcome, pressure, weight, trends and medicines before
+feature selection. Detailed preferences remain available through “Make it yours”
+on the feature page; completing the tour opens the diary. Private builds may
+append an account choice through `onboardingConnectionProvider`; the public app
+has no account dependency. Setup is persisted before opening an optional next
+route, and a failed save remains retryable. Replay returns to Settings.
+
+Lessons use compact numbered instructions and give text priority over decorative
+illustrations on short screens. All 25 translations fit every required page at
+360×640 and 390×844 with bundled fonts and normal text size. Enlarged accessible
+text can still scroll. Browser copy omits unsupported Bluetooth pairing and
+notification permission instructions. The onboarding suite has 116 checks,
+including persistence failures, replay, feature choices and phone layouts.

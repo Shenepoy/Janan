@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:blood_pressure_app/features/onboarding/onboarding_copy_provider.dart';
+import 'package:blood_pressure_app/features/onboarding/onboarding_connection_provider.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_screen.dart';
 import 'package:blood_pressure_app/features/settings/bluetooth_devices_screen.dart';
 import 'package:blood_pressure_app/features/settings/body_profile_screen.dart';
@@ -24,9 +25,8 @@ class _TourTranslations extends AssetLoader {
   @override
   Future<Map<String, dynamic>> load(String path, Locale locale) async =>
       jsonDecode(
-            File('$path/${translationFileTag(locale)}.json').readAsStringSync(),
-          )
-          as Map<String, dynamic>;
+        File('$path/${translationFileTag(locale)}.json').readAsStringSync(),
+      ) as Map<String, dynamic>;
 }
 
 class _FailingCompletionStorage extends MemoryStorage {
@@ -76,6 +76,7 @@ Future<Widget> _tourApp({
   bool firstRun = true,
   Locale locale = const Locale('en'),
   String Function(Locale)? welcomeBody,
+  OnboardingConnectionBuilder? connection,
 }) async {
   SharedPreferences.setMockInitialValues({});
   await EasyLocalization.ensureInitialized();
@@ -88,6 +89,8 @@ Future<Widget> _tourApp({
     startLocale: locale,
     child: ProviderScope(
       overrides: [
+        if (connection != null)
+          onboardingConnectionProvider.overrideWithValue(connection),
         if (welcomeBody != null)
           onboardingWelcomeBodyProvider.overrideWithValue(welcomeBody),
         settingsControllerProvider.overrideWithValue(settings.controller),
@@ -98,9 +101,9 @@ Future<Widget> _tourApp({
         builder: (context) => MaterialApp(
           locale: context.locale,
           localizationsDelegates: [
- ...GlobalMaterialLocalizations.delegates,
- ...context.localizationDelegates,
- ],
+            ...GlobalMaterialLocalizations.delegates,
+            ...context.localizationDelegates,
+          ],
           supportedLocales: context.supportedLocales,
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context).copyWith(disableAnimations: true),
@@ -125,7 +128,7 @@ Finder get _skip => find.byKey(const Key('onboarding-skip'));
 Finder get _close => find.byKey(const Key('onboarding-close'));
 Finder get _cta => find.byKey(const Key('onboarding-cta'));
 Finder get _back => find.byKey(const Key('onboarding-back'));
-Finder get _home => find.byKey(const Key('onboarding-home'));
+Finder get _home => _cta;
 
 Future<void> _next(WidgetTester tester) async {
   await tester.tap(_cta);
@@ -135,17 +138,20 @@ Future<void> _next(WidgetTester tester) async {
 SafaehOnboardingTracker _tracker(WidgetTester tester) => tester
     .widget<SafaehOnboardingTracker>(find.byType(SafaehOnboardingTracker));
 
-Future<void> _toLast(WidgetTester tester) async {
-  while (find.byType(SafaehOnboardingTracker).evaluate().isNotEmpty &&
-      _tracker(tester).currentStep < _tracker(tester).totalSteps - 1) {
-    await _next(tester);
-  }
+Future<void> _customize(WidgetTester tester) async {
+  await tester.ensureVisible(find.byKey(const Key('onboarding-customize')));
+  await tester.tap(find.byKey(const Key('onboarding-customize')));
+  await tester.pumpAndSettle();
 }
 
 Future<void> _toFeatures(WidgetTester tester) async {
-  while (_tracker(tester).currentStep > 1) {
-    await tester.tap(_back);
+  final preferences = find.byKey(const Key('onboarding-preferences'));
+  if (preferences.evaluate().isNotEmpty) {
+    Navigator.of(tester.element(preferences)).pop();
     await tester.pumpAndSettle();
+  }
+  while (_tracker(tester).currentStep < 5) {
+    await _next(tester);
   }
 }
 
@@ -165,6 +171,7 @@ void main() {
     bool firstRun = true,
     Locale locale = const Locale('en'),
     String Function(Locale)? welcomeBody,
+    OnboardingConnectionBuilder? connection,
   }) async {
     await pumpApp(
       tester,
@@ -174,6 +181,7 @@ void main() {
         firstRun: firstRun,
         locale: locale,
         welcomeBody: welcomeBody,
+        connection: connection,
       ),
     );
     if (!firstRun) {
@@ -186,8 +194,7 @@ void main() {
     await open(tester);
     await tester.tap(_skip);
     await tester.pumpAndSettle();
-    await _next(tester);
-    await _toLast(tester);
+    await _customize(tester);
   }
 
   Future<void> tapPreference(WidgetTester tester, String key) async {
@@ -215,7 +222,7 @@ void main() {
     tester,
   ) async {
     await open(tester);
-    expect(find.textContaining('No account, no cloud.'), findsOneWidget);
+    expect(find.textContaining('Free, unlimited offline use.'), findsOneWidget);
   });
 
   testWidgets('distribution welcome receives the active locale', (
@@ -227,7 +234,7 @@ void main() {
       welcomeBody: (locale) => 'Distribution welcome: ${locale.languageCode}',
     );
     expect(find.text('Distribution welcome: ar'), findsOneWidget);
-    expect(find.textContaining('No account, no cloud.'), findsNothing);
+    expect(find.textContaining('Free, unlimited offline use.'), findsNothing);
   });
 
   for (final throws in [false, true]) {
@@ -239,7 +246,8 @@ void main() {
         registry: createAppSettingsRegistry(),
         storage: storage,
       );
-      await preferences(tester);
+      await open(tester);
+      await _toFeatures(tester);
       await tester.ensureVisible(_home);
       await tester.tap(_home);
       await tester.pumpAndSettle();
@@ -274,10 +282,11 @@ void main() {
         storage: storage,
       );
       await open(tester);
-      await _next(tester);
+      await _toFeatures(tester);
       await tapPreference(tester, 'onboarding-feature-bluetooth');
-      await _next(tester);
-      expect(find.text('Add a reading in seconds'), findsOneWidget);
+      await tester.tap(_back);
+      await tester.pumpAndSettle();
+      expect(find.text('Keep track of your doses'), findsOneWidget);
       storage.release.complete();
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
@@ -325,8 +334,8 @@ void main() {
       );
       await preferences(tester);
       if (flags == 0) {
-        expect(find.text('Diary'), findsOneWidget);
-        expect(find.byKey(const Key('onboarding-preferences')), findsNothing);
+        expect(find.text('Diary'), findsNothing);
+        expect(find.byKey(const Key('onboarding-preferences')), findsOneWidget);
       } else {
         for (final feature in [
           ('blood-pressure', bloodPressure),
@@ -409,8 +418,7 @@ void main() {
       expect(settings.controller.get(overdueReminderCountSetting), 6);
       expect(settings.controller.get(overdueReminderIntervalSetting), 120);
       await _toFeatures(tester);
-      await _next(tester);
-      await _toLast(tester);
+      await _customize(tester);
       expect(
         settings.controller.get(startWithAddMeasurementPageSetting),
         isTrue,
@@ -452,8 +460,7 @@ void main() {
     await _toFeatures(tester);
     await tapPreference(tester, 'onboarding-feature-blood-pressure');
     await tapPreference(tester, 'onboarding-feature-weight');
-    await _next(tester);
-    await _toLast(tester);
+    await _customize(tester);
     expect(
       find.byKey(const Key('onboarding-preferences-blood-pressure')),
       findsNothing,
@@ -462,8 +469,7 @@ void main() {
     await chooseOption(tester, 'lbs');
     await _toFeatures(tester);
     await tapPreference(tester, 'onboarding-feature-blood-pressure');
-    await _next(tester);
-    await _toLast(tester);
+    await _customize(tester);
     expect(find.text('kPa'), findsOneWidget);
     expect(
       tester
@@ -518,7 +524,7 @@ void main() {
       tester
           .widget<SafaehOnboardingTracker>(find.byType(SafaehOnboardingTracker))
           .currentStep,
-      6,
+      5,
     );
   });
 
@@ -540,11 +546,10 @@ void main() {
               find.byType(SafaehOnboardingTracker),
             )
             .currentStep,
-        1,
+        5,
       );
       await tapPreference(tester, 'onboarding-feature-weight');
-      await _next(tester);
-      await _toLast(tester);
+      await _customize(tester);
       expect(
         find.byKey(const Key('onboarding-pref-pair-meter')),
         findsOneWidget,
@@ -556,28 +561,24 @@ void main() {
     },
   );
 
-  testWidgets(
-    'turning all tracking off removes the unnecessary preferences step',
-    (tester) async {
-      await open(tester);
-      await tester.tap(_skip);
-      await tester.pumpAndSettle();
-      await tapPreference(tester, 'onboarding-feature-blood-pressure');
-      await tapPreference(tester, 'onboarding-feature-medicine');
-      expect(
-        tester
-            .widget<SafaehOnboardingTracker>(
-              find.byType(SafaehOnboardingTracker),
-            )
-            .totalSteps,
-        2,
-      );
-      await _next(tester);
-      await _toLast(tester);
-      expect(find.text('Diary'), findsOneWidget);
-      expect(navigator.currentState!.canPop(), isFalse);
-    },
-  );
+  testWidgets('turning all tracking off still allows completion', (
+    tester,
+  ) async {
+    await open(tester);
+    await tester.tap(_skip);
+    await tester.pumpAndSettle();
+    await tapPreference(tester, 'onboarding-feature-blood-pressure');
+    await tapPreference(tester, 'onboarding-feature-medicine');
+    expect(
+      tester
+          .widget<SafaehOnboardingTracker>(find.byType(SafaehOnboardingTracker))
+          .totalSteps,
+      6,
+    );
+    await _next(tester);
+    expect(find.text('Diary'), findsOneWidget);
+    expect(navigator.currentState!.canPop(), isFalse);
+  });
 
   for (final locale in [const Locale('en'), const Locale('ar')]) {
     for (final size in [const Size(320, 568), const Size(568, 320)]) {
@@ -606,8 +607,7 @@ void main() {
         await open(tester, locale: locale);
         await tester.tap(_skip);
         await tester.pumpAndSettle();
-        await _next(tester);
-        await _toLast(tester);
+        await _customize(tester);
         expect(tester.takeException(), isNull);
         for (final feature in [
           'blood-pressure',
@@ -641,45 +641,33 @@ void main() {
     }
   }
 
-  for (final feature in ['weight', 'medicine', 'pressure', 'none']) {
-    testWidgets('tour only teaches enabled tools: $feature', (tester) async {
-      await settings.controller.set(
-        bloodPressureEnabledSetting,
-        feature == 'pressure',
-      );
-      await settings.controller.set(weightInputSetting, feature == 'weight');
-      await settings.controller.set(
-        medicineFeatureEnabledSetting,
-        feature == 'medicine',
-      );
+  testWidgets(
+    'all lessons precede feature selection even when tracking is off',
+    (tester) async {
+      await settings.controller.set(bloodPressureEnabledSetting, false);
+      await settings.controller.set(medicineFeatureEnabledSetting, false);
       await open(tester);
-      await _next(tester);
-      expect(_tracker(tester).currentStep, 1);
-      final titles = <String>[];
-      while (_tracker(tester).currentStep < _tracker(tester).totalSteps - 1) {
+      expect(_tracker(tester).totalSteps, 6);
+      for (final title in [
+        'Add a reading in seconds',
+        'Track your weight',
+        'Follow your trends',
+        'Keep track of your doses',
+      ]) {
         await _next(tester);
-        for (final title in [
-          'Track your weight',
-          'Add a reading in seconds',
-          'Follow your trends',
-          'Keep track of your doses',
-        ]) {
-          if (find.text(title).evaluate().isNotEmpty) titles.add(title);
-        }
+        expect(find.text(title), findsOneWidget);
+        expect(
+          find.byKey(const Key('onboarding-feature-blood-pressure')),
+          findsNothing,
+        );
       }
-      expect(titles, switch (feature) {
-        'weight' => ['Track your weight'],
-        'medicine' => ['Keep track of your doses'],
-        'pressure' => ['Add a reading in seconds', 'Follow your trends'],
-        _ => <String>[],
-      });
-      expect(_tracker(tester).totalSteps, switch (feature) {
-        'pressure' => 5,
-        'none' => 2,
-        _ => 4,
-      });
-    });
-  }
+      await _next(tester);
+      expect(
+        find.byKey(const Key('onboarding-feature-blood-pressure')),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('reminder sliders announce settings and actual units', (
     tester,
@@ -716,13 +704,16 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('skipping selected lessons opens preferences', (tester) async {
+  testWidgets('skipping lessons opens feature selection', (tester) async {
     await open(tester);
     await _next(tester);
     await _next(tester);
     await tester.tap(_skip);
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('onboarding-preferences')), findsOneWidget);
+    expect(
+      find.byKey(const Key('onboarding-feature-blood-pressure')),
+      findsOneWidget,
+    );
     expect(_tracker(tester).currentStep, _tracker(tester).totalSteps - 1);
     expect(settings.controller.get(onboardingCompletedSetting), isFalse);
   });
@@ -799,44 +790,6 @@ void main() {
     expect(find.text('مثال توضيحي فقط'), findsOneWidget);
   });
 
-  testWidgets('tour teaches readings, trends, and recording doses', (
-    tester,
-  ) async {
-    await open(tester);
-    expect(
-      tester
-          .widget<SafaehOnboardingTracker>(find.byType(SafaehOnboardingTracker))
-          .currentStep,
-      0,
-    );
-    expect(_back, findsNothing);
-    await _next(tester);
-    expect(
-      find.byKey(const Key('onboarding-feature-blood-pressure')),
-      findsOneWidget,
-    );
-    await _next(tester);
-    expect(find.text('Example only'), findsOneWidget);
-    expect(find.textContaining('Save'), findsOneWidget);
-    expect(_back, findsOneWidget);
-    await _next(tester);
-    expect(find.textContaining('CSV or PDF'), findsOneWidget);
-    await _next(tester);
-    expect(find.textContaining('after you take'), findsOneWidget);
-    await _next(tester);
-    expect(
-      tester
-          .widget<SafaehOnboardingTracker>(find.byType(SafaehOnboardingTracker))
-          .currentStep,
-      5,
-    );
-    expect(
-      find.byKey(const Key('onboarding-shift-missed-doses')),
-      findsNothing,
-    );
-    expect(find.byKey(const Key('onboarding-track-arm-side')), findsNothing);
-  });
-
   testWidgets('Skip opens setup without completing onboarding', (tester) async {
     await open(tester);
     await tester.tap(_skip);
@@ -845,7 +798,7 @@ void main() {
       tester
           .widget<SafaehOnboardingTracker>(find.byType(SafaehOnboardingTracker))
           .currentStep,
-      1,
+      5,
     );
     expect(settings.controller.get(onboardingCompletedSetting), isFalse);
     expect(_skip, findsNothing);
@@ -893,8 +846,6 @@ void main() {
     await open(tester);
     await tester.tap(_skip);
     await tester.pumpAndSettle();
-    await _next(tester);
-    await _toLast(tester);
     await tester.ensureVisible(_home);
     await tester.tap(_home);
     await tester.pumpAndSettle();
@@ -903,39 +854,56 @@ void main() {
     expect(navigator.currentState!.canPop(), isFalse);
   });
 
-  for (final kind in ['reading', 'weight', 'medicine', 'none']) {
-    testWidgets('setup offers a relevant first action: $kind', (tester) async {
-      await settings.controller.set(
-        bloodPressureEnabledSetting,
-        kind == 'reading',
-      );
-      await settings.controller.set(weightInputSetting, kind == 'weight');
-      await settings.controller.set(
-        medicineFeatureEnabledSetting,
-        kind == 'medicine',
-      );
-      await open(tester);
-      await tester.tap(_skip);
-      await tester.pumpAndSettle();
+  testWidgets('finishing setup does not force an editor', (tester) async {
+    await open(tester);
+    await _toFeatures(tester);
+    await _next(tester);
+    expect(find.text('Diary'), findsOneWidget);
+    expect(find.text('Reading editor'), findsNothing);
+    expect(navigator.currentState!.canPop(), isFalse);
+  });
+
+  testWidgets('account choice follows features and saves setup before auth', (
+    tester,
+  ) async {
+    await open(
+      tester,
+      connection: (context, complete) => TextButton(
+        onPressed: () => complete(
+          nextPage: (_) => const Scaffold(body: Text('Account form')),
+        ),
+        child: const Text('Open account'),
+      ),
+    );
+    expect(_tracker(tester).totalSteps, 7);
+    await _toFeatures(tester);
+    expect(find.text('Open account'), findsNothing);
+    await _next(tester);
+    expect(find.text('Open account'), findsOneWidget);
+    expect(find.text('Continue offline'), findsOneWidget);
+    expect(settings.controller.get(onboardingCompletedSetting), isFalse);
+    await tester.tap(find.text('Open account'));
+    await tester.pumpAndSettle();
+    expect(settings.controller.get(onboardingCompletedSetting), isTrue);
+    expect(find.text('Account form'), findsOneWidget);
+    navigator.currentState!.pop();
+    await tester.pumpAndSettle();
+    expect(find.text('Diary'), findsOneWidget);
+    expect(navigator.currentState!.canPop(), isFalse);
+  });
+
+  testWidgets(
+    'account step can finish offline without opening authentication',
+    (tester) async {
+      await open(tester, connection: (_, _) => const Text('Optional account'));
+      await _toFeatures(tester);
       await _next(tester);
-      await _toLast(tester);
-      if (kind != 'none') await _next(tester);
-      final destination = switch (kind) {
-        'reading' => 'Reading editor',
-        'weight' => 'Weight editor',
-        'medicine' => 'Reminders',
-        _ => 'Diary',
-      };
-      expect(find.text(destination), findsOneWidget);
+      expect(find.text('Optional account'), findsOneWidget);
+      await _next(tester);
+      expect(find.text('Diary'), findsOneWidget);
       expect(settings.controller.get(onboardingCompletedSetting), isTrue);
-      if (kind != 'none') {
-        navigator.currentState!.pop();
-        await tester.pumpAndSettle();
-        expect(find.text('Diary'), findsOneWidget);
-      }
-      expect(navigator.currentState!.canPop(), isFalse);
-    });
-  }
+    },
+  );
 
   testWidgets('replay Close preserves its parent route', (tester) async {
     await settings.controller.set(onboardingCompletedSetting, true);

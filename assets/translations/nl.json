@@ -439,7 +439,7 @@
   "bloodPressure": "Bloeddruk",
   "measurements": "Metingen",
   "bluetoothMeasurements": "Bluetoothmetingen",
-  "onboardingFeaturesHint": "Kies wat u wilt bijhouden. We passen de volgende stap aan uw keuzes aan.",
+  "onboardingFeaturesHint": "Kies de hulpmiddelen voor je dagboek. Je kunt ze altijd wijzigen in Instellingen.",
   "onboardingShiftMissedHint": "Verschuif herinneringen op latere tijdstippen als een dosis te laat is. U kunt dit per herinnering aanpassen.",
   "bloodPressureDisabledHint": "Bloeddruk bijhouden staat uit. Schakel dit in via Instellingen > Functies.",
   "preferredWeightUnit": "Preferf gewichtsteam",
@@ -586,7 +586,7 @@
   "onboardingReplay": "Janan gebruiken",
   "onboardingReplayHint": "Speel de korte rondleiding op elk gewenst moment opnieuw",
   "onboardingWelcomeTitle": "Je metingen blijven hier",
-  "onboardingWelcomeBody": "Houd bloeddruk, gewicht en medicijndoses bij op dit apparaat. Zonder account of cloud. Kies hierna wat je wilt bijhouden en leer de ingeschakelde hulpmiddelen gebruiken.",
+  "onboardingWelcomeBody": "Je gezondheidsdagboek blijft op dit apparaat. Gratis en onbeperkt offline te gebruiken, zonder account.",
   "onboardingAddTitle": "Voeg binnen enkele seconden een meting toe",
   "onboardingAddBody": "Tik bij Metingen op het hart met de plus om een meting toe te voegen.\nNeem de systolische en diastolische druk en de pols over van uw meter. Controleer datum en tijd.\nTik op Opslaan. Koppel voor Bluetooth-import eerst uw meter via Instellingen > Apparaten.",
   "onboardingTrendsTitle": "Volg uw trends",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Personaliseer je lichaamsschattingen",
   "bodyProfileAutoSave": "Voer je gegevens eenmalig in. Wijzigingen worden automatisch op dit apparaat opgeslagen.",
   "bodyProfileDetails": "Je gegevens",
-  "bodyProfileEstimates": "Lichaamssamenstelling"
+  "bodyProfileEstimates": "Lichaamssamenstelling",
+  "onboardingContinueOffline": "Offline doorgaan",
+  "onboardingPlusRequirement": "Online functies vereisen een actief Janan Plus-abonnement.",
+  "onboardingAddBodyWeb": "Tik bij Metingen op het hart met de plus om een meting toe te voegen.\nNeem de systolische en diastolische druk en de pols over van uw meter. Controleer datum en tijd.\nOpslaan",
+  "onboardingMedicineBodyWeb": "Open Medicijnen via de medicijntimer of Instellingen.\nVoeg een medicijn toe met de gebruikelijke dosis en tijden. Bekijk je innames in de app.\nMarkeer een dosis als ingenomen nadat u deze hebt genomen. Alleen een herinnering registreert geen inname.",
+  "onboardingConnect": "Verbinden",
+  "onboardingSignIn": "Inloggen",
+  "onboardingCreateAccount": "Account maken"
 }

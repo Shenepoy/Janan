@@ -439,7 +439,7 @@
   "bloodPressure": "Ciśnienie krwi",
   "measurements": "Pomiary",
   "bluetoothMeasurements": "Pomiary przez Bluetooth",
-  "onboardingFeaturesHint": "Wybierz, co chcesz śledzić. Dostosujemy następny krok do Twoich wyborów.",
+  "onboardingFeaturesHint": "Wybierz narzędzia do swojego dziennika. Możesz je zmienić w Ustawieniach w dowolnym momencie.",
   "onboardingShiftMissedHint": "Przesuń późniejsze przypomnienia, gdy dawka jest spóźniona. Możesz to dostosować dla każdego przypomnienia.",
   "bloodPressureDisabledHint": "Śledzenie ciśnienia krwi jest wyłączone. Włącz je w Ustawieniach > Funkcje.",
   "preferredWeightUnit": "Preferowana jednostka wagi",
@@ -586,7 +586,7 @@
   "onboardingReplay": "Jak korzystać z Janan",
   "onboardingReplayHint": "Odtwórz krótką prezentację w dowolnym momencie",
   "onboardingWelcomeTitle": "Twoje pomiary pozostają tutaj",
-  "onboardingWelcomeBody": "Śledź ciśnienie, wagę i dawki leków na tym urządzeniu. Bez konta i chmury. W następnym kroku wybierz, co chcesz śledzić, a potem poznaj włączone narzędzia.",
+  "onboardingWelcomeBody": "Dziennik zdrowia pozostaje na tym urządzeniu. Bezpłatne korzystanie offline bez limitów i bez konta.",
   "onboardingAddTitle": "Dodaj pomiar w sekundach",
   "onboardingAddBody": "W Pomiarach dotknij serca z plusem, aby dodać odczyt.\nPrzepisz ciśnienie skurczowe, rozkurczowe i tętno z ciśnieniomierza. Sprawdź datę i godzinę.\nDotknij Zapisz. Aby importować przez Bluetooth, najpierw sparuj urządzenie w Ustawienia > Urządzenia.",
   "onboardingTrendsTitle": "Podążaj za swoimi trendami",
@@ -727,5 +727,12 @@
   "bodyProfileIntro": "Dostosuj szacunkowe parametry ciała",
   "bodyProfileAutoSave": "Wprowadź swoje dane raz. Zmiany są automatycznie zapisywane na tym urządzeniu.",
   "bodyProfileDetails": "Twoje dane",
-  "bodyProfileEstimates": "Skład ciała"
+  "bodyProfileEstimates": "Skład ciała",
+  "onboardingContinueOffline": "Kontynuuj offline",
+  "onboardingPlusRequirement": "Funkcje online wymagają aktywnej subskrypcji Janan Plus.",
+  "onboardingAddBodyWeb": "W Pomiarach dotknij serca z plusem, aby dodać odczyt.\nPrzepisz ciśnienie skurczowe, rozkurczowe i tętno z ciśnieniomierza. Sprawdź datę i godzinę.\nZapisz",
+  "onboardingMedicineBodyWeb": "Otwórz Leki z minutnika leków lub Ustawień.\nDodaj lek, ustaw zwykłą dawkę i pory przyjmowania. Sprawdzaj dawki w aplikacji.\nOznacz dawkę jako przyjętą po jej zażyciu. Samo przypomnienie nie zapisuje przyjęcia dawki.",
+  "onboardingConnect": "Połączenie",
+  "onboardingSignIn": "Zaloguj się",
+  "onboardingCreateAccount": "Utwórz konto"
 }
