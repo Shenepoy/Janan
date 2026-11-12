@@ -102,3 +102,11 @@ input/editor tests passed. The tab cases cover growing/shrinking height, draft
 retention, hidden focus/semantics, ticker exclusion, reduced-motion changes,
 controller replacement, rapid navigation, child reordering, and globally keyed
 forms.
+
+## Published UI dependencies — Janan 26.11.0
+
+Safaeh 1.1.0 now includes SafaehTabView, and flutter_settings_framework 1.0.0
+supports the standalone Material UI packages. The app uses both published
+packages with a committed lockfile. All three temporary UI compatibility
+directories have been removed. Historical validation above describes the
+intermediate migration; the release runs the complete CI checks again.

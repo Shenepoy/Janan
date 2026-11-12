@@ -40,7 +40,6 @@ linter:
 analyzer:
   exclude:
     - tmp/**
-    - vendor/**
     - build/**
     - android/**
     - ios/**
