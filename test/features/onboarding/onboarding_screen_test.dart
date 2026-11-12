@@ -718,7 +718,7 @@ void main() {
     expect(settings.controller.get(onboardingCompletedSetting), isFalse);
   });
 
-  testWidgets('Hisab controls are centered between Back and Next', (
+  testWidgets('Hisab controls stay in the header above navigation', (
     tester,
   ) async {
     await open(tester);
@@ -729,16 +729,11 @@ void main() {
     final theme = tester.getRect(find.byKey(const Key('onboarding-theme')));
     final next = tester.getRect(_cta);
     final back = tester.getRect(_back);
-    expect(
-      (language.center.dx + theme.center.dx) / 2,
-      closeTo(
-        tester.view.physicalSize.width / tester.view.devicePixelRatio / 2,
-        1,
-      ),
-    );
-    expect(theme.center.dy, closeTo(next.center.dy, 1));
-    expect(back.overlaps(language), isFalse);
-    expect(next.overlaps(theme), isFalse);
+    expect(language.bottom, lessThan(next.top));
+    expect(theme.bottom, lessThan(back.top));
+    expect(theme.center.dy, closeTo(language.center.dy, 1));
+    expect(language.overlaps(theme), isFalse);
+    expect(theme.right, lessThanOrEqualTo(tester.view.physicalSize.width));
   });
 
   testWidgets('theme taps alternate light and dark, holding restores system', (

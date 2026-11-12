@@ -7,6 +7,7 @@ import 'package:blood_pressure_app/features/onboarding/onboarding_connection_pro
 import 'package:blood_pressure_app/features/onboarding/onboarding_feature_preferences.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_feature_setup.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_footer.dart';
+import 'package:blood_pressure_app/features/onboarding/onboarding_header.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_lesson.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_theme_reveal_clipper.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
@@ -225,33 +226,45 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                   SafeArea(
                     child: Column(
                       children: [
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 56),
-                          child: Align(
-                            alignment: AlignmentDirectional.centerEnd,
-                            heightFactor: 1,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 4,
-                              ),
-                              child: widget.firstRun
-                                  ? (_page >= _featurePage
-                                        ? const SizedBox(height: 48)
-                                        : TextButton(
-                                            key: const Key('onboarding-skip'),
-                                            onPressed: _finishing
-                                                ? null
-                                                : () => _goTo(_featurePage),
-                                            child: Text('onboardingSkip'.tr()),
-                                          ))
-                                  : IconButton(
-                                      key: const Key('onboarding-close'),
-                                      onPressed: _finishing ? null : _finish,
-                                      tooltip: 'onboardingDone'.tr(),
-                                      icon: const Icon(Icons.close),
-                                    ),
-                            ),
+                        OnboardingHeader(
+                          action: widget.firstRun
+                              ? (_page >= _featurePage
+                                    ? null
+                                    : MediaQuery.textScalerOf(context)
+                                                  .scale(14) >
+                                              20 ||
+                                          MediaQuery.sizeOf(context).width < 360
+                                    ? IconButton.filledTonal(
+                                        key: const Key('onboarding-skip'),
+                                        tooltip: 'onboardingSkip'.tr(),
+                                        onPressed: _finishing
+                                            ? null
+                                            : () => _goTo(_featurePage),
+                                        icon: const Icon(
+                                          Icons.skip_next_rounded,
+                                        ),
+                                      )
+                                    : TextButton(
+                                        key: const Key('onboarding-skip'),
+                                        onPressed: _finishing
+                                            ? null
+                                            : () => _goTo(_featurePage),
+                                        child: Text(
+                                          'onboardingSkip'.tr(),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ))
+                              : IconButton.filledTonal(
+                                  key: const Key('onboarding-close'),
+                                  onPressed: _finishing ? null : _finish,
+                                  tooltip: 'onboardingDone'.tr(),
+                                  icon: const Icon(Icons.close_rounded),
+                                ),
+                          appearanceControls: OnboardingAppearanceControls(
+                            themeButtonKey: _themeButtonKey,
+                            onThemeChanged: _changeTheme,
+                            pendingTheme: _requestedTheme,
+                            busy: _finishing,
                           ),
                         ),
                         Expanded(
@@ -299,12 +312,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                               _goTo(_page + 1);
                             }
                           },
-                          appearanceControls: OnboardingAppearanceControls(
-                            themeButtonKey: _themeButtonKey,
-                            onThemeChanged: _changeTheme,
-                            pendingTheme: _requestedTheme,
-                            busy: _finishing,
-                          ),
                         ),
                       ],
                     ),
