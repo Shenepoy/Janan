@@ -750,6 +750,49 @@ void main() {
     },
   );
 
+  for (final width in [360.0, 1280.0]) {
+    for (final locale in [const Locale('en'), const Locale('ar')]) {
+      testWidgets('replay chrome uses screen edges at $width in $locale', (
+        tester,
+      ) async {
+        await open(tester, firstRun: false, locale: locale);
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = Size(width, 800);
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpAndSettle();
+        final close = tester.getRect(_close);
+        final language = tester.getRect(
+          find.byKey(const Key('onboarding-language')),
+        );
+        final theme = tester.getRect(find.byKey(const Key('onboarding-theme')));
+        expect(close.top, lessThan(24));
+        if (width >= 840) {
+          final controlsRight = language.right > theme.right
+              ? language.right
+              : theme.right;
+          final controlsLeft = language.left < theme.left
+              ? language.left
+              : theme.left;
+          expect(controlsRight, closeTo(width - 16, 1));
+          expect(close.right, lessThan(controlsLeft));
+          expect(close.center.dy, closeTo(theme.center.dy, 1));
+          expect(theme.top, lessThan(24));
+        } else {
+          expect(
+            locale.languageCode == 'ar' ? close.left : width - close.right,
+            closeTo(16, 1),
+          );
+          final indicator = tester.getRect(
+            find.byType(SafaehOnboardingTracker),
+          );
+          expect(indicator.top - theme.bottom, closeTo(6, 1));
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
   testWidgets('theme taps alternate light and dark, holding restores system', (
     tester,
   ) async {

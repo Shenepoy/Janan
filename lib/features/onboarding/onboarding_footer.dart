@@ -6,7 +6,7 @@ import 'package:safaeh/safaeh.dart';
 class OnboardingFooter extends StatelessWidget {
   const OnboardingFooter({
     super.key,
-    required this.appearanceControls,
+    this.appearanceControls,
     required this.currentStep,
     required this.totalSteps,
     required this.nextLabel,
@@ -15,7 +15,7 @@ class OnboardingFooter extends StatelessWidget {
     required this.onBack,
     required this.onNext,
   });
-  final Widget appearanceControls;
+  final Widget? appearanceControls;
   final int currentStep, totalSteps;
   final String nextLabel;
   final bool isLast, busy;
@@ -33,8 +33,10 @@ class OnboardingFooter extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              appearanceControls,
-              const SizedBox(height: 6),
+              if (appearanceControls != null) ...[
+                appearanceControls!,
+                const SizedBox(height: 6),
+              ],
               SafaehOnboardingTracker(
                 currentStep: currentStep,
                 totalSteps: totalSteps,

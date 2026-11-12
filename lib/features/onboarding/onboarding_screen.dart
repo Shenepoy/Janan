@@ -190,6 +190,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final desktop = OnboardingHeader.usesDesktopLayout(context);
+    final appearance = OnboardingAppearanceControls(
+      themeButtonKey: _themeButtonKey,
+      onThemeChanged: _changeTheme,
+      pendingTheme: _requestedTheme,
+      busy: _finishing,
+    );
     final connection = widget.firstRun
         ? ref.watch(onboardingConnectionProvider)
         : null;
@@ -227,6 +234,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     child: Column(
                       children: [
                         OnboardingHeader(
+                          appearanceControls: desktop ? appearance : null,
                           action: widget.firstRun
                               ? (_page >= _featurePage
                                     ? null
@@ -293,12 +301,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                           ),
                         ),
                         OnboardingFooter(
-                          appearanceControls: OnboardingAppearanceControls(
-                            themeButtonKey: _themeButtonKey,
-                            onThemeChanged: _changeTheme,
-                            pendingTheme: _requestedTheme,
-                            busy: _finishing,
-                          ),
+                          appearanceControls: desktop ? null : appearance,
                           currentStep: _page,
                           totalSteps: _pageCount,
                           nextLabel: nextLabel.tr(),

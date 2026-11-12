@@ -1,61 +1,76 @@
+import 'dart:ui' as ui;
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Compact Hisab-style chrome leaves the existing page room to breathe.
+/// Full-width navigation chrome, separate from the centered lesson content.
 class OnboardingHeader extends StatelessWidget {
-  const OnboardingHeader({super.key, this.action, this.leading, this.title});
+  const OnboardingHeader({
+    super.key,
+    this.action,
+    this.leading,
+    this.title,
+    this.appearanceControls,
+  });
+
+  static bool usesDesktopLayout(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= 840;
 
   final Widget? action;
   final Widget? leading;
   final String? title;
+  final Widget? appearanceControls;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 940),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: LayoutBuilder(
-            builder: (context, constraints) => Row(
-              children: [
-                leading ??
-                    ExcludeSemantics(
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: colors.primaryContainer,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: colors.primary.withValues(alpha: .16),
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.favorite_outline_rounded,
-                          color: colors.onPrimaryContainer,
-                          size: 21,
-                        ),
-                      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        // Desktop appearance controls stay at the physical top-right, including
+        // RTL locales. Mobile navigation follows the locale's trailing edge.
+        textDirection: appearanceControls != null ? ui.TextDirection.ltr : null,
+        children: [
+          leading ??
+              ExcludeSemantics(
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: colors.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: .16),
                     ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: action == null || constraints.maxWidth >= 600
-                      ? Text(
-                          title ?? 'title'.tr(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        )
-                      : const SizedBox.shrink(),
+                  ),
+                  child: Icon(
+                    Icons.favorite_outline_rounded,
+                    color: colors.onPrimaryContainer,
+                    size: 21,
+                  ),
                 ),
-                if (action != null) Flexible(child: action!),
-              ],
-            ),
+              ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: action == null || usesDesktopLayout(context)
+                ? Text(
+                    title ?? 'title'.tr(),
+                    textAlign: appearanceControls != null
+                        ? TextAlign.left
+                        : null,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  )
+                : const SizedBox.shrink(),
           ),
-        ),
+          ?action,
+          if (appearanceControls != null) ...[
+            const SizedBox(width: 8),
+            appearanceControls!,
+          ],
+        ],
       ),
     );
   }
