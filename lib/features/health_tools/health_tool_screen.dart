@@ -12,8 +12,8 @@ import 'package:blood_pressure_app/features/health_tools/health_tools_strings.da
 import 'package:blood_pressure_app/features/health_tools/medicine_supply_summary.dart';
 import 'package:blood_pressure_app/features/health_tools/personal_target_chart.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 class HealthToolScreen extends ConsumerStatefulWidget {
   const HealthToolScreen({super.key, required this.kind});

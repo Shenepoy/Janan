@@ -8,10 +8,10 @@ import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:blood_pressure_app/model/bluetooth_measurement_import_mode.dart';
 import 'package:blood_pressure_app/model/known_ble_device.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:material_ui/material_ui.dart';
 // ignore_for_file: strict_raw_type
 
 

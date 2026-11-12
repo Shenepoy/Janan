@@ -22,16 +22,16 @@ import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_date_
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
-part 'medication_reminder_dose_action_buttons.dart';
-part 'medication_reminder_day_page_header.dart';
-part 'medication_reminder_day_log_page.dart';
 part 'medication_reminder_collapsed_taken_log.dart';
 part 'medication_reminder_day_log_card.dart';
+part 'medication_reminder_day_log_page.dart';
+part 'medication_reminder_day_page_header.dart';
+part 'medication_reminder_dose_action_buttons.dart';
 part 'medication_schedule_list.dart';
 
 ShapeBorder _medicationFabShape(

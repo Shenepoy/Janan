@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "Ši funkcija pasiekiama mobiliojoje programėlėje.",
   "homeChartCount": "Didžiausias grafikų skaičius plačiame ekrane",
   "homeChartCountDesc": "Jei pakanka vietos, rodoma ne daugiau kaip tiek grafikų. Siaurame ekrane rodomas vienas.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "Pritaikykite kūno sudėties įverčius",
+  "bodyProfileAutoSave": "Įveskite savo duomenis vieną kartą. Pakeitimai automatiškai išsaugomi šiame įrenginyje.",
+  "bodyProfileDetails": "Jūsų duomenys",
+  "bodyProfileEstimates": "Kūno sudėtis"
 }

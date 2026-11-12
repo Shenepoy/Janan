@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Botanical shapes, sparkles, and growing chart strokes for the examples.
 /// All coordinates use a 360 × 260 stage; text stays in native Flutter widgets.

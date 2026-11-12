@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_change_chip.dart';
 import 'package:blood_pressure_app/features/measurement_list/weight_detail_screen.dart';
 import 'package:blood_pressure_app/features/measurement_list/weight_list.dart';
@@ -5,9 +6,8 @@ import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:blood_pressure_app/model/storage/types/interval_storage_setting.dart';
 import 'package:blood_pressure_app/model/storage/types/time_step.dart';
 import 'package:blood_pressure_app/model/weight_unit.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../util.dart';
 

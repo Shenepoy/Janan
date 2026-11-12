@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Card to place a complex opened input on.
 class InputCard extends StatelessWidget {

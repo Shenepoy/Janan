@@ -1,6 +1,6 @@
 import 'package:blood_pressure_app/l10n/app_locales.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   test('should have unique names for all languages provided in localizations', () {

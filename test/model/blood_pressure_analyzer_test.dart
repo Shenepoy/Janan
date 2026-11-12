@@ -1,7 +1,7 @@
 
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/model/blood_pressure_analyzer.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 void main() {
   test('should return averages', () {

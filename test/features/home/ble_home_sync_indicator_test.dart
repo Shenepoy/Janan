@@ -3,8 +3,8 @@ import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_card.da
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
 import 'package:blood_pressure_app/features/home/ble_home_sync_indicator.dart';
 import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../util.dart';
 

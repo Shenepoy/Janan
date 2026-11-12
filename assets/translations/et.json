@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "See funktsioon on saadaval mobiilirakenduses.",
   "homeChartCount": "Graafikute ülempiir laial ekraanil",
   "homeChartCountDesc": "Näitab kuni seda arvu graafikuid, kui ruumi jätkub. Kitsal ekraanil kuvatakse üks.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "Kohanda oma kehakoostise hinnanguid",
+  "bodyProfileAutoSave": "Sisesta oma andmed üks kord. Muudatused salvestatakse selles seadmes automaatselt.",
+  "bodyProfileDetails": "Sinu andmed",
+  "bodyProfileEstimates": "Kehakoostis"
 }

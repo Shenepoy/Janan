@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:blood_pressure_app/components/fab_burst_kind.dart';
 import 'package:blood_pressure_app/components/fab_burst_particle.dart';
-import 'package:flutter/material.dart' show Color;
+import 'package:material_ui/material_ui.dart' show Color;
 
 export 'package:blood_pressure_app/components/fab_burst_kind.dart';
 export 'package:blood_pressure_app/components/fab_burst_painter.dart';

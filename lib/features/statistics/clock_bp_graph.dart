@@ -7,8 +7,8 @@ import 'package:blood_pressure_app/features/statistics/chart/chart_tooltip.dart'
 import 'package:blood_pressure_app/model/blood_pressure_analyzer.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Hourly averages. Pulse has a separate bpm scale from pressure.
 class ClockBpGraph extends ConsumerStatefulWidget {

@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:blood_pressure_app/features/shell/shell_scroll_insets.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Padded, width-capped column used by dashboard-style pages.

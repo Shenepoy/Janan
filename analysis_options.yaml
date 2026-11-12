@@ -31,7 +31,6 @@ linter:
     - prefer_single_quotes
     - sort_constructors_first
     - type_annotate_public_apis
-    - unnecessary_await_in_return
     - unnecessary_lambdas
     - unnecessary_null_aware_operator_on_extension_on_nullable
     - use_colored_box
@@ -40,6 +39,8 @@ linter:
 
 analyzer:
   exclude:
+    - tmp/**
+    - vendor/**
     - build/**
     - android/**
     - ios/**

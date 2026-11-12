@@ -1,7 +1,7 @@
 import 'package:blood_pressure_app/features/bluetooth/ui/input_card.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Indication of a failure while taking a bluetooth measurement.
 class MeasurementFailure extends StatelessWidget with Loggable {

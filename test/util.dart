@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:safaeh/safaeh.dart';
+import 'package:blood_pressure_app/core/repository/repository_providers.dart';
+import 'package:blood_pressure_app/core/settings/storage_providers.dart';
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/input/forms/measurement_value_field.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/initialize_app_settings.dart';
@@ -23,14 +25,12 @@ import 'package:blood_pressure_app/model/weight_unit.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:easy_localization/src/localization.dart';
 import 'package:easy_localization/src/translations.dart';
-import 'package:flutter/material.dart';
-import 'package:blood_pressure_app/core/repository/repository_providers.dart';
-import 'package:blood_pressure_app/core/settings/storage_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart';
+import 'package:safaeh/safaeh.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Last controller created by [materialApp] / [appBase].
@@ -898,3 +898,9 @@ class MockBodyweightRepository extends _MockRepo<BodyweightRecord>
 
 dynamic myMatchesGoldenFile(String key) =>
     matchesGoldenFile(join('golden', key));
+
+/// Flutter's byTooltip still checks legacy Tooltip for excluded semantics.
+/// Match the standalone Material tooltip without relying on its RawTooltip tree.
+Finder findMaterialTooltip(String message) => find.byWidgetPredicate(
+  (widget) => widget is Tooltip && widget.message == message,
+);

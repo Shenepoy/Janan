@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 
 /// One action in the same floating glass bar as the phone navigation.

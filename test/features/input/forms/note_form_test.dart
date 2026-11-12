@@ -1,6 +1,6 @@
 import 'package:blood_pressure_app/features/input/forms/note_form.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../util.dart';
 import '../../settings/tiles/color_picker_list_tile_test.dart';
@@ -38,7 +38,7 @@ void main() {
     expect(key.currentState!.validate(), true);
 
     await tester.enterText(find.byType(TextField), 'some test note!');
-    await tester.tap(find.byTooltip('More colors'));
+    await tester.tap(findMaterialTooltip('More colors'));
     await tester.pump();
     await tester.tap(find.byElementPredicate(findColored(Colors.red)));
 
@@ -55,8 +55,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Some note text from test'), findsOneWidget);
-    expect(find.byTooltip('Custom color'), findsNothing);
-    expect(find.byTooltip('Cyan'), findsNWidgets(2));
+    expect(findMaterialTooltip('Custom color'), findsNothing);
+    expect(findMaterialTooltip('Cyan'), findsNWidgets(2));
   });
 
   testWidgets('saves only filled inputs', (WidgetTester tester) async {

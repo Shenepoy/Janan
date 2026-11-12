@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "Ta funkcja jest dostępna w aplikacji mobilnej.",
   "homeChartCount": "Maksymalna liczba wykresów na szerokim ekranie",
   "homeChartCountDesc": "Wyświetla najwyżej tyle wykresów, jeśli jest miejsce. Na wąskim ekranie wyświetla jeden.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "Dostosuj szacunkowe parametry ciała",
+  "bodyProfileAutoSave": "Wprowadź swoje dane raz. Zmiany są automatycznie zapisywane na tym urządzeniu.",
+  "bodyProfileDetails": "Twoje dane",
+  "bodyProfileEstimates": "Skład ciała"
 }

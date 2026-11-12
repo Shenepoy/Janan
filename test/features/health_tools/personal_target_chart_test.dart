@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:blood_pressure_app/features/health_tools/health_tools_repository.dart';
 import 'package:blood_pressure_app/features/health_tools/personal_target_chart.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../core/powersync_probe.dart';
 import '../../util.dart';

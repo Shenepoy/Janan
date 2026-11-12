@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Base for a generic form with return value [T].
 abstract class FormBase<T> extends StatefulWidget {

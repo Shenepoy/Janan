@@ -4,7 +4,7 @@ import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_info.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Resolve [kind] from `settings` and open the visual card.
 Future<void> showMetricInfo(

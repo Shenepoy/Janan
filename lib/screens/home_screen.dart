@@ -14,8 +14,8 @@ import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_page_
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_section.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Central screen of the app with graph and measurement list.
 class AppHome extends ConsumerStatefulWidget {

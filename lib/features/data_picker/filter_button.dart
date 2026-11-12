@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:blood_pressure_app/model/storage/types/interval_storage_setting.dart';
 import 'package:blood_pressure_app/model/storage/types/time_range.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Button that shows an menu to configure a display intervalls filter.
 class FilterButton extends StatefulWidget {

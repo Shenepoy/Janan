@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compact color-chip legend for sys / dia / pul series.
 class ChartLegend extends StatelessWidget {

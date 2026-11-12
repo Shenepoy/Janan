@@ -5,9 +5,9 @@ import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:blood_pressure_app/features/settings/tiles/color_picker_list_tile.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 class GraphScreen extends ConsumerWidget {

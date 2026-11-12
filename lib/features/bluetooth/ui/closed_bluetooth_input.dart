@@ -3,8 +3,8 @@ import 'package:blood_pressure_app/features/bluetooth/logic/bluetooth_cubit.dart
 import 'package:blood_pressure_app/features/settings/app_settings.dart' show appSettingsProvider;
 import 'package:blood_pressure_app/logging.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// A closed ble input that shows the adapter state and allows to start the input.

@@ -114,7 +114,7 @@
 
 ## التطوير
 
-**المتطلبات:** Flutter <span dir="ltr"><code>3.47.1</code></span> (مثبّت في <span dir="ltr"><code>pubspec.yaml</code></span>).
+**المتطلبات:** Flutter <span dir="ltr"><code>3.50.0</code></span> (مثبّت في <span dir="ltr"><code>pubspec.yaml</code></span>).
 
 ```bash
 git clone https://github.com/Zyzto/blood-pressure-monitor-fl.git

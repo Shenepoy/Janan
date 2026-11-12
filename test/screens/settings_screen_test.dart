@@ -1,12 +1,12 @@
+import 'package:blood_pressure_app/core/widgets/defer_until_sheet_settled.dart';
+import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/shell/app_shell.dart';
 import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
-import 'package:blood_pressure_app/features/settings/registry.dart';
-import 'package:blood_pressure_app/core/widgets/defer_until_sheet_settled.dart';
 import 'package:blood_pressure_app/screens/settings_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_settings_framework/safaeh.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:flutter_settings_framework/safaeh.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../util.dart';
 

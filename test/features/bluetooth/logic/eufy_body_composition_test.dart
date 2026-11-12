@@ -1,8 +1,8 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/eufy_body_composition.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/model/body_sex.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 import '../../../util.dart';
 

@@ -16,8 +16,8 @@ import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Text button to import entries like configured in the context.
 class ImportButton extends ConsumerWidget {

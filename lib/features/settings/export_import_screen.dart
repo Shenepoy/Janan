@@ -15,9 +15,9 @@ import 'package:blood_pressure_app/features/settings/tiles/number_input_list_til
 import 'package:blood_pressure_app/model/storage/storage.dart';
 import 'package:blood_pressure_app/model/storage/types/export_format_setting.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:persistent_user_dir_access_android/persistent_user_dir_access_android.dart';
 
 /// Screen to configure and perform exports and imports of blood pressure values.

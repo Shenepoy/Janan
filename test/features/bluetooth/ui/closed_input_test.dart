@@ -4,8 +4,9 @@ import 'dart:async';
 import 'package:blood_pressure_app/features/bluetooth/logic/bluetooth_cubit.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/closed_bluetooth_input.dart';
 import 'package:blood_pressure_app/model/known_ble_device.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../helpers/when_listen.dart';
 import '../../../util.dart';
 

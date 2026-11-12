@@ -4,8 +4,8 @@ import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_measurement_duplicates.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_weight_data.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../util.dart';
 

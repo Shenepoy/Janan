@@ -1,5 +1,5 @@
 import 'package:blood_pressure_app/components/input_dialog.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A list tile for exposing editable strings.
 class InputListTile extends StatelessWidget {

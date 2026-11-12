@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A [ListTile] with a [Slider] attached to it.
 class SliderListTile extends StatelessWidget {

@@ -1,7 +1,7 @@
 import 'package:blood_pressure_app/components/color_picker.dart';
 import 'package:blood_pressure_app/features/settings/tiles/color_picker_list_tile.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../util.dart';
 
@@ -23,21 +23,21 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.byTooltip('Blue'));
+    await tester.tap(findMaterialTooltip('Blue'));
     await tester.pumpAndSettle();
     expect(selected, Colors.blue);
     expect(
       tester.getCenter(find.text('Color')).dy,
-      tester.getCenter(find.byTooltip('More colors')).dy,
+      tester.getCenter(findMaterialTooltip('More colors')).dy,
     );
     expect(find.byType(ColorPicker), findsNothing);
-    await tester.tap(find.byTooltip('No color'));
+    await tester.tap(findMaterialTooltip('No color'));
     await tester.pumpAndSettle();
     expect(selected, Colors.transparent);
     expect(find.byType(CircleAvatar), findsNothing);
     expect(
       tester.getCenter(find.text('Color')).dy,
-      tester.getCenter(find.byTooltip('More colors')).dy,
+      tester.getCenter(findMaterialTooltip('More colors')).dy,
     );
   });
 
@@ -64,11 +64,11 @@ void main() {
           ),
         ),
       );
-      expect(find.byTooltip('Custom color'), findsNWidgets(2));
-      expect(find.byTooltip('No color'), findsNothing);
-      await tester.tap(find.byTooltip('Custom color').last);
+      expect(findMaterialTooltip('Custom color'), findsNWidgets(2));
+      expect(findMaterialTooltip('No color'), findsNothing);
+      await tester.tap(findMaterialTooltip('Custom color').last);
       expect(selected, custom);
-      await tester.tap(find.byTooltip('More colors'));
+      await tester.tap(findMaterialTooltip('More colors'));
       await tester.pumpAndSettle();
       expect(find.byType(ColorPicker), findsOneWidget);
       await tester.tap(find.byElementPredicate(findColored(Colors.red)));

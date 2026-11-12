@@ -1,8 +1,8 @@
 import 'package:blood_pressure_app/features/export_import/model/column.dart';
 import 'package:blood_pressure_app/model/storage/storage.dart';
 import 'package:collection/collection.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/cupertino.dart';
 
 class ExportPreset {
   const ExportPreset(this.id, this.columns, this.editable);

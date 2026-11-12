@@ -2,8 +2,8 @@ import 'package:blood_pressure_app/features/input/forms/add_entry_form.dart';
 import 'package:blood_pressure_app/features/input/forms/add_multiple_entries_form.dart';
 import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 import '../../../model/blood_pressure_analyzer_test.dart';

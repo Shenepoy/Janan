@@ -1,7 +1,6 @@
 import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('Arabic floating snackbar does not move the end FAB', (
@@ -13,11 +12,7 @@ void main() {
       MaterialApp(
         locale: const Locale('ar'),
         supportedLocales: const [Locale('ar'), Locale('en')],
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
         theme: ThemeData(
           snackBarTheme: const SnackBarThemeData(
             behavior: SnackBarBehavior.floating,

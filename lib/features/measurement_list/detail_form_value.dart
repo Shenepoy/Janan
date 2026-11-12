@@ -2,7 +2,7 @@ import 'package:blood_pressure_app/features/measurement_list/cartoon_hop.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_change.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_change_chip.dart';
 import 'package:blood_pressure_app/theme/app_text.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Labeled reading with the unit beside it and the comparison under the unit.
 class DetailFormValue extends StatelessWidget {

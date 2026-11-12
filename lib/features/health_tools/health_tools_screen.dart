@@ -1,7 +1,7 @@
 import 'package:blood_pressure_app/features/health_tools/health_tool_kind.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tool_screen.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_strings.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class HealthToolsScreen extends StatelessWidget {
   const HealthToolsScreen({super.key});

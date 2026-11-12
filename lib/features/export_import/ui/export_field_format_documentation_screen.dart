@@ -4,8 +4,8 @@ import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:blood_pressure_app/features/settings/time_formats_reference_screen.dart';
 import 'package:blood_pressure_app/l10n/bidi.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 

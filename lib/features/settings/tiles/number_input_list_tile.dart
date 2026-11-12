@@ -1,5 +1,5 @@
 import 'package:blood_pressure_app/components/input_dialog.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Widget for editing numbers in a list tile.
 class NumberInputListTile extends StatelessWidget {

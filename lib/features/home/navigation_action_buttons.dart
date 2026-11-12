@@ -3,8 +3,8 @@ import 'package:blood_pressure_app/components/animated_floating_action_button.da
 import 'package:blood_pressure_app/features/export_import/ui/export_popout.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Which shell FAB column to show.
 enum NavigationActionKind {

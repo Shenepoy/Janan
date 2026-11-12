@@ -3,8 +3,8 @@ import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.da
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compact AppBar control for a launch-time meter sync.
 ///

@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "此功能可在移动应用中使用。",
   "homeChartCount": "宽屏上的最大图表数量",
   "homeChartCountDesc": "空间足够时最多显示此数量的图表。窄屏显示一个。",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "个性化身体估算",
+  "bodyProfileAutoSave": "只需输入一次个人信息。更改会自动保存在此设备上。",
+  "bodyProfileDetails": "个人信息",
+  "bodyProfileEstimates": "身体成分"
 }

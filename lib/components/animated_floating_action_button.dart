@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:blood_pressure_app/components/fab_burst.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'package:blood_pressure_app/components/fab_burst.dart' show FabBurstKind;
 

@@ -1,11 +1,11 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/input/add_entry_dialog.dart';
 import 'package:blood_pressure_app/features/input/forms/add_multiple_entries_form.dart';
 import 'package:blood_pressure_app/features/input/forms/note_form.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/settings/tiles/color_picker_list_tile.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../model/export_import/record_formatter_test.dart';
 import '../../util.dart';

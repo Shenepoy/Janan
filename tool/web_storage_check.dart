@@ -12,7 +12,7 @@ import 'package:blood_pressure_app/core/repository/powersync_note_repository.dar
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tool_kind.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_repository.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 import 'package:uuid/uuid.dart';
 

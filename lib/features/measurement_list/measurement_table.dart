@@ -1,7 +1,7 @@
 import 'package:blood_pressure_app/features/measurement_list/metric_change.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_change_chip.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 const _chevronSlot = 20.0;

@@ -8,17 +8,17 @@ issue_tracker: https://github.com/Zyzto/blood-pressure-monitor-fl/issues
 version: 26.10.10+83
 
 environment:
-  sdk: ^3.12.0
-  flutter: 3.47.1
+  sdk: ^3.14.0
+  flutter: 3.50.0
 
 dependencies:
+  material_ui: ^1.11.0
+  cupertino_ui: ^1.1.6
   characters: ^1.4.1
   collection: ^1.19.1
   csv: ^8.0.0
   intl: ^0.20.2
   flutter:
-    sdk: flutter
-  flutter_localizations:
     sdk: flutter
   flutter_markdown_plus: ^1.0.12
   function_tree: ^0.9.1
@@ -41,15 +41,18 @@ dependencies:
   archive: ^4.0.9
   file_picker: ^12.0.0
   app_settings: ^9.0.0
-  safaeh: ^0.12.0
+  safaeh:
+    path: vendor/safaeh
   toastification: ^3.0.3
-  flutter_settings_framework: ^0.11.0
+  flutter_settings_framework:
+    path: vendor/flutter_settings_framework
   flutter_logging_service: ^0.2.3
   easy_localization: ^3.0.8
   persistent_user_dir_access_android: ^0.0.3
   share_plus: ^13.3.0
   sqflite_common_ffi: ^2.4.2
-  inline_tab_view: ^1.0.2
+  inline_tab_view:
+    path: vendor/inline_tab_view
   health: ^13.3.1
   receive_intent: ^0.2.7
   fl_chart: ^1.2.0

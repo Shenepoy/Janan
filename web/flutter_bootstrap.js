@@ -7,7 +7,10 @@ function bootFailed() {
   if (boot) boot.textContent = 'Could not open Janan. Reload to try again. · تعذر فتح الجنان. أعد تحميل الصفحة للمحاولة مجدداً.';
 }
 _flutter.loader.load({
-  config: {canvasKitBaseUrl: 'canvaskit/'},
+  config: {
+    canvasKitBaseUrl: 'canvaskit/',
+    wasmAllowList: {blink: true, webkit: true, gecko: true},
+  },
   onEntrypointLoaded: async (engineInitializer) => {
     try {
       const app = await engineInitializer.initializeEngine();

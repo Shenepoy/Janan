@@ -5,8 +5,8 @@ import 'package:blood_pressure_app/features/input/forms/entry_form_section.dart'
 import 'package:blood_pressure_app/features/input/forms/form_base.dart';
 import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 const _noneSentinel = Object();

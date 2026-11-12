@@ -12,9 +12,9 @@ import 'package:blood_pressure_app/features/settings/edadat_prefs.dart';
 import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:blood_pressure_app/model/storage/file_settings_loader.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Screen that allows mass deleting data entered in the app.
 class DeleteDataScreen extends StatefulWidget {

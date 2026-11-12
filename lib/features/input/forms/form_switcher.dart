@@ -1,7 +1,7 @@
 import 'dart:collection';
 
-import 'package:flutter/material.dart';
 import 'package:inline_tab_view/inline_tab_view.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A resizing view that associates a tab-bar and child widgets.
 class FormSwitcher extends StatefulWidget {

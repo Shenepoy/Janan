@@ -10,9 +10,9 @@ import 'package:blood_pressure_app/model/horizontal_graph_line.dart';
 import 'package:blood_pressure_app/model/known_ble_device.dart';
 import 'package:blood_pressure_app/model/range_limits.dart';
 import 'package:blood_pressure_app/model/weight_unit.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'app_settings.g.dart';

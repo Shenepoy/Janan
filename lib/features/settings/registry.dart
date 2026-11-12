@@ -1,9 +1,9 @@
 import 'package:blood_pressure_app/l10n/app_locales.dart';
 import 'package:blood_pressure_app/model/range_limits.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:material_ui/material_ui.dart';
 
 const generalSection = SettingSection(
   key: 'general',

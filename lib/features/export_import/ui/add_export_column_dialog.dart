@@ -9,8 +9,8 @@ import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Dialog widget for creating and editing a [UserColumn].
 ///

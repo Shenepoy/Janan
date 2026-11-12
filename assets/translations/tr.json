@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "Bu özellik mobil uygulamada kullanılabilir.",
   "homeChartCount": "Geniş ekranlarda en fazla grafik sayısı",
   "homeChartCountDesc": "Yer varsa en fazla bu sayıda grafik gösterilir. Dar ekranlarda bir grafik gösterilir.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "Vücut tahminlerinizi kişiselleştirin",
+  "bodyProfileAutoSave": "Bilgilerinizi bir kez girin. Değişiklikler bu cihaza otomatik olarak kaydedilir.",
+  "bodyProfileDetails": "Bilgileriniz",
+  "bodyProfileEstimates": "Vücut bileşimi"
 }

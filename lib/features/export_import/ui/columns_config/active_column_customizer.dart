@@ -8,7 +8,7 @@ import 'package:blood_pressure_app/features/export_import/ui/columns_config/pres
 import 'package:blood_pressure_app/features/export_import/ui/columns_config/preset_selector.dart';
 import 'package:blood_pressure_app/model/storage/storage.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Class orchestrates preset selector, preset editor and save/delete buttons
 class ActiveColumnCustomizer extends StatelessWidget {

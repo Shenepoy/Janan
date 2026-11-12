@@ -5,8 +5,8 @@ import 'package:blood_pressure_app/features/measurement_list/metric_change_chip.
 import 'package:blood_pressure_app/features/measurement_list/selection/list_selection.dart';
 import 'package:blood_pressure_app/features/measurement_list/selection/selection_action_bar.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../model/export_import/record_formatter_test.dart';
 import '../../util.dart';

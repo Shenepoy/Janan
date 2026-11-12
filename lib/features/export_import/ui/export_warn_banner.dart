@@ -5,7 +5,7 @@ import 'package:blood_pressure_app/model/storage/export_csv_settings.dart';
 import 'package:blood_pressure_app/model/storage/export_settings.dart';
 import 'package:blood_pressure_app/model/storage/types/export_format_setting.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Banner that gives the user information on the importability of their export.

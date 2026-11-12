@@ -11,8 +11,8 @@ import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart' show mapEquals;
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 part 'home_medication_timing_chart_counts.dart';
 part 'home_medication_timing_chart_painter.dart';

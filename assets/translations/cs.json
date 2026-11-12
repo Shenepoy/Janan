@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "Tato funkce je dostupná v mobilní aplikaci.",
   "homeChartCount": "Maximum grafů na široké obrazovce",
   "homeChartCountDesc": "Zobrazí nejvýše tento počet grafů, pokud je místo. Na úzké obrazovce se zobrazí jeden.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "Přizpůsobte odhady tělesného složení",
+  "bodyProfileAutoSave": "Zadejte své údaje jednou. Změny se automaticky ukládají do tohoto zařízení.",
+  "bodyProfileDetails": "Vaše údaje",
+  "bodyProfileEstimates": "Tělesné složení"
 }

@@ -1,7 +1,7 @@
 import 'package:blood_pressure_app/features/measurement_list/cartoon_hop.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_change.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Arrow and delta for a metric versus the previous measurement.
 class MetricChangeChip extends StatelessWidget {

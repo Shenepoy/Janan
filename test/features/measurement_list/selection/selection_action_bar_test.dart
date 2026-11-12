@@ -1,7 +1,7 @@
 import 'package:blood_pressure_app/features/measurement_list/selection/selection_action_bar.dart';
 import 'package:blood_pressure_app/features/shell/shell_tab.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('shows the selection overlay when visibility changes', (

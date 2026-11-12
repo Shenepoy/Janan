@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "Deze functie is beschikbaar in de mobiele app.",
   "homeChartCount": "Maximumaantal grafieken op brede schermen",
   "homeChartCountDesc": "Toont maximaal dit aantal grafieken als er ruimte is. Smalle schermen tonen er één.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "Personaliseer je lichaamsschattingen",
+  "bodyProfileAutoSave": "Voer je gegevens eenmalig in. Wijzigingen worden automatisch op dit apparaat opgeslagen.",
+  "bodyProfileDetails": "Je gegevens",
+  "bodyProfileEstimates": "Lichaamssamenstelling"
 }

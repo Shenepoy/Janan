@@ -6,8 +6,8 @@ import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:blood_pressure_app/model/storage/types/interval_storage_setting.dart';
 import 'package:blood_pressure_app/model/storage/types/time_step.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 import 'package:week_of_year/date_week_extensions.dart';
 

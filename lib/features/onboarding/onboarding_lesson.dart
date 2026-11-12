@@ -4,9 +4,9 @@ import 'package:blood_pressure_app/features/onboarding/onboarding_copy_provider.
 import 'package:blood_pressure_app/features/onboarding/onboarding_palette.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_scene.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Illustrated lessons with a calm reading rhythm and an animated example.
 class OnboardingLesson extends ConsumerWidget {

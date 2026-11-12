@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 extension WaitUntil on WidgetTester {
   /// Retries with 100ms delay for up to [maxLength] for a [test] to succeed.

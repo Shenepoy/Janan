@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Represents an inclusive time span, defined by a [start] and an [end]
 /// [TimeOfDay].

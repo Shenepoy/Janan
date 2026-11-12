@@ -1,6 +1,6 @@
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_snapshot.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Left-axis numeric title.
 ///

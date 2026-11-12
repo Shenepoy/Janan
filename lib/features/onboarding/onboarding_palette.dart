@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Related garden colors give each lesson its own identity in either theme.
 ColorScheme onboardingPalette(ThemeData theme, int page) {

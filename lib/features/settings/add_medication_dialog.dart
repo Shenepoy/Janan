@@ -3,9 +3,9 @@ import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/input/forms/entry_form_section.dart';
 import 'package:blood_pressure_app/features/settings/tiles/color_picker_list_tile.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Full-page editor for a [Medicine].

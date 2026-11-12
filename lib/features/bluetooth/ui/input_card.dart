@@ -1,6 +1,6 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A lightly frosted Bluetooth surface that lets a little of the form show
 /// through while keeping the card content easy to read.

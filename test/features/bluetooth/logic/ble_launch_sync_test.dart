@@ -1,17 +1,17 @@
 import 'dart:async';
 
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_launch_sync.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_read_cubit.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/bluetooth_cubit.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/characteristics/ble_measurement_data.dart';
-import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_weight_data.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/device_scan_cubit.dart';
+import 'package:blood_pressure_app/features/bluetooth/logic/devices/ble_weight_data.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
 import 'package:blood_pressure_app/model/known_ble_device.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 import '../../../helpers/when_listen.dart';
 import '../../../util.dart';

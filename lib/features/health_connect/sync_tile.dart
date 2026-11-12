@@ -2,7 +2,7 @@ import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/features/health_connect/sync_model.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SyncTile extends StatelessWidget {
   const SyncTile({super.key, required this.mdl, required this.disabled});

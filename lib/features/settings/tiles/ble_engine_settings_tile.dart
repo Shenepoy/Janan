@@ -2,9 +2,9 @@ import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Catalog tile that names the BLE and Ultra engines and describes each.
 class BleEngineSettingsTile extends ConsumerWidget {

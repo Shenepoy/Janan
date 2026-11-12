@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
 import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Base for fullscreen dialogs that allow value input.
 class FullscreenDialog extends StatelessWidget {

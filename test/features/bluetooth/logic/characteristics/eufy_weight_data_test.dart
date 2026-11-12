@@ -1,6 +1,6 @@
-import 'package:blood_pressure_app/features/bluetooth/logic/ble_measurement_duplicates.dart';
 import 'dart:typed_data';
 
+import 'package:blood_pressure_app/features/bluetooth/logic/ble_measurement_duplicates.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/characteristics/eufy_weight_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 

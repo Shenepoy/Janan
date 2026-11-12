@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Tiny hop with stretch, squash, and a bounce — like a cartoon character.
 class CartoonHop extends StatefulWidget {

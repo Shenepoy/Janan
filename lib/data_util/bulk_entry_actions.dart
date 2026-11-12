@@ -10,8 +10,8 @@ import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:health/health.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// High-level bulk edits for selected list rows.
 extension BulkEntryUtils on BuildContext {

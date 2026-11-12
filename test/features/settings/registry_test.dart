@@ -1,8 +1,8 @@
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/screens/settings_screen.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   test('catalog orders cards by everyday use with Advanced rows last', () {

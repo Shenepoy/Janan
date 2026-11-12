@@ -62,6 +62,9 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos
 
+      - name: Analyze UI compatibility dependencies
+        run: dart analyze vendor
+
       - name: Test
         run: flutter test
 

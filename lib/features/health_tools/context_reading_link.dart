@@ -3,8 +3,8 @@ import 'package:blood_pressure_app/features/health_tools/health_tools_strings.da
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/model/blood_pressure/pressure_unit.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 
 /// An optional stable-ID link within the selected local diary. A missing

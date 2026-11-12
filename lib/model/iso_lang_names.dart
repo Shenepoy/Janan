@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Selects the correct display name for a specific language code.
 String getDisplayLanguage(Locale l) => switch (l.toLanguageTag()) {

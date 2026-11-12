@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Opens a launch destination above Home without inventing parent screens
 /// from the URL segments (for example, two copies of the medication tabs).

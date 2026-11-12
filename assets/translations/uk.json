@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "Ця функція доступна в мобільному застосунку.",
   "homeChartCount": "Максимум графіків на широкому екрані",
   "homeChartCountDesc": "Показувати не більше цієї кількості графіків, якщо є місце. На вузькому екрані показується один.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "Персоналізуйте оцінки складу тіла",
+  "bodyProfileAutoSave": "Введіть свої дані один раз. Зміни автоматично зберігаються на цьому пристрої.",
+  "bodyProfileDetails": "Ваші дані",
+  "bodyProfileEstimates": "Склад тіла"
 }

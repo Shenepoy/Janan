@@ -19,9 +19,9 @@ import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Charts the user can cycle on the home dashboard.

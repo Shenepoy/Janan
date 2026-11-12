@@ -1,9 +1,9 @@
 import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../util.dart';
 

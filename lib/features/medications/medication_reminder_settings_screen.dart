@@ -1,6 +1,6 @@
 import 'package:blood_pressure_app/features/medications/medication_reminder_runtime.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shows notification permission and exact-timing access for medication reminders.
 class MedicationReminderSettingsScreen extends StatefulWidget {

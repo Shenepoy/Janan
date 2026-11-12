@@ -6,8 +6,8 @@ import 'package:blood_pressure_app/features/export_import/ui/export_field_format
 import 'package:blood_pressure_app/l10n/bidi.dart';
 import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fullscreen dialog that explains the time format and pops the context with either null or a time format string.
 class EnterTimeFormatDialog extends StatefulWidget {

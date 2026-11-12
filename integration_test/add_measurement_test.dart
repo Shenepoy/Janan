@@ -3,9 +3,9 @@ import 'package:blood_pressure_app/features/input/add_entry_dialog.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_list_entry.dart';
 import 'package:blood_pressure_app/features/settings/tiles/color_picker_list_tile.dart';
 import 'package:blood_pressure_app/screens/home_screen.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../test/features/settings/tiles/color_picker_list_tile_test.dart';
 import 'util.dart';

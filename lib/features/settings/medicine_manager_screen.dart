@@ -10,8 +10,8 @@ import 'package:blood_pressure_app/features/settings/add_medication_dialog.dart'
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Medicine catalog, with editing and a direct reminder creation action.

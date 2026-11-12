@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:blood_pressure_app/components/fab_burst_kind.dart';
 import 'package:blood_pressure_app/components/fab_burst_particle.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Paints a FAB's action-specific burst behind its button.
 class FabBurstPainter extends CustomPainter {

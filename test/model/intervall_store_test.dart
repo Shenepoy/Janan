@@ -1,7 +1,7 @@
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/model/storage/types/interval_storage_setting.dart';
 import 'package:blood_pressure_app/model/storage/types/time_step.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
 
 void main() {
   test('base constructor should initialize with values', () {

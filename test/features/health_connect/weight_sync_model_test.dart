@@ -1,5 +1,5 @@
-import 'package:test/test.dart';
 import 'package:health/health.dart';
+import 'package:test/test.dart';
 
 void main() {
  test('health types are of units assumed in code', () {

@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "Тази функция е достъпна в мобилното приложение.",
   "homeChartCount": "Максимум графики на широк екран",
   "homeChartCountDesc": "Показва до този брой графики, ако има място. На тесни екрани се показва една.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "Персонализирайте оценките за тялото си",
+  "bodyProfileAutoSave": "Въведете данните си веднъж. Промените се запазват автоматично на това устройство.",
+  "bodyProfileDetails": "Вашите данни",
+  "bodyProfileEstimates": "Телесен състав"
 }

@@ -109,7 +109,7 @@ This fork is not on Play. Build from source if you want a copy you signed yourse
 
 ## Develop
 
-**Requirements:** Flutter `3.47.1` (pinned in `pubspec.yaml`).
+**Requirements:** Flutter `3.50.0` (pinned in `pubspec.yaml`).
 
 ```bash
 git clone https://github.com/Zyzto/blood-pressure-monitor-fl.git

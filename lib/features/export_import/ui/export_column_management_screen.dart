@@ -4,8 +4,8 @@ import 'package:blood_pressure_app/features/export_import/model/column.dart';
 import 'package:blood_pressure_app/features/export_import/ui/add_export_column_dialog.dart';
 import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Page that shows all export columns and allows adding and editing custom
 /// ones.

@@ -9,9 +9,9 @@ import 'package:blood_pressure_app/features/home/ble_home_sync_indicator.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
 import 'package:blood_pressure_app/model/known_ble_device.dart';
-import 'package:flutter/material.dart';
-import 'package:safaeh/safaeh.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:safaeh/safaeh.dart';
 
 import '../../../util.dart';
 

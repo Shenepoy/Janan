@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "இந்த அம்சம் மொபைல் செயலியில் கிடைக்கிறது.",
   "homeChartCount": "அகலமான திரைகளில் வரைபடங்களின் அதிகபட்ச எண்ணிக்கை",
   "homeChartCountDesc": "இடம் இருந்தால் இந்த எண்ணிக்கை வரை வரைபடங்களைக் காட்டு. குறுகிய திரைகளில் ஒன்று காட்டப்படும்.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "உங்கள் உடல் மதிப்பீடுகளைத் தனிப்பயனாக்குங்கள்",
+  "bodyProfileAutoSave": "உங்கள் விவரங்களை ஒருமுறை உள்ளிடுங்கள். மாற்றங்கள் இந்தச் சாதனத்தில் தானாகச் சேமிக்கப்படும்.",
+  "bodyProfileDetails": "உங்கள் விவரங்கள்",
+  "bodyProfileEstimates": "உடல் அமைப்பு"
 }

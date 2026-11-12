@@ -4,7 +4,7 @@ import 'package:blood_pressure_app/features/statistics/chart/time_axis_titles.da
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_snapshot.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// A statistic that shows how often values occur in a list of values.

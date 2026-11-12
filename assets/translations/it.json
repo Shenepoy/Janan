@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "Questa funzione è disponibile nell’app mobile.",
   "homeChartCount": "Numero massimo di grafici su schermi larghi",
   "homeChartCountDesc": "Mostra fino a questo numero di grafici se c’è spazio. Gli schermi stretti ne mostrano uno.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "Personalizza le stime corporee",
+  "bodyProfileAutoSave": "Inserisci i tuoi dati una volta. Le modifiche vengono salvate automaticamente su questo dispositivo.",
+  "bodyProfileDetails": "I tuoi dati",
+  "bodyProfileEstimates": "Composizione corporea"
 }

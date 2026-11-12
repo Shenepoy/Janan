@@ -4,8 +4,8 @@ import 'package:blood_pressure_app/features/measurement_list/previous_measuremen
 import 'package:blood_pressure_app/features/measurement_list/selection/list_selection.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Category filter used for the home measurement table.
 enum MeasurementListFilter { all, bloodPressure, medicine }

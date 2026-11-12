@@ -12,8 +12,8 @@ import 'package:blood_pressure_app/model/blood_pressure/pressure_unit.dart';
 import 'package:blood_pressure_app/model/blood_pressure_analyzer.dart';
 import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// SYS / DIA / PUL averages for the selected range, grouped in one card.
 class PeriodMetricCards extends ConsumerWidget {

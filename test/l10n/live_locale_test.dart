@@ -1,14 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/l10n/loaded_locale.dart';
 import 'package:blood_pressure_app/screens/settings_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../util.dart';
 
@@ -55,7 +56,10 @@ void main() {
                 return MaterialApp(
                   locale: loadedAppLocale(context),
                   supportedLocales: context.supportedLocales,
-                  localizationsDelegates: context.localizationDelegates,
+                  localizationsDelegates: [
+ ...GlobalMaterialLocalizations.delegates,
+ ...context.localizationDelegates,
+ ],
                   home: const SettingsPage(),
                 );
               },

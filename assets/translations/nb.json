@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "Denne funksjonen er tilgjengelig i mobilappen.",
   "homeChartCount": "Maksimalt antall grafer på brede skjermer",
   "homeChartCountDesc": "Viser opptil dette antallet grafer når det er plass. Smale skjermer viser én.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "Tilpass kroppsberegningene dine",
+  "bodyProfileAutoSave": "Legg inn opplysningene dine én gang. Endringer lagres automatisk på denne enheten.",
+  "bodyProfileDetails": "Dine opplysninger",
+  "bodyProfileEstimates": "Kroppssammensetning"
 }

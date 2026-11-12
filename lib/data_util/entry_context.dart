@@ -12,8 +12,8 @@ import 'package:blood_pressure_app/model/storage/storage.dart' show ExportSettin
 import 'package:blood_pressure_app/screens/add_entry_screen.dart';
 import 'package:blood_pressure_app/screens/error_reporting_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:health/health.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Allow high level operations on the repositories in context.
 extension EntryUtils on BuildContext {

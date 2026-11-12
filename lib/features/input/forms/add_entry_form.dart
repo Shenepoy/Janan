@@ -13,10 +13,10 @@ import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 import 'package:uuid/uuid.dart';
 

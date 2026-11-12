@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "この機能はモバイルアプリで利用できます。",
   "homeChartCount": "広い画面で表示するグラフの最大数",
   "homeChartCountDesc": "空きスペースに応じて、この数までグラフを表示します。狭い画面では1つ表示します。",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "体の推定値を個人に合わせて調整",
+  "bodyProfileAutoSave": "情報を一度入力すると、変更はこの端末に自動保存されます。",
+  "bodyProfileDetails": "個人情報",
+  "bodyProfileEstimates": "体組成"
 }

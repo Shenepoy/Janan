@@ -1,6 +1,6 @@
 import 'package:blood_pressure_app/components/form_bottom_action.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared frame for settings pages that own a scrollable or an async body.
 class SettingsPageFrame extends StatelessWidget {

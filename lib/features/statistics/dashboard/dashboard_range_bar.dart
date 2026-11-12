@@ -5,8 +5,8 @@ import 'package:blood_pressure_app/core/settings/storage_providers.dart';
 import 'package:blood_pressure_app/features/data_picker/interval_picker.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Pill range control for a dashboard-style app bar.

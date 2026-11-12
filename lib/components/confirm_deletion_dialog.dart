@@ -1,6 +1,6 @@
 import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Outcome of the deletion confirmation sheet.

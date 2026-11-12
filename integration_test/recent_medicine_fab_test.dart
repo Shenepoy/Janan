@@ -4,11 +4,11 @@ import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart'
 import 'package:blood_pressure_app/features/medications/medication_reminder_providers.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
 import 'package:blood_pressure_app/features/settings/initialize_app_settings.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

@@ -1,7 +1,7 @@
 import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 /// Open a compact range calendar dropping from the tapped date control.

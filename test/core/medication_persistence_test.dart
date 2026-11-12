@@ -3,15 +3,15 @@ import 'dart:io';
 import 'package:blood_pressure_app/core/repository/powersync_medication_schedule_repository.dart';
 import 'package:blood_pressure_app/core/repository/powersync_medicine_intake_repository.dart';
 import 'package:blood_pressure_app/core/repository/powersync_medicine_repository.dart';
-import 'package:blood_pressure_app/domain/domain.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:blood_pressure_app/core/repository/repository_providers.dart';
+import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
-import 'package:safaeh/safaeh.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:powersync/powersync.dart';
+import 'package:safaeh/safaeh.dart';
 
-import 'powersync_probe.dart';
 import '../util.dart';
+import 'powersync_probe.dart';
 
 void main() {
   late PowerSyncDatabase db;

@@ -1,6 +1,6 @@
 import 'package:blood_pressure_app/features/bluetooth/ui/input_card.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compact placeholder shown while no bluetooth devices have been found yet.
 class DeviceScanPlaceholder extends StatelessWidget {

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A text widget that shows a placeholder('-') when no text is present.
 class NullableText extends StatelessWidget {

@@ -1,5 +1,5 @@
 import 'package:blood_pressure_app/features/onboarding/onboarding_palette.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A quiet wash of color behind the lively examples, leaving copy and controls
 /// on a clean surface. Page and theme changes blend without a repeating ticker.

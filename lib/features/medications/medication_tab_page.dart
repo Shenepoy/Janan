@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Preserves a medication destination's date and scroll position between swipes.
 class MedicationTabPage extends StatefulWidget {

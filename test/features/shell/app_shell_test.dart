@@ -1,7 +1,6 @@
-import '../../util.dart';
 import 'dart:async';
-
 import 'dart:ui' as ui;
+
 import 'package:blood_pressure_app/core/settings/storage_providers.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
 import 'package:blood_pressure_app/features/data_picker/interval_picker.dart';
@@ -9,20 +8,21 @@ import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart'
 import 'package:blood_pressure_app/features/measurement_list/selection/selection_action_bar.dart';
 import 'package:blood_pressure_app/features/shell/app_shell.dart';
 import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
-import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_range_bar.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_page_body.dart';
+import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_range_bar.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:blood_pressure_app/screens/settings_screen.dart';
 import 'package:camera_cutout/camera_cutout.dart';
 import 'package:camera_cutout/camera_cutout_platform_interface.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
+
+import '../../util.dart';
 
 /// Scrolls the settings list until [target] sits clear of the app bar and nav.
 ///

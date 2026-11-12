@@ -6,7 +6,7 @@ import 'package:blood_pressure_app/features/bluetooth/logic/ble_measurement_dupl
 import 'package:blood_pressure_app/features/bluetooth/logic/characteristics/ble_measurement_data.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/input_card.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Indication of a successful bluetooth read that returned multiple measurements.
 class MeasurementMultiple extends StatefulWidget {

@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "Ez a funkció a mobilalkalmazásban érhető el.",
   "homeChartCount": "Grafikonok maximális száma széles képernyőn",
   "homeChartCountDesc": "Legfeljebb ennyi grafikont mutat, ha van elég hely. Keskeny képernyőn egy látható.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "Személyre szabott testösszetétel-becslések",
+  "bodyProfileAutoSave": "Add meg egyszer az adataidat. A változtatásokat az eszköz automatikusan menti.",
+  "bodyProfileDetails": "Adataid",
+  "bodyProfileEstimates": "Testösszetétel"
 }

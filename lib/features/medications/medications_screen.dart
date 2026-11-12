@@ -3,7 +3,7 @@ import 'package:blood_pressure_app/features/medications/medication_reminders_scr
 import 'package:blood_pressure_app/features/medications/medication_tab_page.dart';
 import 'package:blood_pressure_app/features/settings/medicine_manager_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Destinations within the medication area; switching does not push a route.
 enum MedicationTab { today, reminders, medicines }

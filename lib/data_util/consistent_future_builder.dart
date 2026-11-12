@@ -2,7 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:blood_pressure_app/app.dart' show App;
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A future builder with app defaults.
 class ConsistentFutureBuilder<T> extends StatefulWidget {

@@ -2,8 +2,8 @@ import 'package:blood_pressure_app/core/repository/watch_providers.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A builder that provides the contents of a repository.
 class RepositoryBuilder<T, R extends Repository<T>> extends ConsumerWidget {

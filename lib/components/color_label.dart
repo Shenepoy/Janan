@@ -1,5 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Human-readable names for the standard palette, with a custom-color fallback.
 String colorLabel(Color color) {

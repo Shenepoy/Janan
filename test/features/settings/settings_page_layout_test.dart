@@ -1,4 +1,3 @@
-import '../../util.dart';
 import 'package:blood_pressure_app/features/export_import/ui/export_column_management_screen.dart';
 import 'package:blood_pressure_app/features/export_import/ui/export_field_format_documentation_screen.dart';
 import 'package:blood_pressure_app/features/settings/bluetooth_devices_screen.dart';
@@ -7,8 +6,10 @@ import 'package:blood_pressure_app/features/settings/configure_warn_values_scree
 import 'package:blood_pressure_app/features/settings/delete_data_screen.dart';
 import 'package:blood_pressure_app/features/settings/range_limits_screen.dart';
 import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../../util.dart';
 
 
 void main() {

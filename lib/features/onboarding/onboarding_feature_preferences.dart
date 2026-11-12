@@ -7,10 +7,10 @@ import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/settings/tiles/slider_list_tile.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// First-run preferences for the enabled tracking features.
 /// Writes use the same registry as Settings; hidden features retain their values.

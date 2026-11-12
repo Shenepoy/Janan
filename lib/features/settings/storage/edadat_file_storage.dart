@@ -9,8 +9,8 @@ import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
 import 'package:blood_pressure_app/model/bluetooth_measurement_import_mode.dart';
 import 'package:blood_pressure_app/model/body_sex.dart';
 import 'package:blood_pressure_app/model/weight_unit.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 

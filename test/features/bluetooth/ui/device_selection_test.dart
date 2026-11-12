@@ -1,8 +1,8 @@
 import 'package:blood_pressure_app/features/bluetooth/backend/bluetooth_backend.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/device_selection.dart';
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../util.dart';
 

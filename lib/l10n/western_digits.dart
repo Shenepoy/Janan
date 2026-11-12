@@ -1,10 +1,9 @@
 // Named constructors match [DateFormat] (yMMMd, MMM, …).
 // ignore_for_file: non_constant_identifier_names
 
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 const _easternArabic = '٠١٢٣٤٥٦٧٨٩';
 const _persian = '۰۱۲۳۴۵۶۷۸۹';
@@ -88,5 +87,6 @@ List<LocalizationsDelegate<dynamic>> withWesternDigits(
 ) =>
     [
       const WesternDigitsMaterialLocalizationsDelegate(),
+      ...GlobalMaterialLocalizations.delegates,
       ...delegates,
     ];

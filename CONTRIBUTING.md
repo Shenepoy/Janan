@@ -20,7 +20,7 @@ Build notes and architecture live in [`docs/`](docs/). CI, signing, and Obtainiu
 
 To build locally:
 
-1. Install [Flutter](https://docs.flutter.dev/get-started/install) `3.47.1` (pinned in `pubspec.yaml`)
+1. Install [Flutter](https://docs.flutter.dev/get-started/install) `3.50.0` (pinned in `pubspec.yaml`)
 2. `git clone https://github.com/Zyzto/blood-pressure-monitor-fl.git`
 3. `cd blood-pressure-monitor-fl`
 4. `dart run build_runner build`

@@ -724,8 +724,8 @@
   "webNativeFeatureUnavailable": "Ta funkcija je na voljo v mobilni aplikaciji.",
   "homeChartCount": "Največ grafov na širokih zaslonih",
   "homeChartCountDesc": "Prikaže največ toliko grafov, če je dovolj prostora. Na ozkih zaslonih prikaže enega.",
-  "bodyProfileIntro": "Personalize your body estimates",
-  "bodyProfileAutoSave": "Add your details once. Changes are saved automatically on this device.",
-  "bodyProfileDetails": "Your details",
-  "bodyProfileEstimates": "Body composition"
+  "bodyProfileIntro": "Prilagodite ocene telesne sestave",
+  "bodyProfileAutoSave": "Svoje podatke vnesite enkrat. Spremembe se samodejno shranijo v tej napravi.",
+  "bodyProfileDetails": "Vaši podatki",
+  "bodyProfileEstimates": "Telesna sestava"
 }
