@@ -51,8 +51,6 @@ dependencies:
   persistent_user_dir_access_android: ^0.0.3
   share_plus: ^13.3.0
   sqflite_common_ffi: ^2.4.2
-  inline_tab_view:
-    path: vendor/inline_tab_view
   health: ^13.3.1
   receive_intent: ^0.2.7
   fl_chart: ^1.2.0

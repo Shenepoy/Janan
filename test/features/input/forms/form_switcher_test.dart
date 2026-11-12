@@ -1,34 +1,46 @@
 import 'package:blood_pressure_app/features/input/forms/form_switcher.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:inline_tab_view/inline_tab_view.dart';
+import 'package:safaeh/safaeh.dart';
 import 'package:material_ui/material_ui.dart';
 
 void main() {
-  testWidgets('shows a InlineTabView', (tester) async {
-    await tester.pumpWidget(MaterialApp(
+  testWidgets('shows a SafaehTabView', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
         home: Scaffold(
-            body: FormSwitcher(
-      subForms: [
-        (SizedBox(width: 1, height: 1), SizedBox(width: 2, height: 2))
-      ],
-    ))));
+          body: FormSwitcher(
+            subForms: [
+              (SizedBox(width: 1, height: 1), SizedBox(width: 2, height: 2)),
+            ],
+          ),
+        ),
+      ),
+    );
 
     expect(find.byType(TabBar), findsNothing, reason: 'only one tab present');
     expect(find.byType(TabBarView), findsNothing);
-    expect(find.byType(InlineTabView), findsNothing, reason: 'only one tab present');
+    expect(
+      find.byType(SafaehTabView),
+      findsNothing,
+      reason: 'only one tab present',
+    );
   });
 
   testWidgets('shows all passed tabs in TabBar', (tester) async {
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(
+      MaterialApp(
         home: Scaffold(
-            body: FormSwitcher(
-      subForms: [
-        (Text('Tab 1'), SizedBox(width: 2, height: 2)),
-        (Text('Tab 2'), SizedBox(width: 2, height: 2)),
-        (Text('Tab 3'), SizedBox(width: 2, height: 2)),
-        (Text('Tab 4'), SizedBox(width: 2, height: 2)),
-      ],
-    ))));
+          body: FormSwitcher(
+            subForms: [
+              (Text('Tab 1'), SizedBox(width: 2, height: 2)),
+              (Text('Tab 2'), SizedBox(width: 2, height: 2)),
+              (Text('Tab 3'), SizedBox(width: 2, height: 2)),
+              (Text('Tab 4'), SizedBox(width: 2, height: 2)),
+            ],
+          ),
+        ),
+      ),
+    );
 
     expect(find.text('Tab 1'), findsOneWidget);
     expect(find.text('Tab 2'), findsOneWidget);
@@ -37,16 +49,20 @@ void main() {
   });
 
   testWidgets('associates title and widget correctly', (tester) async {
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(
+      MaterialApp(
         home: Scaffold(
-            body: FormSwitcher(
-      subForms: [
-        (Text('Tab 1'), Text('Content 1')),
-        (Text('Tab 2'), Text('Content 2')),
-        (Text('Tab 3'), Text('Content 3')),
-        (Text('Tab 4'), Text('Content 4')),
-      ],
-    ))));
+          body: FormSwitcher(
+            subForms: [
+              (Text('Tab 1'), Text('Content 1')),
+              (Text('Tab 2'), Text('Content 2')),
+              (Text('Tab 3'), Text('Content 3')),
+              (Text('Tab 4'), Text('Content 4')),
+            ],
+          ),
+        ),
+      ),
+    );
 
     expect(find.text('Content 1'), findsOneWidget);
     expect(find.text('Content 2'), findsNothing);
@@ -72,19 +88,21 @@ void main() {
 
   testWidgets('controller provides index', (tester) async {
     final controller = FormSwitcherController();
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: FormSwitcher(
-          controller: controller,
-          subForms: [
-            (Text('Tab 1'), Text('Content 1')),
-            (Text('Tab 2'), Text('Content 2')),
-            (Text('Tab 3'), Text('Content 3')),
-            (Text('Tab 4'), Text('Content 4')),
-          ],
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FormSwitcher(
+            controller: controller,
+            subForms: [
+              (Text('Tab 1'), Text('Content 1')),
+              (Text('Tab 2'), Text('Content 2')),
+              (Text('Tab 3'), Text('Content 3')),
+              (Text('Tab 4'), Text('Content 4')),
+            ],
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     expect(controller.index, 0);
 
@@ -95,5 +113,33 @@ void main() {
     controller.animateTo(3);
     await tester.pumpAndSettle();
     expect(controller.index, 3);
+  });
+  testWidgets('keeps unsaved form values when switching tabs', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: FormSwitcher(
+              subForms: [
+                (Text('Pressure'), TextField()),
+                (Text('Weight'), TextField()),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.enterText(find.byType(TextField), '120');
+    await tester.tap(find.text('Weight'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '70');
+    await tester.tap(find.text('Pressure'));
+    await tester.pumpAndSettle();
+    expect(find.text('120'), findsOneWidget);
+    expect(find.text('70'), findsNothing);
+    await tester.tap(find.text('Weight'));
+    await tester.pumpAndSettle();
+    expect(find.text('70'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

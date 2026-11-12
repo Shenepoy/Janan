@@ -12,8 +12,9 @@ and light/dark themes are retained. Modern Material localization delegates are
 registered alongside Easy Localization, with the Arabic Western-digit override
 first. The small remaining Cupertino imports use `cupertino_ui` 1.1.6.
 
-Safaeh 0.12.0, flutter_settings_framework 0.11.0, and inline_tab_view 1.0.2 still
-expose legacy Material types in their published APIs. `vendor/` contains minimal
+The initial migration used compatibility copies of Safaeh 0.12.0,
+flutter_settings_framework 0.11.0, and inline_tab_view 1.0.2. Safaeh and the
+settings framework have since published Material UI-compatible 1.0.0 releases. `vendor/` contains minimal
 compatibility copies from their published sources, retaining licenses, original
 file hashes, and package-specific patch notes. They do not depend on a sibling
 working tree or change the pub cache. Replace them when compatible upstream
@@ -84,3 +85,20 @@ successful live purchases, hosted AI, or a production Flutter cutover.
 References:
 - https://flutter.dev/blog/whats-new-in-flutter-3-50
 - https://docs.flutter.dev/release/breaking-changes/material-ui-and-cupertino-ui
+
+## Content-sized tab forms
+
+Janan now uses `SafaehTabView` in its input form switcher. The inline_tab_view
+dependency and its vendored patch have been removed. The original component is
+implemented and tested in the Safaeh repository and mirrored into the Safaeh
+snapshot here and in the cloud overlay until a release includes it. It keeps
+form state, animates height changes, and disables inactive focus, semantics, and
+tickers. Reduced motion disables the height animation. Tab selection remains
+button/controller driven. No package release is made by this change.
+
+Validation for the replacement: Safaeh analyzer clean and all 276 package tests
+passed, including nine focused tab-view cases. Janan analyzer clean and all 94
+input/editor tests passed. The tab cases cover growing/shrinking height, draft
+retention, hidden focus/semantics, ticker exclusion, reduced-motion changes,
+controller replacement, rapid navigation, child reordering, and globally keyed
+forms.

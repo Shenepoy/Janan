@@ -1,20 +1,17 @@
 import 'dart:collection';
 
-import 'package:inline_tab_view/inline_tab_view.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:safaeh/safaeh.dart';
 
 /// A resizing view that associates a tab-bar and child widgets.
 class FormSwitcher extends StatefulWidget {
   /// Create a resizing view that associates a tab-bar and child widgets-
-  const FormSwitcher({super.key,
-    required this.subForms,
-    this.controller,
-  });
+  const FormSwitcher({super.key, required this.subForms, this.controller});
 
   /// List of (tab title, tab content) pairs.
   final List<(Widget, Widget)> subForms;
-  
-  /// Controller to use to control the switcher from code. 
+
+  /// Controller to use to control the switcher from code.
   final FormSwitcherController? controller;
 
   @override
@@ -69,20 +66,14 @@ class _FormSwitcherState extends State<FormSwitcher>
           controller: controller,
           tabs: [
             for (final f in widget.subForms)
-              Padding(
-                padding: EdgeInsets.all(8.0),
-                child: f.$1,
-              ),
+              Padding(padding: EdgeInsets.all(8.0), child: f.$1),
           ],
         ),
-        InlineTabView(
+        SafaehTabView(
           controller: controller,
           children: [
             for (final f in widget.subForms)
-              Padding(
-                padding: EdgeInsets.only(top: 8.0),
-                child: f.$2,
-              ),
+              Padding(padding: EdgeInsets.only(top: 8.0), child: f.$2),
           ],
         ),
       ],
@@ -97,7 +88,7 @@ class FormSwitcherController {
   TabController? _controller;
 
   /// Add a reference to a TabController to control.
-  /// 
+  ///
   /// This does not mean this object is responsible for destroying it.
   void _initialize(TabController controller) {
     _controller = controller;

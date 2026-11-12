@@ -57,3 +57,5 @@ export 'src/device_cutout_scope.dart';
 export 'src/display_cutout_layout.dart';
 export 'src/cutout_aware_fab_location.dart';
 export 'src/cycle_button.dart';
+
+export 'src/tab_view.dart';
