@@ -1,0 +1,3 @@
+Noto Color Emoji, SIL Open Font License 1.1
+Source: https://github.com/googlefonts/noto-emoji/blob/99701e07d3d1fe1bdbcdb14964547f0fd592966f/2D/fonts/NotoColorEmoji.ttf
+SHA-256: 15671215ab769fdc7162a045d56fd7d7e477c51b04e6b3c761d914d8fdd6cc44

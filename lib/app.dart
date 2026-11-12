@@ -46,6 +46,7 @@ import 'package:blood_pressure_app/screens/home_screen.dart';
 import 'package:blood_pressure_app/screens/settings_screen.dart';
 import 'package:blood_pressure_app/screens/statistics_screen.dart';
 import 'package:blood_pressure_app/screens/weight_screen.dart';
+import 'package:blood_pressure_app/theme/app_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -141,9 +142,8 @@ class _AppState extends ConsumerState<App> with Loggable {
         // already gone
       }
       try {
-        Directory(
-          join(await getDatabasesPath(), 'settings'),
-        ).deleteSync(recursive: true);
+        Directory(join(await getDatabasesPath(), 'settings'))
+            .deleteSync(recursive: true);
       } on FileSystemException {
         // already gone
       }
@@ -536,9 +536,8 @@ class _AppRootState extends ConsumerState<_AppRoot> {
       _ => languageKey,
     };
     try {
-      await const MethodChannel(
-        'com.shenepoy.janan/app_locale',
-      ).invokeMethod<void>('set', {'tag': tag});
+      await const MethodChannel('com.shenepoy.janan/app_locale')
+          .invokeMethod<void>('set', {'tag': tag});
     } on MissingPluginException {
       // Desktop and tests do not expose the Android locale channel.
     } on PlatformException {
@@ -670,12 +669,14 @@ class _AppRootState extends ConsumerState<_AppRoot> {
         onGenerateTitle: (context) => 'title'.tr(),
         theme: _buildTheme(
           ColorScheme.fromSeed(seedColor: settings.accentColor),
+          locale,
         ),
         darkTheme: _buildTheme(
           ColorScheme.fromSeed(
             seedColor: settings.accentColor,
             brightness: Brightness.dark,
           ),
+          locale,
         ),
         themeMode: settings.themeMode,
         localizationsDelegates: withWesternDigits(
@@ -715,7 +716,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
     );
   }
 
-  ThemeData _buildTheme(ColorScheme colorScheme) {
+  ThemeData _buildTheme(ColorScheme colorScheme, Locale locale) {
     final inputBorder = OutlineInputBorder(
       borderSide: BorderSide(
         width: 3,
@@ -728,6 +729,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
 
     return ThemeData(
       colorScheme: colorScheme,
+      fontFamilyFallback: appFontFallbacks(locale),
       useMaterial3: true,
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: colorScheme.primary,

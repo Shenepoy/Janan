@@ -221,3 +221,20 @@ Settings ZIP recovery also passes through the actual download/file-picker flow.
 The isolated source changed Compact table rows from off to on after backup;
 restoring the ZIP and restarting returned it to off. Re-exported JSON matched
 all seven archive entries, and all six settings-loader tests pass.
+
+
+## Bundled UI fonts — 2026-11-12
+
+Register the existing Noto Arabic, Tamil, Japanese and Chinese assets under
+`flutter.fonts`, not only `flutter.assets` (the latter previously served PDF
+exports). The shared theme uses these local fallback families and prefers
+Japanese Han forms when the UI locale is Japanese. Noto Color Emoji is bundled
+with its upstream revision, checksum and OFL license. This avoids depending on
+Flutter's external fallback-font CDN, which the hosted CSP intentionally blocks.
+
+Regression tests inspect the generated runtime manifest and rasterize real
+script/emoji glyphs. The multilingual layout audit now loads that same manifest
+instead of registering otherwise undeclared fonts just for tests. All 430
+Arabic/Japanese/Chinese/Tamil layout cases, the font tests and 21 live-locale/
+settings tests pass; static analysis is clean. Font cmap auditing covers every
+visible scalar used by those translations, including Traditional Chinese.

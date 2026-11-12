@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:blood_pressure_app/theme/app_fonts.dart';
+
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -79,42 +83,29 @@ void main() {
             : null,
       );
 
-    for (final family in {
-      'Roboto': [
-        'assets/fonts/NotoSans-Regular.ttf',
-        'assets/fonts/NotoSans-Bold.ttf',
-      ],
-      'NotoSansTamil': [
-        'assets/fonts/NotoSansTamil-Regular.ttf',
-        'assets/fonts/NotoSansTamil-Bold.ttf',
-      ],
-      'NotoSansSC': ['assets/fonts/NotoSansSC.ttf'],
-      'NotoSansJP': ['assets/fonts/NotoSansJP.ttf'],
-      'NotoSansArabic': [
-        'assets/fonts/NotoSansArabic-Regular.ttf',
-        'assets/fonts/NotoSansArabic-Bold.ttf',
-      ],
-      'Ahem': [
-        'assets/fonts/NotoSans-Regular.ttf',
-        'assets/fonts/NotoSansArabic-Regular.ttf',
-      ],
-      'monospace': ['assets/fonts/NotoSans-Regular.ttf'],
-    }.entries) {
-      final loader = FontLoader(family.key);
-      for (final path in family.value) {
-        loader.addFont(File(path).readAsBytes().then(ByteData.sublistView));
+    final manifest =
+        jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
+    final runtimeFamilies = {
+      ...appFontFallbacks(const Locale('en')),
+      'MaterialIcons',
+      'packages/material_symbols_icons/MaterialSymbolsOutlined',
+    };
+    for (final entry in manifest.where(
+      (entry) => runtimeFamilies.contains(entry['family']),
+    )) {
+      final loader = FontLoader(entry['family'] as String);
+      for (final font in entry['fonts'] as List) {
+        loader.addFont(rootBundle.load(font['asset'] as String));
       }
       await loader.load();
     }
-    await (FontLoader(
-      'MaterialIcons',
-    )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
-    await (FontLoader('MaterialSymbolsOutlined')..addFont(
-          rootBundle.load(
-            'packages/material_symbols_icons/lib/fonts/MaterialSymbolsOutlined.ttf',
-          ),
-        ))
-        .load();
+    // Keep the existing test-only Latin metrics; non-Latin fonts above now come
+    // exclusively from the same generated manifest used by the shipped app.
+    for (final family in ['Roboto', 'Ahem', 'monospace']) {
+      final loader = FontLoader(family);
+      loader.addFont(rootBundle.load('assets/fonts/NotoSans-Regular.ttf'));
+      await loader.load();
+    }
   });
   final at = DateTime.now().subtract(const Duration(days: 1));
   final record = BloodPressureRecord(
@@ -251,19 +242,12 @@ void main() {
             final app = await materialApp(
               Builder(
                 builder: (context) => MediaQuery(
-                  data: MediaQuery.of(
-                    context,
-                  ).copyWith(textScaler: TextScaler.linear(1.3)),
+                  data: MediaQuery.of(context)
+                      .copyWith(textScaler: TextScaler.linear(1.3)),
                   child: Theme(
                     data: ThemeData(
                       fontFamily: 'Roboto',
-                      fontFamilyFallback: [
-                        'NotoSansArabic',
-                        'NotoSansTamil',
-                        if (locale.languageCode == 'ja') 'NotoSansJP',
-                        'NotoSansSC',
-                        if (locale.languageCode != 'ja') 'NotoSansJP',
-                      ],
+                      fontFamilyFallback: appFontFallbacks(locale),
                       colorScheme: ColorScheme.fromSeed(
                         seedColor: const Color(0xFF00695C),
                       ),

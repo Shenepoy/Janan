@@ -31,6 +31,15 @@ Future<void> runJanan({
       await initializeIntegrations?.call();
       LicenseRegistry.addLicense(() async* {
         yield LicenseEntryWithLineBreaks([
+          'Noto Color Emoji',
+        ], await rootBundle.loadString('assets/fonts/NotoColorEmoji-OFL.txt'));
+        yield LicenseEntryWithLineBreaks([
+          'Noto Sans',
+          'Noto Sans Arabic',
+          'Noto Sans Tamil',
+          'Noto Sans SC',
+        ], await rootBundle.loadString('assets/fonts/OFL.txt'));
+        yield LicenseEntryWithLineBreaks([
           'Noto Sans JP',
         ], await rootBundle.loadString('assets/fonts/NotoSansJP-OFL.txt'));
       });
