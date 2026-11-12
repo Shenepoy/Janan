@@ -38,9 +38,21 @@ checklist through the GitHub Release.
    commit to pass.
 4. Confirm the matching `vYY.0M.MICRO` tag does not already exist. Create an annotated tag at the
    CI-green commit and push that tag to `origin`.
-5. Wait for the tag-triggered `Release` workflow. Confirm it passes and the GitHub Release contains
+5. Wait for the tag-triggered `Release` workflow. Confirm it passes and the draft GitHub Release contains
    the ABI APKs (`armeabi-v7a`, `arm64-v8a`, `x86_64`), universal APK, and symbols archive before
    reporting the release as published.
+   The workflow creates a draft so the two distributions can be assembled before
+   Obtainium sees the release. Build the clean private composition with
+   `JANAN_FLAVOR=prod JANAN_TARGET=lib/main_cloud.dart ARTIFACT_PREFIX=janan`
+   and a public-only `JANAN_DART_DEFINE_FILE`, using the same release script.
+   Upload its four APKs, symbols, and verified corresponding source/checksum.
+   Verify production APK IDs are `com.shenepoy.janan`, FOSS IDs are
+   `com.shenepoy.janan.foss`, and both use the existing release certificate.
+   Publish the completed draft with `gh release edit <tag> --draft=false`.
+
+FOSS assets are named `janan-foss-<version>-<abi>.apk`. Production assets retain
+`janan-<version>-<abi>.apk` for existing installations/Obtainium filters. Never
+replace a production update with a different application ID.
 
 Never move or overwrite an existing release tag. If a tagged release needs a code fix, use a new
 micro version and build number.

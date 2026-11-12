@@ -110,3 +110,8 @@ supports the standalone Material UI packages. The app uses both published
 packages with a committed lockfile. All three temporary UI compatibility
 directories have been removed. Historical validation above describes the
 intermediate migration; the release runs the complete CI checks again.
+
+CI uses JDK 21 to run the Android build and lint tooling. AGP 9.3.1's lint
+JavaDoc parser calls `List.removeLast`, which is unavailable in JDK 17 and
+caused a CI-only `NoSuchMethodError`. App Java/Kotlin bytecode targets remain
+17; lint remains enabled. Local signed builds use the same JDK 21 generation.

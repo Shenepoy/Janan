@@ -115,7 +115,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -143,7 +143,9 @@ jobs:
         run: ./gradlew :app:testFossDebugUnitTest
 
       - name: Signing property serialization
-        run: python3 scripts/ci/test_signing_properties.py
+        run: |
+          python3 scripts/ci/test_signing_properties.py
+          python3 scripts/ci/test_release_packaging.py
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
@@ -169,7 +171,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -204,7 +206,7 @@ jobs:
         run: |
           eval "$(bash ./scripts/ci/app_version.sh)"
           for suffix in armeabi-v7a arm64-v8a x86_64 universal; do
-            apk="dist/janan-${name}-${suffix}.apk"
+            apk="dist/janan-foss-${name}-${suffix}.apk"
             test -s "$apk" || { echo "Missing APK: $apk" >&2; exit 1; }
           done
           sdk="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
@@ -222,7 +224,7 @@ jobs:
               exit 1
             fi
           done
-          unzip -l "dist/janan-${name}-symbols.zip" | grep -q 'mapping.txt'
+          unzip -l "dist/janan-foss-${name}-symbols.zip" | grep -q 'mapping.txt'
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
