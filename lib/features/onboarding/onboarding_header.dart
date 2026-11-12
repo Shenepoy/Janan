@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -27,9 +25,7 @@ class OnboardingHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
-        // Desktop appearance controls stay at the physical top-right, including
-        // RTL locales. Mobile navigation follows the locale's trailing edge.
-        textDirection: appearanceControls != null ? ui.TextDirection.ltr : null,
+        // Keep actions at the logical end; Arabic mirrors the entire header.
         children: [
           leading ??
               ExcludeSemantics(
@@ -55,9 +51,7 @@ class OnboardingHeader extends StatelessWidget {
             child: action == null || usesDesktopLayout(context)
                 ? Text(
                     title ?? 'title'.tr(),
-                    textAlign: appearanceControls != null
-                        ? TextAlign.left
-                        : null,
+                    textAlign: TextAlign.start,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium
@@ -65,11 +59,11 @@ class OnboardingHeader extends StatelessWidget {
                   )
                 : const SizedBox.shrink(),
           ),
-          ?action,
           if (appearanceControls != null) ...[
-            const SizedBox(width: 8),
             appearanceControls!,
+            if (action != null) const SizedBox(width: 8),
           ],
+          ?action,
         ],
       ),
     );

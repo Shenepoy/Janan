@@ -774,8 +774,13 @@ void main() {
           final controlsLeft = language.left < theme.left
               ? language.left
               : theme.left;
-          expect(controlsRight, closeTo(width - 16, 1));
-          expect(close.right, lessThan(controlsLeft));
+          if (locale.languageCode == 'ar') {
+            expect(close.left, closeTo(16, 1));
+            expect(close.right, lessThan(controlsLeft));
+          } else {
+            expect(close.right, closeTo(width - 16, 1));
+            expect(close.left, greaterThan(controlsRight));
+          }
           expect(close.center.dy, closeTo(theme.center.dy, 1));
           expect(theme.top, lessThan(24));
         } else {
