@@ -238,28 +238,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                           action: widget.firstRun
                               ? (_page >= _featurePage
                                     ? null
-                                    : MediaQuery.textScalerOf(context)
-                                                  .scale(14) >
-                                              20 ||
-                                          MediaQuery.sizeOf(context).width < 360
-                                    ? IconButton.filledTonal(
+                                    : IconButton.filledTonal(
                                         key: const Key('onboarding-skip'),
                                         tooltip: 'onboardingSkip'.tr(),
                                         onPressed: _finishing
                                             ? null
                                             : () => _goTo(_featurePage),
-                                        icon: const Icon(
-                                          Icons.skip_next_rounded,
-                                        ),
-                                      )
-                                    : TextButton(
-                                        key: const Key('onboarding-skip'),
-                                        onPressed: _finishing
-                                            ? null
-                                            : () => _goTo(_featurePage),
-                                        child: Text(
-                                          'onboardingSkip'.tr(),
-                                          textAlign: TextAlign.center,
+                                        icon: Icon(
+                                          Directionality.of(context) ==
+                                                  ui.TextDirection.rtl
+                                              ? Icons
+                                                    .keyboard_double_arrow_left_rounded
+                                              : Icons
+                                                    .keyboard_double_arrow_right_rounded,
                                         ),
                                       ))
                               : IconButton.filledTonal(
