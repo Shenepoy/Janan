@@ -59,7 +59,12 @@ micro version and build number.
 
 Obtainium follows that GitHub Release.
 
-Do not upload this APK to Play or F-Droid. Those listings are not ours.
+Never upload Janan artifacts to the upstream project's Play or F-Droid listings.
+Janan's own Play Console listing uses `com.shenepoy.janan` and requires a signed
+Android App Bundle from the private `prod` composition, targeting
+`lib/main_cloud.dart`. Use the release's public-only client configuration and
+retain the corresponding source bundle. Upload through the requested Play
+Console track; uploading a draft does not authorize rolling out a Play release.
 
 The public build defaults to the `foss` flavor (`com.shenepoy.janan.foss`).
 The private overlay explicitly builds `prod` (`com.shenepoy.janan`). Debug builds

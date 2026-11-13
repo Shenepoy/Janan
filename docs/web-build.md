@@ -1,5 +1,29 @@
 # Shared Flutter web client
 
+## Public privacy and deletion pages
+
+Static, JavaScript-free policy pages are included in `web/` and copied by the
+normal Flutter web build:
+
+- `/privacy/` and `/ar/privacy/`
+- `/delete-account/` and `/ar/delete-account/`
+
+The hosted canonical origin is `https://janan.shenepoy.com`.
+Both languages use `web/legal.css`, the existing favicon, and the approved
+privacy/deletion contact `shenepoy@gmail.com`. Keep the English and Arabic
+content aligned. These pages distinguish the local diary from optional account
+features; they do not claim that disabled hosted AI or checkout is available.
+Review the processor disclosures before enabling those features, and update
+retention details when provider retention settings are finalized.
+
+Initial publication on 2026-11-13 adds only these five static files to the
+existing client Hosting release. All 94 non-reserved live client files were
+matched to the existing distributable artifact using Firebase's compressed-file
+hashes before staging the addition. The app binaries, source bundle, service
+worker, admin site, report site and backend were not rebuilt or modified.
+Validation covers all four pages' local links, locale/direction, contact links
+and script-free HTML, plus browser layout checks including Arabic at 390 px.
+
 The browser target uses the same free local diary, repositories and Safaeh UI
 as the mobile app. Like Hisab, it builds PowerSync's browser worker locally and
 emits WebAssembly plus the JavaScript fallback. There is no PowerSync service

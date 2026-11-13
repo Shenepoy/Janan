@@ -1235,7 +1235,7 @@ const _pdfLogoAsset = 'janan-logo-monochrome.svg';
 
 /// Drops the adaptive-icon margin so the heart fills the header box.
 String _logoWithoutMargin(String svg) =>
-    svg.replaceFirst('viewBox="0 0 1024 1024"', 'viewBox="166 286 649 542"');
+    svg.replaceFirst('viewBox="0 0 1024 1024"', 'viewBox="210 240 605 544"');
 
 /// Split a formatted medicine intake into an Arabic medicine name and an
 /// LTR parenthesized dose so bidi mirroring cannot reverse the punctuation.
