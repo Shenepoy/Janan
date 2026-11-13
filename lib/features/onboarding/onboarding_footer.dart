@@ -60,25 +60,11 @@ class OnboardingFooter extends StatelessWidget {
                   padding: const EdgeInsets.all(6),
                   child: Row(
                     children: [
-                      // Reserve Back’s slot so Next never moves between steps.
-                      SizedBox.square(
-                        dimension: 48,
-                        child: currentStep > 0
-                            ? IconButton.outlined(
-                                key: const Key('onboarding-back'),
-                                tooltip: 'onboardingBack'.tr(),
-                                onPressed: busy ? null : onBack,
-                                style: IconButton.styleFrom(
-                                  minimumSize: const Size(48, 48),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                                icon: const BackButtonIcon(),
-                              )
-                            : null,
+                      _AnimatedBackButton(
+                        visible: currentStep > 0,
+                        busy: busy,
+                        onBack: onBack,
                       ),
-                      const SizedBox(width: 8),
                       Expanded(
                         child: FilledButton.icon(
                           key: const Key('onboarding-cta'),
@@ -112,4 +98,73 @@ class OnboardingFooter extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Expands Back and its spacing together, so Next resizes continuously.
+class _AnimatedBackButton extends StatelessWidget {
+  const _AnimatedBackButton({
+    required this.visible,
+    required this.busy,
+    required this.onBack,
+  });
+
+  final bool visible, busy;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(begin: visible ? 1 : 0, end: visible ? 1 : 0),
+    duration: MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 280),
+    curve: Curves.easeInOutCubic,
+    builder: (context, progress, child) => SizedBox(
+      width: 56 * progress,
+      height: 48,
+      child: progress == 0
+          ? null
+          : ClipRect(
+              child: OverflowBox(
+                alignment: AlignmentDirectional.centerStart,
+                minWidth: 56,
+                maxWidth: 56,
+                minHeight: 48,
+                maxHeight: 48,
+                child: Opacity(
+                  opacity: progress,
+                  child: ExcludeSemantics(
+                    excluding: !visible || progress < 1,
+                    child: ExcludeFocus(
+                      excluding: !visible || progress < 1,
+                      child: IgnorePointer(
+                        ignoring: !visible || progress < 1,
+                        child: child,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+    ),
+    child: Row(
+      children: [
+        SizedBox.square(
+          dimension: 48,
+          child: IconButton.outlined(
+            key: const Key('onboarding-back'),
+            tooltip: 'onboardingBack'.tr(),
+            onPressed: busy || !visible ? null : onBack,
+            style: IconButton.styleFrom(
+              minimumSize: const Size(48, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            icon: const BackButtonIcon(),
+          ),
+        ),
+        const SizedBox(width: 8),
+      ],
+    ),
+  );
 }

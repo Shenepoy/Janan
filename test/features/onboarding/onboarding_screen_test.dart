@@ -76,6 +76,7 @@ Future<Widget> _tourApp({
   bool firstRun = true,
   Locale locale = const Locale('en'),
   Brightness brightness = Brightness.light,
+  bool disableAnimations = true,
   String Function(Locale)? welcomeBody,
   OnboardingConnectionBuilder? connection,
 }) async {
@@ -108,7 +109,8 @@ Future<Widget> _tourApp({
           ],
           supportedLocales: context.supportedLocales,
           builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            data: MediaQuery.of(context)
+                .copyWith(disableAnimations: disableAnimations),
             child: child!,
           ),
           navigatorKey: navigator,
@@ -173,6 +175,7 @@ void main() {
     bool firstRun = true,
     Locale locale = const Locale('en'),
     Brightness brightness = Brightness.light,
+    bool disableAnimations = true,
     String Function(Locale)? welcomeBody,
     OnboardingConnectionBuilder? connection,
   }) async {
@@ -184,6 +187,7 @@ void main() {
         firstRun: firstRun,
         locale: locale,
         brightness: brightness,
+        disableAnimations: disableAnimations,
         welcomeBody: welcomeBody,
         connection: connection,
       ),
@@ -752,7 +756,48 @@ void main() {
 
   for (final width in [360.0, 1280.0]) {
     for (final locale in [const Locale('en'), const Locale('ar')]) {
-      testWidgets('Next stays fixed when Back appears at $width in $locale', (
+      testWidgets('Next resizes smoothly with Back at $width in $locale', (
+        tester,
+      ) async {
+        await open(tester, locale: locale, disableAnimations: false);
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = Size(width, 800);
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpAndSettle();
+        final full = tester.getRect(_cta);
+        await tester.tap(_cta);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 80));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        final entering = tester.getRect(_cta);
+        expect(entering.width, greaterThan(full.width - 56));
+        expect(entering.width, lessThan(full.width));
+        expect(entering.top, full.top);
+        expect(entering.height, full.height);
+        expect(
+          locale.languageCode == 'ar' ? entering.left : entering.right,
+          locale.languageCode == 'ar' ? full.left : full.right,
+        );
+        await tester.pumpAndSettle();
+        final compact = tester.getRect(_cta);
+        expect(compact.width, closeTo(full.width - 56, .01));
+        await tester.tap(_back);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 80));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        final leaving = tester.getRect(_cta);
+        expect(leaving.width, greaterThan(compact.width));
+        expect(leaving.width, lessThan(full.width));
+        await tester.pumpAndSettle();
+        expect(tester.getRect(_cta), full);
+        expect(_back, findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('Next fills the dock without Back at $width in $locale', (
         tester,
       ) async {
         await open(tester, locale: locale);
@@ -765,7 +810,10 @@ void main() {
         final first = tester.getRect(_cta);
         await _next(tester);
         expect(_back, findsOneWidget);
-        expect(tester.getRect(_cta), first);
+        final second = tester.getRect(_cta);
+        expect(first.width - second.width, closeTo(56, .01));
+        expect(second.height, first.height);
+        expect(second.top, first.top);
         await tester.tap(_back);
         await tester.pumpAndSettle();
         expect(_back, findsNothing);
