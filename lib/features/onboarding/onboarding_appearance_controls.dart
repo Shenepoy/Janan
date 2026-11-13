@@ -1,4 +1,5 @@
 import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
+import 'package:blood_pressure_app/features/onboarding/onboarding_header.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/l10n/app_locales.dart';
@@ -68,74 +69,77 @@ class OnboardingAppearanceControls extends ConsumerWidget {
     final duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : const Duration(milliseconds: 200);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton.filledTonal(
-          key: const Key('onboarding-language'),
-          tooltip: languageLabel,
-          style: IconButton.styleFrom(
-            minimumSize: const Size(48, 48),
-            backgroundColor: colors.surfaceContainerHighest,
-            foregroundColor: colors.onSurface,
-          ),
-          onPressed: busy
-              ? null
-              : () => _chooseLanguage(context, ref, settings.languageKey),
-          icon: const Icon(Icons.language, size: 24),
+    final controls = <Widget>[
+      IconButton.filledTonal(
+        key: const Key('onboarding-language'),
+        tooltip: languageLabel,
+        style: IconButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          backgroundColor: colors.surfaceContainerHighest,
+          foregroundColor: colors.onSurface,
         ),
-        const SizedBox(width: 8),
-        CallbackShortcuts(
-          bindings: {
-            const SingleActivator(LogicalKeyboardKey.enter, shift: true): () {
-              if (!busy) onThemeChanged(ThemeMode.system);
-            },
+        onPressed: busy
+            ? null
+            : () => _chooseLanguage(context, ref, settings.languageKey),
+        icon: const Icon(Icons.language, size: 24),
+      ),
+      const SizedBox(width: 8),
+      CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.enter, shift: true): () {
+            if (!busy) onThemeChanged(ThemeMode.system);
           },
-          child: SizedBox(
-            key: themeButtonKey,
-            width: 48,
-            height: 48,
-            child: IconButton.filledTonal(
-              key: const Key('onboarding-theme'),
-              tooltip: themeLabel,
-              onLongPress: busy ? null : () => onThemeChanged(ThemeMode.system),
-              style: IconButton.styleFrom(
-                backgroundColor: colors.surfaceContainerHighest,
-                foregroundColor: colors.onSurface,
+        },
+        child: SizedBox(
+          key: themeButtonKey,
+          width: 48,
+          height: 48,
+          child: IconButton.filledTonal(
+            key: const Key('onboarding-theme'),
+            tooltip: themeLabel,
+            onLongPress: busy ? null : () => onThemeChanged(ThemeMode.system),
+            style: IconButton.styleFrom(
+              backgroundColor: colors.surfaceContainerHighest,
+              foregroundColor: colors.onSurface,
+            ),
+            onPressed: busy
+                ? null
+                : () => onThemeChanged(
+                    (mode == ThemeMode.system
+                            ? Theme.of(context).brightness == Brightness.dark
+                            : mode == ThemeMode.dark)
+                        ? ThemeMode.light
+                        : ThemeMode.dark,
+                  ),
+            icon: AnimatedSwitcher(
+              duration: duration,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(scale: animation, child: child),
               ),
-              onPressed: busy
-                  ? null
-                  : () => onThemeChanged(
-                      (mode == ThemeMode.system
-                              ? Theme.of(context).brightness == Brightness.dark
-                              : mode == ThemeMode.dark)
-                          ? ThemeMode.light
-                          : ThemeMode.dark,
-                    ),
-              icon: AnimatedSwitcher(
-                duration: duration,
-                transitionBuilder: (child, animation) => FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(scale: animation, child: child),
-                ),
-                child: Icon(
-                  switch (mode) {
-                    ThemeMode.light => Symbols.light_mode_rounded,
-                    ThemeMode.dark => Symbols.dark_mode_rounded,
-                    ThemeMode.system => Symbols.routine_rounded,
-                  },
-                  key: ValueKey(mode),
-                  size: 24,
-                  fill: 0,
-                  weight: 400,
-                  grade: 0,
-                  opticalSize: 24,
-                ),
+              child: Icon(
+                switch (mode) {
+                  ThemeMode.light => Symbols.light_mode_rounded,
+                  ThemeMode.dark => Symbols.dark_mode_rounded,
+                  ThemeMode.system => Symbols.routine_rounded,
+                },
+                key: ValueKey(mode),
+                size: 24,
+                fill: 0,
+                weight: 400,
+                grade: 0,
+                opticalSize: 24,
               ),
             ),
           ),
         ),
-      ],
+      ),
+    ];
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: OnboardingHeader.usesDesktopLayout(context)
+          ? controls.reversed.toList()
+          : controls,
     );
   }
 }

@@ -766,6 +766,11 @@ void main() {
           find.byKey(const Key('onboarding-language')),
         );
         final theme = tester.getRect(find.byKey(const Key('onboarding-theme')));
+        // Swap only the desktop order; each order follows the locale direction.
+        final languageOnLeft = locale.languageCode == 'ar'
+            ? width >= 840
+            : width < 840;
+        expect(language.center.dx < theme.center.dx, languageOnLeft);
         expect(close.top, lessThan(24));
         if (width >= 840) {
           final controlsRight = language.right > theme.right
