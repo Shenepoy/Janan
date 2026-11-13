@@ -752,6 +752,30 @@ void main() {
 
   for (final width in [360.0, 1280.0]) {
     for (final locale in [const Locale('en'), const Locale('ar')]) {
+      testWidgets('Next stays fixed when Back appears at $width in $locale', (
+        tester,
+      ) async {
+        await open(tester, locale: locale);
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = Size(width, 800);
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpAndSettle();
+        expect(_back, findsNothing);
+        final first = tester.getRect(_cta);
+        await _next(tester);
+        expect(_back, findsOneWidget);
+        expect(tester.getRect(_cta), first);
+        await tester.tap(_back);
+        await tester.pumpAndSettle();
+        expect(_back, findsNothing);
+        expect(tester.getRect(_cta), first);
+      });
+    }
+  }
+
+  for (final width in [360.0, 1280.0]) {
+    for (final locale in [const Locale('en'), const Locale('ar')]) {
       testWidgets('replay chrome uses screen edges at $width in $locale', (
         tester,
       ) async {

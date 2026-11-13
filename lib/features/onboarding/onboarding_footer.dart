@@ -60,21 +60,25 @@ class OnboardingFooter extends StatelessWidget {
                   padding: const EdgeInsets.all(6),
                   child: Row(
                     children: [
-                      if (currentStep > 0) ...[
-                        IconButton.outlined(
-                          key: const Key('onboarding-back'),
-                          tooltip: 'onboardingBack'.tr(),
-                          onPressed: busy ? null : onBack,
-                          style: IconButton.styleFrom(
-                            minimumSize: const Size(48, 48),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          icon: const BackButtonIcon(),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
+                      // Reserve Back’s slot so Next never moves between steps.
+                      SizedBox.square(
+                        dimension: 48,
+                        child: currentStep > 0
+                            ? IconButton.outlined(
+                                key: const Key('onboarding-back'),
+                                tooltip: 'onboardingBack'.tr(),
+                                onPressed: busy ? null : onBack,
+                                style: IconButton.styleFrom(
+                                  minimumSize: const Size(48, 48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                icon: const BackButtonIcon(),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: FilledButton.icon(
                           key: const Key('onboarding-cta'),
