@@ -734,5 +734,10 @@
   "onboardingMedicineBodyWeb": "افتح الأدوية من مؤقت الدواء أو الإعدادات.\nأضف دواءً وحدد الجرعة والمواعيد المعتادة. راجع جرعاتك داخل التطبيق.\nسجّل الجرعة كمأخوذة بعد تناولها. التذكير وحده لا يسجّل تناول الجرعة.",
   "onboardingConnect": "الاتصال",
   "onboardingSignIn": "تسجيل دخول",
-  "onboardingCreateAccount": "إنشاء الحساب"
+  "onboardingCreateAccount": "إنشاء الحساب",
+  "reminderHoldTakenHint": "اضغط مطولًا على «تناولت» لاختيار الوقت.",
+  "reminderTakenTimeFuture": "اختر وقتًا ليس في المستقبل.",
+  "reminderConfirmTakenTime": "تسجيل هذه الجرعة؟",
+  "reminderTakenTimeDetails": "{medicine} · {dose}\nتم تناولها في {date} الساعة {time}",
+  "reminderLogAtTime": "تسجيل الساعة {time}"
 }

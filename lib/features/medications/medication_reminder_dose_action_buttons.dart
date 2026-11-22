@@ -6,6 +6,7 @@ class _DoseActionButtons extends StatelessWidget {
     required this.onTaken,
     required this.onSnooze,
     required this.onSkip,
+    this.onChooseTime,
     this.saving = false,
     this.historical = false,
   });
@@ -13,6 +14,7 @@ class _DoseActionButtons extends StatelessWidget {
   final VoidCallback onTaken;
   final VoidCallback onSnooze;
   final VoidCallback onSkip;
+  final VoidCallback? onChooseTime;
   final bool saving;
   final bool historical;
 
@@ -29,6 +31,7 @@ class _DoseActionButtons extends StatelessWidget {
     final segments = [
       _DoseActionSegment(
         onPressed: enabled ? onTaken : null,
+        onLongPress: enabled ? onChooseTime : null,
         background: theme.colorScheme.primary,
         foreground: theme.colorScheme.onPrimary,
         icon: saving

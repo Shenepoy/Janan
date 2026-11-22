@@ -734,5 +734,10 @@
   "onboardingMedicineBodyWeb": "Open Medications from the medicine timer or Settings.\nAdd a medicine and set its usual dose and times. Review your doses in the app.\nMark a dose taken after you take it. A reminder alone does not record a dose.",
   "onboardingConnect": "Connect",
   "onboardingSignIn": "Sign In",
-  "onboardingCreateAccount": "Create account"
+  "onboardingCreateAccount": "Create account",
+  "reminderHoldTakenHint": "Hold Taken to choose a time.",
+  "reminderTakenTimeFuture": "Choose a time that is not in the future.",
+  "reminderConfirmTakenTime": "Log this dose?",
+  "reminderTakenTimeDetails": "{medicine} · {dose}\nTaken on {date} at {time}",
+  "reminderLogAtTime": "Log at {time}"
 }

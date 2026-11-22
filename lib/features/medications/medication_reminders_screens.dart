@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
 import 'package:blood_pressure_app/components/form_bottom_action.dart';
 import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart';
+import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/core/repository/repository_providers.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
@@ -1425,7 +1426,81 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
     return countdown;
   }
 
-  Future<void> _setStatus(String status) async {
+  Future<void> _chooseTakenTime() async {
+    final countdown = _countdownForPanel();
+    if (countdown == null || _saving) return;
+    final occurrence = countdown.occurrence;
+    final now = DateTime.now();
+    final day = doseIsDayOverdue(occurrence, now)
+        ? occurrence.scheduledAt
+        : now;
+    final initial = occurrence.scheduledAt.isAfter(now)
+        ? now
+        : occurrence.scheduledAt;
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (selected == null || !mounted) return;
+    final takenAt = DateTime(
+      day.year,
+      day.month,
+      day.day,
+      selected.hour,
+      selected.minute,
+    );
+    if (takenAt.isAfter(DateTime.now())) {
+      context.showError('reminderTakenTimeFuture'.tr());
+      return;
+    }
+    final localizations = MaterialLocalizations.of(context);
+    final time = localizations.formatTimeOfDay(
+      selected,
+      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+    );
+    final details = 'reminderTakenTimeDetails'.tr(
+      namedArgs: {
+        'medicine': occurrence.schedule.medicine.designation,
+        'dose': formatMedicationDose(
+          occurrence.schedule.doseAmount,
+          occurrence.schedule.doseUnit,
+        ),
+        'date': localizations.formatMediumDate(takenAt),
+        'time': time,
+      },
+    );
+    final confirmed = await showResponsiveSheet<bool>(
+      context: context,
+      title: 'reminderConfirmTakenTime'.tr(),
+      child: Builder(
+        builder: (sheetContext) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(details),
+              const SizedBox(height: 20),
+              FilledButton(
+                key: const ValueKey('safaeh_confirm'),
+                onPressed: () => Navigator.pop(sheetContext, true),
+                child: Text('reminderLogAtTime'.tr(namedArgs: {'time': time})),
+              ),
+              TextButton(
+                key: const ValueKey('safaeh_cancel'),
+                onPressed: () => Navigator.pop(sheetContext, false),
+                child: Text('btnCancel'.tr()),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted || _saving) return;
+    await _setStatus('taken', takenAt: takenAt);
+  }
+
+  Future<void> _setStatus(String status, {DateTime? takenAt}) async {
     final countdown = _countdownForPanel();
     if (countdown == null || _saving) return;
     setState(() => _saving = true);
@@ -1440,7 +1515,7 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
         status,
         snoozeUntil: snoozeUntil,
         takenAt: status == 'taken'
-            ? historicalDoseTakenAt(occurrence, DateTime.now())
+            ? takenAt ?? historicalDoseTakenAt(occurrence, DateTime.now())
             : null,
       );
       await _recordDoseReminder(
@@ -1549,15 +1624,25 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
                       )
                     else if (countdown == null)
                       _MedicationPanelEmpty(hasSchedules: widget.hasSchedules)
-                    else
+                    else ...[
                       _MedicationDoseActionCard(
                         countdown: countdown,
                         now: widget.now,
                         saving: _saving,
                         onTaken: () => _setStatus('taken'),
+                        onChooseTime: _chooseTakenTime,
                         onSnooze: () => _setStatus('snoozed'),
                         onSkip: () => _setStatus('skipped'),
                       ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'reminderHoldTakenHint'.tr(),
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                     if (visibleLater.isNotEmpty) ...[
                       const SizedBox(height: 13),
                       Align(
@@ -1721,6 +1806,7 @@ class _MedicationDoseActionCard extends StatelessWidget {
     required this.now,
     required this.saving,
     required this.onTaken,
+    required this.onChooseTime,
     required this.onSnooze,
     required this.onSkip,
   });
@@ -1729,6 +1815,7 @@ class _MedicationDoseActionCard extends StatelessWidget {
   final DateTime now;
   final bool saving;
   final VoidCallback onTaken;
+  final VoidCallback onChooseTime;
   final VoidCallback onSnooze;
   final VoidCallback onSkip;
 
@@ -1820,6 +1907,7 @@ class _MedicationDoseActionCard extends StatelessWidget {
             ),
             const SizedBox(height: 9),
             _DoseActionButtons(
+              onChooseTime: onChooseTime,
               saving: saving,
               historical: doseIsDayOverdue(occurrence, now),
               onTaken: onTaken,
@@ -1838,6 +1926,7 @@ class _DoseActionSegment extends StatelessWidget {
     required this.label,
     required this.foreground,
     required this.onPressed,
+    this.onLongPress,
     this.background,
     this.icon,
   });
@@ -1845,6 +1934,7 @@ class _DoseActionSegment extends StatelessWidget {
   final String label;
   final Color foreground;
   final VoidCallback? onPressed;
+  final VoidCallback? onLongPress;
   final Color? background;
   final Widget? icon;
 
@@ -1856,6 +1946,7 @@ class _DoseActionSegment extends StatelessWidget {
       color: background ?? Colors.transparent,
       child: InkWell(
         onTap: onPressed,
+        onLongPress: onLongPress,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           child: Row(
