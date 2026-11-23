@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/theme/app_sheet_appearance.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
@@ -29,15 +30,17 @@ Future<T?> showResponsiveSheet<T>({
   bool centerInFullViewport = true,
   SafaehPhoneSheetPlacement phonePlacement = SafaehPhoneSheetPlacement.bottom,
   bool paintPhoneTitle = true,
+  double? dialogMaxWidth,
 }) => showSafaeh<T>(
   context: context,
+  floatingAppearance: appSheetAppearance,
   child: child,
   title: title,
   titleBuilder: title == null || title.isEmpty
       ? null
       : (ctx, style) => Text(
           title,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: style,
         ),
@@ -49,7 +52,9 @@ Future<T?> showResponsiveSheet<T>({
   enableDrag: enableDrag,
   sheetShape: sheetShape,
   barrierDismissible: barrierDismissible,
-  contentPadding: contentPadding,
+  contentPadding: contentPadding ?? EdgeInsets.zero,
+  dialogMaxWidth: dialogMaxWidth,
+  showHeaderDivider: false,
   phonePlacement: phonePlacement,
   paintPhoneTitle: paintPhoneTitle,
 );
@@ -71,6 +76,7 @@ Future<T?> showAppDialog<T>({
   bool centerInFullViewport = true,
 }) => showSafaehDialog<T>(
   context: context,
+  floatingAppearance: appSheetAppearance,
   builder: builder,
   barrierDismissible: barrierDismissible,
   barrierColor: barrierColor,

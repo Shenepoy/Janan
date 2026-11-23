@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
-import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
+import 'package:blood_pressure_app/core/widgets/app_sheet.dart';
 import 'package:blood_pressure_app/features/export_import/ui/export_field_format_documentation_screen.dart';
 import 'package:blood_pressure_app/l10n/bidi.dart';
 import 'package:blood_pressure_app/l10n/western_digits.dart';
@@ -9,7 +9,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Fullscreen dialog that explains the time format and pops the context with either null or a time format string.
+/// Adaptive sheet that explains the time format and pops the context with either null or a time format string.
 class EnterTimeFormatDialog extends StatefulWidget {
   /// Create dialog for entering time formats as used by the [DateFormat] class.
   const EnterTimeFormatDialog({
@@ -55,61 +55,47 @@ class _EnterTimeFormatDialogState extends State<EnterTimeFormatDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-      child: Column(
-        children: [
-          Markdown(
-            shrinkWrap: true,
-            onTapLink: getLinkTapHandler(context),
-            physics: const NeverScrollableScrollPhysics(),
-            data: context.locale.languageCode == 'ar'
-                ? isolateMarkdownCodes('enterTimeFormatDesc'.tr())
-                : 'enterTimeFormatDesc'.tr(),
-          ),
-          Text(
-            WesternDateFormat(
-              timeFormatFieldController.text,
-              context.locale.toString(),
-            ).format(widget.previewTime ?? DateTime.now()),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: TextField(
-              textDirection: ui.TextDirection.ltr,
-              controller: timeFormatFieldController,
-              focusNode: focusNode,
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                labelText: 'enterTimeFormatString'.tr(),
-                errorText: timeFormatFieldController.text.isEmpty
-                    ? 'errNoValue'.tr()
-                    : null,
-              ),
+  Widget build(BuildContext context) => AppSheetBody(
+    footer: AppSheetAction(
+      label: 'btnSave'.tr(),
+      onPressed: timeFormatFieldController.text.isEmpty
+          ? null
+          : () => Navigator.pop(context, timeFormatFieldController.text),
+    ),
+    child: Column(
+      children: [
+        Markdown(
+          shrinkWrap: true,
+          onTapLink: getLinkTapHandler(context),
+          physics: const NeverScrollableScrollPhysics(),
+          data: context.locale.languageCode == 'ar'
+              ? isolateMarkdownCodes('enterTimeFormatDesc'.tr())
+              : 'enterTimeFormatDesc'.tr(),
+        ),
+        Text(
+          WesternDateFormat(
+            timeFormatFieldController.text,
+            context.locale.toString(),
+          ).format(widget.previewTime ?? DateTime.now()),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: TextField(
+            textDirection: ui.TextDirection.ltr,
+            controller: timeFormatFieldController,
+            focusNode: focusNode,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              labelText: 'enterTimeFormatString'.tr(),
+              errorText: timeFormatFieldController.text.isEmpty
+                  ? 'errNoValue'.tr()
+                  : null,
             ),
           ),
-          const SizedBox(height: 20),
-          OverflowBar(
-            alignment: MainAxisAlignment.end,
-            spacing: 8,
-            overflowAlignment: OverflowBarAlignment.end,
-            overflowSpacing: 8,
-            children: responsiveSheetActions(
-              context,
-              actions: [
-                FilledButton(
-                  onPressed: () {
-                    if (timeFormatFieldController.text.isNotEmpty) {
-                      Navigator.pop(context, timeFormatFieldController.text);
-                    }
-                  },
-                  child: Text('btnSave'.tr()),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
 }
 
 /// Shows a dialog that explains the ICU DateTime format and allows editing [initialTimeFormat] with a preview.
@@ -122,6 +108,7 @@ Future<String?> showTimeFormatPickerDialog(
 ) => showResponsiveSheet<String?>(
   context: context,
   title: 'enterTimeFormatScreen'.tr(),
+  contentPadding: EdgeInsets.zero,
   maxHeight: MediaQuery.sizeOf(context).height * 0.8,
   child: EnterTimeFormatDialog(
     initialValue: initialTimeFormat,

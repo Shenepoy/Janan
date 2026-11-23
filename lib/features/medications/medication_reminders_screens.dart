@@ -8,7 +8,9 @@ import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart
 import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
 import 'package:blood_pressure_app/core/repository/repository_providers.dart';
+import 'package:blood_pressure_app/core/widgets/app_sheet.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
+import 'package:blood_pressure_app/core/widgets/visible_periodic_refresh.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_detail_screen.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_plan.dart';
@@ -22,6 +24,7 @@ import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_date_range_sheet.dart';
 import 'package:blood_pressure_app/logging.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
+import 'package:blood_pressure_app/theme/app_fab_shape.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,16 +37,14 @@ part 'medication_reminder_day_log_page.dart';
 part 'medication_reminder_day_page_header.dart';
 part 'medication_reminder_dose_action_buttons.dart';
 part 'medication_schedule_list.dart';
+part 'medication_widget_dose_panel.dart';
 
 ShapeBorder _medicationFabShape(
   ThemeData theme, {
   required bool compact,
   required bool roundedSquare,
 }) => compact && roundedSquare
-    ? theme.floatingActionButtonTheme.shape ??
-          const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(16)),
-          )
+    ? theme.floatingActionButtonTheme.shape ?? appFabShape
     : const CircleBorder();
 
 Future<List<DoseOccurrence>> upcomingDoseOccurrences(
@@ -493,13 +494,23 @@ class MedicationReminderCard extends ConsumerStatefulWidget {
       _MedicationReminderCardState();
 }
 
-class _MedicationReminderCardState
-    extends ConsumerState<MedicationReminderCard> {
-  static const _refreshRate = Duration(seconds: 30);
+class _MedicationReminderCardState extends ConsumerState<MedicationReminderCard>
+    with VisiblePeriodicRefresh<MedicationReminderCard> {
+  @override
+  Duration get refreshInterval => const Duration(seconds: 30);
+
+  bool _needsClock = false;
+  @override
+  bool get periodicRefreshEnabled => _needsClock;
+
+  @override
+  void refreshVisibleContent() {
+    setState(() => _now = DateTime.now());
+    _syncShiftedReminders();
+  }
 
   final _targetLink = LayerLink();
   final _targetKey = GlobalKey();
-  Timer? _ticker;
   DateTime _now = DateTime.now();
   DateTime? _lastShiftSync;
 
@@ -507,11 +518,6 @@ class _MedicationReminderCardState
   void initState() {
     super.initState();
     SafaehGenieShader.preload();
-    _ticker = Timer.periodic(_refreshRate, (_) {
-      if (!mounted) return;
-      setState(() => _now = DateTime.now());
-      _syncShiftedReminders();
-    });
   }
 
   void _syncShiftedReminders() {
@@ -539,12 +545,6 @@ class _MedicationReminderCardState
         settings,
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
   }
 
   Future<void> _openDetails(
@@ -599,6 +599,8 @@ class _MedicationReminderCardState
   Widget build(BuildContext context) {
     final settings = ref.watch(appSettingsProvider);
     if (!settings.medicineFeatureEnabled) {
+      _needsClock = false;
+      syncPeriodicRefresh();
       return const SizedBox.shrink();
     }
     final schedules = ref.watch(medicationSchedulesProvider);
@@ -609,6 +611,8 @@ class _MedicationReminderCardState
     final occurrenceList =
         occurrences.asData?.value ?? const <DoseOccurrence>[];
     final active = scheduleList.any((schedule) => schedule.active);
+    _needsClock = active;
+    syncPeriodicRefresh();
     final dueAnchors = <String, DateTime>{};
     final shiftTargets = _doseShiftTargets(
       occurrenceList,
@@ -721,9 +725,8 @@ class _DoseCountdown {
 
   String accessibilityText(BuildContext context) {
     final medicine = occurrence.schedule.medicine.designation;
-    final formatted = MaterialLocalizations.of(
-      context,
-    ).formatTimeOfDay(TimeOfDay.fromDateTime(targetAt));
+    final formatted = MaterialLocalizations.of(context)
+        .formatTimeOfDay(TimeOfDay.fromDateTime(targetAt));
     if (overdue) return '$medicine · ${_t('reminderStatusOverdue', 'Overdue')}';
     return '$medicine · $formatted';
   }
@@ -996,19 +999,33 @@ class _OverdueSirenState extends State<_OverdueSiren>
       vsync: this,
       duration: const Duration(milliseconds: 360),
     );
-    if (widget.active) _controller.repeat(reverse: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncMotion();
+  }
+
+  void _syncMotion() {
+    final animate =
+        widget.active &&
+        !MediaQuery.disableAnimationsOf(context) &&
+        TickerMode.valuesOf(context).enabled &&
+        ModalRoute.isCurrentOf(context) != false;
+    if (animate && !_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    } else if (!animate) {
+      _controller
+        ..stop()
+        ..value = 0;
+    }
   }
 
   @override
   void didUpdateWidget(_OverdueSiren oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.active && !_controller.isAnimating) {
-      _controller.repeat(reverse: true);
-    } else if (!widget.active && _controller.isAnimating) {
-      _controller
-        ..stop()
-        ..value = 0;
-    }
+    _syncMotion();
   }
 
   @override
@@ -1019,7 +1036,7 @@ class _OverdueSirenState extends State<_OverdueSiren>
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.active) return widget.builder(0);
+    if (!_controller.isAnimating) return widget.builder(0);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) => widget.builder(_controller.value),
@@ -1529,6 +1546,8 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
       ref.invalidate(medicationDayProvider);
       ref.invalidate(medicationSchedulesProvider);
       if (mounted) Navigator.of(context).pop();
+    } catch (_) {
+      if (mounted) context.showError('entrySaveFailed'.tr());
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1566,7 +1585,7 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
       ),
     );
 
-    return SizedBox(
+    final panel = SizedBox(
       key: const ValueKey('medicationReminderDosePanel'),
       width: math.max(0.0, math.min(media.width - 32, 400.0)),
       child: Material(
@@ -1577,7 +1596,8 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
         clipBehavior: Clip.antiAlias,
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxPanelHeight),
-          child: SingleChildScrollView(
+          child: AppSheetBody(
+            surface: false,
             padding: const EdgeInsets.all(14),
             child: IgnorePointer(
               ignoring: widget.contentOpacity < 1,
@@ -1674,9 +1694,8 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
                               visualDensity: VisualDensity.compact,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            onPressed: () => Navigator.of(
-                              context,
-                            ).popAndPushNamed<void, void>('/add-medicine'),
+                            onPressed: () => Navigator.of(context)
+                                .popAndPushNamed<void, void>('/add-medicine'),
                             icon: const Icon(Icons.add, size: 18),
                             label: Text(
                               _t('reminderLogManualDose', 'Log Manual Dose'),
@@ -1713,6 +1732,10 @@ class _MedicationDosePanelState extends ConsumerState<_MedicationDosePanel> {
         ),
       ),
     );
+    return PopScope(
+      canPop: !_saving,
+      child: AbsorbPointer(absorbing: _saving, child: panel),
+    );
   }
 }
 
@@ -1740,9 +1763,8 @@ class _DeferredDoseSummary extends StatelessWidget {
     final scheduledAt = takeAt != null && takeAt!.isAfter(now)
         ? takeAt!
         : occurrence.scheduledAt;
-    final time = MaterialLocalizations.of(
-      context,
-    ).formatTimeOfDay(TimeOfDay.fromDateTime(scheduledAt));
+    final time = MaterialLocalizations.of(context)
+        .formatTimeOfDay(TimeOfDay.fromDateTime(scheduledAt));
     final remaining = _formatCompactCountdown(
       scheduledAt.difference(now),
       overdue: false,
@@ -1963,10 +1985,8 @@ class _DoseActionSegment extends StatelessWidget {
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: Theme.of(context).textTheme.labelLarge
+                      ?.copyWith(color: color, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
@@ -2150,9 +2170,9 @@ class _MedicationPanelEmpty extends ConsumerWidget {
         if (!hasSchedules) ...[
           const SizedBox(height: 12),
           FilledButton.icon(
-            onPressed: () => Navigator.of(
-              context,
-            ).popAndPushNamed<void, void>('/medications'),
+            onPressed: () =>
+                Navigator.of(context)
+                    .popAndPushNamed<void, void>('/medications'),
             icon: const Icon(Icons.add),
             label: Text(_t('reminderAddSchedule', 'Add reminder')),
           ),
@@ -2244,27 +2264,16 @@ class MedicationSchedulesScreen extends ConsumerWidget with Loggable {
     WidgetRef ref,
     MedicationSchedule schedule,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppConfirmSheet(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(_t('reminderEndScheduleTitle', 'End this reminder?')),
-        content: Text(
-          _t(
-            'reminderEndScheduleBody',
-            'It will stop creating reminders. Its dose history will stay saved.',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text('btnCancel'.tr()),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(_t('reminderEndAction', 'End reminder')),
-          ),
-        ],
+      title: _t('reminderEndScheduleTitle', 'End this reminder?'),
+      content: _t(
+        'reminderEndScheduleBody',
+        'It will stop creating reminders. Its dose history will stay saved.',
       ),
+      confirmLabel: _t('reminderEndAction', 'End reminder'),
+      cancelLabel: 'btnCancel'.tr(),
+      destructive: true,
     );
     if (confirmed != true || !context.mounted) return;
     await _saveScheduleState(
@@ -3396,9 +3405,8 @@ class _MedicationScheduleEditorScreenState
                                               'reminderStartDate',
                                               'Start date',
                                             )
-                                          : DateFormat.yMMMd(
-                                              locale,
-                                            ).format(_startDate!),
+                                          : DateFormat.yMMMd(locale)
+                                                .format(_startDate!),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -3415,9 +3423,8 @@ class _MedicationScheduleEditorScreenState
                                     label: Text(
                                       _endDate == null
                                           ? _t('reminderEndDate', 'End date')
-                                          : DateFormat.yMMMd(
-                                              locale,
-                                            ).format(_endDate!),
+                                          : DateFormat.yMMMd(locale)
+                                                .format(_endDate!),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -3812,9 +3819,8 @@ class _ReminderInfoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
-      color: Theme.of(
-        context,
-      ).colorScheme.secondaryContainer.withValues(alpha: 0.65),
+      color: Theme.of(context).colorScheme.secondaryContainer
+          .withValues(alpha: 0.65),
       borderRadius: BorderRadius.circular(16),
     ),
     child: Padding(

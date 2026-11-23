@@ -3,6 +3,7 @@ import 'package:blood_pressure_app/features/data_picker/interval_picker.dart';
 import 'package:blood_pressure_app/features/home/ble_home_sync_indicator.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_filter_scope.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_list.dart';
+import 'package:blood_pressure_app/features/nutrition/nutrition_strings.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_range_bar.dart';
 import 'package:blood_pressure_app/model/storage/interval_store_manager.dart';
@@ -75,7 +76,17 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
       page: page,
       titles: [
         for (final key in titleKeys)
-          Text(key.tr(), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            key == 'nutritionTitle'
+                ? nutritionTitle(
+                    context,
+                    food: settings.foodTrackingEnabled,
+                    water: settings.waterTrackingEnabled,
+                  )
+                : key.tr(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
       ],
       // Reserve the same leading width as the trailing action slot. This
       // keeps the title on the physical center line even when actions morph.

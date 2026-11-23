@@ -1,5 +1,4 @@
-import 'dart:async';
-
+import 'package:blood_pressure_app/core/widgets/visible_periodic_refresh.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_repository.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_strings.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -19,16 +18,18 @@ class MedicineSupplySummary extends StatefulWidget {
   State<MedicineSupplySummary> createState() => _MedicineSupplySummaryState();
 }
 
-class _MedicineSupplySummaryState extends State<MedicineSupplySummary> {
+class _MedicineSupplySummaryState extends State<MedicineSupplySummary>
+    with VisiblePeriodicRefresh<MedicineSupplySummary> {
+  @override
+  Duration get refreshInterval => const Duration(minutes: 1);
+
+  @override
+  void refreshVisibleContent() => setState(() {});
   late Stream<List<Map<String, Object?>>> _rows;
-  Timer? _timer;
   @override
   void initState() {
     super.initState();
     _rows = widget.repository.watchSupply(widget.medicineId);
-    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (mounted) setState(() {});
-    });
   }
 
   @override
@@ -38,12 +39,6 @@ class _MedicineSupplySummaryState extends State<MedicineSupplySummary> {
         oldWidget.medicineId != widget.medicineId) {
       _rows = widget.repository.watchSupply(widget.medicineId);
     }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
   }
 
   @override

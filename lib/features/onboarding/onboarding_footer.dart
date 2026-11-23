@@ -7,6 +7,7 @@ class OnboardingFooter extends StatelessWidget {
   const OnboardingFooter({
     super.key,
     this.appearanceControls,
+    this.secondaryAction,
     required this.currentStep,
     required this.totalSteps,
     required this.nextLabel,
@@ -16,6 +17,7 @@ class OnboardingFooter extends StatelessWidget {
     required this.onNext,
   });
   final Widget? appearanceControls;
+  final Widget? secondaryAction;
   final int currentStep, totalSteps;
   final String nextLabel;
   final bool isLast, busy;
@@ -92,6 +94,7 @@ class OnboardingFooter extends StatelessWidget {
                   ),
                 ),
               ),
+              ?secondaryAction,
             ],
           ),
         ),

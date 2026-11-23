@@ -9,6 +9,22 @@ extension HealthToolsStrings on String {
 }
 
 const _english = <String, String>{
+  'tools.foodDiary': 'Food diary',
+  'tools.waterDiary': 'Water diary',
+  'tools.hints.foodDiary': 'Record meals, portions and notes. Entries are stored on this device and included in full database backups. This diary does not calculate nutrients or recommend a diet.',
+  'tools.hints.waterDiary': 'Log the water you drink in millilitres. The daily total reflects your entries, not an intake target. Included in full database backups.',
+  'tools.fields.food': 'Food or drink',
+  'tools.fields.meal': 'Meal',
+  'tools.fields.portion': 'Portion (optional, e.g. 1 bowl)',
+  'tools.fields.water_ml': 'Water (mL)',
+  'tools.options.breakfast': 'Breakfast',
+  'tools.options.lunch': 'Lunch',
+  'tools.options.dinner': 'Dinner',
+  'tools.options.snack': 'Snack',
+  'tools.previousDay': 'Previous day',
+  'tools.nextDay': 'Next day',
+  'tools.foodEntries': 'food entries',
+  'tools.loggedForDay': 'Logged for this day',
   'tools.add': 'Add entry',
   'tools.labObservation': 'Lab observations',
   'tools.hints.labObservation':
@@ -117,6 +133,22 @@ const _english = <String, String>{
   'tools.options.clinician': 'Clinician-provided',
 };
 const _arabic = <String, String>{
+  'tools.foodDiary': 'سجل الطعام',
+  'tools.waterDiary': 'سجل الماء',
+  'tools.hints.foodDiary': 'سجّل الوجبات والكميات والملاحظات. تُحفظ الإدخالات على هذا الجهاز وتُضمّن في النسخ الاحتياطية الكاملة لقاعدة البيانات. لا يحسب هذا السجل العناصر الغذائية ولا يقترح حمية.',
+  'tools.hints.waterDiary': 'سجّل الماء الذي تشربه بالملليلتر. المجموع اليومي يعكس إدخالاتك وليس هدفاً للشرب. يُضمّن في النسخ الاحتياطية الكاملة لقاعدة البيانات.',
+  'tools.fields.food': 'طعام أو شراب',
+  'tools.fields.meal': 'الوجبة',
+  'tools.fields.portion': 'الكمية (اختياري، مثل طبق واحد)',
+  'tools.fields.water_ml': 'الماء (مل)',
+  'tools.options.breakfast': 'الفطور',
+  'tools.options.lunch': 'الغداء',
+  'tools.options.dinner': 'العشاء',
+  'tools.options.snack': 'وجبة خفيفة',
+  'tools.previousDay': 'اليوم السابق',
+  'tools.nextDay': 'اليوم التالي',
+  'tools.foodEntries': 'إدخالات طعام',
+  'tools.loggedForDay': 'المسجل لهذا اليوم',
   'tools.add': 'إضافة إدخال',
   'tools.labObservation': 'نتائج المختبر',
   'tools.hints.labObservation':

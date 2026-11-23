@@ -21,15 +21,17 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.StandardMethodCodec
 
-class MainActivity: FlutterFragmentActivity() {
+open class MainActivity: FlutterFragmentActivity() {
     private var hideStatusBarForCompactLandscape = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Android retains the task's original intent after process death. A
         // restored reminder is no longer a new tap: let Flutter boot normally.
         // This must run before super attaches receive_intent / notifications.
+        val freshWaterTap = WaterReminderScheduler.consumeTap(this, intent)
         val restoringReminder = savedInstanceState != null &&
             (intent.getStringExtra("route") == "/medications/today" ||
+                (intent.getStringExtra("route") == "/nutrition" && !freshWaterTap) ||
                 intent.action == "SELECT_NOTIFICATION" ||
                 intent.action == "SELECT_FOREGROUND_NOTIFICATION_ACTION")
         if (restoringReminder) {
@@ -39,13 +41,18 @@ class MainActivity: FlutterFragmentActivity() {
         }
         // FlutterFragment also saves the widget's initial route in its arguments.
         // Recreate it so that route cannot override the app's normal startup.
-        super.onCreate(if (restoringReminder) null else savedInstanceState)
+        super.onCreate(if (restoringReminder || freshWaterTap) null else savedInstanceState)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes = window.attributes.apply {
                 layoutInDisplayCutoutMode =
                     WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        WaterReminderScheduler.consumeTap(this, intent)
+        super.onNewIntent(intent)
     }
 
     companion object {
@@ -74,6 +81,20 @@ class MainActivity: FlutterFragmentActivity() {
                     mainHandler.post { action() }
                 },
             )
+        }
+
+        MethodChannel(messenger, "com.shenepoy.janan/water_reminders",
+            StandardMethodCodec.INSTANCE, reminderQueue).setMethodCallHandler { call, result ->
+            if (call.method == "configure") {
+                try {
+                    result.success(WaterReminderScheduler.configure(applicationContext,
+                        call.arguments as? Map<*, *> ?: emptyMap<String, Any>()))
+                } catch (error: RuntimeException) {
+                    result.error("water_reminder_error", error.message, null)
+                }
+            } else if (call.method == "status") {
+                result.success(WaterReminderScheduler.nextScheduled(applicationContext))
+            } else result.notImplemented()
         }
 
         MethodChannel(

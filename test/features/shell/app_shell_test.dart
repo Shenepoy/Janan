@@ -6,6 +6,7 @@ import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.da
 import 'package:blood_pressure_app/features/data_picker/interval_picker.dart';
 import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart';
 import 'package:blood_pressure_app/features/measurement_list/selection/selection_action_bar.dart';
+import 'package:blood_pressure_app/features/settings/lazy_settings_list.dart';
 import 'package:blood_pressure_app/features/shell/app_shell.dart';
 import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
 import 'package:blood_pressure_app/features/statistics/dashboard/dashboard_page_body.dart';
@@ -55,6 +56,143 @@ Future<void> _reveal(WidgetTester tester, Finder list, Finder target) async {
 }
 
 void main() {
+  testWidgets('kept-alive hidden tabs stop their tickers', (tester) async {
+    var homeTicks = 0;
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        pages: [
+          _TickProbe(onTick: () => homeTicks++),
+          const Text('weight'),
+          const Text('stats'),
+          const Text('settings'),
+        ],
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(homeTicks, greaterThan(0));
+    await tester.tap(find.byKey(AppShell.navSettingsKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 500));
+    final hiddenTicks = homeTicks;
+    await tester.pump(const Duration(seconds: 1));
+    expect(homeTicks, hiddenTicks);
+    await tester.tap(find.byKey(AppShell.navHomeKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(homeTicks, greaterThan(hiddenTicks));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('navigation taps switch directly to the destination FAB', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(400, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpApp(
+      tester,
+      await _minimalShell(
+        pages: const [
+          Text('home-page'),
+          Text('weight-page'),
+          Text('stats-page'),
+          Text('settings-page'),
+        ],
+      ),
+    );
+
+    NavigationActionKind? action() =>
+        (tester
+                    .widget<Scaffold>(find.byType(Scaffold).first)
+                    .floatingActionButton
+                as NavigationActionButtons?)
+            ?.kind;
+
+    Future<void> checkFrames(NavigationActionKind? expected) async {
+      for (var frame = 0; frame < 30; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(action(), expected, reason: 'FAB at frame $frame');
+      }
+    }
+
+    await tester.tap(find.byKey(AppShell.navStatisticsKey));
+    await tester.pump();
+    await checkFrames(NavigationActionKind.export);
+    await tester.tap(find.byKey(AppShell.navHomeKey));
+    await tester.pump();
+    await checkFrames(NavigationActionKind.bloodPressure);
+    await tester.tap(find.byKey(AppShell.navSettingsKey));
+    await tester.pump();
+    await checkFrames(null);
+    await tester.tap(find.byKey(AppShell.navHomeKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 32));
+    await tester.tap(find.byKey(AppShell.navStatisticsKey));
+    await tester.pump();
+    await checkFrames(NavigationActionKind.export);
+
+    await tester.fling(find.byType(PageView), const Offset(300, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(action(), NavigationActionKind.weight);
+
+    // Interrupt a second tap before the page reaches its destination.
+    await tester.tap(find.byKey(AppShell.navSettingsKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(action(), isNull);
+    await tester.fling(find.byType(PageView), const Offset(300, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(find.text('home-page').hitTestable(), findsOneWidget);
+    expect(action(), NavigationActionKind.bloodPressure);
+  }, variant: const TargetPlatformVariant({TargetPlatform.android}));
+
+  testWidgets('external water navigation reuses the mounted shell', (
+    tester,
+  ) async {
+    final navigation = ShellNavigationController();
+    addTearDown(navigation.dispose);
+    final scroll = ScrollController();
+    addTearDown(scroll.dispose);
+    await pumpApp(
+      tester,
+      await materialApp(
+        AppShell(
+          showWeight: true,
+          navigation: navigation,
+          nutritionPage: const Text('water-diary'),
+          pages: [
+            ListView.builder(
+              controller: scroll,
+              itemCount: 100,
+              itemExtent: 60,
+              itemBuilder: (_, index) => Text('Reading $index'),
+            ),
+            const Text('weight-page'),
+            const Text('stats-page'),
+            const Text('settings-page'),
+          ],
+        ),
+      ),
+    );
+    scroll.jumpTo(240);
+    for (var i = 0; i < 2; i++) {
+      navigation.open(ShellTab.nutrition);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      expect(find.text('water-diary').hitTestable(), findsOneWidget);
+      expect(find.byType(AppShell), findsOneWidget);
+      await tester.tap(find.byKey(AppShell.navHomeKey));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      expect(scroll.offset, 240);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('desktop direct navigation never visits unrelated pages', (
     tester,
   ) async {
@@ -195,7 +333,7 @@ void main() {
         expect(homeHeader.center.dx, 640);
         await tester.tap(find.byKey(AppShell.navSettingsKey));
         await tester.pumpAndSettle();
-        final content = tester.getRect(find.byType(SettingsSectionList));
+        final content = tester.getRect(find.byType(LazySettingsList));
         final header = tester.getRect(find.byType(DashboardAppBar));
         expect(header, homeHeader);
         expect(content.center.dx, closeTo(640, 1));
@@ -561,10 +699,14 @@ void main() {
     final shellScaffold = tester.widget<Scaffold>(find.byType(Scaffold));
     expect(shellScaffold.bottomNavigationBar, isNull);
     expect(
-      SafaehBottomNavScope.maybeOf(
-        tester.element(find.text('home-page')),
-      )?.visualInset,
-      SafaehBottomNavMetrics.defaultVisualClearance,
+      SafaehBottomNavScope.maybeOf(tester.element(find.text('home-page')))
+          ?.visualInset,
+      greaterThanOrEqualTo(
+        tester
+                .getSize(find.byKey(const ValueKey('app_shell_floating_nav')))
+                .height +
+            8,
+      ),
     );
     expect(
       find.byKey(const ValueKey('app_shell_floating_nav')),
@@ -1860,4 +2002,30 @@ class _FakeCameraCutoutPlatform extends CameraCutoutPlatform {
   void emit(CameraCutoutInfo info) => _updates.add(info);
 
   Future<void> dispose() => _updates.close();
+}
+
+class _TickProbe extends StatefulWidget {
+  const _TickProbe({required this.onTick});
+  final VoidCallback onTick;
+  @override
+  State<_TickProbe> createState() => _TickProbeState();
+}
+
+class _TickProbeState extends State<_TickProbe>
+    with SingleTickerProviderStateMixin {
+  late final _ticker = createTicker((_) => widget.onTick());
+  @override
+  void initState() {
+    super.initState();
+    _ticker.start();
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const Text('Home ticker');
 }

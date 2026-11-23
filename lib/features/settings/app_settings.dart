@@ -61,6 +61,9 @@ class AppSettings {
     required this.trackArmSide,
     required this.medicineFeatureEnabled,
     this.medicationHistoryDisplay = 'combined',
+    this.foodTrackingEnabled = true,
+    this.waterTrackingEnabled = true,
+    this.foodNutritionTotals = true,
     required this.weightInput,
     required this.knownBleDev,
     required this.weightUnit,
@@ -148,6 +151,9 @@ class AppSettings {
       bloodPressureEnabled: controller.get(bloodPressureEnabledSetting),
       trackArmSide: controller.get(trackArmSideSetting),
       medicineFeatureEnabled: controller.get(medicineFeatureEnabledSetting),
+      foodTrackingEnabled: controller.get(foodTrackingEnabledSetting),
+      waterTrackingEnabled: controller.get(waterTrackingEnabledSetting),
+      foodNutritionTotals: controller.get(foodNutritionTotalsSetting),
       medicationHistoryDisplay: controller.get(medicationHistoryDisplaySetting),
       weightInput: controller.get(weightInputSetting),
       knownBleDev: decodeKnownBleDevices(
@@ -219,6 +225,10 @@ class AppSettings {
   final bool bloodPressureEnabled;
   final bool trackArmSide;
   final bool medicineFeatureEnabled;
+  final bool foodTrackingEnabled;
+  final bool waterTrackingEnabled;
+  final bool foodNutritionTotals;
+  bool get nutritionEnabled => foodTrackingEnabled || waterTrackingEnabled;
 
   /// combined, recentTable, or separatePage.
   final String medicationHistoryDisplay;
@@ -338,6 +348,9 @@ AppSettings appSettings(Ref ref) {
   ref.watch(settings.provider(bloodPressureEnabledSetting));
   ref.watch(settings.provider(trackArmSideSetting));
   ref.watch(settings.provider(medicineFeatureEnabledSetting));
+  ref.watch(settings.provider(foodTrackingEnabledSetting));
+  ref.watch(settings.provider(waterTrackingEnabledSetting));
+  ref.watch(settings.provider(foodNutritionTotalsSetting));
   ref.watch(settings.provider(medicationHistoryDisplaySetting));
   ref.watch(settings.provider(weightInputSetting));
   ref.watch(settings.provider(knownBleDevicesSetting));

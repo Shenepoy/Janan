@@ -14,7 +14,6 @@ import 'package:path/path.dart';
 import 'package:safaeh/safaeh.dart';
 import 'package:sqflite/sqflite.dart';
 
-
 /// Screen that shows app version and debug options.
 class VersionScreen extends StatefulWidget {
   /// Screen that shows app version and debug options.
@@ -25,13 +24,22 @@ class VersionScreen extends StatefulWidget {
 }
 
 class _VersionScreenState extends State<VersionScreen> with Loggable {
+  late final _packageInfo = PackageInfo.fromPlatform();
+  late final _legacyDatabase = _findLegacyDatabase();
+
+  Future<String?> _findLegacyDatabase() async {
+    final path = join(await getDatabasesPath(), 'blood_pressure.db');
+    final stat = await FileStat.stat(path);
+    return stat.type == FileSystemEntityType.file ? path : null;
+  }
+
   @override
   Widget build(BuildContext context) => SettingsPageFrame(
     title: Text('version'.tr()),
     actions: [
       IconButton(
         onPressed: () async {
-          final packageInfo = await PackageInfo.fromPlatform();
+          final packageInfo = await _packageInfo;
           await Clipboard.setData(
             ClipboardData(
               text:
@@ -51,7 +59,7 @@ class _VersionScreenState extends State<VersionScreen> with Loggable {
         children: [
           // Debug info
           ConsistentFutureBuilder<PackageInfo>(
-            future: PackageInfo.fromPlatform(),
+            future: _packageInfo,
             onData: (context, packageInfo) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -89,13 +97,9 @@ class _VersionScreenState extends State<VersionScreen> with Loggable {
           ),
           if (!kIsWeb)
             FutureBuilder(
-              future: Future(() async {
-                final dbPath = await getDatabasesPath();
-                return join(dbPath, 'blood_pressure.db');
-              }),
+              future: _legacyDatabase,
               builder: (context, snapshot) {
-                if (snapshot.data == null ||
-                    !File(snapshot.data!).existsSync()) {
+                if (snapshot.data == null) {
                   return SizedBox.shrink();
                 }
                 return ListTile(
@@ -103,7 +107,7 @@ class _VersionScreenState extends State<VersionScreen> with Loggable {
                     try {
                       await FilePicker.saveFile(
                         fileName: 'blood_pressure.db',
-                        bytes: File(snapshot.data!).readAsBytesSync(),
+                        bytes: await File(snapshot.data!).readAsBytes(),
                         type: FileType.any, // application/vnd.sqlite3
                       );
                     } catch (e) {

@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
+import 'package:blood_pressure_app/core/widgets/app_sheet.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/bluetooth/backend/bluetooth_backend.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_launch_sync.dart';
@@ -28,7 +29,6 @@ import 'package:blood_pressure_app/model/bluetooth_measurement_import_mode.dart'
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:safaeh/safaeh.dart';
 
 /// Class for inputting measurement through bluetooth.
 class BluetoothInput extends ConsumerStatefulWidget {
@@ -285,7 +285,7 @@ class BluetoothInputState extends ConsumerState<BluetoothInput> with Loggable {
         inputInfo: () async {
           logDebug('build.inputInfo[mounted: ${context.mounted}]');
           if (context.mounted) {
-            await showSafaehConfirm(
+            await showAppConfirmSheet(
               context: context,
               title: 'bluetoothInput'.tr(),
               content: 'aboutBleInput'.tr(),

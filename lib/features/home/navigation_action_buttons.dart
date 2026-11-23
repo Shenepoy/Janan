@@ -2,6 +2,7 @@ import 'package:blood_pressure_app/app.dart';
 import 'package:blood_pressure_app/components/animated_floating_action_button.dart';
 import 'package:blood_pressure_app/features/export_import/ui/export_popout.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
+import 'package:blood_pressure_app/features/nutrition/nutrition_actions.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:material_ui/material_ui.dart';
@@ -10,6 +11,9 @@ import 'package:material_ui/material_ui.dart';
 enum NavigationActionKind {
   /// Medicine countdown plus add blood pressure.
   bloodPressure,
+
+  /// Add food and water.
+  nutrition,
 
   /// Add weight.
   weight,
@@ -38,6 +42,10 @@ class NavigationActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kind == NavigationActionKind.nutrition) {
+      return const NutritionDiaryActions();
+    }
+
     if (kind == NavigationActionKind.export) {
       return SizedBox.square(
         dimension: 56,

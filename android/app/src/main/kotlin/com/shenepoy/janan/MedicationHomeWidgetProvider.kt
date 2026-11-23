@@ -187,18 +187,22 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         }
 
         val identity = medicationWidgetLaunchIdentity(context.packageName, widgetId)
-        val intent = Intent(context, MainActivity::class.java).apply {
+        val intent = Intent(context, MedicationWidgetTapReceiver::class.java).apply {
             action = identity.action
-            putExtra("route", "/medications/today")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+            flags = Intent.FLAG_RECEIVER_FOREGROUND
         }
-        val pendingIntent = PendingIntent.getActivity(
+        val pendingIntent = PendingIntent.getBroadcast(
             context,
             widgetId,
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            // The launcher fills sourceBounds with the tapped view rectangle.
+            // This explicit, non-exported receiver is the only destination.
+            PendingIntent.FLAG_UPDATE_CURRENT or
+                (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0),
         )
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_circle, pendingIntent)
         manager.updateAppWidget(widgetId, views)
     }
 
@@ -234,26 +238,19 @@ class MedicationHomeWidgetProvider : AppWidgetProvider() {
         alarmManager.cancel(pendingIntent)
         if (triggerAtMillis == null || triggerAtMillis <= System.currentTimeMillis()) return
 
+        // A launcher label is presentation, not a dose notification. Never wake
+        // the CPU or opt out of Doze to repaint it. Actual notifications have
+        // their own wakeup alarms and remain unchanged.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
             !alarmManager.canScheduleExactAlarms()
         ) {
-            alarmManager.setAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMillis,
-                pendingIntent,
-            )
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMillis,
-                pendingIntent,
-            )
+            alarmManager.set(AlarmManager.RTC, triggerAtMillis, pendingIntent)
         } else {
-            alarmManager.setExact(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMillis,
-                pendingIntent,
-            )
+            try {
+                alarmManager.setExact(AlarmManager.RTC, triggerAtMillis, pendingIntent)
+            } catch (_: SecurityException) {
+                alarmManager.set(AlarmManager.RTC, triggerAtMillis, pendingIntent)
+            }
         }
     }
 

@@ -11,6 +11,9 @@ enum ShellTab {
   /// Medicine intake history, when configured as a separate page.
   medications,
 
+  /// Food and water diary.
+  nutrition,
+
   /// Statistics.
   statistics,
 
@@ -22,10 +25,12 @@ enum ShellTab {
 List<ShellTab> visibleShellTabs({
   required bool showWeight,
   bool showBloodPressure = true,
+  bool showNutrition = false,
   bool showMedicationHistory = false,
 }) => [
   ShellTab.home,
   if (showWeight) ShellTab.weight,
+  if (showNutrition) ShellTab.nutrition,
   if (showMedicationHistory) ShellTab.medications,
   if (showBloodPressure) ShellTab.statistics,
   ShellTab.settings,

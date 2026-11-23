@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -21,6 +22,8 @@ class EdadatFileStorage implements SettingsStorage {
   String? _directory;
   File? _file;
   final Map<String, Object> _data = {};
+  final _pendingWrites = <Completer<bool>>[];
+  bool _writing = false;
 
   static const fileName = 'edadat.json';
 
@@ -38,7 +41,9 @@ class EdadatFileStorage implements SettingsStorage {
         if (decoded is Map<String, dynamic>) {
           _data
             ..clear()
-            ..addAll(decoded.map((key, value) => MapEntry(key, value as Object)));
+            ..addAll(
+              decoded.map((key, value) => MapEntry(key, value as Object)),
+            );
         }
       } on FormatException {
         _data.clear();
@@ -46,11 +51,36 @@ class EdadatFileStorage implements SettingsStorage {
     }
   }
 
-  Future<bool> _persist() async {
-    final file = _file;
-    if (file == null) return false;
-    file.writeAsStringSync(jsonEncode(_data));
-    return true;
+  Future<bool> _persist() {
+    if (_file == null) return Future.value(false);
+    final completion = Completer<bool>();
+    _pendingWrites.add(completion);
+    if (!_writing) {
+      _writing = true;
+      scheduleMicrotask(_drainWrites);
+    }
+    return completion.future;
+  }
+
+  /// Synchronous bursts share a write. Edits made during IO form the next batch;
+  /// every caller completes only after its snapshot (or a newer one) is saved.
+  Future<void> _drainWrites() async {
+    while (_pendingWrites.isNotEmpty) {
+      final batch = List<Completer<bool>>.of(_pendingWrites);
+      _pendingWrites.clear();
+      try {
+        final snapshot = jsonEncode(_data);
+        await _file!.writeAsString(snapshot);
+        for (final completion in batch) {
+          completion.complete(true);
+        }
+      } catch (error, stack) {
+        for (final completion in batch) {
+          completion.completeError(error, stack);
+        }
+      }
+    }
+    _writing = false;
   }
 
   @override
@@ -108,14 +138,15 @@ class EdadatFileStorage implements SettingsStorage {
   @override
   List<String>? getStringList(String key) {
     final value = _data[key];
-    if (value is List<String>) return value;
+    if (value is List<String>) return List<String>.of(value);
     if (value is List) return value.map((e) => e.toString()).toList();
     return null;
   }
 
   @override
   Future<bool> setStringList(String key, List<String> value) {
-    _data[key] = value;
+    // The deferred write must not retain a caller-owned mutable list.
+    _data[key] = List<String>.of(value);
     return _persist();
   }
 
@@ -193,7 +224,10 @@ Future<void> _applyGeneral(
 ) async {
   final language = map['language'];
   if (language is String && language.toLowerCase() != 'null') {
-    await controller.set(languageSetting, languageKeyFromLocale(Locale(language)));
+    await controller.set(
+      languageSetting,
+      languageKeyFromLocale(Locale(language)),
+    );
   }
   await _setColor(controller, accentColorSetting, map['accentColor']);
   await _setColor(controller, sysColorSetting, map['sysColor']);
@@ -205,7 +239,11 @@ Future<void> _applyGeneral(
       jsonEncode(map['horizontalGraphLines']),
     );
   }
-  await _setIf<String>(controller, dateFormatStringSetting, map['dateFormatString']);
+  await _setIf<String>(
+    controller,
+    dateFormatStringSetting,
+    map['dateFormatString'],
+  );
   if (map['graphLineThickness'] is num) {
     await controller.set(
       graphLineThicknessSetting,
@@ -216,8 +254,16 @@ Future<void> _applyGeneral(
   await _setIf<int>(controller, sysWarnSetting, map['sysWarn']);
   await _setIf<int>(controller, diaWarnSetting, map['diaWarn']);
   await _setIf<int>(controller, lastVersionSetting, map['lastVersion']);
-  await _setIf<bool>(controller, allowManualTimeInputSetting, map['allowManualTimeInput']);
-  await _setIf<bool>(controller, confirmDeletionSetting, map['confirmDeletion']);
+  await _setIf<bool>(
+    controller,
+    allowManualTimeInputSetting,
+    map['allowManualTimeInput'],
+  );
+  await _setIf<bool>(
+    controller,
+    confirmDeletionSetting,
+    map['confirmDeletion'],
+  );
   final theme = map['themeMode'];
   if (theme is int) {
     await controller.set(themeModeSetting, switch (theme) {
@@ -227,22 +273,44 @@ Future<void> _applyGeneral(
     });
   }
   await _setIf<bool>(controller, validateInputsSetting, map['validateInputs']);
-  await _setIf<bool>(controller, allowMissingValuesSetting, map['allowMissingValues']);
-  await _setIf<bool>(controller, drawRegressionLinesSetting, map['drawRegressionLines']);
+  await _setIf<bool>(
+    controller,
+    allowMissingValuesSetting,
+    map['allowMissingValues'],
+  );
+  await _setIf<bool>(
+    controller,
+    drawRegressionLinesSetting,
+    map['drawRegressionLines'],
+  );
   await _setIf<bool>(
     controller,
     startWithAddMeasurementPageSetting,
     map['startWithAddMeasurementPage'],
   );
-  await _setIf<bool>(controller, autostartBluetoothInputSetting, map['autostartBluetoothInput']);
-  await _setIf<bool>(controller, syncBluetoothOnLaunchSetting, map['syncBluetoothOnLaunch']);
+  await _setIf<bool>(
+    controller,
+    autostartBluetoothInputSetting,
+    map['autostartBluetoothInput'],
+  );
+  await _setIf<bool>(
+    controller,
+    syncBluetoothOnLaunchSetting,
+    map['syncBluetoothOnLaunch'],
+  );
   final importMode = BluetoothMeasurementImportMode.deserialize(
-    map['bluetoothImportMode'] is int ? map['bluetoothImportMode'] as int : null,
+    map['bluetoothImportMode'] is int
+        ? map['bluetoothImportMode'] as int
+        : null,
   );
   if (importMode != null) {
     await controller.set(bluetoothImportModeSetting, importMode.name);
   }
-  await _setIf<bool>(controller, compactListSetting, map['compactList'] ?? map['useLegacyList']);
+  await _setIf<bool>(
+    controller,
+    compactListSetting,
+    map['compactList'] ?? map['useLegacyList'],
+  );
   if (map['needlePinBarWidth'] is num) {
     await controller.set(
       needlePinBarWidthSetting,
@@ -251,7 +319,9 @@ Future<void> _applyGeneral(
   }
   await _setIf<bool>(controller, bottomAppBarsSetting, map['bottomAppBars']);
   final pressure = PressureUnit.deserialize(
-    map['preferredPressureUnit'] is int ? map['preferredPressureUnit'] as int : null,
+    map['preferredPressureUnit'] is int
+        ? map['preferredPressureUnit'] as int
+        : null,
   );
   if (pressure != null) {
     await controller.set(preferredPressureUnitSetting, pressure.name);
@@ -264,7 +334,10 @@ Future<void> _applyGeneral(
   }
   await _setIf<bool>(controller, weightInputSetting, map['weightInput']);
   if (map['knownBleDev'] != null) {
-    await controller.set(knownBleDevicesSetting, jsonEncode(map['knownBleDev']));
+    await controller.set(
+      knownBleDevicesSetting,
+      jsonEncode(map['knownBleDev']),
+    );
   }
   final weight = WeightUnit.deserialize(
     map['weightUnit'] is int ? map['weightUnit'] as int : null,
@@ -279,13 +352,19 @@ Future<void> _applyGeneral(
     );
   }
   await _setIf<int>(controller, birthYearSetting, map['birthYear']);
-  final sex = BodySex.deserialize(map['bodySex'] is int ? map['bodySex'] as int : null);
+  final sex = BodySex.deserialize(
+    map['bodySex'] is int ? map['bodySex'] as int : null,
+  );
   if (sex != null) {
     await controller.set(bodySexSetting, sex.name);
   }
   await _setIf<bool>(controller, athleteModeSetting, map['athleteMode']);
   await _setIf<bool>(controller, trustBleTimeSetting, map['trustBLETime']);
-  await _setIf<bool>(controller, showBleTimeTrustDialogSetting, map['showBLETimeTrustDialog']);
+  await _setIf<bool>(
+    controller,
+    showBleTimeTrustDialogSetting,
+    map['showBLETimeTrustDialog'],
+  );
   await _setIf<int>(
     controller,
     interruptGraphAfterNDaysSetting,
@@ -297,8 +376,16 @@ Future<void> _applyHealthConnect(
   SettingsController controller,
   Map<String, dynamic> map,
 ) async {
-  await _setIf<bool>(controller, useHealthConnectSetting, map['useHealthConnect']);
-  await _setIf<bool>(controller, syncWeightMeasurementsSetting, map['syncWeightMeasurements']);
+  await _setIf<bool>(
+    controller,
+    useHealthConnectSetting,
+    map['useHealthConnect'],
+  );
+  await _setIf<bool>(
+    controller,
+    syncWeightMeasurementsSetting,
+    map['syncWeightMeasurements'],
+  );
   await _setIf<bool>(
     controller,
     syncPressureMeasurementsSetting,

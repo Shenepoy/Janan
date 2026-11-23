@@ -95,6 +95,17 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
+        <receiver android:name=".MedicationWidgetTapReceiver" android:exported="false" />
+        <activity
+            android:name=".MedicationWidgetActionActivity"
+            android:launchMode="singleTask"
+            android:exported="false"
+            android:taskAffinity="${applicationId}.medication_widget"
+            android:excludeFromRecents="true"
+            android:theme="@style/MedicationWidgetActionTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".MedicationWidgetConfigureActivity"
             android:exported="true"
@@ -117,6 +128,15 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/medication_widget_info" />
+        </receiver>
+        <receiver android:name=".WaterReminderReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
         </receiver>
         <receiver
             android:name=".MedicationWidgetRefreshReceiver"

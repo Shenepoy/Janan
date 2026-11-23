@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:blood_pressure_app/core/settings/storage_providers.dart';
+import 'package:blood_pressure_app/core/widgets/app_sheet.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/input/forms/blood_pressure_form.dart';
 import 'package:blood_pressure_app/features/input/forms/date_time_form.dart';
@@ -334,7 +335,7 @@ class AddEntryFormState extends FormStateBase<CombinedEntry, AddEntryForm>
             'hours': '${record.time.difference(DateTime.now()).inHours}',
           },
         );
-        final confirmed = await showSafaehConfirm(
+        final confirmed = await showAppConfirmSheet(
           context: context,
           title: 'bluetoothInput'.tr(),
           content: warning,

@@ -41,7 +41,7 @@ void main() {
     expect(find.text('Choose one'), findsOneWidget);
     expect(
       find.descendant(
-        of: find.byType(SafaehTilePickerBody<String>),
+        of: find.byType(SafaehSheetTemplate),
         matching: find.text('Choose one'),
       ),
       findsNothing,
@@ -53,6 +53,97 @@ void main() {
     await tester.pumpAndSettle();
     expect(result, 'b');
   });
+
+  testWidgets('long option sheets build only visible choices', (tester) async {
+    usePhoneTestSurface(tester);
+    int? result;
+    await pumpApp(
+      tester,
+      await materialApp(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () async {
+              result = await showOptionPickerSheet<int>(
+                context,
+                title: 'Choose',
+                options: [
+                  for (var i = 0; i < 200; i++)
+                    SheetPickerOption(
+                      value: i,
+                      label: 'Choice $i',
+                      enabled: i != 0,
+                    ),
+                ],
+              );
+            },
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byType(SafaehLabeledOptionTile).evaluate().length,
+      lessThan(30),
+    );
+    await tester.tap(find.text('Choice 0'));
+    await tester.pumpAndSettle();
+    expect(result, isNull);
+    expect(find.byType(SafaehSheetTemplate), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Choice 199'),
+      400,
+      scrollable: find.descendant(
+        of: find.byType(SafaehSheetTemplate),
+        matching: find.byType(Scrollable),
+      ),
+      maxScrolls: 50,
+    );
+    await tester.tap(find.text('Choice 199'));
+    await tester.pumpAndSettle();
+    expect(result, 199);
+  });
+
+  testWidgets(
+    'sheet footer stays reachable when the body scrolls above the keyboard',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 600);
+      tester.view.devicePixelRatio = 1;
+      tester.view.viewInsets = const FakeViewPadding(bottom: 250);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetViewInsets);
+      await pumpApp(
+        tester,
+        await materialApp(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showResponsiveSheet<void>(
+                context: context,
+                title: 'Edit',
+                child: buildSheetShell(
+                  context,
+                  title: 'Edit',
+                  showTitleInBody: false,
+                  body: const SizedBox(height: 1200, child: Text('Long form')),
+                  actions: [
+                    FilledButton(onPressed: () {}, child: const Text('Save')),
+                  ],
+                ),
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(find.text('Save').hitTestable(), findsOneWidget);
+      expect(tester.getBottomLeft(find.text('Save')).dy, lessThan(350));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('action sheet returns the tapped action and hides cancel', (
     tester,
@@ -75,11 +166,7 @@ void main() {
                     label: 'Mark as taken',
                     leading: Icon(Icons.check),
                   ),
-                  SheetAction(
-                    value: 'skip',
-                    label: 'Skip',
-                    destructive: true,
-                  ),
+                  SheetAction(value: 'skip', label: 'Skip', destructive: true),
                 ],
               );
             },
@@ -96,7 +183,9 @@ void main() {
     expect(find.byType(SafaehLabeledOptionTile), findsNWidgets(2));
     expect(
       tester
-          .widget<SafaehLabeledOptionTile>(find.widgetWithText(SafaehLabeledOptionTile, 'Skip'))
+          .widget<SafaehLabeledOptionTile>(
+            find.widgetWithText(SafaehLabeledOptionTile, 'Skip'),
+          )
           .destructive,
       isTrue,
     );

@@ -1,7 +1,7 @@
 import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
+import 'package:blood_pressure_app/core/widgets/app_sheet.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:safaeh/safaeh.dart';
 
 /// Outcome of the deletion confirmation sheet.
 enum DeleteChoice {
@@ -58,25 +58,17 @@ class _DeleteConfirmBody extends StatelessWidget {
   final bool allowBlacklist;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final radius = BorderRadius.circular(SafaehTheme.of(context).radius);
-    final contentStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: cs.onSurfaceVariant,
-    );
-    final filled = FilledButton.styleFrom(
-      backgroundColor: cs.error,
-      foregroundColor: cs.onError,
-      shape: RoundedRectangleBorder(borderRadius: radius),
-    );
-
-    return buildSafaehSheetShell(
-      showTitleInBody: false,
-      body: SafaehContentPanel(
-        child: Text(description, style: contentStyle),
-      ),
-      actions: [
+  Widget build(BuildContext context) => AppSheetBody(
+    footer: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppSheetAction(
+          buttonKey: const ValueKey('safaeh_confirm'),
+          label: 'delete'.tr(),
+          destructive: true,
+          onPressed: () => Navigator.pop(context, DeleteChoice.delete),
+        ),
         if (allowBlacklist)
           TextButton(
             key: const ValueKey('deleteAndBlacklist'),
@@ -84,13 +76,8 @@ class _DeleteConfirmBody extends StatelessWidget {
                 Navigator.pop(context, DeleteChoice.deleteAndBlacklist),
             child: Text('deleteAndBlacklist'.tr()),
           ),
-        FilledButton(
-          key: const ValueKey('safaeh_confirm'),
-          style: filled,
-          onPressed: () => Navigator.pop(context, DeleteChoice.delete),
-          child: Text('delete'.tr()),
-        ),
       ],
-    );
-  }
+    ),
+    child: Text(description),
+  );
 }

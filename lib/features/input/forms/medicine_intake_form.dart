@@ -1,5 +1,6 @@
 import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
+import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/input/forms/entry_form_section.dart';
 import 'package:blood_pressure_app/features/input/forms/form_base.dart';
@@ -765,103 +766,26 @@ class _MedicinePickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ListView(
-      shrinkWrap: true,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      children: [
-        if (selected != null) ...[
-          _PickerTile(
-            swatch: _MedSwatch(color: theme.colorScheme.outline, empty: true),
-            title: 'noMedication'.tr(),
-            selected: false,
-            onTap: () => Navigator.pop(context, _noneSentinel),
+    return AppOptionPickerBody<Object>(
+      selected: selected,
+      options: [
+        if (selected != null)
+          SheetPickerOption(
+            value: _noneSentinel,
+            label: 'noMedication'.tr(),
+            leading: _MedSwatch(color: theme.colorScheme.outline, empty: true),
           ),
-          const SizedBox(height: 8),
-        ],
-        for (var i = 0; i < medicines.length; i++) ...[
-          if (i > 0) const SizedBox(height: 8),
-          _PickerTile(
-            swatch: _MedSwatch(
-              color: _medColor(medicines[i], theme),
+        for (final medicine in medicines)
+          SheetPickerOption(
+            value: medicine,
+            label: medicine.designation,
+            subtitle: medicine.formattedDosis,
+            leading: _MedSwatch(
+              color: _medColor(medicine, theme),
               empty: false,
             ),
-            title: medicines[i].designation,
-            subtitle: medicines[i].formattedDosis,
-            selected: selected == medicines[i],
-            onTap: () => Navigator.pop(context, medicines[i]),
           ),
-        ],
       ],
-    );
-  }
-}
-
-class _PickerTile extends StatelessWidget {
-  const _PickerTile({
-    required this.swatch,
-    required this.title,
-    required this.selected,
-    required this.onTap,
-    this.subtitle,
-  });
-
-  final Widget swatch;
-  final String title;
-  final String? subtitle;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = selected
-        ? theme.colorScheme.primaryContainer
-        : theme.colorScheme.surface;
-    return Material(
-      color: color,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
-          child: Row(
-            children: [
-              swatch,
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: AppText.title(context)),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          child: Text(
-                            subtitle!,
-                            style: AppText.subtitle(context),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (selected)
-                Icon(Icons.check_circle, color: theme.colorScheme.primary),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

@@ -1,4 +1,6 @@
+import 'package:blood_pressure_app/core/widgets/app_sheet.dart';
 import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
+import 'package:blood_pressure_app/features/nutrition/water_preferences_screen.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_palette.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/bluetooth_devices_screen.dart';
@@ -19,10 +21,12 @@ class OnboardingFeaturePreferences extends ConsumerWidget {
     super.key,
     required this.onAdjustFeatures,
     this.onGoHome,
+    this.showHeading = true,
   });
 
   final VoidCallback onAdjustFeatures;
   final VoidCallback? onGoHome;
+  final bool showHeading;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,8 +34,9 @@ class OnboardingFeaturePreferences extends ConsumerWidget {
     final theme = Theme.of(context);
     final colors = onboardingPalette(theme, 0);
     final canImport = settings.bloodPressureEnabled || settings.weightInput;
-    return SingleChildScrollView(
+    return AppSheetBody(
       key: const Key('onboarding-preferences'),
+      surface: false,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Center(
         child: ConstrainedBox(
@@ -39,32 +44,33 @@ class OnboardingFeaturePreferences extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                key: const Key('onboarding-preferences-header'),
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: colors.primaryContainer,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      Icons.tune_rounded,
-                      color: colors.primary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'onboardingPreferencesTitle'.tr(),
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+              if (showHeading)
+                Row(
+                  key: const Key('onboarding-preferences-header'),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colors.primaryContainer,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        Icons.tune_rounded,
+                        color: colors.primary,
+                        size: 24,
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'onboardingPreferencesTitle'.tr(),
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 8),
               Text(
                 'onboardingPreferencesHint'.tr(),
@@ -195,6 +201,43 @@ class OnboardingFeaturePreferences extends ConsumerWidget {
                         settings.roundedReminderButton,
                       ),
                     ]),
+                  ],
+                ),
+              if (settings.foodTrackingEnabled)
+                _section(
+                  context,
+                  key: 'food',
+                  title: 'foodTracking',
+                  icon: Symbols.grocery,
+                  palette: 2,
+                  children: [
+                    _switchTile(
+                      ref,
+                      foodNutritionTotalsSetting,
+                      settings.foodNutritionTotals,
+                    ),
+                  ],
+                ),
+              if (settings.waterTrackingEnabled)
+                _section(
+                  context,
+                  key: 'water',
+                  title: 'waterTracking',
+                  icon: Icons.local_drink_outlined,
+                  palette: 1,
+                  children: [
+                    ListTile(
+                      key: const Key('onboarding-pref-water-preferences'),
+                      title: Text(waterPreferencesAction.titleKey.tr()),
+                      subtitle: Text(waterPreferencesAction.subtitleKey!.tr()),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push<void>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const WaterPreferencesScreen(),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               if (settings.bluetoothMeasurementsEnabled)
@@ -386,9 +429,8 @@ class OnboardingFeaturePreferences extends ConsumerWidget {
     title: Text(setting.titleKey.tr()),
     semanticLabel: setting.titleKey.tr(),
     semanticFormatterCallback: (value) {
-      final number = NumberFormat.decimalPattern(
-        context.locale.toLanguageTag(),
-      ).format(value.round());
+      final number = NumberFormat.decimalPattern(context.locale.toLanguageTag())
+          .format(value.round());
       return setting == overdueReminderIntervalSetting
           ? 'onboardingMinutesValue'.tr(namedArgs: {'value': number})
           : number;

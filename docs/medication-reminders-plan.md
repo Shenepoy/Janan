@@ -53,7 +53,7 @@ Keep the existing bottom navigation unchanged for the MVP. The countdown makes t
 
 ## Widget
 
-Ship one compact circular 1 × 1 Android home-screen widget with the first release. It mirrors the in-app countdown: a medicine-colored progress ring, a minute-granularity time-left display (`2h`, `58m`, `+10m`), amber within an hour of the dose, and red overdue text with elapsed time. Tapping it opens Today's medicines. The widget does not mark a dose taken in the MVP.
+Ship one compact circular 1 × 1 Android home-screen widget with the first release. It mirrors the in-app countdown: a medicine-colored progress ring, a minute-granularity time-left display (`2h`, `58m`, `+10m`), amber within an hour of the dose, and red overdue text with elapsed time. Tapping it opens a translucent dose action window over the launcher, reusing the in-app panel for Taken, Snooze, Skip, manual logging, and Calendar. Each pinned widget scopes actions to its selected schedule.
 
 The widget reads one prepared next-dose summary from app-shared preferences; it must not open the PowerSync database from a widget process. A scheduled widget refresh updates the whole-hour or whole-minute label and ring at the next label boundary, when the dose enters the one-hour window, and when it becomes overdue. Schedule edits and dose actions replace the summary and due-time refresh.
 
@@ -102,5 +102,5 @@ Update `lib/core/database/powersync_schema.dart` by adding local-only tables and
 ## Later decisions
 
 - iOS notifications and WidgetKit widget, using the same domain model but a native WidgetKit extension and shared app-group data.
-- Direct Taken/Snooze actions on notifications and interactive widget controls.
+- Direct Taken/Snooze actions on notifications. Widget action windows are implemented.
 - As-needed schedules, intervals, variable dose amounts, refill tracking, and caregiver or multi-profile support.

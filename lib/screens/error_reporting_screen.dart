@@ -155,9 +155,14 @@ class ErrorScreen extends StatelessWidget {
                           join(dir, HealthDatabase.legacyBackupName),
                           join(dir, HealthDatabase.legacyFileName),
                         ];
-                        final path = candidates
-                            .where((p) => File(p).existsSync())
-                            .firstOrNull;
+                        String? path;
+                        for (final candidate in candidates) {
+                          final stat = await FileStat.stat(candidate);
+                          if (stat.type == FileSystemEntityType.file) {
+                            path = candidate;
+                            break;
+                          }
+                        }
                         if (path == null) {
                           if (context.mounted) {
                             context.showError(_label('noDatabaseFile', 'No database file found.'));
@@ -166,7 +171,7 @@ class ErrorScreen extends StatelessWidget {
                         }
                         await FilePicker.saveFile(
                           fileName: basename(path),
-                          bytes: File(path).readAsBytesSync(),
+                          bytes: await File(path).readAsBytes(),
                           type: FileType.any, // application/vnd.sqlite3
                         );
                       } catch(e) {

@@ -64,7 +64,10 @@ class IntervalPicker extends ConsumerWidget implements PreferredSizeWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _PillTrack(interval: interval),
+              SizedBox(
+                height: _pillsHeight,
+                child: _PillTrack(interval: interval),
+              ),
               const SizedBox(height: _rangeGap),
               SizedBox(
                 height: _rangeHeight,
@@ -142,7 +145,7 @@ class _RangePill extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 4),
           child: Text(
             label,
             textAlign: TextAlign.center,

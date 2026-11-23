@@ -11,7 +11,7 @@ The medication area now has three persistent tabs: **Today**, **Reminders**, and
 day and does not push another
 screen. Back returns to the screen from which the medication area was opened.
 
-- The home calendar and notification/widget routes open **Today**.
+- The home calendar and notifications open **Today**. Home-screen widgets open the dose action window described below.
 - The reminder setup route opens **Reminders**. Tap a card to edit, use its switch
   to pause/resume, and use its labeled overflow menu to edit or end a reminder.
   Ending still requires confirmation and preserves dose history.
@@ -157,11 +157,22 @@ The placed widget shows the next medicine, an hours-or-minutes countdown, and th
 
 ![Janan circular countdown widget on the home screen](screenshots/medication-reminders/19-widget-home-countdown.png)
 
-### 14. Open today's agenda from the widget
+### 14. Act on a dose from the widget
 
-Tap the circle. Janan opens today's agenda with the next dose state. The widget itself is read-only.
+Tap the circle to open the same dose panel used in the app, in a translucent
+window anchored to the tapped widget on the Android launcher. It opens above
+or below the widget according to the available room. Choose **Taken**,
+**+10 min**, or **Skip**.
+The saved widget pin limits the panel to that schedule; an all-medicines widget
+shows the next dose. A deleted pin never falls back to a different medicine.
+**Log a dose**, **Calendar**, and medicine details remain available.
 
-![Today's medicines opened from the widget](screenshots/medication-reminders/14-widget-opens-today.png)
+Saving refreshes the widget and closes the action window. Back or tapping outside
+closes it without saving. The window reads fresh occurrences through the normal
+Flutter repository; the native countdown still reads only its prepared summary.
+An already-running app refreshes its medication views when resumed.
+
+![Dose actions over the launcher](screenshots/medication-reminders/24-widget-actions.png)
 
 ## Capture the near-dose and overdue states
 
@@ -339,3 +350,140 @@ the historical two-button layout on `emulator-5554`, display `0`:
 `mobile://artifacts/display-0-1792878986149-6e5290df-f549-4950-9a48-a20512744b65.png`.
 The emulator check did not record any intakes; persistence was checked in a
 temporary test database. ADB was used for build/install, with no ADB UI fallback.
+
+
+## Widget action window validation — 2026-11-14
+
+Validated the FOSS debug package (`com.shenepoy.janan.foss.debug`) on
+`emulator-5554`, logical display 0 (1280 × 2856). No physical phone or release
+installation was updated. Added widget ID 7 through the launcher picker.
+
+- 92 medication tests passed; a subsequent 53-test run covered the new window
+  and app shell. Flutter analysis is clean. Native Android unit tests and the
+  debug APK build passed.
+- Fresh and repeated widget taps opened the panel over the launcher. Empty state
+  and Android Back were checked. Unit tests also cover outside dismissal,
+  Calendar replacement/back, pinned selection, deleted/completed pins, and save
+  failure recovery.
+- With the existing debug reminder fixture, **Taken** recorded exactly one
+  Lisinopril intake linked to its occurrence, returned to the launcher, and
+  promoted Metformin. A read-only database snapshot confirmed the intake and
+  `taken` status; reopening showed one recorded dose.
+- **+10 min** returned to the launcher and changed the native widget's semantic
+  description to `Test Metformin, SNOOZED`. **Skip** then closed the window and
+  promoted Aspirin. The emulator retains these demo medicines (Lisinopril taken,
+  Metformin skipped); the debug data server was switched off after seeding.
+- PolyScreen supplied all launch, input, UI queries, and captures. Its hierarchy
+  sometimes failed to idle on animated previews, and its hit-test estimate
+  considered the modal barrier to cover dose actions. In those cases taps used
+  screenshot-confirmed coordinates through PolyScreen. No raw ADB UI fallback
+  was used. ADB handled installation, read-only diagnostics, and stopping the
+  older emulator debug process whose test server occupied port 8765. Fixture
+  data was seeded through the existing localhost debug endpoint.
+
+APK SHA-256: `199d723e4f2fc1578bb2f68d4501d582c0b917b2c13f8103bcc4fdbf19aefa54`.
+
+
+### Anchoring and opening-time correction — 2026-11-14
+
+The initial implementation centered the panel and destroyed its Flutter engine
+on each dismissal. A timing probe measured 3253 ms from activity creation to
+ready dose content. The launch intent also had no `sourceBounds`.
+
+The explicit PendingIntent now allows the launcher to supply source bounds;
+normal taps target the visible 80 dp widget circle. Bounds are converted to
+logical pixels and passed to a measured popup layout. The panel clamps to safe
+screen edges, opens above a lower widget, and scrolls within the available room.
+Its 160 ms entrance scales from the widget side.
+
+The widget window now keeps its stopped task for repeat taps. Each tap reloads
+occurrences and the selected pin. If app preferences changed while it was
+stopped, the activity recreates its isolate to reload language, appearance, and
+reminder settings. The OS can still reclaim the stopped task; no background
+service or wake lock is used. Opening skips Health Connect startup sync, settings
+search indexing, full notification rebuilding, and widget bitmap regeneration.
+
+On the same debug emulator, repeat taps reached ready content in 45 ms and
+120 ms (after moving the widget to the lower-right). A cold process launch was
+2581 ms, so cold Flutter startup remains slower than the retained-window path.
+These timings measure activity receipt to built dose content, excluding the
+short entrance animation; temporary probes were removed afterward.
+
+PolyScreen moved the widget from `(67,557)-(307,797)` to
+`(973,1565)-(1213,1805)` in physical pixels. Captures verify the panel directly
+below the first placement and directly above the second. A Taken action after
+a repeat opening saved Aspirin, returned to the launcher, and the next tap
+showed Atorvastatin with three recorded doses. All input, including dragging,
+used PolyScreen. The emulator fixture now has Lisinopril and Aspirin taken and
+Metformin skipped.
+
+![Panel attached below the widget](screenshots/medication-reminders/24-widget-actions.png)
+
+![Panel attached above a lower widget](screenshots/medication-reminders/25-widget-actions-above.png)
+
+Final validation with timing probes removed: 142 Flutter tests passed across
+medications, settings registry, and app shell; Flutter analysis reported no
+issues; `:app:testFossDebugUnitTest` and the FOSS debug APK build passed.
+The rebuilt APK was installed on `emulator-5554`; dismiss/reopen retained the
+correct above-widget placement. `git diff --check` passed. No physical device
+was updated.
+
+Final APK SHA-256: `a847f336b91a62a09022a1bf8a0b37a0ea4da0aa267522d08026247815c186b7`.
+
+### Shared widget modal motion — 2026-11-14
+
+The widget now calls the same `showSafaehAnchored` genie motion as the in-app
+medicine button, replacing the custom 160 ms scale. Safaeh owns the stationary
+scrim fade, 460 ms panel morph, and lift/elevation. Dose data loads before opening
+so the motion applies to the card rather than a loading spinner. Dismissal waits
+for the route's reverse animation before moving the transparent task behind the
+launcher.
+
+The activity requests no native window animation. Existing PendingIntent tokens
+are replaced to update their launch flags. Pixel Launcher still imposed a
+cross-task zoom in recordings, so the Flutter host remains transparent until
+Android's `onEnterAnimationComplete` callback. This adds the launcher's entry
+time before the popup starts on affected launchers; the earlier repeat-opening
+measurements above do not include this new wait. No fixed delay is used.
+
+PolyScreen recorded first and repeat opens and Back dismissal on
+`emulator-5554`, display 0. Extracted repeat-open frames confirm that the full
+screen scrim only changes opacity while the card morphs from the widget.
+The first debug open still drops animation frames during cold rendering.
+No raw ADB UI interaction was used. The 14 widget tests cover placement, actions,
+waiting for native entry, and waiting for the reverse animation before dismissal.
+Flutter analysis, the FOSS debug APK build, and `git diff --check` passed.
+
+![Stationary scrim fade and shared genie motion](screenshots/medication-reminders/26-widget-genie-motion.png)
+
+Validated APK SHA-256: `7adc9a22edd50099c3913692ab8ecd4678fd950a943e0f1e4999775f2c91c5d6`.
+
+### Faster widget entry — 2026-11-14
+
+Widget taps now use an explicit, non-exported `MedicationWidgetTapReceiver`.
+It validates the widget ID/provider and launch action, forwards the tapped
+rectangle, and opens the existing activity with no-animation options. This
+avoids Pixel Launcher's separate zoom before Safaeh can start. The same genie
+motion, stationary fading scrim, and native entry-completion guard remain.
+
+A temporary timing harness failed its 700 ms repeat-opening threshold before
+the change: data ready at 80 ms, native entry at 579 ms, popup start at 581 ms,
+and animation complete at 1070 ms. Changing to a floating activity did not help
+and was reverted. With the tap receiver, two repeat openings started at 101 ms
+and 74 ms and completed at 599 ms and 562 ms. These timings start when the
+activity receives the launch; they exclude delivery to the receiver. The
+460 ms Safaeh animation was not shortened. Cold debug startup still measured
+3024 ms to completion; this change addresses the extra repeat-opening delay.
+
+The device timing harness is the regression check for launcher behavior; JVM
+unit tests cannot reproduce the launcher transition. All timing probes and the
+temporary harness were removed after measuring. The final APK passed 14 Flutter
+widget tests, Android unit tests, Flutter analysis, and `git diff --check`.
+PolyScreen verified cold/repeat launches, source placement, and Back dismissal
+on `emulator-5554`, display 0. Final recorded frames confirm that removing the
+launcher's zoom preserved the stationary fade and genie animation. No raw ADB
+UI fallback or physical-device installation was used.
+
+![Faster widget entry with unchanged motion](screenshots/medication-reminders/27-widget-fast-opening.png)
+
+Validated APK SHA-256: `7ae81b1a8fa3943a8eb96157ad33a0016f74f9f53d3899ed2a501fe6a5b1b1a0`.

@@ -1,5 +1,10 @@
+import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
+
+import 'dart:ui' as ui;
+
 import 'package:blood_pressure_app/core/widgets/defer_until_sheet_settled.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
+import 'package:blood_pressure_app/features/settings/lazy_settings_list.dart';
 import 'package:blood_pressure_app/features/shell/app_shell.dart';
 import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
 import 'package:blood_pressure_app/screens/settings_screen.dart';
@@ -11,6 +16,62 @@ import 'package:material_ui/material_ui.dart';
 import '../util.dart';
 
 void main() {
+  testWidgets('food preferences follow tracking without losing their value', (
+    tester,
+  ) async {
+    usePhoneTestSurface(tester);
+    await pumpApp(tester, await materialApp(const SettingsPage()));
+    await _reveal(tester, find.text('Show nutrition totals'));
+    final tile = find.ancestor(
+      of: find.text('Show nutrition totals'),
+      matching: find.byType(SwitchSettingsTile),
+    );
+    expect(tester.widget<SwitchSettingsTile>(tile).enabled, isTrue);
+    await testSettingsController!.set(foodTrackingEnabledSetting, false);
+    await tester.pump();
+    expect(tester.widget<SwitchSettingsTile>(tile).enabled, isFalse);
+    await testSettingsController!.set(foodTrackingEnabledSetting, true);
+    await tester.pump();
+    expect(tester.widget<SwitchSettingsTile>(tile).enabled, isTrue);
+    expect(testSettingsController!.get(foodNutritionTotalsSetting), isTrue);
+  });
+
+  testWidgets(
+    'settings mounts only visible rows and search reveals distant rows',
+    (tester) async {
+      usePhoneTestSurface(tester);
+      await pumpApp(tester, await materialApp(const SettingsPage()));
+      final semantics = tester.ensureSemantics();
+      expect(
+        tester
+            .getSemantics(find.text('General').first)
+            .getSemanticsData()
+            .hasAction(ui.SemanticsAction.tap),
+        isTrue,
+      );
+      semantics.dispose();
+      final anchors = find.byType(SettingAnchor).evaluate().length;
+      expect(anchors, lessThan(20));
+      expect(find.text('Show nutrition totals'), findsNothing);
+      await tester.tap(find.byType(SafaehSettingsSearchButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('safaeh_settings_search_field')),
+        'Show nutrition totals',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Show nutrition totals').last);
+      await tester.pumpAndSettle();
+      expect(
+        find
+            .widgetWithText(SwitchSettingsTile, 'Show nutrition totals')
+            .hitTestable(),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('desktop shell and settings switch locale together', (
     tester,
   ) async {
@@ -88,6 +149,31 @@ void main() {
     expect(find.text('Theme'), findsWidgets);
   });
 
+  testWidgets('search results fit the page above the keyboard', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+    await pumpApp(tester, await materialApp(const SettingsPage()));
+    await tester.tap(find.byType(SafaehSettingsSearchButton));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('safaeh_settings_search_field')),
+      'g',
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    final results = find.byType(SafaehSettingsSearchResults);
+    final scrollable = find.ancestor(
+      of: results,
+      matching: find.byType(ListView),
+    );
+    expect(scrollable, findsOneWidget);
+    expect(tester.getRect(scrollable).bottom, lessThanOrEqualTo(544));
+  });
+
   for (final direction in [TextDirection.ltr, TextDirection.rtl]) {
     for (final layout in [
       (1000.0, 64.0),
@@ -117,7 +203,7 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
-          final rect = tester.getRect(find.byType(SettingsSectionList));
+          final rect = tester.getRect(find.byType(LazySettingsList));
           expect(rect.width, 720);
           expect(rect.center.dx, closeTo(layout.$1 / 2, 1));
           expect(
@@ -277,12 +363,12 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.byKey(sheetOptionSkeletonKey), findsOneWidget);
-    expect(find.text('MM/dd/yyyy h:mm a'), findsNothing);
+    expect(find.text('yyyy-MM-dd HH:mm'), findsNothing);
 
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('MM/dd/yyyy h:mm a'), findsNothing);
+    expect(find.text('yyyy-MM-dd HH:mm'), findsNothing);
     await tester.pump();
-    expect(find.text('MM/dd/yyyy h:mm a'), findsOneWidget);
+    expect(find.text('yyyy-MM-dd HH:mm'), findsOneWidget);
   });
 
   testWidgets('date format uses a Safaeh picker of presets', (tester) async {
@@ -293,12 +379,20 @@ void main() {
     await tester.tap(find.text('Time format').last);
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('safaeh_drag_handle')), findsOneWidget);
-    expect(find.byType(SafaehTilePickerBody<String>), findsOneWidget);
+    expect(find.byType(AppOptionPickerBody<String>), findsOneWidget);
     expect(find.text('yyyy-MM-dd HH:mm'), findsOneWidget);
     expect(find.text('dd/MM/yyyy HH:mm'), findsOneWidget);
-    expect(find.text('MM/dd/yyyy h:mm a'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('MM/dd/yyyy h:mm a'),
+      250,
+      scrollable: find.descendant(
+        of: find.byType(AppOptionPickerBody<String>),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(find.text('MM/dd/yyyy h:mm a').hitTestable(), findsOneWidget);
 
-    await tester.tap(find.text('dd/MM/yyyy HH:mm'));
+    await tester.tap(find.text('MM/dd/yyyy h:mm a'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('safaeh_drag_handle')), findsNothing);
   });
@@ -308,6 +402,7 @@ void main() {
 
     await pumpApp(tester, await materialApp(const SettingsPage()));
 
+    await _reveal(tester, find.text('Advanced').first);
     expect(find.text('Advanced'), findsWidgets);
     expect(find.text('Bottom dialog bars'), findsNothing);
     expect(find.text('Animation duration'), findsNothing);
@@ -326,6 +421,7 @@ void main() {
     await pumpApp(tester, await materialApp(const SettingsPage()));
 
     final advanced = find.text('Advanced').first;
+    await _reveal(tester, advanced);
     await Scrollable.ensureVisible(tester.element(advanced), alignment: 0.8);
     await tester.pump();
 
@@ -365,3 +461,15 @@ Finder _swatch(int argb) => find.byWidgetPredicate((widget) {
   final color = decoration is BoxDecoration ? decoration.color : null;
   return color != null && color.toARGB32() == argb;
 });
+
+Future<void> _reveal(WidgetTester tester, Finder target) async {
+  await tester.scrollUntilVisible(
+    target,
+    250,
+    scrollable: find.descendant(
+      of: find.byType(LazySettingsList),
+      matching: find.byType(Scrollable),
+    ),
+  );
+  await tester.pumpAndSettle();
+}

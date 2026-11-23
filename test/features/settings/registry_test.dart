@@ -13,6 +13,8 @@ void main() {
       'blood_pressure',
       'weight',
       'medications',
+      'food',
+      'water',
       'bluetooth',
       'data',
       'about',
@@ -76,6 +78,8 @@ void main() {
       'rounded_reminder_button',
       'medication_history_display',
     ]);
+    expect(main('food'), ['food_tracking_enabled', 'food_nutrition_totals']);
+    expect(main('water'), ['water_tracking_enabled', 'water_preferences']);
     expect(main('bluetooth'), [
       'bluetooth_measurements_enabled',
       'ble_input',
@@ -87,6 +91,7 @@ void main() {
       'export_settings',
       'import_settings',
       'delete_data',
+      'usage_analytics',
     ]);
     expect(main('about'), [
       'version',

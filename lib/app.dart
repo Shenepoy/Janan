@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -16,6 +17,7 @@ import 'package:blood_pressure_app/core/settings/storage_providers.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/data_util/consistent_future_builder.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
+import 'package:blood_pressure_app/features/analytics/usage_analytics.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
 import 'package:blood_pressure_app/features/debug/debug_data_server.dart';
 import 'package:blood_pressure_app/features/health_connect/bp_sync_model.dart';
@@ -26,7 +28,10 @@ import 'package:blood_pressure_app/features/input/forms/add_entry_form.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_providers.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_runtime.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminders_screens.dart';
+import 'package:blood_pressure_app/features/medications/medication_widget_window.dart';
 import 'package:blood_pressure_app/features/medications/medications_screen.dart';
+import 'package:blood_pressure_app/features/nutrition/nutrition_screen.dart';
+import 'package:blood_pressure_app/features/nutrition/water_reminders.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_screen.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/export_import_screen.dart';
@@ -46,6 +51,7 @@ import 'package:blood_pressure_app/screens/home_screen.dart';
 import 'package:blood_pressure_app/screens/settings_screen.dart';
 import 'package:blood_pressure_app/screens/statistics_screen.dart';
 import 'package:blood_pressure_app/screens/weight_screen.dart';
+import 'package:blood_pressure_app/theme/app_fab_shape.dart';
 import 'package:blood_pressure_app/theme/app_fonts.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
@@ -81,6 +87,8 @@ class _AppState extends ConsumerState<App> with Loggable {
   var _ownsFileSettings = false;
   var _ownsDb = false;
   AppRoute _initialRoute = AppRoute.home;
+  String? _widgetScheduleId;
+  Rect? _widgetAnchor;
 
   FileSettingsLoader? _settingsLoader;
   ExportSettings? _exportSettings;
@@ -120,6 +128,12 @@ class _AppState extends ConsumerState<App> with Loggable {
   Future<void> _loadApp() async {
     if (!mounted) return;
     initializeNativeDatabaseFactory();
+    if (WidgetsBinding.instance.platformDispatcher.defaultRouteName ==
+        medicationWidgetRoute) {
+      final intent = await ReceiveIntent.getInitialIntent();
+      _widgetScheduleId = intent?.extra?['scheduleId'] as String? ?? '';
+      _widgetAnchor = medicationWidgetAnchor(intent?.extra);
+    }
 
     if (!kIsWeb && kDebugMode && (const bool.fromEnvironment('testing_mode'))) {
       final dbPath = await getDatabasesPath();
@@ -213,6 +227,13 @@ class _AppState extends ConsumerState<App> with Loggable {
     }
 
     if (!mounted) return;
+    if (_widgetScheduleId != null) {
+      // The action window needs local repositories, not startup migrations,
+      // Health Connect sync, or rebuilding every scheduled notification.
+      _medCache = ref.read(medCacheProvider);
+      setState(() => _ready = true);
+      return;
+    }
     final settings = ref.read(appSettingsProvider);
     try {
       if (settings.allowMissingValues && settings.validateInputs) {
@@ -352,9 +373,14 @@ class _AppState extends ConsumerState<App> with Loggable {
       try {
         final intent = await ReceiveIntent.getInitialIntent();
         logInfo('Received intent: $intent');
+        if (intent?.extra?['route'] == medicationWidgetRoute) {
+          _widgetScheduleId = intent?.extra?['scheduleId'] as String? ?? '';
+        }
         if (hc.medicineFeatureEnabled &&
             intent?.extra?['route'] == AppRoute.medicationToday.path) {
           initialRoute = AppRoute.medicationToday;
+        } else if (intent?.extra?['route'] == AppRoute.nutrition.path) {
+          initialRoute = AppRoute.nutrition;
         } else if (intent?.action ==
             'android.intent.action.VIEW_PERMISSION_USAGE') {
           switch (intent!
@@ -420,10 +446,14 @@ class _AppState extends ConsumerState<App> with Loggable {
       exportColumnsManagerProvider.overrideWithValue(_exportColumnsManager!),
       medCacheProvider.overrideWithValue(_medCache!),
     ],
-    child: _AppRoot(
-      initialRoute: _initialRoute,
-      homePresence: _homePresence,
-      launchSyncHostKey: _launchSyncHostKey,
+    child: WaterReminderHost(
+      child: _AppRoot(
+        initialRoute: _initialRoute,
+        widgetScheduleId: _widgetScheduleId,
+        widgetAnchor: _widgetAnchor,
+        homePresence: _homePresence,
+        launchSyncHostKey: _launchSyncHostKey,
+      ),
     ),
   );
 
@@ -446,9 +476,13 @@ class _AppRoot extends ConsumerStatefulWidget {
     required this.initialRoute,
     required this.homePresence,
     required this.launchSyncHostKey,
+    this.widgetScheduleId,
+    this.widgetAnchor,
   });
 
   final AppRoute initialRoute;
+  final String? widgetScheduleId;
+  final Rect? widgetAnchor;
   final HomePresenceObserver homePresence;
   final GlobalKey launchSyncHostKey;
 
@@ -456,8 +490,13 @@ class _AppRoot extends ConsumerStatefulWidget {
   ConsumerState<_AppRoot> createState() => _AppRootState();
 }
 
-class _AppRootState extends ConsumerState<_AppRoot> {
+class _AppRootState extends ConsumerState<_AppRoot>
+    with WidgetsBindingObserver {
+  final _widgetWindowObserver = MedicationWidgetWindowObserver();
+
+  UsageAnalytics? _startedAnalytics;
   final _settingsSearchOpen = ValueNotifier<bool>(false);
+  final _shellNavigation = ShellNavigationController();
   StreamSubscription<MedicineIntake?>? _intakeClaims;
   DebugDataServer? _debugServer;
   String? _syncedReminderLocale;
@@ -466,6 +505,30 @@ class _AppRootState extends ConsumerState<_AppRoot> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    if (widget.widgetScheduleId != null) {
+      medicationWidgetWindowChannel.setMethodCallHandler((call) async {
+        if (call.method != 'open' || !mounted) return;
+        final launch = Map<Object?, Object?>.from(call.arguments as Map);
+        ref.invalidate(medicationSchedulesProvider);
+        ref.invalidate(homeMedicationOccurrencesProvider);
+        ref.invalidate(medicationWidgetOccurrencesProvider);
+        final navigator = medicationNavigatorKey.currentState;
+        if (navigator == null) return;
+        navigator.popUntil((route) => route.isFirst);
+        unawaited(
+          showMedicationWidgetPanel(
+            navigator.overlay!.context,
+            launch['scheduleId'] as String? ?? '',
+            anchor: medicationWidgetAnchor(launch),
+          ),
+        );
+      });
+    }
+    MedicationReminderRuntime.instance.openNutrition = () {
+      medicationNavigatorKey.currentState?.popUntil((route) => route.isFirst);
+      _shellNavigation.open(ShellTab.nutrition);
+    };
     if (kDebugMode) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -511,9 +574,26 @@ class _AppRootState extends ConsumerState<_AppRoot> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    // A home widget uses its own Flutter engine and repository instances.
+    // Re-read its writes when returning to an already-running app.
+    ref.invalidate(medicationSchedulesProvider);
+    ref.invalidate(homeMedicationOccurrencesProvider);
+    ref.invalidate(todayMedicationOccurrencesProvider);
+    ref.invalidate(medicationDayProvider);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (widget.widgetScheduleId != null) {
+      medicationWidgetWindowChannel.setMethodCallHandler(null);
+    }
     unawaited(_debugServer?.stop());
     _intakeClaims?.cancel();
+    MedicationReminderRuntime.instance.openNutrition = null;
+    _shellNavigation.dispose();
     _settingsSearchOpen.dispose();
     super.dispose();
   }
@@ -561,6 +641,8 @@ class _AppRootState extends ConsumerState<_AppRoot> {
   }
 
   Widget _shell(ShellTab tab) => AppShell(
+    navigation: _shellNavigation,
+    nutritionPage: const NutritionScreen(embedded: true),
     homePresence: widget.homePresence,
     initialTab: tab,
     settingsSearchOpen: _settingsSearchOpen,
@@ -576,6 +658,11 @@ class _AppRootState extends ConsumerState<_AppRoot> {
 
   @override
   Widget build(BuildContext context) {
+    final analytics = ref.watch(usageAnalyticsProvider);
+    if (!identical(analytics, _startedAnalytics)) {
+      _startedAnalytics = analytics;
+      unawaited(analytics.capture(UsageEvent.appOpened));
+    }
     final settings = ref.watch(appSettingsProvider);
     if (kDebugMode) {
       ref.listen(
@@ -622,7 +709,11 @@ class _AppRootState extends ConsumerState<_AppRoot> {
     final routes = {
       AppRoute.onboarding.path: (_) =>
           OnboardingScreen(firstRun: !settings.onboardingCompleted),
-      AppRoute.home.path: (_) => _shell(ShellTab.home),
+      AppRoute.home.path: (_) => _shell(
+        widget.initialRoute == AppRoute.nutrition
+            ? ShellTab.nutrition
+            : ShellTab.home,
+      ),
       AppRoute.add.path: (_) => settings.bloodPressureEnabled
           ? const AddEntryScreen(kind: AddEntryKind.bloodPressure)
           : _shell(ShellTab.home),
@@ -659,6 +750,10 @@ class _AppRootState extends ConsumerState<_AppRoot> {
       data: const SafaehThemeData(
         tabletBreakpoint: 600,
         dialogMaxWidth: 560,
+        sheetTemplate: SafaehSheetTemplateStyle(
+          padding: EdgeInsets.fromLTRB(20, 8, 20, 20),
+          surfaceColor: Colors.white,
+        ),
         floatingAppearance: SafaehFloatingAppearance(
           style: SafaehFloatingSurfaceStyle.glass,
         ),
@@ -685,7 +780,10 @@ class _AppRootState extends ConsumerState<_AppRoot> {
         supportedLocales: context.supportedLocales,
         locale: locale,
         debugShowCheckedModeBanner: false,
-        navigatorObservers: [widget.homePresence],
+        navigatorObservers: [
+          widget.homePresence,
+          if (widget.widgetScheduleId != null) _widgetWindowObserver,
+        ],
         builder: (context, child) {
           final directed = Directionality(
             textDirection: isRtl ? ui.TextDirection.rtl : ui.TextDirection.ltr,
@@ -707,8 +805,17 @@ class _AppRootState extends ConsumerState<_AppRoot> {
             ),
           );
         },
-        initialRoute: widget.initialRoute.path,
-        onGenerateInitialRoutes: widget.initialRoute == AppRoute.medicationToday
+        // A water notification selects the root shell tab. Creating both /
+        // and /nutrition would mount two shells sharing the interval picker.
+        initialRoute: widget.initialRoute == AppRoute.nutrition
+            ? AppRoute.home.path
+            : widget.initialRoute.path,
+        onGenerateInitialRoutes: widget.widgetScheduleId != null
+            ? (_) => medicationWidgetInitialRoutes(
+                widget.widgetScheduleId!,
+                anchor: widget.widgetAnchor,
+              )
+            : widget.initialRoute == AppRoute.medicationToday
             ? (name) => initialRouteStack(name, routes)
             : null,
         routes: routes,
@@ -732,6 +839,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
       fontFamilyFallback: appFontFallbacks(locale),
       useMaterial3: true,
       floatingActionButtonTheme: FloatingActionButtonThemeData(
+        shape: appFabShape,
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
       ),
@@ -763,6 +871,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
 enum AppRoute {
   onboarding('/onboarding'),
   home('/'),
+  nutrition('/nutrition'),
   add('/add'),
   addWeight('/add-weight'),
   addMedicine('/add-medicine'),

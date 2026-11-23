@@ -47,6 +47,24 @@ class OnboardingFeatureSetup extends ConsumerWidget {
         page: 2,
         change: (bool value) => ref.updateSetting(weightInputSetting, value),
       ),
+      (
+        key: 'food',
+        title: 'foodTracking',
+        icon: Symbols.grocery,
+        value: settings.foodTrackingEnabled,
+        page: 2,
+        change: (bool value) =>
+            ref.updateSetting(foodTrackingEnabledSetting, value),
+      ),
+      (
+        key: 'water',
+        title: 'waterTracking',
+        icon: Icons.local_drink_outlined,
+        value: settings.waterTrackingEnabled,
+        page: 1,
+        change: (bool value) =>
+            ref.updateSetting(waterTrackingEnabledSetting, value),
+      ),
       if (isPlatformSupportedBluetooth)
         (
           key: 'bluetooth',
@@ -76,7 +94,7 @@ class OnboardingFeatureSetup extends ConsumerWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Text(
                   'onboardingFeaturesHint'.tr(),
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -85,7 +103,7 @@ class OnboardingFeatureSetup extends ConsumerWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 LayoutBuilder(
                   builder: (context, constraints) => Wrap(
                     spacing: 12,
@@ -93,11 +111,19 @@ class OnboardingFeatureSetup extends ConsumerWidget {
                     children: [
                       for (final choice in choices)
                         SizedBox(
-                          width: constraints.maxWidth >= 620
+                          width:
+                              constraints.maxWidth >= 280 &&
+                                  MediaQuery.textScalerOf(context).scale(14) <=
+                                      17
                               ? (constraints.maxWidth - 12) / 2
                               : constraints.maxWidth,
                           child: _choice(
                             context,
+                            compact:
+                                constraints.maxWidth < 620 &&
+                                constraints.maxWidth >= 280 &&
+                                MediaQuery.textScalerOf(context).scale(14) <=
+                                    17,
                             palette: onboardingPalette(theme, choice.page),
                             key: choice.key,
                             title: choice.title.tr(),
@@ -128,6 +154,7 @@ class OnboardingFeatureSetup extends ConsumerWidget {
 
   Widget _choice(
     BuildContext context, {
+    required bool compact,
     required ColorScheme palette,
     required String key,
     required String title,
@@ -158,34 +185,73 @@ class OnboardingFeatureSetup extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        child: SwitchListTile(
-          visualDensity: const VisualDensity(vertical: -2),
-          key: Key('onboarding-feature-$key'),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 0,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: Text(
-            title,
-            style: Theme.of(context).textTheme.bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          secondary: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: palette.primaryContainer,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: palette.primary, size: 24),
-          ),
-          activeThumbColor: palette.onPrimary,
-          activeTrackColor: palette.primary,
-          value: selected,
-          onChanged: onChanged,
-        ),
+        child: compact
+            ? InkWell(
+                key: Key('onboarding-feature-$key'),
+                borderRadius: BorderRadius.circular(24),
+                onTap: () => onChanged(!selected),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Icon(icon, color: palette.primary, size: 24),
+                          Switch(
+                            value: selected,
+                            onChanged: onChanged,
+                            activeThumbColor: palette.onPrimary,
+                            activeTrackColor: palette.primary,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ],
+                      ),
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: 13,
+                          height: 1.15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : SwitchListTile(
+                visualDensity: const VisualDensity(vertical: -2),
+                key: Key('onboarding-feature-$key'),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 0,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                title: Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                secondary: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: palette.primaryContainer,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(icon, color: palette.primary, size: 24),
+                ),
+                activeThumbColor: palette.onPrimary,
+                activeTrackColor: palette.primary,
+                value: selected,
+                onChanged: onChanged,
+              ),
       ),
     );
   }

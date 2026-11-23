@@ -8,14 +8,17 @@ import 'package:blood_pressure_app/model/storage/types/time_step.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Previous display window for period comparison, or null for lifetime.
-DateRange? previousDisplayRange(IntervalStorage interval) {
+DateRange? previousDisplayRange(
+  IntervalStorage interval, {
+  DateRange? currentRange,
+}) {
   switch (interval.stepSize) {
     case TimeStep.lifetime:
       return null;
     case TimeStep.last7Days:
     case TimeStep.last30Days:
     case TimeStep.custom:
-      final current = interval.currentRange;
+      final current = currentRange ?? interval.currentRange;
       final duration = current.end.difference(current.start);
       return DateRange(
         start: current.start.subtract(duration),
@@ -59,10 +62,7 @@ double? pressureInUnit(Pressure? pressure, PressureUnit unit) {
 String formatDashboardPressure(Pressure? pressure, PressureUnit unit) {
   final value = pressureInUnit(pressure, unit);
   if (value == null) return '—';
-  return formatDashboardNumber(
-    value,
-    digits: unit == PressureUnit.kPa ? 1 : 0,
-  );
+  return formatDashboardNumber(value, digits: unit == PressureUnit.kPa ? 1 : 0);
 }
 
 /// Trimmed decimal string, or an em dash.

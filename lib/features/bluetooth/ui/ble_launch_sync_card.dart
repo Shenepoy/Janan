@@ -1,6 +1,8 @@
+import 'package:blood_pressure_app/core/widgets/app_sheet.dart';
 import 'package:blood_pressure_app/features/bluetooth/logic/ble_launch_sync.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:safaeh/safaeh.dart';
 
 /// Status card shown while a launch-time meter sync is running or finished.
 class BleLaunchSyncCard extends StatelessWidget {
@@ -31,13 +33,11 @@ class BleLaunchSyncCard extends StatelessWidget {
     final result = progress.result;
     final busy = progress.isBusy && !paused;
     final showResume = onResume != null && !busy && paused;
-    final showSearchAgain = onResume != null
-        && !busy
-        && !paused
-        && result != null;
-    return Card(
-      margin: const EdgeInsets.only(top: 8),
-      child: Padding(
+    final showSearchAgain =
+        onResume != null && !busy && !paused && result != null;
+    return SafaehSheetSurface(
+      child: AppSheetBody(
+        surface: false,
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -45,23 +45,18 @@ class BleLaunchSyncCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  _leadingIcon,
-                  color: _leadingColor(theme),
-                ),
+                Icon(_leadingIcon, color: _leadingColor(theme)),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    _title(),
-                    style: theme.textTheme.titleMedium,
-                  ),
+                  child: Text(_title(), style: theme.textTheme.titleMedium),
                 ),
-                if (busy && (progress.phase == BleLaunchSyncPhase.scanning
-                    || progress.lookingForMore))
+                if (busy &&
+                    (progress.phase == BleLaunchSyncPhase.scanning ||
+                        progress.lookingForMore))
                   _ScanCountdown(until: progress.scanUntil),
-                if (busy
-                    && progress.phase != BleLaunchSyncPhase.scanning
-                    && !progress.lookingForMore)
+                if (busy &&
+                    progress.phase != BleLaunchSyncPhase.scanning &&
+                    !progress.lookingForMore)
                   const SizedBox.square(
                     dimension: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
@@ -148,12 +143,12 @@ class BleLaunchSyncCard extends StatelessWidget {
 
   Color _leadingColor(ThemeData theme) {
     final result = progress.result;
-    if (result?.status == BleLaunchSyncStatus.failed
-        || result?.status == BleLaunchSyncStatus.notFound) {
+    if (result?.status == BleLaunchSyncStatus.failed ||
+        result?.status == BleLaunchSyncStatus.notFound) {
       return theme.colorScheme.error;
     }
-    if (result?.status == BleLaunchSyncStatus.imported
-        || result?.status == BleLaunchSyncStatus.upToDate) {
+    if (result?.status == BleLaunchSyncStatus.imported ||
+        result?.status == BleLaunchSyncStatus.upToDate) {
       return theme.colorScheme.primary;
     }
     return theme.colorScheme.primary;
@@ -173,8 +168,9 @@ class BleLaunchSyncCard extends StatelessWidget {
     final result = progress.result;
     if (result != null) {
       return switch (result.status) {
-        BleLaunchSyncStatus.imported =>
-          'importedNewMeasurements'.tr(namedArgs: {'count': '${result.count}'}),
+        BleLaunchSyncStatus.imported => 'importedNewMeasurements'.tr(
+          namedArgs: {'count': '${result.count}'},
+        ),
         BleLaunchSyncStatus.upToDate => 'noNewMeasurements'.tr(),
         BleLaunchSyncStatus.bluetoothOff => 'bluetoothOffSyncSkipped'.tr(),
         BleLaunchSyncStatus.failed => 'bluetoothSyncFailed'.tr(),
@@ -186,13 +182,14 @@ class BleLaunchSyncCard extends StatelessWidget {
     final name = progress.deviceName?.trim();
     final hasName = name != null && name.isNotEmpty;
     return switch (progress.phase) {
-      BleLaunchSyncPhase.idle ||
-      BleLaunchSyncPhase.scanning => hasName
-          ? 'lookingForDevice'.tr(namedArgs: {'name': name})
-          : 'scanningForDevices'.tr(),
-      BleLaunchSyncPhase.connecting => hasName
-          ? 'foundMeterNamed'.tr(namedArgs: {'name': name})
-          : 'connectingToMeter'.tr(),
+      BleLaunchSyncPhase.idle || BleLaunchSyncPhase.scanning =>
+        hasName
+            ? 'lookingForDevice'.tr(namedArgs: {'name': name})
+            : 'scanningForDevices'.tr(),
+      BleLaunchSyncPhase.connecting =>
+        hasName
+            ? 'foundMeterNamed'.tr(namedArgs: {'name': name})
+            : 'connectingToMeter'.tr(),
       BleLaunchSyncPhase.reading => 'readingStoredMeasurements'.tr(),
       BleLaunchSyncPhase.importing => 'savingNewMeasurements'.tr(),
       BleLaunchSyncPhase.done => 'syncingMeter'.tr(),
@@ -205,10 +202,12 @@ class BleLaunchSyncCard extends StatelessWidget {
     final hasName = name != null && name.isNotEmpty;
     final result = progress.result;
     if (result != null) {
-      if (result.status == BleLaunchSyncStatus.imported
-          || result.status == BleLaunchSyncStatus.upToDate) {
+      if (result.status == BleLaunchSyncStatus.imported ||
+          result.status == BleLaunchSyncStatus.upToDate) {
         if (result.duplicateCount > 0) {
-          return 'skippedAlreadySaved'.tr(namedArgs: {'count': '${result.duplicateCount}'});
+          return 'skippedAlreadySaved'.tr(
+            namedArgs: {'count': '${result.duplicateCount}'},
+          );
         }
         if (result.receivedCount > 0) {
           return 'newMeasurements'.tr(namedArgs: {'count': '${result.count}'});
@@ -223,9 +222,10 @@ class BleLaunchSyncCard extends StatelessWidget {
       return 'scanningForExtraDevices'.tr();
     }
     return switch (progress.phase) {
-      BleLaunchSyncPhase.connecting => hasName
-          ? 'connectingToDevice'.tr(namedArgs: {'name': name})
-          : 'connectingToMeter'.tr(),
+      BleLaunchSyncPhase.connecting =>
+        hasName
+            ? 'connectingToDevice'.tr(namedArgs: {'name': name})
+            : 'connectingToMeter'.tr(),
       BleLaunchSyncPhase.reading => 'readingStoredMeasurements'.tr(),
       BleLaunchSyncPhase.importing => 'savingNewMeasurements'.tr(),
       BleLaunchSyncPhase.scanning => 'checkingForOneMinute'.tr(),
@@ -235,8 +235,8 @@ class BleLaunchSyncCard extends StatelessWidget {
 
   String? _detail() {
     if (paused || progress.result != null) return null;
-    if (progress.phase == BleLaunchSyncPhase.reading
-        || progress.phase == BleLaunchSyncPhase.connecting) {
+    if (progress.phase == BleLaunchSyncPhase.reading ||
+        progress.phase == BleLaunchSyncPhase.connecting) {
       return 'waitForMeterMeasurement'.tr();
     }
     return null;
@@ -282,16 +282,16 @@ class _StepRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = switch (phase) {
-      BleLaunchSyncPhase.idle ||
-      BleLaunchSyncPhase.scanning => 0,
+      BleLaunchSyncPhase.idle || BleLaunchSyncPhase.scanning => 0,
       BleLaunchSyncPhase.connecting => 1,
       BleLaunchSyncPhase.reading => 2,
       BleLaunchSyncPhase.importing => 3,
       BleLaunchSyncPhase.done => 4,
     };
-    final failed = result?.status == BleLaunchSyncStatus.failed
-        || result?.status == BleLaunchSyncStatus.notFound
-        || result?.status == BleLaunchSyncStatus.bluetoothOff;
+    final failed =
+        result?.status == BleLaunchSyncStatus.failed ||
+        result?.status == BleLaunchSyncStatus.notFound ||
+        result?.status == BleLaunchSyncStatus.bluetoothOff;
     final steps = <(IconData, String)>[
       (Icons.bluetooth_searching, 'syncStepLook'.tr()),
       (Icons.bluetooth_connected, 'syncStepConnect'.tr()),
@@ -315,10 +315,10 @@ class _StepRow extends StatelessWidget {
             state: failed && current <= index
                 ? _StepStatus.pending
                 : current > index
-                    ? _StepStatus.done
-                    : current == index
-                        ? _StepStatus.active
-                        : _StepStatus.pending,
+                ? _StepStatus.done
+                : current == index
+                ? _StepStatus.active
+                : _StepStatus.pending,
           ),
         ],
       ],
@@ -343,8 +343,7 @@ class _StepChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = switch (state) {
-      _StepStatus.done ||
-      _StepStatus.active => theme.colorScheme.primary,
+      _StepStatus.done || _StepStatus.active => theme.colorScheme.primary,
       _StepStatus.pending => theme.colorScheme.onSurfaceVariant,
     };
     return Column(
@@ -361,10 +360,7 @@ class _StepChip extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(color: color),
-        ),
+        Text(label, style: theme.textTheme.labelSmall?.copyWith(color: color)),
       ],
     );
   }

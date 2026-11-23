@@ -247,6 +247,24 @@ List<ReminderRingGroup> _laterReminderRings(
   ];
 }
 
+/// Cancel medicine requests without removing the native water reminder.
+@visibleForTesting
+Future<void> cancelMedicineNotifications(
+  FlutterLocalNotificationsPlugin notifications,
+) async {
+  // Water owns a negative native notification ID and its own repeating alarm.
+  // Rebuilding medicine schedules must not dismiss that independent reminder.
+  // Native batch cancellation avoids one platform round trip per future dose.
+  await notifications.cancelAllPendingNotifications();
+  final ids = <int>{
+    for (final item in await notifications.getActiveNotifications())
+      if (item.id != null && item.id! > 0) item.id!,
+  };
+  for (final id in ids) {
+    await notifications.cancel(id: id);
+  }
+}
+
 /// Local notification and Android widget bridge for medication schedules.
 class MedicationReminderRuntime {
   MedicationReminderRuntime._();
@@ -259,7 +277,10 @@ class MedicationReminderRuntime {
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
   bool _initialized = false;
-  bool _pendingWidgetRoute = false;
+  String? _pendingWidgetRoute;
+
+  /// Selects Food & water in the existing root shell.
+  VoidCallback? openNutrition;
   StreamSubscription<receive_intent.Intent?>? _widgetIntentSubscription;
 
   Future<void> initialize() async {
@@ -269,8 +290,9 @@ class MedicationReminderRuntime {
           .ReceiveIntent
           .receivedIntentStream
           .listen((intent) {
-            if (intent?.extra?['route'] == '/medications/today') {
-              _pendingWidgetRoute = true;
+            final route = intent?.extra?['route'];
+            if (route == '/medications/today' || route == '/nutrition') {
+              _pendingWidgetRoute = route as String;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 flushPendingWidgetRoute();
               });
@@ -294,14 +316,19 @@ class MedicationReminderRuntime {
 
   /// Opens the agenda after the app has mounted its navigator.
   void flushPendingWidgetRoute() {
-    if (!_pendingWidgetRoute) return;
+    final route = _pendingWidgetRoute;
+    if (route == null) return;
     final navigator = medicationNavigatorKey.currentState;
     if (navigator == null) return;
-    _pendingWidgetRoute = false;
-    navigator.pushNamedAndRemoveUntil(
-      '/medications/today',
-      (route) => route.isFirst,
-    );
+    if (route == '/nutrition') {
+      final open = openNutrition;
+      if (open == null) return;
+      _pendingWidgetRoute = null;
+      open();
+      return;
+    }
+    _pendingWidgetRoute = null;
+    navigator.pushNamedAndRemoveUntil(route, (route) => route.isFirst);
   }
 
   /// Requests user-facing notification and exact-alarm access when available.
@@ -426,7 +453,7 @@ class MedicationReminderRuntime {
   }) async {
     await initialize();
     if (!_initialized) return;
-    await _notifications.cancelAll();
+    await cancelMedicineNotifications(_notifications);
     if (!notificationsEnabled) return;
     final android = _notifications
         .resolvePlatformSpecificImplementation<

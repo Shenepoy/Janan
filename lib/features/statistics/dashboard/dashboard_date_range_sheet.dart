@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/core/widgets/app_sheet.dart';
 import 'package:blood_pressure_app/l10n/western_digits.dart';
 import 'package:blood_pressure_app/theme/app_text.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -134,83 +135,48 @@ class _DashboardDateRangeSheetState extends State<_DashboardDateRangeSheet> {
   Widget build(BuildContext context) {
     final locale = context.locale.toString();
     final rangeText = _rangeText(locale);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 16),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-          Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.singleDay
-                            ? (rangeText ?? '')
-                            : 'custom'.tr(),
-                        style: AppText.title(context),
-                      ),
-                      if (!widget.singleDay && rangeText != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          rangeText,
-                          style: AppText.subtitle(context),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close, size: 22),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SafaehMonthCalendar(
-            month: _visibleMonth,
-            firstDate: widget.firstDate,
-            lastDate: widget.lastDate,
-            start: _start,
-            end: _end,
-            onDayTap: _onDayTap,
-            monthLabel: WesternDateFormat.yMMMM(locale).format(_visibleMonth),
-            weekdayLabels: _weekdayLabels(context, locale),
-            previousTooltip: MaterialLocalizations.of(
-              context,
-            ).previousMonthTooltip,
-            nextTooltip: MaterialLocalizations.of(context).nextMonthTooltip,
-            onPreviousMonth: () => _shiftMonth(-1),
-            onNextMonth: () => _shiftMonth(1),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+    return AppSheetBody(
+      padding: const EdgeInsets.all(16),
+      header: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text('btnCancel'.tr()),
+                Text(
+                  widget.singleDay ? (rangeText ?? '') : 'custom'.tr(),
+                  style: AppText.title(context),
                 ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  key: const Key('interval_range_confirm'),
-                  onPressed: _canConfirm ? _confirm : null,
-                  child: Text('btnConfirm'.tr()),
-                ),
+                if (!widget.singleDay && rangeText != null)
+                  Text(rangeText, style: AppText.subtitle(context)),
               ],
             ),
           ),
+          IconButton(
+            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.close),
+          ),
         ],
-        ),
+      ),
+      footer: AppSheetAction(
+        buttonKey: const Key('interval_range_confirm'),
+        label: 'btnConfirm'.tr(),
+        onPressed: _canConfirm ? _confirm : null,
+      ),
+      child: SafaehMonthCalendar(
+        month: _visibleMonth,
+        firstDate: widget.firstDate,
+        lastDate: widget.lastDate,
+        start: _start,
+        end: _end,
+        onDayTap: _onDayTap,
+        monthLabel: WesternDateFormat.yMMMM(locale).format(_visibleMonth),
+        weekdayLabels: _weekdayLabels(context, locale),
+        previousTooltip: MaterialLocalizations.of(context).previousMonthTooltip,
+        nextTooltip: MaterialLocalizations.of(context).nextMonthTooltip,
+        onPreviousMonth: () => _shiftMonth(-1),
+        onNextMonth: () => _shiftMonth(1),
       ),
     );
   }

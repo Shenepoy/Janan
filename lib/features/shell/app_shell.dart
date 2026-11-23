@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'dart:math' as math;
+
 import 'dart:ui' as ui;
 
 import 'package:blood_pressure_app/components/snack_bar_stable_fab_location.dart';
+import 'package:blood_pressure_app/features/analytics/usage_analytics.dart';
 import 'package:blood_pressure_app/features/bluetooth/ui/ble_launch_sync_host.dart';
 import 'package:blood_pressure_app/features/home/navigation_action_buttons.dart';
 import 'package:blood_pressure_app/features/measurement_list/measurement_filter_scope.dart';
 import 'package:blood_pressure_app/features/medications/medication_history_screen.dart';
+import 'package:blood_pressure_app/features/nutrition/nutrition_strings.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/shell/dashboard_app_bar.dart';
 import 'package:blood_pressure_app/features/shell/shell_scroll_insets.dart';
@@ -16,17 +20,30 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:safaeh/safaeh.dart';
 
 export 'package:blood_pressure_app/features/shell/shell_tab.dart';
+
+/// Opens a destination in the mounted shell without stacking another shell.
+class ShellNavigationController extends ChangeNotifier {
+  ShellTab? _requestedTab;
+
+  void open(ShellTab tab) {
+    _requestedTab = tab;
+    notifyListeners();
+  }
+}
 
 /// Home / statistics / settings chrome with a persistent destination bar.
 class AppShell extends ConsumerWidget {
   const AppShell({
     super.key,
     required this.pages,
+    this.nutritionPage,
     this.homePresence,
+    this.navigation,
     this.initialTab = ShellTab.home,
     this.showWeight,
     this.showBloodPressure,
@@ -38,8 +55,13 @@ class AppShell extends ConsumerWidget {
   /// Measurements, weight, statistics, and settings pages, in that order.
   final List<Widget> pages;
 
+  /// Optional first-class food and water destination.
+  final Widget? nutritionPage;
+
   /// Presence state used by launch-sync to exclude the settings tab.
   final HomePresenceObserver? homePresence;
+
+  final ShellNavigationController? navigation;
 
   /// Tab shown first. Falls back to home if [ShellTab.weight] is hidden.
   final ShellTab initialTab;
@@ -61,6 +83,7 @@ class AppShell extends ConsumerWidget {
 
   static const navHomeKey = ValueKey<String>('shell_nav_home');
   static const navMedicationsKey = ValueKey<String>('shell_nav_medications');
+  static const navNutritionKey = ValueKey<String>('shell_nav_nutrition');
   static const navWeightKey = ValueKey<String>('shell_nav_weight');
   static const navStatisticsKey = ValueKey<String>('shell_nav_statistics');
   static const navSettingsKey = ValueKey<String>('shell_nav_settings');
@@ -74,14 +97,31 @@ class AppShell extends ConsumerWidget {
     final showMedicine = this.showMedicine ?? settings.medicineFeatureEnabled;
     final showMedicationHistory =
         showMedicine && settings.medicationHistoryDisplay == 'separatePage';
+    final nutritionPage = settings.nutritionEnabled ? this.nutritionPage : null;
     final tabs = visibleShellTabs(
       showWeight: enabled,
+      showNutrition: nutritionPage != null,
       showBloodPressure: showBloodPressure,
       showMedicationHistory: showMedicationHistory,
     );
     final shell = _AppShellView(
+      onTabOpened: (tab) => unawaited(
+        ref.read(usageAnalyticsProvider).capture(UsageEvent.forTab(tab)),
+      ),
       pages: pages,
+      nutritionPage: nutritionPage,
+      nutritionLabel: nutritionPage == null
+          ? ''
+          : nutritionTitle(
+              context,
+              food: settings.foodTrackingEnabled,
+              water: settings.waterTrackingEnabled,
+            ),
+      nutritionIcon: settings.foodTrackingEnabled
+          ? Symbols.grocery
+          : Icons.local_drink_outlined,
       homePresence: homePresence,
+      navigation: navigation,
       initialTab: tabs.contains(initialTab) ? initialTab : ShellTab.home,
       showWeight: enabled,
       showBloodPressure: showBloodPressure,
@@ -97,7 +137,11 @@ class AppShell extends ConsumerWidget {
 class _AppShellView extends StatefulWidget {
   const _AppShellView({
     required this.pages,
+    required this.onTabOpened,
+    this.nutritionPage,
     required this.initialTab,
+    required this.nutritionLabel,
+    required this.nutritionIcon,
     required this.showWeight,
     required this.showBloodPressure,
     required this.showMedicine,
@@ -105,11 +149,19 @@ class _AppShellView extends StatefulWidget {
     this.settingsSearchOpen,
     this.onSettingsSearch,
     this.homePresence,
+    this.navigation,
   });
 
   final List<Widget> pages;
+  final ValueChanged<ShellTab> onTabOpened;
+
+  /// Optional first-class food and water destination.
+  final Widget? nutritionPage;
   final HomePresenceObserver? homePresence;
+  final ShellNavigationController? navigation;
   final ShellTab initialTab;
+  final String nutritionLabel;
+  final IconData nutritionIcon;
   final bool showWeight;
   final bool showBloodPressure;
   final bool showMedicine;
@@ -126,6 +178,7 @@ class _AppShellViewState extends State<_AppShellView>
   static const _systemUiChannel = MethodChannel('com.shenepoy.janan/system_ui');
 
   late int _index;
+  int? _actionTarget;
   late double _page;
   late final PageController _pageController;
   late final AnimationController _desktopMotion;
@@ -139,6 +192,25 @@ class _AppShellViewState extends State<_AppShellView>
   double _desktopFadeFrom = 1;
 
   final _pagesKey = GlobalKey(debugLabel: 'shell_pages');
+  final _navSizeKey = GlobalKey(debugLabel: 'shell_nav_size');
+  double _navClearance = SafaehBottomNavMetrics.defaultVisualClearance;
+
+  void _measureNavigation() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _isLandscape) return;
+      final box = _navSizeKey.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) return;
+      // The bar includes SafeArea; the FAB's base location already handles it.
+      final clearance = math.max(
+        SafaehBottomNavMetrics.defaultVisualClearance,
+        box.size.height + 8 - MediaQuery.viewPaddingOf(context).bottom,
+      );
+      if ((clearance - _navClearance).abs() > 0.5) {
+        setState(() => _navClearance = clearance);
+      }
+    });
+  }
+
   late final MeasurementFilterController _measurementFilter;
   bool _landscapeNavCollapsed = true;
   bool _isLandscape = false;
@@ -153,6 +225,7 @@ class _AppShellViewState extends State<_AppShellView>
 
   List<ShellTab> get _tabs => visibleShellTabs(
     showWeight: widget.showWeight,
+    showNutrition: widget.nutritionPage != null,
     showBloodPressure: widget.showBloodPressure,
     showMedicationHistory: widget.showMedicationHistory,
   );
@@ -162,6 +235,7 @@ class _AppShellViewState extends State<_AppShellView>
     return [
       widget.pages[0],
       if (widget.showWeight) widget.pages[1],
+      if (widget.nutritionPage != null) widget.nutritionPage!,
       if (widget.showMedicationHistory)
         const MedicationHistoryScreen(embedded: true),
       if (widget.showBloodPressure) widget.pages[2],
@@ -172,7 +246,10 @@ class _AppShellViewState extends State<_AppShellView>
   @override
   void initState() {
     super.initState();
-    _index = _tabs.indexOf(widget.initialTab).clamp(0, _tabs.length - 1);
+    _index = _tabs
+        .indexOf(widget.navigation?._requestedTab ?? widget.initialTab)
+        .clamp(0, _tabs.length - 1);
+    widget.navigation?.addListener(_openRequestedTab);
     _page = _index.toDouble();
     _measurementFilter = MeasurementFilterController();
     _desktopMotion = AnimationController(vsync: this, value: 1)
@@ -186,7 +263,12 @@ class _AppShellViewState extends State<_AppShellView>
   @override
   void didUpdateWidget(covariant _AppShellView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.showWeight == widget.showWeight &&
+    if (oldWidget.navigation != widget.navigation) {
+      oldWidget.navigation?.removeListener(_openRequestedTab);
+      widget.navigation?.addListener(_openRequestedTab);
+    }
+    if ((oldWidget.nutritionPage != null) == (widget.nutritionPage != null) &&
+        oldWidget.showWeight == widget.showWeight &&
         oldWidget.showBloodPressure == widget.showBloodPressure &&
         oldWidget.showMedicationHistory == widget.showMedicationHistory) {
       return;
@@ -196,6 +278,7 @@ class _AppShellViewState extends State<_AppShellView>
     _desktopMotion.value = 1;
     final oldTabs = visibleShellTabs(
       showWeight: oldWidget.showWeight,
+      showNutrition: oldWidget.nutritionPage != null,
       showBloodPressure: oldWidget.showBloodPressure,
       showMedicationHistory: oldWidget.showMedicationHistory,
     );
@@ -203,6 +286,7 @@ class _AppShellViewState extends State<_AppShellView>
     var next = _tabs.indexOf(current);
     if (next < 0) next = 0;
     _index = next;
+    _actionTarget = null;
     _page = next.toDouble();
     _updatePresence();
     // Rebase the viewport before the changed tab list is laid out. Waiting
@@ -212,8 +296,16 @@ class _AppShellViewState extends State<_AppShellView>
     }
   }
 
+  void _openRequestedTab() {
+    final index = _tabs.indexOf(
+      widget.navigation?._requestedTab ?? _tabs[_index],
+    );
+    if (index >= 0) _go(index);
+  }
+
   @override
   void dispose() {
+    widget.navigation?.removeListener(_openRequestedTab);
     if (!kIsWeb &&
         _compactLandscapeStatusBarHidden &&
         defaultTargetPlatform == TargetPlatform.android) {
@@ -259,11 +351,13 @@ class _AppShellViewState extends State<_AppShellView>
     if (_index == index) return;
     setState(() {
       _index = index;
+      if (_actionTarget == index) _actionTarget = null;
     });
     if (index != _tabs.length - 1 && widget.settingsSearchOpen?.value == true) {
       widget.settingsSearchOpen!.value = false;
     }
     _updatePresence(index: index);
+    widget.onTabOpened(_tabs[index]);
   }
 
   void _updatePresence({int? index}) {
@@ -317,7 +411,18 @@ class _AppShellViewState extends State<_AppShellView>
       );
 
   void _go(int index) {
-    if (index == (_desktopTarget ?? _index)) return;
+    // A tap on the still-selected tab must reverse an in-flight page scroll.
+    // onPageChanged updates _index only after the viewport crosses halfway.
+    if (_desktopTarget != null) {
+      if (index == _desktopTarget) return;
+    } else if (index == _index &&
+        (!_pageController.hasClients ||
+            !_pageController.position.isScrollingNotifier.value)) {
+      return;
+    }
+    // A navigation tap chooses the destination's actions immediately, even
+    // while the viewport is still sliding past intervening tabs.
+    setState(() => _actionTarget = index);
     if (index != _tabs.length - 1 && widget.settingsSearchOpen?.value == true) {
       widget.settingsSearchOpen!.value = false;
     }
@@ -367,6 +472,12 @@ class _AppShellViewState extends State<_AppShellView>
           selectedIcon: Icons.scale,
           tileKey: AppShell.navWeightKey,
         ),
+        ShellTab.nutrition => SafaehSidenavDestination(
+          label: widget.nutritionLabel,
+          icon: widget.nutritionIcon,
+          selectedIcon: widget.nutritionIcon,
+          tileKey: AppShell.navNutritionKey,
+        ),
         ShellTab.medications => SafaehSidenavDestination(
           label: 'medications'.tr(),
           icon: Icons.medication_outlined,
@@ -388,10 +499,13 @@ class _AppShellViewState extends State<_AppShellView>
       },
   ];
 
+  int get _actionIndex => _actionTarget ?? _index;
+
   NavigationActionKind _actionKind() {
-    final tab = _tabs[_page.round().clamp(0, _tabs.length - 1)];
+    final tab = _tabs[_actionIndex];
     return switch (tab) {
       ShellTab.weight => NavigationActionKind.weight,
+      ShellTab.nutrition => NavigationActionKind.nutrition,
       ShellTab.statistics => NavigationActionKind.export,
       _ => NavigationActionKind.bloodPressure,
     };
@@ -429,6 +543,7 @@ class _AppShellViewState extends State<_AppShellView>
     final titleKeys = [
       'measurements',
       if (widget.showWeight) 'weight',
+      if (widget.nutritionPage != null) 'nutritionTitle',
       if (widget.showMedicationHistory) 'medications',
       if (widget.showBloodPressure) 'statistics',
       'settings',
@@ -442,6 +557,7 @@ class _AppShellViewState extends State<_AppShellView>
               (constraints.maxWidth >= 960 ||
                   constraints.maxWidth >= constraints.maxHeight * 1.5);
           _isLandscape = isLandscape;
+          if (!isLandscape) _measureNavigation();
           _syncCompactLandscapeStatusBar(
             constraints.maxWidth > constraints.maxHeight &&
                 constraints.maxHeight < 600,
@@ -450,6 +566,8 @@ class _AppShellViewState extends State<_AppShellView>
             // The navigation is painted over the page, so expose its full
             // visual clearance to floating controls and page-index overlays.
             visible: !isLandscape,
+            visualClearance: _navClearance,
+            contentClearance: _navClearance + 32,
             child: Builder(
               builder: (context) {
                 final tokens = SafaehTheme.of(context);
@@ -489,7 +607,11 @@ class _AppShellViewState extends State<_AppShellView>
                   collapsed: _landscapeNavCollapsed,
                 );
                 return PopScope(
-                  canPop: _index == 0,
+                  // A local overlay consumes Back before shell tab navigation.
+                  canPop:
+                      _index == 0 ||
+                      (ModalRoute.of(context)?.willHandlePopInternally ??
+                          false),
                   onPopInvokedWithResult: (didPop, _) {
                     if (!didPop) _go(0);
                   },
@@ -552,25 +674,26 @@ class _AppShellViewState extends State<_AppShellView>
                                                   ? Duration.zero
                                                   : tokens.navMotion,
                                               curve: Curves.fastOutSlowIn,
-                                              padding: EdgeInsetsDirectional.fromSTEB(
-                                                math.max(
-                                                  compactSurfaceWidth + 12,
-                                                  rtl
-                                                      ? contentInsets.right
-                                                      : contentInsets.left,
-                                                ),
-                                                0,
-                                                math.max(
-                                                  // Keep the floating actions clear of
-                                                  // charts and table cells in either rotation.
-                                                  _tabs[_index] ==
-                                                          ShellTab.settings
-                                                      ? 0
-                                                      : 72,
-                                                  contentEndInset,
-                                                ),
-                                                0,
-                                              ),
+                                              padding:
+                                                  EdgeInsetsDirectional.fromSTEB(
+                                                    math.max(
+                                                      compactSurfaceWidth + 12,
+                                                      rtl
+                                                          ? contentInsets.right
+                                                          : contentInsets.left,
+                                                    ),
+                                                    0,
+                                                    math.max(
+                                                      // Keep the floating actions clear of
+                                                      // charts and table cells in either rotation.
+                                                      _tabs[_index] ==
+                                                              ShellTab.settings
+                                                          ? 0
+                                                          : 72,
+                                                      contentEndInset,
+                                                    ),
+                                                    0,
+                                                  ),
                                               child: _shellPages(
                                                 pages: pages,
                                                 localeTag: localeTag,
@@ -751,25 +874,41 @@ class _AppShellViewState extends State<_AppShellView>
                                 left: 0,
                                 right: 0,
                                 bottom: 8,
-                                child: SafaehFloatingNavBar(
-                                  key: const ValueKey('app_shell_floating_nav'),
-                                  selectedIndex: _index,
-                                  onDestinationSelected: _go,
-                                  destinations: destinations,
-                                  floatingAppearance:
-                                      const SafaehFloatingAppearance(
-                                        style: SafaehFloatingSurfaceStyle.glass,
+                                child:
+                                    NotificationListener<
+                                      SizeChangedLayoutNotification
+                                    >(
+                                      onNotification: (_) {
+                                        _measureNavigation();
+                                        return false;
+                                      },
+                                      child: SizeChangedLayoutNotifier(
+                                        key: _navSizeKey,
+                                        child: SafaehFloatingNavBar(
+                                          key: const ValueKey(
+                                            'app_shell_floating_nav',
+                                          ),
+                                          selectedIndex: _index,
+                                          onDestinationSelected: _go,
+                                          destinations: destinations,
+                                          floatingAppearance:
+                                              const SafaehFloatingAppearance(
+                                                style:
+                                                    SafaehFloatingSurfaceStyle
+                                                        .glass,
+                                              ),
+                                          hideWhenKeyboardVisible: true,
+                                        ),
                                       ),
-                                  hideWhenKeyboardVisible: true,
-                                ),
+                                    ),
                               ),
                             ],
                           ),
-                    floatingActionButton: _index < dataTabCount
+                    floatingActionButton: _actionIndex < dataTabCount
                         ? NavigationActionButtons(
                             kind: _actionKind(),
                             showBloodPressure:
-                                _tabs[_index] != ShellTab.medications &&
+                                _tabs[_actionIndex] != ShellTab.medications &&
                                 widget.showBloodPressure,
                             showMedicine: widget.showMedicine,
                           )
@@ -810,50 +949,67 @@ class _AppShellViewState extends State<_AppShellView>
     EdgeInsets landscapeInsets = EdgeInsets.zero,
   }) => ShellTabScope(
     activeTab: _tabs[_index],
-    child: _desktopTransition(
-      PageView(
-        key: _pagesKey,
-        controller: _pageController,
-        scrollDirection: _desktopNavigation && _isLandscape
-            ? Axis.vertical
-            : Axis.horizontal,
-        // Navigation buttons animate the viewport. Desktop wheel/trackpad input
-        // belongs to the page's own scrollables, including at their boundaries.
-        physics: _desktopNavigation
-            ? const NeverScrollableScrollPhysics()
-            : null,
-        onPageChanged: _select,
-        children: [
-          for (var i = 0; i < pages.length; i++)
-            _KeepAlivePage(
-              // Keep identity tied to each tab as settings change.
-              key: ValueKey<String>('shell-page-${_tabs[i].name}-$localeTag'),
-              child: ShellScrollInsets(
-                insets:
-                    _tabs[i] == ShellTab.weight ||
-                        _tabs[i] == ShellTab.statistics
-                    ? landscapeInsets
-                    : EdgeInsets.zero,
-                child: Padding(
-                  padding:
-                      _tabs[i] == ShellTab.weight ||
-                          _tabs[i] == ShellTab.statistics
-                      ? EdgeInsets.zero
-                      : landscapeInsets,
-                  child: Builder(
-                    builder: (context) => MediaQuery.removePadding(
-                      context: context,
-                      removeTop: landscapeInsets.top > 0,
-                      removeBottom: landscapeInsets.bottom > 0,
-                      child: pages[i],
+    child: NotificationListener<ScrollStartNotification>(
+      onNotification: (notification) {
+        // A drag can interrupt a navigation animation before its destination.
+        // Return action selection to the page reached by that gesture.
+        if (notification.depth == 0 &&
+            notification.dragDetails != null &&
+            _actionTarget != null) {
+          setState(() => _actionTarget = null);
+        }
+        return false;
+      },
+      child: _desktopTransition(
+        PageView(
+          key: _pagesKey,
+          controller: _pageController,
+          scrollDirection: _desktopNavigation && _isLandscape
+              ? Axis.vertical
+              : Axis.horizontal,
+          // Navigation buttons animate the viewport. Desktop wheel/trackpad input
+          // belongs to the page's own scrollables, including at their boundaries.
+          physics: _desktopNavigation
+              ? const NeverScrollableScrollPhysics()
+              : null,
+          onPageChanged: _select,
+          children: [
+            for (var i = 0; i < pages.length; i++)
+              _KeepAlivePage(
+                // Keep identity tied to each tab as settings change.
+                key: ValueKey<String>('shell-page-${_tabs[i].name}-$localeTag'),
+                child: TickerMode(
+                  enabled: i == _index,
+                  child: ShellScrollInsets(
+                    insets:
+                        _tabs[i] == ShellTab.nutrition ||
+                            _tabs[i] == ShellTab.weight ||
+                            _tabs[i] == ShellTab.statistics
+                        ? landscapeInsets
+                        : EdgeInsets.zero,
+                    child: Padding(
+                      padding:
+                          _tabs[i] == ShellTab.nutrition ||
+                              _tabs[i] == ShellTab.weight ||
+                              _tabs[i] == ShellTab.statistics
+                          ? EdgeInsets.zero
+                          : landscapeInsets,
+                      child: Builder(
+                        builder: (context) => MediaQuery.removePadding(
+                          context: context,
+                          removeTop: landscapeInsets.top > 0,
+                          removeBottom: landscapeInsets.bottom > 0,
+                          child: pages[i],
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
+        slide: true,
       ),
-      slide: true,
     ),
   );
 }

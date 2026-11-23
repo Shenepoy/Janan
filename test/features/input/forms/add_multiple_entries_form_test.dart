@@ -4,7 +4,6 @@ import 'package:blood_pressure_app/model/bluetooth_input_mode.dart';
 import 'package:blood_pressure_app/model/combined_entry.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:safaeh/safaeh.dart';
 
 import '../../../model/blood_pressure_analyzer_test.dart';
 import '../../../util.dart';
@@ -92,10 +91,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(SafaehConfirmSheet), findsNothing);
+    expect(find.byKey(const ValueKey('safaeh_confirm')), findsNothing);
     await tester.tap(find.text('mockBleInput'));
     await tester.pumpAndSettle();
-    expect(find.byType(SafaehConfirmSheet), findsOneWidget);
+    expect(find.byKey(const ValueKey('safaeh_confirm')), findsOneWidget);
     expect(
       find.textContaining('The bluetooth device reported a time off by'),
       findsOneWidget,
@@ -104,12 +103,12 @@ void main() {
 
     await tapSafaehConfirm(tester);
     await tester.pumpAndSettle();
-    expect(find.byType(SafaehConfirmSheet), findsNothing);
+    expect(find.byKey(const ValueKey('safaeh_confirm')), findsNothing);
 
     // reopens the next time
     await tester.tap(find.text('mockBleInput'));
     await tester.pumpAndSettle();
-    expect(find.byType(SafaehConfirmSheet), findsOneWidget);
+    expect(find.byKey(const ValueKey('safaeh_confirm')), findsOneWidget);
   });
 
   testWidgets('allows disabling warning if time from ble is too old', (
@@ -133,10 +132,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(SafaehConfirmSheet), findsNothing);
+    expect(find.byKey(const ValueKey('safaeh_confirm')), findsNothing);
     await tester.tap(find.text('mockBleInput'));
     await tester.pumpAndSettle();
-    expect(find.byType(SafaehConfirmSheet), findsOneWidget);
+    expect(find.byKey(const ValueKey('safaeh_confirm')), findsOneWidget);
     expect(
       find.textContaining('The bluetooth device reported a time off by'),
       findsOneWidget,
@@ -145,10 +144,10 @@ void main() {
 
     await tester.tap(find.text('Don\'t show again'));
     await tester.pumpAndSettle();
-    expect(find.byType(SafaehConfirmSheet), findsNothing);
+    expect(find.byKey(const ValueKey('safaeh_confirm')), findsNothing);
     await tester.tap(find.text('mockBleInput'));
     await tester.pumpAndSettle();
-    expect(find.byType(SafaehConfirmSheet), findsNothing);
+    expect(find.byKey(const ValueKey('safaeh_confirm')), findsNothing);
   });
 
   testWidgets('entering multiple measurements displays list', (tester) async {

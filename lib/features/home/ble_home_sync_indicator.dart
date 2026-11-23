@@ -303,6 +303,11 @@ class _StageIconState extends State<_StageIcon>
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _syncMotion();
   }
 
@@ -320,6 +325,12 @@ class _StageIconState extends State<_StageIcon>
       : const Duration(milliseconds: 900);
 
   void _syncMotion() {
+    if (MediaQuery.disableAnimationsOf(context) ||
+        !TickerMode.valuesOf(context).enabled ||
+        ModalRoute.isCurrentOf(context) == false) {
+      _controller.stop();
+      return;
+    }
     switch (widget.motion) {
       case _IconMotion.rotate:
         _controller.repeat();

@@ -4,6 +4,16 @@ import 'package:powersync/powersync.dart';
 /// Local-only PowerSync schema. Never synced; no `ps_crud` growth.
 final schema = Schema([
   ...healthToolTables,
+  Table.localOnly('nutrition_foods', [
+    Column.text('data_json'),
+    Column.integer('favorite'),
+    Column.integer('updated_unix_s'),
+  ]),
+  Table.localOnly('nutrition_meals', [
+    Column.text('name'),
+    Column.text('items_json'),
+    Column.integer('updated_unix_s'),
+  ]),
   Table.localOnly('blood_pressure', [
     Column.integer('timestamp_unix_s'),
     Column.real('sys_kpa'),

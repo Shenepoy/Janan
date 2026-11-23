@@ -49,6 +49,16 @@ class _FailingCompletionStorage extends MemoryStorage {
   }
 }
 
+class _FailingUsageStorage extends MemoryStorage {
+  bool fail = true;
+
+  @override
+  Future<bool> setBool(String key, bool value) async {
+    if (key == usageAnalyticsSetting.key && fail) return false;
+    return super.setBool(key, value);
+  }
+}
+
 class _DelayedBluetoothStorage extends MemoryStorage {
   _DelayedBluetoothStorage({required this.delayEngine});
 
@@ -133,6 +143,12 @@ Finder get _close => find.byKey(const Key('onboarding-close'));
 Finder get _cta => find.byKey(const Key('onboarding-cta'));
 Finder get _back => find.byKey(const Key('onboarding-back'));
 Finder get _home => _cta;
+Finder get _usageSkip => find.byKey(const Key('onboarding-usage-skip'));
+
+Future<void> _declineUsage(WidgetTester tester) async {
+  await tester.tap(_usageSkip);
+  await tester.pumpAndSettle();
+}
 
 Future<void> _next(WidgetTester tester) async {
   await tester.tap(_cta);
@@ -256,6 +272,7 @@ void main() {
       );
       await open(tester);
       await _toFeatures(tester);
+      await _next(tester);
       await tester.ensureVisible(_home);
       await tester.tap(_home);
       await tester.pumpAndSettle();
@@ -279,6 +296,41 @@ void main() {
       expect(storage.attempts, 2);
     });
   }
+
+  testWidgets(
+    'food and water onboarding choices share persistent preferences',
+    (tester) async {
+      await open(tester);
+      await _toFeatures(tester);
+      await tapPreference(tester, 'onboarding-feature-food');
+      expect(settings.controller.get(foodTrackingEnabledSetting), isFalse);
+      await _customize(tester);
+      expect(
+        find.byKey(const Key('onboarding-pref-food_nutrition_totals')),
+        findsNothing,
+      );
+      await tapPreference(tester, 'onboarding-pref-water-preferences');
+      expect(
+        find.byKey(const ValueKey('water-target-setting')),
+        findsOneWidget,
+      );
+      navigator.currentState!.pop();
+      await tester.pumpAndSettle();
+      navigator.currentState!.pop();
+      await tester.pumpAndSettle();
+      await tapPreference(tester, 'onboarding-feature-food');
+      await tapPreference(tester, 'onboarding-feature-water');
+      await _customize(tester);
+      expect(
+        find.byKey(const Key('onboarding-pref-water-preferences')),
+        findsNothing,
+      );
+      await tapPreference(tester, 'onboarding-pref-food_nutrition_totals');
+      expect(settings.controller.get(foodNutritionTotalsSetting), isFalse);
+      expect(settings.controller.get(waterTrackingEnabledSetting), isFalse);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   for (final delayEngine in [false, true]) {
     testWidgets('Bluetooth saves after leaving feature page: $delayEngine', (
@@ -581,9 +633,10 @@ void main() {
       tester
           .widget<SafaehOnboardingTracker>(find.byType(SafaehOnboardingTracker))
           .totalSteps,
-      6,
+      7,
     );
     await _next(tester);
+    await _declineUsage(tester);
     expect(find.text('Diary'), findsOneWidget);
     expect(navigator.currentState!.canPop(), isFalse);
   });
@@ -655,7 +708,7 @@ void main() {
       await settings.controller.set(bloodPressureEnabledSetting, false);
       await settings.controller.set(medicineFeatureEnabledSetting, false);
       await open(tester);
-      expect(_tracker(tester).totalSteps, 6);
+      expect(_tracker(tester).totalSteps, 7);
       for (final title in [
         'Add a reading in seconds',
         'Track your weight',
@@ -722,7 +775,7 @@ void main() {
       find.byKey(const Key('onboarding-feature-blood-pressure')),
       findsOneWidget,
     );
-    expect(_tracker(tester).currentStep, _tracker(tester).totalSteps - 1);
+    expect(_tracker(tester).currentStep, _tracker(tester).totalSteps - 2);
     expect(settings.controller.get(onboardingCompletedSetting), isFalse);
   });
 
@@ -915,15 +968,7 @@ void main() {
       matching: find.byType(SafaehLabeledOptionTile),
     );
     await tester.ensureVisible(arabic);
-    final option = find
-        .ancestor(
-          of: arabic,
-          matching: find.byWidgetPredicate(
-            (widget) => widget is GestureDetector && widget.onTap != null,
-          ),
-        )
-        .first;
-    await tester.tap(option);
+    await tester.tap(arabic);
     await tester.pumpAndSettle();
     expect(settings.controller.get(languageSetting), 'ar');
     expect(
@@ -979,9 +1024,9 @@ void main() {
   ) async {
     final handle = tester.ensureSemantics();
     await open(tester);
-    expect(find.bySemanticsLabel('Step 1 of 6'), findsOneWidget);
+    expect(find.bySemanticsLabel('Step 1 of 7'), findsOneWidget);
     await _next(tester);
-    expect(find.bySemanticsLabel('Step 2 of 6'), findsOneWidget);
+    expect(find.bySemanticsLabel('Step 2 of 7'), findsOneWidget);
     handle.dispose();
   });
 
@@ -994,6 +1039,7 @@ void main() {
     await tester.ensureVisible(_home);
     await tester.tap(_home);
     await tester.pumpAndSettle();
+    await _declineUsage(tester);
     expect(find.text('Diary'), findsOneWidget);
     expect(settings.controller.get(onboardingCompletedSetting), isTrue);
     expect(navigator.currentState!.canPop(), isFalse);
@@ -1003,6 +1049,7 @@ void main() {
     await open(tester);
     await _toFeatures(tester);
     await _next(tester);
+    await _declineUsage(tester);
     expect(find.text('Diary'), findsOneWidget);
     expect(find.text('Reading editor'), findsNothing);
     expect(navigator.currentState!.canPop(), isFalse);
@@ -1020,10 +1067,11 @@ void main() {
         child: const Text('Open account'),
       ),
     );
-    expect(_tracker(tester).totalSteps, 7);
+    expect(_tracker(tester).totalSteps, 8);
     await _toFeatures(tester);
     expect(find.text('Open account'), findsNothing);
     await _next(tester);
+    await _declineUsage(tester);
     expect(find.text('Open account'), findsOneWidget);
     expect(find.text('Continue offline'), findsOneWidget);
     expect(settings.controller.get(onboardingCompletedSetting), isFalse);
@@ -1043,12 +1091,100 @@ void main() {
       await open(tester, connection: (_, _) => const Text('Optional account'));
       await _toFeatures(tester);
       await _next(tester);
+      await _declineUsage(tester);
       expect(find.text('Optional account'), findsOneWidget);
       await _next(tester);
       expect(find.text('Diary'), findsOneWidget);
       expect(settings.controller.get(onboardingCompletedSetting), isTrue);
     },
   );
+
+  for (final dismiss in ['skip', 'close']) {
+    testWidgets('highlighted default-on usage can be disabled with $dismiss', (
+      tester,
+    ) async {
+      await open(tester);
+      await _toFeatures(tester);
+      await _next(tester);
+      expect(find.byKey(const Key('onboarding-usage-card')), findsOneWidget);
+      expect(find.text('Help improve Janan'), findsOneWidget);
+      expect(find.text('Turn off usage sharing'), findsOneWidget);
+      expect(settings.controller.get(usageAnalyticsSetting), isTrue);
+      await tester.tap(
+        dismiss == 'skip'
+            ? _usageSkip
+            : find.byKey(const Key('onboarding-usage-close')),
+      );
+      await tester.pumpAndSettle();
+      expect(settings.controller.get(usageAnalyticsSetting), isFalse);
+      expect(find.text('Diary'), findsOneWidget);
+    });
+  }
+
+  for (final enabled in [true, false]) {
+    for (final cloud in [true, false]) {
+      testWidgets('Next preserves usage $enabled in cloud=$cloud', (
+        tester,
+      ) async {
+        if (!enabled)
+          await settings.controller.set(usageAnalyticsSetting, false);
+        await open(
+          tester,
+          connection: cloud ? (_, _) => const Text('Optional account') : null,
+        );
+        await _toFeatures(tester);
+        await _next(tester);
+        expect(settings.controller.get(usageAnalyticsSetting), enabled);
+        await _next(tester);
+        expect(settings.controller.get(usageAnalyticsSetting), enabled);
+        expect(find.text(cloud ? 'Optional account' : 'Diary'), findsOneWidget);
+      });
+    }
+  }
+
+  testWidgets('skipping lessons and continuing leaves default usage on', (
+    tester,
+  ) async {
+    await open(tester);
+    await tester.tap(_skip);
+    await tester.pumpAndSettle();
+    await _next(tester);
+    await _next(tester);
+    expect(settings.controller.get(usageAnalyticsSetting), isTrue);
+    expect(find.text('Diary'), findsOneWidget);
+  });
+
+  testWidgets('failed opt-out stays visible and can be retried', (
+    tester,
+  ) async {
+    final storage = _FailingUsageStorage();
+    settings = await initializeSettings(
+      registry: createAppSettingsRegistry(),
+      storage: storage,
+    );
+    await open(tester);
+    await _toFeatures(tester);
+    await _next(tester);
+    await _declineUsage(tester);
+    expect(settings.controller.get(onboardingCompletedSetting), isFalse);
+    expect(find.byKey(const Key('onboarding-usage-card')), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    storage.fail = false;
+    await _declineUsage(tester);
+    expect(settings.controller.get(usageAnalyticsSetting), isFalse);
+    expect(find.text('Diary'), findsOneWidget);
+  });
+
+  testWidgets('closing usage choice revokes a previous choice', (tester) async {
+    await settings.controller.set(usageAnalyticsSetting, true);
+    await open(tester);
+    await _toFeatures(tester);
+    await _next(tester);
+    await tester.tap(find.byKey(const Key('onboarding-usage-close')));
+    await tester.pumpAndSettle();
+    expect(settings.controller.get(usageAnalyticsSetting), isFalse);
+  });
 
   testWidgets('replay Close preserves its parent route', (tester) async {
     await settings.controller.set(onboardingCompletedSetting, true);

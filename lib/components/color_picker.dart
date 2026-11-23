@@ -135,7 +135,6 @@ Future<Color?> showColorPaletteSheet(
   context: context,
   title: title ?? 'color'.tr(),
   maxHeight: MediaQuery.sizeOf(context).height * 0.78,
-  contentPadding: const EdgeInsets.only(top: 8),
   child: buildSheetShell(
     context,
     title: title ?? 'color'.tr(),

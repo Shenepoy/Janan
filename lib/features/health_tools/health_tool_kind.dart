@@ -1,6 +1,30 @@
 import 'package:blood_pressure_app/features/health_tools/tool_field.dart';
 
 enum HealthToolKind {
+  foodDiary('food_diary', [
+    ToolField('food', required: true),
+    ToolField(
+      'meal',
+      required: true,
+      options: ['breakfast', 'lunch', 'dinner', 'snack'],
+    ),
+    ToolField('portion'),
+    ToolField('calories', numeric: true, minimum: 0, maximum: 100000),
+    ToolField('protein', numeric: true, minimum: 0, maximum: 10000),
+    ToolField('carbs', numeric: true, minimum: 0, maximum: 10000),
+    ToolField('fat', numeric: true, minimum: 0, maximum: 10000),
+    ToolField('note'),
+  ]),
+  waterDiary('water_diary', [
+    ToolField(
+      'water_ml',
+      numeric: true,
+      required: true,
+      minimum: 1,
+      maximum: 10000,
+    ),
+    ToolField('note'),
+  ]),
   diaryContext('diary_context', [
     ToolField('symptom', required: true),
     ToolField('severity', numeric: true, minimum: 0, maximum: 10),

@@ -6,7 +6,9 @@ import 'package:blood_pressure_app/core/database/database_providers.dart';
 import 'package:blood_pressure_app/core/repository/repository_providers.dart';
 import 'package:blood_pressure_app/core/settings/boot_file_settings.dart';
 import 'package:blood_pressure_app/core/settings/storage_providers.dart';
+import 'package:blood_pressure_app/features/analytics/usage_analytics.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_runtime.dart';
+import 'package:blood_pressure_app/features/medications/medication_widget_window.dart';
 import 'package:blood_pressure_app/features/settings/initialize_app_settings.dart';
 import 'package:blood_pressure_app/l10n/app_locales.dart';
 import 'package:blood_pressure_app/logging.dart';
@@ -27,6 +29,9 @@ Future<void> runJanan({
   await runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      final widgetLaunch =
+          WidgetsBinding.instance.platformDispatcher.defaultRouteName ==
+          medicationWidgetRoute;
       if (kIsWeb) WidgetsBinding.instance.ensureSemantics();
       await initializeIntegrations?.call();
       LicenseRegistry.addLicense(() async* {
@@ -44,7 +49,9 @@ Future<void> runJanan({
         ], await rootBundle.loadString('assets/fonts/NotoSansJP-OFL.txt'));
       });
       try {
-        await MedicationReminderRuntime.instance.initialize();
+        if (!widgetLaunch) {
+          await MedicationReminderRuntime.instance.initialize();
+        }
       } catch (e, stack) {
         Log.warning(
           'Medication reminder initialization failed',
@@ -53,7 +60,7 @@ Future<void> runJanan({
         );
       }
       installCrashHandlers();
-      await initAppLogging();
+      if (!widgetLaunch) await initAppLogging();
       try {
         await EasyLocalization.ensureInitialized();
       } catch (e, stack) {
@@ -67,7 +74,7 @@ Future<void> runJanan({
 
       SettingsProviders? settings;
       try {
-        settings = await initializeAppSettings();
+        settings = await initializeAppSettings(indexForSearch: !widgetLaunch);
       } catch (e, stack) {
         Log.severe('Settings init failed', error: e, stackTrace: stack);
       }
@@ -94,6 +101,14 @@ Future<void> runJanan({
           useFallbackTranslations: true,
           child: ProviderScope(
             overrides: [
+              usageConfigurationProvider.overrideWithValue(
+                UsageConfiguration(
+                  endpoint: const String.fromEnvironment('JANAN_USAGE_URL'),
+                  cloud:
+                      appFlavor == 'prod' ||
+                      const String.fromEnvironment('JANAN_BUILD') == 'cloud',
+                ),
+              ),
               if (settings != null)
                 settingsControllerProvider.overrideWithValue(
                   settings.controller,

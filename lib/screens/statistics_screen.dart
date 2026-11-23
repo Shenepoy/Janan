@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
+import 'package:blood_pressure_app/core/settings/storage_providers.dart';
 import 'package:blood_pressure_app/data_util/combined_entry_builder.dart';
 import 'package:blood_pressure_app/data_util/consistent_future_builder.dart';
 import 'package:blood_pressure_app/domain/domain.dart';
@@ -50,18 +53,23 @@ class StatisticsScreen extends ConsumerWidget {
   }
 }
 
-class _StatisticsDashboard extends StatelessWidget {
+class _StatisticsDashboard extends ConsumerWidget {
   const _StatisticsDashboard({required this.entries});
 
   final List<CombinedEntry> entries;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     Localizations.localeOf(context);
     final manager = context.intervalStoreManager;
     final interval = manager.get(IntervalStoreManagerLocation.mainPage);
     final snapshot = DashboardSnapshot.from(entriesNewestFirst: entries);
-    final previousRange = previousDisplayRange(interval);
+    final previousRange = previousDisplayRange(
+      interval,
+      currentRange: ref.watch(
+        currentDateRangeProvider(IntervalStoreManagerLocation.mainPage),
+      ),
+    );
 
     return DashboardPageBody(
       children: [
@@ -109,7 +117,7 @@ class _StatisticsDashboard extends StatelessWidget {
   }
 }
 
-class _PreviousWindowKpis extends StatelessWidget {
+class _PreviousWindowKpis extends StatefulWidget {
   const _PreviousWindowKpis({
     super.key,
     required this.interval,
@@ -122,21 +130,91 @@ class _PreviousWindowKpis extends StatelessWidget {
   final DateRange? previousRange;
 
   @override
-  Widget build(BuildContext context) {
-    if (previousRange == null) {
-      return PeriodMetricCards(period: period);
+  State<_PreviousWindowKpis> createState() => _PreviousWindowKpisState();
+}
+
+class _PreviousWindowKpisState extends State<_PreviousWindowKpis> {
+  BloodPressureRepository? _repository;
+  StreamSubscription<BloodPressureRecord?>? _writes;
+  Object? _queryKey;
+  Future<BloodPressureAnalyzer?>? _previous;
+
+  Future<BloodPressureAnalyzer?> _loadPrevious() async {
+    final range = widget.previousRange;
+    final limit = widget.interval.timeLimitRange;
+    if (range == null) return null;
+    final records = await _repository!.get(range);
+    final filtered = recordsInTimeLimit(records, limit);
+    return filtered.isEmpty ? null : BloodPressureAnalyzer(List.of(filtered));
+  }
+
+  Future<BloodPressureAnalyzer?> _startPreviousLoad() {
+    final future = _loadPrevious();
+    // A synchronous read failure can complete before the next frame attaches
+    // FutureBuilder. Mark it handled now; the builder still displays the error.
+    future.ignore();
+    return future;
+  }
+
+  void _syncQuery() {
+    final repository = context.bpRepo;
+    if (!identical(repository, _repository)) {
+      _writes?.cancel();
+      _repository = repository;
+      _writes = repository.subscribe().listen(
+        (_) {
+          if (mounted && identical(repository, _repository)) {
+            setState(() {
+              _previous = _startPreviousLoad();
+            });
+          }
+        },
+        onError: (Object error, StackTrace stack) {
+          if (!mounted || !identical(repository, _repository)) return;
+          final future = Future<BloodPressureAnalyzer?>.error(error, stack);
+          future.ignore();
+          setState(() {
+            _previous = future;
+          });
+        },
+      );
     }
-    final repo = context.bpRepo;
+    final limit = widget.interval.timeLimitRange;
+    final key = (repository, widget.previousRange, limit?.start, limit?.end);
+    if (_queryKey != key) {
+      _queryKey = key;
+      _previous = _startPreviousLoad();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncQuery();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PreviousWindowKpis oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncQuery();
+  }
+
+  @override
+  void dispose() {
+    _writes?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.previousRange == null) {
+      return PeriodMetricCards(period: widget.period);
+    }
     return ConsistentFutureBuilder<BloodPressureAnalyzer?>(
-      cacheFuture: true,
-      future: repo.get(previousRange!).then((records) {
-        final filtered = recordsInTimeLimit(records, interval.timeLimitRange);
-        if (filtered.isEmpty) return null;
-        return BloodPressureAnalyzer(List.of(filtered));
-      }),
-      onWaiting: PeriodMetricCards(period: period),
+      future: _previous!,
+      onWaiting: PeriodMetricCards(period: widget.period),
       onData: (context, previous) =>
-          PeriodMetricCards(period: period, previous: previous),
+          PeriodMetricCards(period: widget.period, previous: previous),
     );
   }
 }

@@ -9,6 +9,7 @@ import 'package:blood_pressure_app/core/repository/powersync_medicine_repository
 import 'package:blood_pressure_app/domain/domain.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tool_kind.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_repository.dart';
+import 'package:blood_pressure_app/features/nutrition/food_library.dart';
 import 'package:powersync/powersync.dart';
 
 /// Import a `.db` file that is either legacy `bp.db` or a PowerSync `health.db`.
@@ -178,6 +179,15 @@ Future<int> _importHealth(
       await tools.save(kind, values, id: row['id'] as String);
       count++;
     }
+  }
+  final library = FoodLibrary(targetDatabase);
+  for (final row in await _query(sqlite, 'SELECT * FROM nutrition_foods')) {
+    await library.restoreFood(row);
+    count++;
+  }
+  for (final row in await _query(sqlite, 'SELECT * FROM nutrition_meals')) {
+    await library.restoreMeal(row);
+    count++;
   }
   return count;
 }

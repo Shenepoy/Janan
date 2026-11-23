@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
+import 'package:blood_pressure_app/core/widgets/app_sheet.dart';
 import 'package:blood_pressure_app/features/measurement_list/metric_info.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -52,7 +53,7 @@ class MetricInfoDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final currentBand = info.currentBand;
-    return SingleChildScrollView(
+    return AppSheetBody(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -136,10 +137,8 @@ class _BandPill extends StatelessWidget {
       ),
       child: Text(
         band.label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
+        style: Theme.of(context).textTheme.labelLarge
+            ?.copyWith(color: color, fontWeight: FontWeight.w600),
       ),
     );
   }

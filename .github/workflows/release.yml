@@ -118,6 +118,8 @@ jobs:
         run: bash ./scripts/ci/codegen.sh
 
       - name: Build release APK
+        env:
+          JANAN_DART_DEFINE_FILE: config/usage.production.json
         run: bash ./scripts/ci/build_release_apk.sh
 
       - name: Verify APK is not debug-signed

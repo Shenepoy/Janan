@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/core/widgets/app_slider_settings_tile.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/configure_warn_values_screen.dart';
 import 'package:blood_pressure_app/features/settings/graph_markings_screen.dart';
@@ -180,7 +181,7 @@ class _GraphSlider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SliderSettingsTile(
+    return AppSliderSettingsTile(
       leading: Icon(icon),
       dialogTitle: title,
       title: subtitle == null

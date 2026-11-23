@@ -7,6 +7,7 @@ Map<String, Object> dumpEdadatController(SettingsController controller) {
   final map = <String, Object>{};
   for (final setting in controller.registry.settings) {
     if (!setting.persist || setting.type == SettingType.action) continue;
+    if (setting.key == usageAnalyticsSetting.key) continue;
     final storable = setting.toStorable(controller.get(setting));
     if (storable != null) map[setting.key] = storable;
   }
@@ -20,6 +21,7 @@ Future<void> importEdadatMap(
 ) async {
   for (final setting in controller.registry.settings) {
     if (!setting.persist || setting.type == SettingType.action) continue;
+    if (setting.key == usageAnalyticsSetting.key) continue;
     if (!map.containsKey(setting.key)) continue;
     try {
       final value = setting.fromStorable(map[setting.key]);

@@ -47,7 +47,7 @@ class HealthToolsRepository {
     }
     for (final field in kind.fields) {
       final value = values[field.name];
-      if (value == null || value == '') {
+      if (value == null || value is String && value.trim().isEmpty) {
         if (field.required) throw ArgumentError(field.name);
         continue;
       }

@@ -145,6 +145,7 @@ Deeper notes live in [`docs/`](docs/).
 | [Data package](docs/data-package.md) | How stored records are shaped |
 | [Code style](docs/codestyle.md) | Conventions in this tree |
 | [Testing](docs/testing.md) | How tests are organized |
+| [Android debug app](docs/android-debug.md) | Build and install alongside existing Janan apps |
 | [CI and releases](docs/ci.md) | Analyze, test, signed APK, Obtainium |
 | [Contributing](CONTRIBUTING.md) | Bugs, translations, PRs on **this** repo |
 
@@ -206,6 +207,7 @@ What upstream already has and this fork still has: manual input, graphs, CSV / P
 |---|---|
 | **Blood pressure** | Systolic, diastolic, pulse, notes, and medicine doses. |
 | **Reminders** | Dose times, a home countdown, and a log of what was taken. |
+| **Food and water** | Dedicated Food & water tab with a wide chronological list, a full-page food hub with local search, favorites, reusable meals and a basket review, portion scaling, notes, optional calories/macros, recent-food reuse, quick water-sheet presets, period totals using the shared 7D / 30D / 1Y / All selector and calendar. Stored locally and included in full database backups. |
 | **Weight** | Optional log, BMI, and body composition from a compatible scale. |
 | **Charts** | Trends, distribution, and time of day. |
 | **Bluetooth** | Automatically sync saved [monitors and scales](docs/bluetooth.md) on launch, or import a reading manually. |
@@ -230,3 +232,5 @@ The name **Janan**, the Arabic wordmark <span dir="rtl">**الجَنَان**</sp
   ·
   fork of <a href="https://github.com/derdilla/blood-pressure-monitor-fl">derdilla/blood-pressure-monitor-fl</a>
 </p>
+
+Optional app usage statistics are off by default in both distributions. See [usage analytics and consent](docs/usage-analytics.md) for collected counters and the separate essential cloud service records.

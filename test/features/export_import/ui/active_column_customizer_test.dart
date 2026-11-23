@@ -1,3 +1,4 @@
+import 'package:blood_pressure_app/components/input_dialog.dart';
 import 'package:blood_pressure_app/features/export_import/model/column.dart';
 import 'package:blood_pressure_app/features/export_import/model/export_preset.dart';
 import 'package:blood_pressure_app/features/export_import/ui/columns_config/active_column_customizer.dart';
@@ -30,12 +31,12 @@ void main() {
     expect(find.text('Custom'), findsOneWidget);
     expect(find.text('Systolic'), findsOneWidget);
     expect(find.text('Diastolic'), findsOneWidget);
-    expect(find.byType(SafaehTextInputSheet), findsNothing);
+    expect(find.byType(AppTextInputSheet), findsNothing);
 
     await tester.tap(find.byIcon(Icons.save));
     await tester.pumpAndSettle();
 
-    expect(find.byType(SafaehTextInputSheet), findsOneWidget);
+    expect(find.byType(AppTextInputSheet), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'test preset');
     await tester.pumpAndSettle();
     await tapSafaehConfirm(tester);
@@ -102,7 +103,7 @@ void main() {
     expect(find.byIcon(Icons.save), findsOneWidget);
     await tester.tap(find.byIcon(Icons.save));
     await tester.pumpAndSettle();
-    expect(find.byType(SafaehTextInputSheet), findsNothing);
+    expect(find.byType(AppTextInputSheet), findsNothing);
 
     expect(exportSettings.presets, hasLength(1));
     expect(exportSettings.presets.first.columns, hasLength(1));
@@ -204,12 +205,12 @@ void main() {
     await tester.tap(find.byIcon(Icons.save));
     await tester.pumpAndSettle();
 
-    expect(find.byType(SafaehTextInputSheet), findsOneWidget);
+    expect(find.byType(AppTextInputSheet), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'uncreative');
     await tester.pumpAndSettle();
     await tapSafaehConfirm(tester);
     await tester.pumpAndSettle();
-    expect(find.byType(SafaehTextInputSheet), findsNothing);
+    expect(find.byType(AppTextInputSheet), findsNothing);
     expect(find.text('This title already exists'), findsNothing);
 
     await tester.tap(find.byType(SafaehAnchoredDropdownChip<String?>));
@@ -218,12 +219,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.save));
     await tester.pumpAndSettle();
-    expect(find.byType(SafaehTextInputSheet), findsOneWidget);
+    expect(find.byType(AppTextInputSheet), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'uncreative');
     await tester.pumpAndSettle();
     await tapSafaehConfirm(tester);
     await tester.pumpAndSettle();
-    expect(find.byType(SafaehTextInputSheet), findsOneWidget);
+    expect(find.byType(AppTextInputSheet), findsOneWidget);
     expect(find.text('This title already exists'), findsOneWidget);
   });
 

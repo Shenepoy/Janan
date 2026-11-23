@@ -1,6 +1,8 @@
 import 'dart:ui' as ui;
 
+import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
+import 'package:blood_pressure_app/features/analytics/usage_analytics.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_appearance_controls.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_backdrop.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_connection_provider.dart';
@@ -10,6 +12,7 @@ import 'package:blood_pressure_app/features/onboarding/onboarding_footer.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_header.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_lesson.dart';
 import 'package:blood_pressure_app/features/onboarding/onboarding_theme_reveal_clipper.dart';
+import 'package:blood_pressure_app/features/onboarding/onboarding_usage.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -17,10 +20,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:safaeh/safaeh.dart';
 
 const _lessons = [0, 1, 4, 2, 3];
 const _featurePage = 5;
+const _usagePage = 6;
 
 /// A replayable walkthrough of recording, reviewing, and tracking health data.
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -67,7 +70,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   bool get _hasConnection =>
       widget.firstRun && ref.read(onboardingConnectionProvider) != null;
 
-  int get _pageCount => _featurePage + 1 + (_hasConnection ? 1 : 0);
+  int get _pageCount =>
+      _featurePage + 1 + (widget.firstRun ? 1 : 0) + (_hasConnection ? 1 : 0);
+
+  bool get _onUsagePage => widget.firstRun && _page == _usagePage;
 
   bool get _onLastPage => _page >= _pageCount - 1;
 
@@ -81,6 +87,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeOutCubic,
     );
+  }
+
+  Future<void> _disableUsage() async {
+    if (_finishing) return;
+    ref.read(usageAnalyticsProvider).close();
+    setState(() => _finishing = true);
+    try {
+      // Persist the opt-out before continuing; failed writes stay retryable.
+      final saved = await ref.read(settingsControllerProvider).importAll({
+        usageAnalyticsSetting.key: false,
+      });
+      if (saved != 1) {
+        _showCompletionError();
+        return;
+      }
+      if (!mounted) return;
+      setState(() => _finishing = false);
+      await _continueAfterUsage();
+    } catch (_) {
+      _showCompletionError();
+    }
+  }
+
+  Future<void> _continueAfterUsage() async {
+    if (_finishing) return;
+    if (_hasConnection) {
+      await _goTo(_usagePage + 1);
+    } else {
+      await _finish();
+    }
   }
 
   /// Complete once, leaving one diary underneath an optional first task.
@@ -190,7 +226,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
-    final desktop = OnboardingHeader.usesDesktopLayout(context);
+    final appearanceInHeader =
+        OnboardingHeader.usesDesktopLayout(context) ||
+        (_onUsagePage && MediaQuery.sizeOf(context).height < 450);
     final appearance = OnboardingAppearanceControls(
       themeButtonKey: _themeButtonKey,
       onThemeChanged: _changeTheme,
@@ -201,7 +239,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         ? ref.watch(onboardingConnectionProvider)
         : null;
     final backdropPage = _page < _lessons.length ? _lessons[_page] : 0;
-    final nextLabel = !_onLastPage
+    final nextLabel = _onUsagePage
+        ? 'onboardingNext'
+        : !_onLastPage
         ? 'onboardingNext'
         : !widget.firstRun
         ? 'onboardingDone'
@@ -234,8 +274,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     child: Column(
                       children: [
                         OnboardingHeader(
-                          appearanceControls: desktop ? appearance : null,
-                          action: widget.firstRun
+                          appearanceControls: appearanceInHeader
+                              ? appearance
+                              : null,
+                          action: _onUsagePage
+                              ? IconButton.filledTonal(
+                                  key: const Key('onboarding-usage-close'),
+                                  tooltip: 'onboardingUsageSkip'.tr(),
+                                  onPressed: _finishing ? null : _disableUsage,
+                                  icon: const Icon(Icons.close_rounded),
+                                )
+                              : widget.firstRun
                               ? (_page >= _featurePage
                                     ? null
                                     : IconButton.filledTonal(
@@ -263,6 +312,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                         Expanded(
                           child: PageView(
                             controller: _pager,
+                            physics: _finishing
+                                ? const NeverScrollableScrollPhysics()
+                                : null,
                             onPageChanged: (page) =>
                                 setState(() => _page = page),
                             children: [
@@ -273,7 +325,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                                   active: _page == index,
                                 ),
                               OnboardingFeatureSetup(
-                                onCustomize: () => showSafaeh<void>(
+                                onCustomize: () => showResponsiveSheet<void>(
                                   context: context,
                                   title: 'onboardingPreferencesTitle'.tr(),
                                   maxWidth: 660,
@@ -281,26 +333,39 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                                   maxHeight:
                                       MediaQuery.sizeOf(context).height * .9,
                                   child: OnboardingFeaturePreferences(
+                                    showHeading: false,
                                     onAdjustFeatures: () =>
                                         Navigator.pop(context),
                                   ),
                                 ),
                               ),
+                              if (widget.firstRun) const OnboardingUsage(),
                               if (connection != null)
                                 connection(context, _finish),
                             ],
                           ),
                         ),
                         OnboardingFooter(
-                          appearanceControls: desktop ? null : appearance,
+                          appearanceControls: appearanceInHeader
+                              ? null
+                              : appearance,
                           currentStep: _page,
                           totalSteps: _pageCount,
                           nextLabel: nextLabel.tr(),
                           isLast: _onLastPage,
                           busy: _finishing,
                           onBack: () => _goTo(_page - 1),
+                          secondaryAction: _onUsagePage
+                              ? TextButton(
+                                  key: const Key('onboarding-usage-skip'),
+                                  onPressed: _finishing ? null : _disableUsage,
+                                  child: Text('onboardingUsageSkip'.tr()),
+                                )
+                              : null,
                           onNext: () {
-                            if (_onLastPage) {
+                            if (_onUsagePage) {
+                              _continueAfterUsage();
+                            } else if (_onLastPage) {
                               _finish();
                             } else {
                               _goTo(_page + 1);

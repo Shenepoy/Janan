@@ -45,11 +45,56 @@ const medicationsSection = SettingSection(
   initiallyExpanded: true,
 );
 
+const foodSection = SettingSection(
+  key: 'food',
+  titleKey: 'foodTracking',
+  icon: Symbols.grocery,
+  order: 5,
+  initiallyExpanded: true,
+);
+const waterSection = SettingSection(
+  key: 'water',
+  titleKey: 'waterTracking',
+  icon: Icons.local_drink_outlined,
+  order: 6,
+  initiallyExpanded: true,
+);
+
+const foodTrackingEnabledSetting = BoolSetting(
+  'food_tracking_enabled',
+  defaultValue: true,
+  titleKey: 'foodTracking',
+  subtitleKey: 'trackingEnabledHint',
+  icon: Symbols.grocery,
+  section: 'food',
+  order: 0,
+);
+const waterTrackingEnabledSetting = BoolSetting(
+  'water_tracking_enabled',
+  defaultValue: true,
+  titleKey: 'waterTracking',
+  subtitleKey: 'waterTrackingEnabledHint',
+  icon: Icons.local_drink_outlined,
+  section: 'water',
+  order: 0,
+);
+const foodNutritionTotalsSetting = BoolSetting(
+  'food_nutrition_totals',
+  defaultValue: true,
+  titleKey: 'foodNutritionTotals',
+  subtitleKey: 'foodNutritionTotalsHint',
+  icon: Icons.summarize_outlined,
+  section: 'food',
+  order: 1,
+  dependsOn: 'food_tracking_enabled',
+  enabledWhen: true,
+);
+
 const bluetoothSection = SettingSection(
   key: 'bluetooth',
   titleKey: 'devices',
   icon: Icons.bluetooth,
-  order: 5,
+  order: 7,
   initiallyExpanded: true,
 );
 
@@ -57,7 +102,7 @@ const dataSection = SettingSection(
   key: 'data',
   titleKey: 'data',
   icon: Icons.storage_outlined,
-  order: 6,
+  order: 8,
   initiallyExpanded: true,
 );
 
@@ -65,7 +110,7 @@ const aboutSection = SettingSection(
   key: 'about',
   titleKey: 'aboutWarnValuesScreen',
   icon: Icons.info_outline,
-  order: 7,
+  order: 9,
   initiallyExpanded: true,
 );
 
@@ -73,8 +118,56 @@ const graphSection = SettingSection(
   key: 'graph',
   titleKey: 'graphSettings',
   icon: Icons.trending_down_outlined,
-  order: 8,
+  order: 10,
   initiallyExpanded: true,
+);
+
+const waterBottlesSetting = StringSetting(
+  'water_bottles',
+  defaultValue: '',
+  titleKey: 'waterPreferences',
+  visible: false,
+);
+const waterRemindersSetting = StringSetting(
+  'water_reminders',
+  defaultValue: '',
+  titleKey: 'waterPreferences',
+  visible: false,
+);
+
+const waterDailyTargetSetting = IntSetting(
+  'water_daily_target_ml',
+  defaultValue: 0,
+  titleKey: 'waterPreferences',
+  visible: false,
+);
+
+const waterVesselSetting = EnumSetting(
+  'water_vessel',
+  defaultValue: 'glass',
+  titleKey: 'waterVessel',
+  options: ['glass', 'mug', 'bottle', 'sportsBottle'],
+  visible: false,
+);
+
+const waterServingSetting = IntSetting(
+  'water_serving_ml',
+  defaultValue: 250,
+  titleKey: 'waterDefaultServing',
+  visible: false,
+);
+
+const waterPreferencesAction = ActionSetting(
+  'water_preferences',
+  titleKey: 'waterPreferences',
+  subtitleKey: 'waterPreferencesHint',
+  icon: Icons.local_drink_outlined,
+  section: 'water',
+  order: 1,
+  searchTerms: {
+    'en': ['water', 'cup', 'bottle', 'glass', 'serving', 'hydration'],
+    'ar': ['ماء', 'كوب', 'زجاجة', 'كمية'],
+  },
 );
 
 const languageSetting = EnumSetting(
@@ -1060,6 +1153,17 @@ const logsViewerAction = ActionSetting(
   },
 );
 
+/// The usage preference is local and excluded from settings backups.
+final usageAnalyticsSetting = BoolSetting(
+  'usage_analytics',
+  defaultValue: true,
+  titleKey: 'usageAnalytics',
+  subtitleKey: 'usageAnalyticsDescription',
+  icon: Icons.privacy_tip_outlined,
+  section: 'data',
+  order: 20,
+);
+
 SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
   sections: [
     styleSection,
@@ -1067,12 +1171,24 @@ SettingsRegistry createAppSettingsRegistry() => SettingsRegistry.withSettings(
     bloodPressureSection,
     weightSection,
     medicationsSection,
+    foodSection,
+    waterSection,
     bluetoothSection,
     dataSection,
     aboutSection,
     graphSection,
   ],
   settings: [
+    usageAnalyticsSetting,
+    foodTrackingEnabledSetting,
+    waterTrackingEnabledSetting,
+    foodNutritionTotalsSetting,
+    waterBottlesSetting,
+    waterRemindersSetting,
+    waterDailyTargetSetting,
+    waterVesselSetting,
+    waterServingSetting,
+    waterPreferencesAction,
     startWithAddMeasurementPageSetting,
     trackArmSideSetting,
     allowManualTimeInputSetting,

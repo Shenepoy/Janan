@@ -10,7 +10,7 @@ internal class ReminderNotificationHandler(
 ) : MethodChannel.MethodCallHandler {
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
-            "zonedSchedule", "cancel", "cancelAll" -> notifications.onMethodCall(call, result)
+            "zonedSchedule", "cancel", "cancelAll", "cancelAllPendingNotifications" -> notifications.onMethodCall(call, result)
             else -> onMainThread {
                 try {
                     notifications.onMethodCall(call, result)

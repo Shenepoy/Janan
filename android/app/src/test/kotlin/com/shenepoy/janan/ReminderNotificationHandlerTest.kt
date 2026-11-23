@@ -25,11 +25,11 @@ class ReminderNotificationHandlerTest {
         )
         val worker = Executors.newSingleThreadExecutor()
         try {
-            for (method in listOf("cancelAll", "zonedSchedule", "cancel")) {
+            for (method in listOf("cancelAll", "cancelAllPendingNotifications", "zonedSchedule", "cancel")) {
                 worker.submit { handler.onMethodCall(MethodCall(method, null), result) }
                     .get(5, TimeUnit.SECONDS)
             }
-            assertEquals(listOf("cancelAll", "zonedSchedule", "cancel"), calls)
+            assertEquals(listOf("cancelAll", "cancelAllPendingNotifications", "zonedSchedule", "cancel"), calls)
             assertEquals(calls, result.successes)
         } finally {
             worker.shutdownNow()

@@ -8,6 +8,8 @@ import 'package:blood_pressure_app/features/health_tools/health_tool_kind.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_repository.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_strings.dart';
 import 'package:blood_pressure_app/features/medications/medication_reminder_providers.dart';
+import 'package:blood_pressure_app/features/nutrition/food_library.dart';
+import 'package:blood_pressure_app/features/nutrition/nutrition_strings.dart';
 import 'package:blood_pressure_app/features/settings/edadat_prefs.dart';
 import 'package:blood_pressure_app/features/settings/settings_subpage.dart';
 import 'package:blood_pressure_app/model/storage/file_settings_loader.dart';
@@ -42,6 +44,28 @@ class _DeleteDataScreenState extends State<DeleteDataScreen> {
         title: 'delete'.tr(),
         icon: Icons.delete_outline,
         children: [
+          ListTile(
+            leading: const Icon(Icons.restaurant_outlined),
+            title: Text(nutritionText(context, 'foodLibrary')),
+            trailing: const Icon(Icons.delete_forever),
+            onTap: () async {
+              if (!await showConfirmDeletionDialog(
+                    context,
+                    nutritionText(context, 'foodLibraryDelete'),
+                  ) ||
+                  !context.mounted) {
+                return;
+              }
+              final database = ProviderScope.containerOf(
+                context,
+                listen: false,
+              ).read(healthDatabaseProvider);
+              await FoodLibrary(database).clear();
+              if (context.mounted) {
+                context.showSuccess('deletionConfirmed'.tr());
+              }
+            },
+          ),
           for (final kind in HealthToolKind.values)
             ListTile(
               leading: const Icon(Icons.health_and_safety_outlined),

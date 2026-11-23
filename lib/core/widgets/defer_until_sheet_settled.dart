@@ -33,7 +33,10 @@ class _DeferUntilSheetSettledState extends State<DeferUntilSheetSettled> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final animation = ModalRoute.of(context)?.animation;
-    if (identical(animation, _animation)) return;
+    if (identical(animation, _animation)) {
+      if (animation == null) _settled = true;
+      return;
+    }
     _animation?.removeStatusListener(_onStatus);
     _animation = animation;
     animation?.addStatusListener(_onStatus);
@@ -71,7 +74,8 @@ class _DeferUntilSheetSettledState extends State<DeferUntilSheetSettled> {
   }
 
   @override
-  Widget build(BuildContext context) => _settled ? widget.child : widget.placeholder;
+  Widget build(BuildContext context) =>
+      _settled ? widget.child : widget.placeholder;
 }
 
 /// Cheap rows that stand in for a [SafaehOptionList] while the sheet moves.

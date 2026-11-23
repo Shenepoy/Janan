@@ -3,12 +3,15 @@ import 'dart:convert';
 import 'package:archive/archive_io.dart';
 import 'package:blood_pressure_app/app.dart';
 import 'package:blood_pressure_app/components/color_picker.dart';
+import 'package:blood_pressure_app/components/input_dialog.dart';
 import 'package:blood_pressure_app/core/layout/responsive_sheet.dart';
 import 'package:blood_pressure_app/core/repository/repo_context.dart';
+import 'package:blood_pressure_app/core/widgets/app_slider_settings_tile.dart';
 import 'package:blood_pressure_app/core/widgets/defer_until_sheet_settled.dart';
 import 'package:blood_pressure_app/core/widgets/sheet_helpers.dart';
 import 'package:blood_pressure_app/core/widgets/toast.dart';
 import 'package:blood_pressure_app/features/health_tools/health_tools_screen.dart';
+import 'package:blood_pressure_app/features/nutrition/water_preferences_screen.dart';
 import 'package:blood_pressure_app/features/settings/app_settings.dart';
 import 'package:blood_pressure_app/features/settings/bluetooth_devices_screen.dart';
 import 'package:blood_pressure_app/features/settings/body_profile_screen.dart';
@@ -16,6 +19,7 @@ import 'package:blood_pressure_app/features/settings/delete_data_screen.dart';
 import 'package:blood_pressure_app/features/settings/edadat_prefs.dart';
 import 'package:blood_pressure_app/features/settings/extra_settings_provider.dart';
 import 'package:blood_pressure_app/features/settings/graph_markings_screen.dart';
+import 'package:blood_pressure_app/features/settings/lazy_settings_list.dart';
 import 'package:blood_pressure_app/features/settings/range_limits_screen.dart';
 import 'package:blood_pressure_app/features/settings/registry.dart';
 import 'package:blood_pressure_app/features/settings/storage/edadat_file_storage.dart';
@@ -35,7 +39,6 @@ import 'package:flutter_settings_framework/flutter_settings_framework.dart';
 import 'package:flutter_settings_framework/safaeh.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 
 /// Drop rows whose registry definition marks them invisible. The catalog page
 /// still builds every setting in a section; Health Connect internals and other
@@ -72,6 +75,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   late final SettingsRegistry _registry;
   final _scrollController = ScrollController();
   final _scrollViewportKey = GlobalKey();
+  final _listKey = GlobalKey<LazySettingsListState>();
   final _anchors = SettingAnchorRegistry();
   final _sectionKeys = <String, GlobalKey>{};
   final _sectionExpanded = <String, bool>{};
@@ -156,11 +160,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       if (!mounted || _isSearchOpen || _sectionNavigation.isNavigating) return;
       final scrollContext = _scrollViewportKey.currentContext;
       if (scrollContext == null) return;
-      final active = activeSafaehSettingsSectionId(
-        sections: _displayedSections,
-        sectionKeys: _sectionKeys,
-        scrollContext: scrollContext,
-      );
+      final active = _listKey.currentState?.activeSectionId;
       if (active != null && active != _activeSectionId) {
         setState(() => _activeSectionId = active);
       }
@@ -169,6 +169,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   void _setSectionExpanded(String sectionId, bool expanded) {
     if (_sectionExpanded[sectionId] == expanded) return;
+    _listKey.currentState?.cancelReveal();
     _sectionNavigation.layoutChanged();
     setState(() => _sectionExpanded[sectionId] = expanded);
   }
@@ -182,11 +183,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   void _setSubSectionExpanded(String sectionKey, String subKey, bool expanded) {
     final id = _subSectionId(sectionKey, subKey);
     if (_subSectionExpanded[id] == expanded) return;
+    _listKey.currentState?.cancelReveal();
     _sectionNavigation.layoutChanged();
     setState(() => _subSectionExpanded[id] = expanded);
   }
 
   Future<void> _selectSection(SettingSection section) async {
+    _listKey.currentState?.cancelReveal();
     final key = _sectionKeys[section.key];
     if (key == null) return;
     final wasExpanded =
@@ -196,13 +199,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       _activeSectionId = section.key;
       _sectionExpanded[section.key] = true;
     });
-    await _sectionNavigation.navigate(
-      () =>
-          scrollToPageSection(key, controller: _scrollController, alignment: 0),
-    );
+    await _sectionNavigation.navigate(() async {
+      await _listKey.currentState?.reveal(key);
+    });
   }
 
   Future<void> _selectSearchResult(SearchResult result) async {
+    _listKey.currentState?.cancelReveal();
     final setting = result.setting;
     final sectionKey = setting.section;
     if (sectionKey == null) return;
@@ -223,7 +226,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       }
       _activeSectionId = sectionKey;
     });
-    await _sectionNavigation.navigate(() => _anchors.scrollTo(setting.key));
+    await _sectionNavigation.navigate(() async {
+      final revealed = await _listKey.currentState?.reveal(
+        _anchors.keyFor(setting.key),
+      );
+      if (!mounted || revealed != true) return;
+      await _anchors.scrollTo(
+        setting.key,
+        controller: _scrollController,
+        alignment: 0,
+      );
+    });
   }
 
   bool _isSearchResultVisible(SearchResult result) {
@@ -252,8 +265,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       if (settingsList.isEmpty) continue;
       final tiles = <Widget>[];
       for (final setting in settingsList) {
-        final tile = _buildTileForSetting(context, settings, setting);
-        if (tile != null) tiles.add(_anchors.wrap(setting.key, tile));
+        tiles.add(
+          _anchors.wrap(
+            setting.key,
+            Consumer(
+              // Search highlights decorate the anchor above this row. Keep
+              // tile ink on a Material below that decoration so switching a
+              // highlighted setting never paints through its background.
+              builder: (context, rowRef, _) => Material(
+                type: MaterialType.transparency,
+                child:
+                    _buildTileForSetting(context, settings, setting, rowRef) ??
+                    const SizedBox.shrink(),
+              ),
+            ),
+          ),
+        );
       }
       if (tiles.isEmpty) continue;
       if (subKey != null && subKey.isNotEmpty) {
@@ -264,9 +291,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             expanded: expanded,
             onToggle: () =>
                 _setSubSectionExpanded(sectionKey, subKey, !expanded),
-            children: expanded ? tiles : const [],
+            children: const [],
           ),
         );
+        if (expanded) result.addAll(tiles);
         continue;
       }
       result.addAll(tiles);
@@ -274,37 +302,36 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return visibleCatalogChildren(_registry, result);
   }
 
-  Widget _sectionWidget(
+  CardSettingsSection _sectionWidget(
     BuildContext context,
     SettingsProviders settings,
     SettingSection section,
   ) {
     final isExpanded =
         _sectionExpanded[section.key] ?? section.initiallyExpanded;
-    return KeyedSubtree(
+    return CardSettingsSection(
       key: _sectionKeys[section.key],
-      child: CardSettingsSection(
-        title: _sectionTitle(section.titleKey),
-        icon: section.icon ?? Icons.settings,
-        isExpanded: isExpanded,
-        onExpansionChanged: (expanded) =>
-            _setSectionExpanded(section.key, expanded),
-        sectionId: section.key,
-        children: _sectionChildren(context, settings, section.key),
-      ),
+      title: _sectionTitle(section.titleKey),
+      icon: section.icon ?? Icons.settings,
+      isExpanded: isExpanded,
+      onExpansionChanged: (expanded) =>
+          _setSectionExpanded(section.key, expanded),
+      sectionId: section.key,
+      children: _sectionChildren(context, settings, section.key),
     );
   }
 
   Widget _buildSettingsList(BuildContext context, SettingsProviders settings) {
     final bottomInset =
         SafaehBottomNavScope.maybeOf(context)?.contentInsetWithSafeArea ?? 0.0;
-    return SettingsSectionList(
+    return LazySettingsList(
+      key: _listKey,
       navigation: _sectionNavigation,
       onUserScroll: _scheduleActiveSectionUpdate,
       scrollViewKey: _scrollViewportKey,
       controller: _scrollController,
       padding: EdgeInsets.fromLTRB(0, 8, 0, bottomInset + 16),
-      children: [
+      sections: [
         for (final section in _displayedSections)
           _sectionWidget(context, settings, section),
       ],
@@ -346,6 +373,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             SafaehSettingsSearchOverlay(
               isOpen: _isSearchOpen,
+              // The page is already below the app bar and resized for the IME.
+              // The package's viewport-based cap otherwise exceeds this body.
+              panelMaxHeight:
+                  (constraints.maxHeight -
+                          MediaQuery.paddingOf(context).vertical -
+                          12)
+                      .clamp(248.0, 620.0),
               onClose: () => _setSearchOpen(false),
               searchIndex: settings.searchIndex,
               resultFilter: _isSearchResultVisible,
@@ -400,8 +434,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     BuildContext context,
     SettingsProviders settings,
     SettingDefinition<Object?> setting,
+    WidgetRef ref,
   ) {
-    final defaultTile = _buildDefaultTile(context, settings, setting);
     if (kIsWeb &&
         (setting.section == 'bluetooth' ||
             setting.key == medicationNotificationsEnabledSetting.key ||
@@ -460,12 +494,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
           );
-          if (!mounted || result == null) return;
+          if (!context.mounted || result == null) return;
           await ref.updateSetting(dateFormatStringSetting, result);
         },
       );
     }
-    if (setting is! ActionSetting) return defaultTile;
+    if (setting is! ActionSetting) {
+      return _buildDefaultTile(context, settings, setting, ref);
+    }
     if (setting.key == bodyProfileAction.key) {
       final appSettings = ref.watch(appSettingsProvider);
       return ActionSettingsTile(
@@ -506,6 +542,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       'graph_settings' || 'bp_range_limits' => appSettings.bloodPressureEnabled,
       'weight_range_limits' => appSettings.weightInput,
       'medications' => appSettings.medicineFeatureEnabled,
+      'water_preferences' => appSettings.waterTrackingEnabled,
       _ => isSettingEnabled(settings, setting, ref),
     };
     return ActionSettingsTile(
@@ -523,6 +560,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     BuildContext context,
     SettingsProviders settings,
     SettingDefinition<Object?> setting,
+    WidgetRef ref,
   ) {
     var enabled = isSettingEnabled(settings, setting, ref);
     if (setting.key == overdueReminderCountSetting.key ||
@@ -590,7 +628,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                       ),
                   ],
                 );
-                if (!mounted || result == null) return;
+                if (!context.mounted || result == null) return;
                 await ref.read(settings.provider(setting).notifier).set(result);
               }
             : null,
@@ -598,25 +636,58 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
     if (setting is IntSetting) {
       final value = ref.watch(settings.provider(setting));
-      return IntSettingsTile.fromSetting(
-        setting: setting,
-        title: title,
-        subtitle: value.toString(),
-        value: value,
+      return ListTile(
+        leading: setting.icon == null ? null : Icon(setting.icon),
+        title: Text(title),
+        subtitle: Text('$value'),
         enabled: enabled,
-        dialogTitle: title,
-        onChanged: enabled
-            ? (value) =>
-                  ref.read(settings.provider(setting).notifier).set(value)
-            : null,
+        trailing: settingsChevronEnd(context),
+        onTap: !enabled
+            ? null
+            : () async {
+                final result = await showAppTextInput(
+                  context: context,
+                  title: title,
+                  hint: title,
+                  doneLabel: 'btnSave'.tr(),
+                  initialValue: '$value',
+                  keyboardType: const TextInputType.numberWithOptions(
+                    signed: true,
+                  ),
+                  validator: (text) {
+                    final number = int.tryParse(toWesternDigits(text));
+                    if (number == null) return 'errNaN'.tr();
+                    if (setting.min != null && number < setting.min!) {
+                      return '${'minimum'.tr()}: ${setting.min}';
+                    }
+                    if (setting.max != null && number > setting.max!) {
+                      return '${'maximum'.tr()}: ${setting.max}';
+                    }
+                    return setting.validate(number)
+                        ? null
+                        : 'tools.invalid'.tr();
+                  },
+                );
+                if (result != null && context.mounted) {
+                  await ref
+                      .read(settings.provider(setting).notifier)
+                      .set(int.parse(toWesternDigits(result)));
+                }
+              },
       );
     }
     if (setting is DoubleSetting) {
       final value = ref.watch(settings.provider(setting));
-      return SliderSettingsTile.fromDoubleSetting(
-        setting: setting,
-        title: title,
+      return AppSliderSettingsTile(
+        leading: setting.icon == null ? null : Icon(setting.icon),
+        title: Text(title),
         value: value,
+        min: setting.min ?? 0,
+        max: setting.max ?? 100,
+        divisions: setting.max != null && setting.min != null
+            ? ((setting.max! - setting.min!) / setting.step).round()
+            : null,
+        valueFormatter: (v) => v.toStringAsFixed(setting.decimalPlaces),
         enabled: enabled,
         dialogTitle: title,
         onChanged: enabled
@@ -663,7 +734,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   availableColors: colors,
                   title: title,
                 );
-                if (!mounted || result == null) return;
+                if (!context.mounted || result == null) return;
                 await ref
                     .read(settings.provider(setting).notifier)
                     .set(result.toARGB32());
@@ -694,6 +765,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   Future<void> _handleAction(BuildContext context, String key) async {
     switch (key) {
+      case 'water_preferences':
+        await Navigator.push(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) => const WaterPreferencesScreen(),
+          ),
+        );
       case 'health_tools':
         await Navigator.push(
           context,
@@ -743,9 +821,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           MaterialPageRoute<void>(builder: (_) => const VersionScreen()),
         );
       case 'source_code':
-        final url = Uri.parse(
-          'https://github.com/Shenepoy/Janan',
-        );
+        final url = Uri.parse('https://github.com/Shenepoy/Janan');
         if (await canLaunchUrl(url)) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
         }
@@ -881,12 +957,11 @@ class _TimeFormatPickerState extends State<_TimeFormatPicker> {
   ];
 
   @override
-  Widget build(BuildContext context) => SafaehTilePickerBody<String>(
-    showTitleInBody: false,
+  Widget build(BuildContext context) => AppOptionPickerBody<String>(
     selected: widget.selected,
     options: [
       for (var i = 0; i < widget.patterns.length; i++)
-        SafaehTileOption<String>(
+        SheetPickerOption<String>(
           value: widget.patterns[i],
           label: _labels[i],
           subtitle: widget.patterns[i],

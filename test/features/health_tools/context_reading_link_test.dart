@@ -202,7 +202,7 @@ void main() {
     await tester.tap(find.text('Change linked reading'));
     await settleDatabase(tester, find.text('No readings in this diary yet.'));
     expect(find.byKey(const ValueKey('link-reading-private')), findsNothing);
-    await tester.tap(find.text('Cancel'));
+    await dismissSafaeh(tester);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 50)),

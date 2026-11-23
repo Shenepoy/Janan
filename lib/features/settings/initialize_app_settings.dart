@@ -11,12 +11,15 @@ import 'package:sqflite/sqflite.dart';
 
 Future<SettingsProviders> initializeAppSettings({
   SettingsStorage? storage,
+  bool indexForSearch = true,
 }) async {
   if (storage != null || kIsWeb) {
     final settings = await initializeSettings(
       registry: createAppSettingsRegistry(),
       storage: storage ?? CoercingSettingsStorage(SharedPreferencesStorage()),
-      localizationProvider: await loadSettingsLocalizationProvider(),
+      localizationProvider: indexForSearch
+          ? await loadSettingsLocalizationProvider()
+          : PreIndexedLocalizationProvider(const {}),
     );
     await _completeLegacyOnboarding(settings);
     return settings;
@@ -34,7 +37,9 @@ Future<SettingsProviders> initializeAppSettings({
   final settings = await initializeSettings(
     registry: createAppSettingsRegistry(),
     storage: prefs,
-    localizationProvider: await loadSettingsLocalizationProvider(),
+    localizationProvider: indexForSearch
+        ? await loadSettingsLocalizationProvider()
+        : PreIndexedLocalizationProvider(const {}),
   );
   await file.importLegacyFilesIfNeeded(settings.controller);
   await _completeLegacyOnboarding(settings);
